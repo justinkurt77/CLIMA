@@ -1,0 +1,47 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "fid": "0",
+        "id": "1",
+        "Bname": "CITY HALL",
+        "Bcaption": "Lipad palayano",
+        "Bdesc": "The heart of palayan city",
+        "Blink": "cityofpalayan.gov.ph",
+        "Bphoto": "files/20260304010326564_images (6).jpeg",
+        "Bauthor": "Edmar",
+        "category": "Hotels"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.1003130946322,
+          15.563289263446809
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "fid": "0",
+        "id": "1",
+        "Bname": "CITY HALL",
+        "Bcaption": "Lipad palayano",
+        "Bdesc": "The heart of palayan city",
+        "Blink": "cityofpalayan.gov.ph",
+        "Bphoto": "files/20260304010326564_images (6).jpeg",
+        "Bauthor": "Edmar",
+        "category": "Hotels"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.1003130946322,
+          15.563289263446809
+        ]
+      }
+    }
+  ]
+}

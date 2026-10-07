@@ -1,0 +1,221 @@
+import { AnimatePresence, motion } from "framer-motion";
+import { MapPin, ChevronDown } from "lucide-react";
+import SearchBar from "./SearchBar";
+
+export function MapOverlayActions({
+  isMapFullView,
+  onOpenModal,
+  activeFilters,
+  setActiveFilters,
+  filterOpen,
+  setFilterOpen,
+  setSearchPin,
+  userLocation,
+  mapRef,
+}) {
+  return (
+    <AnimatePresence>
+      {isMapFullView && (
+        <motion.div
+          layoutId="header-search-morph"
+          initial={{ opacity: 0, y: -20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+          transition={{
+            duration: 0.7,
+            ease: [0.32, 0.72, 0, 1],
+          }}
+          style={{
+            position: "absolute",
+            top: "calc(8px + env(safe-area-inset-top, 0px))",
+            left: 8,
+            right: 8,
+            zIndex: 10,
+            pointerEvents: "auto",
+            width: "calc(100% - 16px)",
+            maxWidth: "100%",
+          }}
+        >
+        <motion.div
+          key="search-mode"
+          initial={{ opacity: 0, scale: 0.98, filter: "blur(4px)" }}
+          animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+          exit={{ opacity: 0, scale: 0.98, filter: "blur(4px)" }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          style={{
+            display: "flex",
+            gap: 10,
+            alignItems: "stretch",
+            width: "100%",
+          }}
+        >
+          {/* Left Side: Search Bar */}
+          <div style={{ flex: 2.5 }}>
+              <SearchBar
+                mapRef={mapRef}
+                onSearchSelect={setSearchPin}
+                userLocation={userLocation}
+                isPill={true}
+              />
+            </div>
+
+            {/* Right Side: Status Filter */}
+            <div style={{ flex: 1, position: "relative" }}>
+              <button
+                onClick={() => setFilterOpen((v) => !v)}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  background: "rgba(74, 94, 54, 0.95)",
+                  borderRadius: 40,
+                  padding: "0 14px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
+                  cursor: "pointer",
+                  paddingTop: 14,
+                  paddingBottom: 14,
+                }}
+              >
+                <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                  {activeFilters.includes("pending") && (
+                    <div
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        background: "#ff8c8c",
+                      }}
+                    />
+                  )}
+                  {activeFilters.includes("inprogress") && (
+                    <div
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        background: "#80bfff",
+                      }}
+                    />
+                  )}
+                  {activeFilters.includes("resolved") && (
+                    <div
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        background: "#8ce68c",
+                      }}
+                    />
+                  )}
+                </div>
+                <ChevronDown
+                  size={14}
+                  color="white"
+                  style={{
+                    flexShrink: 0,
+                    opacity: 0.7,
+                    transform: filterOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.2s",
+                  }}
+                />
+              </button>
+
+              {/* Dropdown Menu */}
+              <AnimatePresence>
+                {filterOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 10px)",
+                      right: 0,
+                      width: 160,
+                      background: "white",
+                      borderRadius: 18,
+                      padding: 8,
+                      boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+                      zIndex: 100,
+                    }}
+                  >
+                    {[
+                      { id: "pending", label: "Pending", bg: "#ff8c8c" },
+                      { id: "inprogress", label: "In Progress", bg: "#80bfff" },
+                      { id: "resolved", label: "Resolved", bg: "#8ce68c" },
+                    ].map((item) => {
+                      const isActive = activeFilters.includes(item.id);
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setActiveFilters((prev) =>
+                              isActive
+                                ? prev.filter((f) => f !== item.id)
+                                : [...prev, item.id],
+                            );
+                          }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            width: "100%",
+                            padding: "10px 12px",
+                            borderRadius: 12,
+                            background: isActive ? "#F0F4ED" : "transparent",
+                            border: "none",
+                            cursor: "pointer",
+                            marginBottom: 4,
+                            transition: "background 0.2s",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 14,
+                              height: 14,
+                              borderRadius: 4,
+                              background: isActive ? item.bg : "#eee",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              transition: "background 0.2s",
+                            }}
+                          >
+                            {isActive && (
+                              <div
+                                style={{
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: "50%",
+                                  background: "white",
+                                }}
+                              />
+                            )}
+                          </div>
+                          <span
+                            style={{
+                              fontSize: 12,
+                              fontWeight: 700,
+                              color: isActive ? "#4A5E36" : "#888",
+                            }}
+                          >
+                            {item.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+        </motion.div>
+        </motion.div>
+    )}
+  </AnimatePresence>
+  );
+}
