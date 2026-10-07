@@ -5,16 +5,16 @@ export function DescriptionCard({ description, errors, onChange }) {
   return (
     <div
       style={{
-        background: "white",
-        borderRadius: 20,
-        padding: "14px 16px",
-        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-        border: "1px solid #E8EBE5",
+        background: "#121214",
+        borderRadius: 22,
+        padding: "16px 18px",
+        boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
         flexShrink: 0,
       }}
     >
       <CardHeader
-        icon={<Pencil size={14} color="#3F6F23" />}
+        icon={<Pencil size={14} color="#ffffff" />}
         label="What Happened?"
         badge="Required"
       />
@@ -25,17 +25,17 @@ export function DescriptionCard({ description, errors, onChange }) {
         style={{
           width: "100%",
           height: 130,
-          borderRadius: 12,
+          borderRadius: 14,
           border: errors.description
-            ? "1.5px solid #e8604c"
-            : "1.5px solid #EAEBDE",
+            ? "1px solid #ffffff"
+            : "1px solid rgba(255, 255, 255, 0.12)",
           padding: "12px 14px",
           fontSize: 13,
-          color: "#2E2A27",
+          color: "#ffffff",
           resize: "none",
           outline: "none",
           fontFamily: "inherit",
-          background: "#F9FDF7",
+          background: "#18181b",
           boxSizing: "border-box",
           lineHeight: 1.6,
         }}
@@ -49,10 +49,10 @@ export function DescriptionCard({ description, errors, onChange }) {
         }}
       >
         {errors.description ? (
-          <div style={{ color: "#e8604c", fontSize: 11, fontWeight: 700 }}>
+          <div style={{ color: "#ffffff", fontSize: 11, fontWeight: 700 }}>
             <AlertTriangle
               size={12}
-              color="#e8604c"
+              color="#ffffff"
               style={{ marginRight: 4, marginBottom: -2 }}
             />
             {errors.description}
@@ -63,7 +63,7 @@ export function DescriptionCard({ description, errors, onChange }) {
         <div
           style={{
             fontSize: 11,
-            color: description.length > 20 ? "#7B936B" : "#A2B099",
+            color: "#71717a",
             fontWeight: 600,
           }}
         >

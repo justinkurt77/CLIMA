@@ -17,7 +17,7 @@ export default function Step4Success({ onClose }) {
       style={{
         position: "absolute",
         inset: 0,
-        background: "#F9FDF7",
+        background: "#000000",
         zIndex: 10000,
         display: "flex",
         flexDirection: "column",
@@ -39,11 +39,13 @@ export default function Step4Success({ onClose }) {
           width: 80,
           height: 80,
           borderRadius: "50%",
-          background: "#E8F5E9",
+          background: "rgba(255, 255, 255, 0.1)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           marginBottom: 24,
+          boxShadow: "0 0 30px rgba(255, 255, 255, 0.15)",
         }}
       >
         <motion.div
@@ -51,7 +53,7 @@ export default function Step4Success({ onClose }) {
           animate={{ pathLength: 1, opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <CheckCircle size={40} color="#3F6F23" />
+          <CheckCircle size={40} color="#ffffff" strokeWidth={2.2} />
         </motion.div>
       </motion.div>
 
@@ -60,11 +62,12 @@ export default function Step4Success({ onClose }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.4, ease: "easeOut" }}
         style={{
-          fontSize: 22,
-          fontWeight: 800,
-          color: "#1a1108",
-          marginBottom: 12,
+          fontSize: 24,
+          fontWeight: 900,
+          color: "#ffffff",
+          marginBottom: 10,
           textAlign: "center",
+          letterSpacing: -0.5,
         }}
       >
         Report Submitted!
@@ -76,7 +79,7 @@ export default function Step4Success({ onClose }) {
         transition={{ duration: 0.4, delay: 0.5, ease: "easeOut" }}
         style={{
           fontSize: 14,
-          color: "#7B936B",
+          color: "#a1a1aa",
           textAlign: "center",
           lineHeight: 1.5,
           marginBottom: 32,
@@ -84,7 +87,7 @@ export default function Step4Success({ onClose }) {
         }}
       >
         Thank you for helping our community. Your report has been submitted
-        successfully and is now being reviewed.
+        successfully and is now under review.
       </motion.p>
 
       <motion.button
@@ -99,13 +102,13 @@ export default function Step4Success({ onClose }) {
           maxWidth: 300,
           padding: "16px",
           borderRadius: 30,
-          background: "linear-gradient(135deg, #4aaa1f 0%, #3F6F23 100%)",
-          color: "white",
+          background: "#ffffff",
+          color: "#000000",
           fontWeight: 800,
           fontSize: 15,
           border: "none",
           cursor: "pointer",
-          boxShadow: "0 4px 15px rgba(63, 111, 35, 0.3)",
+          boxShadow: "0 4px 20px rgba(255, 255, 255, 0.25)",
           transition: "transform 0.1s",
         }}
       >

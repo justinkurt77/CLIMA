@@ -4,7 +4,7 @@ export function CardHeader({ icon, label, badge }) {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 6,
+        gap: 8,
         marginBottom: 12,
       }}
     >
@@ -13,28 +13,37 @@ export function CardHeader({ icon, label, badge }) {
           width: 28,
           height: 28,
           borderRadius: "50%",
-          background: "#F2F7EF",
+          background: "rgba(255, 255, 255, 0.1)",
+          border: "1px solid rgba(255, 255, 255, 0.15)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 14,
+          color: "#ffffff",
         }}
       >
         {icon}
       </div>
-      <span style={{ fontSize: 13, fontWeight: 700, color: "#2E2A27" }}>
+      <span style={{ fontSize: 13, fontWeight: 800, color: "#ffffff" }}>
         {label}
       </span>
-      <span
-        style={{
-          marginLeft: "auto",
-          fontSize: 11,
-          color: "#7B936B",
-          fontWeight: 600,
-        }}
-      >
-        {badge}
-      </span>
+      {badge && (
+        <span
+          style={{
+            marginLeft: "auto",
+            fontSize: 10,
+            color: "#ffffff",
+            fontWeight: 800,
+            background: "rgba(255, 255, 255, 0.08)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            padding: "2px 8px",
+            borderRadius: 10,
+            textTransform: "uppercase",
+            letterSpacing: 0.3,
+          }}
+        >
+          {badge}
+        </span>
+      )}
     </div>
   );
 }

@@ -16,8 +16,6 @@ export default function EmergencyScreen() {
       name: "Palayan City CDRRMO",
       desc: "Disaster Risk Reduction",
       icon: ShieldAlert,
-      color: "#EF4444",
-      lightColor: "#FEE2E2",
       numbers: ["09205741581", "09669109674"],
       display: ["(0920) 574 1581", "(0966) 910 9674"],
     },
@@ -25,8 +23,6 @@ export default function EmergencyScreen() {
       name: "Palayan BFP",
       desc: "Fire Protection",
       icon: Flame,
-      color: "#F97316",
-      lightColor: "#FFEDD5",
       numbers: ["09430669962"],
       display: ["0943 066 9962"],
     },
@@ -34,8 +30,6 @@ export default function EmergencyScreen() {
       name: "City Health Office",
       desc: "Health Emergencies",
       icon: HeartPulse,
-      color: "#10B981",
-      lightColor: "#D1FAE5",
       numbers: ["09171073808", "09209472735"],
       display: ["0917 107 3808", "0920 947 2735"],
     },
@@ -43,8 +37,6 @@ export default function EmergencyScreen() {
       name: "City Hospital",
       desc: "Medical Emergencies",
       icon: Activity,
-      color: "#3B82F6",
-      lightColor: "#DBEAFE",
       numbers: ["09178018247"],
       display: ["0917 801 8247"],
     },
@@ -52,8 +44,6 @@ export default function EmergencyScreen() {
       name: "NEECO",
       desc: "Electrical Emergencies",
       icon: Zap,
-      color: "#EAB308",
-      lightColor: "#FEF9C3",
       numbers: ["09328893447", "09328893348"],
       display: ["0932 889 3447", "0932 889 3348"],
     },
@@ -61,8 +51,6 @@ export default function EmergencyScreen() {
       name: "City Traffic",
       desc: "Traffic & Road Incidents",
       icon: CarFront,
-      color: "#8B5CF6",
-      lightColor: "#EDE9FE",
       numbers: ["09958741014"],
       display: ["0995 874 1014"],
     },
@@ -76,7 +64,8 @@ export default function EmergencyScreen() {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        fontFamily: "'Nunito', sans-serif",
+        background: "#000000",
+        fontFamily: "'Nunito', -apple-system, sans-serif",
         pointerEvents: "auto",
       }}
     >
@@ -96,65 +85,85 @@ export default function EmergencyScreen() {
         {/* Floating Header */}
         <div
           style={{
-            background: "rgba(220, 38, 38, 0.95)", // Glassy Red
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)",
-            borderRadius: 24,
-            margin: "8px",
-            marginTop: "calc(8px + env(safe-area-inset-top, 0px))",
-            padding: "16px 20px",
+            background: "rgba(16, 16, 18, 0.94)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            borderRadius: 26,
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            margin: "12px 14px 6px",
+            marginTop: "calc(12px + env(safe-area-inset-top, 0px))",
+            padding: "20px 22px",
             flexShrink: 0,
-            boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.8)",
           }}
         >
-          <h1
+          <div
             style={{
-              fontSize: 24,
-              fontWeight: 900,
-              color: "#FFF",
-              marginBottom: 4,
-              lineHeight: 1.1,
+              display: "inline-block",
+              background: "rgba(255, 255, 255, 0.1)",
+              border: "1px solid rgba(255, 255, 255, 0.18)",
+              padding: "4px 10px",
+              borderRadius: 12,
+              fontSize: 10,
+              fontWeight: 800,
+              color: "#ffffff",
+              letterSpacing: 0.8,
+              textTransform: "uppercase",
+              marginBottom: 8,
             }}
           >
-            Emergency
-            <br />
-            Hotlines
+            Direct Dispatch
+          </div>
+          <h1
+            style={{
+              fontSize: 26,
+              fontWeight: 900,
+              color: "#ffffff",
+              margin: "0 0 4px",
+              lineHeight: 1.15,
+              letterSpacing: -0.5,
+            }}
+          >
+            Emergency Hotlines
           </h1>
           <p
             style={{
-              color: "rgba(255, 255, 255, 0.9)",
-              fontSize: 14,
+              color: "#a1a1aa",
+              fontSize: 13,
               fontWeight: 600,
-              marginTop: 4,
+              margin: 0,
             }}
           >
-            Palayan City Response Center
+            Palayan City Rapid Emergency Operations
           </p>
         </div>
 
         {/* Cards Container */}
         <div
           style={{
-            padding: "8px",
+            padding: "10px 14px",
             display: "flex",
             flexDirection: "column",
             gap: 12,
-            paddingBottom: "100px",
+            paddingBottom: "110px",
           }}
         >
           {departments.map((dept, i) => {
             const IconObj = dept.icon;
             return (
-              <div
+              <motion.div
                 key={i}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: i * 0.05 }}
                 style={{
-                  background: "rgba(255, 255, 255, 0.95)",
-                  backdropFilter: "blur(10px)",
-                  borderRadius: 20,
-                  padding: "16px",
+                  background: "#121214",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  borderRadius: 22,
+                  padding: "16px 18px",
                   display: "flex",
                   flexDirection: "column",
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+                  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.5)",
                 }}
               >
                 {/* Dept Header */}
@@ -162,30 +171,32 @@ export default function EmergencyScreen() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    marginBottom: 16,
+                    marginBottom: 14,
                   }}
                 >
                   <div
                     style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 12,
-                      background: dept.lightColor,
+                      width: 42,
+                      height: 42,
+                      borderRadius: 14,
+                      background: "rgba(255, 255, 255, 0.08)",
+                      border: "1px solid rgba(255, 255, 255, 0.14)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       marginRight: 12,
                       flexShrink: 0,
+                      color: "#ffffff",
                     }}
                   >
-                    <IconObj color={dept.color} size={20} strokeWidth={2.5} />
+                    <IconObj size={20} strokeWidth={2.2} />
                   </div>
                   <div>
                     <h2
                       style={{
                         fontSize: 16,
                         fontWeight: 800,
-                        color: "#1F2937",
+                        color: "#ffffff",
                         margin: 0,
                         lineHeight: 1.2,
                       }}
@@ -195,8 +206,8 @@ export default function EmergencyScreen() {
                     <span
                       style={{
                         fontSize: 12,
-                        color: "#6B7280",
-                        fontWeight: 700,
+                        color: "#71717a",
+                        fontWeight: 600,
                       }}
                     >
                       {dept.desc}
@@ -216,19 +227,19 @@ export default function EmergencyScreen() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        background: "#F9FAFB",
-                        padding: "12px 14px",
+                        background: "rgba(255, 255, 255, 0.04)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        padding: "11px 14px",
                         borderRadius: 16,
                         textDecoration: "none",
-                        border: "1px solid #F3F4F6",
                         transition: "all 0.2s ease",
                       }}
                     >
                       <span
                         style={{
-                          fontSize: 15,
+                          fontSize: 14,
                           fontWeight: 800,
-                          color: "#374151",
+                          color: "#f4f4f5",
                           letterSpacing: "0.5px",
                         }}
                       >
@@ -239,22 +250,22 @@ export default function EmergencyScreen() {
                           display: "flex",
                           alignItems: "center",
                           gap: 6,
-                          color: dept.color,
+                          color: "#000000",
                           fontWeight: 800,
                           fontSize: 12,
-                          background: "#FFF",
-                          padding: "4px 8px",
-                          borderRadius: 12,
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                          background: "#ffffff",
+                          padding: "6px 12px",
+                          borderRadius: 20,
+                          boxShadow: "0 2px 8px rgba(255, 255, 255, 0.2)",
                         }}
                       >
                         <span>Call</span>
-                        <Phone size={14} fill={dept.color} />
+                        <Phone size={13} fill="#000000" color="#000000" />
                       </div>
                     </a>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>

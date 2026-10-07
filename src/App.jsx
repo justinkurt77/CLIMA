@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from "react";
-import BottomNav from "./components/layout/BottomNav";
+import CitizenNav from "./components/layout/CitizenNav";
 import HomeScreen from "./screens/HomeScreen";
 import MyReportsScreen from "./screens/MyReportsScreen";
 import ProfileScreen from "./screens/ProfileScreen";
@@ -239,7 +239,7 @@ function App() {
       style={{
         maxWidth: isAdminView ? "none" : "480px",
         margin: isAdminView ? "0" : "0 auto",
-        background: isAdminView ? "transparent" : "#f0f0f0",
+        background: isAdminView ? "transparent" : "#111318",
       }}
     >
       {/* ADMIN LAYER (Handled as a screen now) */}
@@ -249,20 +249,23 @@ function App() {
         {!isAdminView && activeScreen === "home" && (
           <motion.div
             key="home"
-            variants={screenVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={screenVariants.transition}
-            className="screen active"
-            style={{ zIndex: 10, pointerEvents: "none" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 10,
+              overflowY: "auto",
+            }}
           >
             <HomeScreen
               onOpenModal={openModal}
               userReports={userReports}
-              isMapFullView={isMapFullView}
               session={session}
               userLocation={userLocation}
+              setActiveScreen={setActiveScreen}
             />
           </motion.div>
         )}
@@ -276,9 +279,48 @@ function App() {
             exit="exit"
             transition={screenVariants.transition}
             className="screen active"
-            style={{ zIndex: 10, background: "transparent" }}
+            style={{ zIndex: 10, background: "transparent", position: "absolute", inset: 0 }}
           >
             <EmergencyScreen />
+          </motion.div>
+        )}
+
+        {activeScreen === "maps" && (
+          <motion.div
+            key="maps"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 10,
+            }}
+          >
+            <ErrorBoundary>
+              <Suspense
+                fallback={
+                  <div className="map-loading" style={{ position: "relative", flex: 1 }}>
+                    <div style={{ fontSize: 34, marginBottom: 6 }}>🗺️</div>
+                    <div className="map-loading-text">Loading map...</div>
+                  </div>
+                }
+              >
+                <MapScreen
+                  onOpenModal={openModal}
+                  userReports={userReports}
+                  showMapUI={true}
+                  userLocation={userLocation}
+                  isMapFullView={true}
+                  onMapDoubleClick={() => {}}
+                  onPinClick={() => {}}
+                  isNavMinimized={false}
+                  isAdmin={false}
+                  activeScreen={activeScreen}
+                />
+              </Suspense>
+            </ErrorBoundary>
           </motion.div>
         )}
 
@@ -410,24 +452,14 @@ function App() {
         )}
       </AnimatePresence>
 
-      {/* MAP — Background layer */}
+      {/* MAP — Background layer: only visible on admin views */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           zIndex: 1,
-          opacity:
-            activeScreen === "home" ||
-            activeScreen === "maps" ||
-            activeScreen === "emergency" ||
-            activeScreen === "profile" ||
-            isAdminView
-              ? 1
-              : 0,
-          pointerEvents:
-            activeScreen === "home" || activeScreen === "maps" || isAdminView
-              ? "auto"
-              : "none",
+          opacity: isAdminView ? 1 : 0,
+          pointerEvents: isAdminView ? "auto" : "none",
           transition: "opacity 0.4s ease",
         }}
       >
@@ -584,13 +616,9 @@ function App() {
       </AnimatePresence>
 
       {!isAdminView && (
-        <BottomNav
+        <CitizenNav
           activeScreen={activeScreen}
           setActiveScreen={setActiveScreen}
-          isHidden={activeScreen === "home" && isMapFullView}
-          isMinimized={isNavMinimized}
-          setIsMinimized={setIsNavMinimized}
-          onFabClick={openModal}
         />
       )}
 

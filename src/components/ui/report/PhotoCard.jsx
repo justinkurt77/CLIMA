@@ -7,16 +7,16 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
   return (
     <div
       style={{
-        background: "white",
-        borderRadius: 20,
-        padding: "14px 16px",
-        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-        border: "1px solid #E8EBE5",
+        background: "#121214",
+        borderRadius: 22,
+        padding: "16px 18px",
+        boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
         flexShrink: 0,
       }}
     >
       <CardHeader
-        icon={<ImageIcon size={14} color="#3F6F23" />}
+        icon={<ImageIcon size={14} color="#ffffff" />}
         label="Attach Photo"
         badge="Optional"
       />
@@ -44,6 +44,7 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
                 overflow: "hidden",
                 width: "100%",
                 height: 120,
+                border: "1px solid rgba(255, 255, 255, 0.15)",
               }}
             >
               <img
@@ -61,7 +62,7 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
                   position: "absolute",
                   inset: 0,
                   background:
-                    "linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.35) 100%)",
+                    "linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.6) 100%)",
                 }}
               />
               <button
@@ -73,8 +74,8 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
                   position: "absolute",
                   top: 8,
                   right: 8,
-                  background: "rgba(0,0,0,0.55)",
-                  border: "none",
+                  background: "rgba(0,0,0,0.75)",
+                  border: "1px solid rgba(255,255,255,0.2)",
                   borderRadius: "50%",
                   width: 26,
                   height: 26,
@@ -94,7 +95,7 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
               onClick={() => fileRef.current?.click()}
               style={{
                 height: 120,
-                border: "1.5px dashed #C7D6BE",
+                border: "1.5px dashed rgba(255, 255, 255, 0.2)",
                 borderRadius: 14,
                 display: "flex",
                 flexDirection: "column",
@@ -102,7 +103,7 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
                 justifyContent: "center",
                 gap: 8,
                 cursor: "pointer",
-                background: "linear-gradient(135deg, #F9FDF7 0%, #F2F7EF 100%)",
+                background: "#18181b",
               }}
             >
               <div
@@ -110,16 +111,15 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
                   width: 32,
                   height: 32,
                   borderRadius: "50%",
-                  background: "white",
+                  background: "rgba(255, 255, 255, 0.1)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
                 }}
               >
-                <ImageIcon size={14} color="#3F6F23" strokeWidth={1.5} />
+                <ImageIcon size={14} color="#ffffff" strokeWidth={1.5} />
               </div>
-              <div style={{ fontSize: 11, color: "#3F6F23", fontWeight: 700 }}>
+              <div style={{ fontSize: 11, color: "#ffffff", fontWeight: 700 }}>
                 Add more
               </div>
             </div>
@@ -131,7 +131,7 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
           style={{
             width: "100%",
             height: 120,
-            border: "1.5px dashed #C7D6BE",
+            border: "1.5px dashed rgba(255, 255, 255, 0.2)",
             borderRadius: 14,
             display: "flex",
             flexDirection: "column",
@@ -139,7 +139,7 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
             justifyContent: "center",
             gap: 8,
             cursor: "pointer",
-            background: "linear-gradient(135deg, #F9FDF7 0%, #F2F7EF 100%)",
+            background: "#18181b",
           }}
         >
           <div
@@ -147,18 +147,18 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
               width: 44,
               height: 44,
               borderRadius: "50%",
-              background: "#F2F7EF",
+              background: "rgba(255, 255, 255, 0.1)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <ImageIcon size={20} color="#3F6F23" strokeWidth={1.5} />
+            <ImageIcon size={20} color="#ffffff" strokeWidth={1.5} />
           </div>
-          <div style={{ fontSize: 13, color: "#3F6F23", fontWeight: 700 }}>
+          <div style={{ fontSize: 13, color: "#ffffff", fontWeight: 700 }}>
             Tap to add photos
           </div>
-          <div style={{ fontSize: 11, color: "#8CA17D", fontWeight: 500 }}>
+          <div style={{ fontSize: 11, color: "#71717a", fontWeight: 500 }}>
             Up to 4 JPG, PNG or HEIC
           </div>
         </div>

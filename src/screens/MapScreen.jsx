@@ -51,14 +51,14 @@ const ICON_MAP = {
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "";
 
 const STATUS_COLORS = {
-  pending: "#E74C3C",
-  inprogress: "#3498DB",
-  resolved: "#2ECC71",
+  pending: "#ffffff",
+  inprogress: "#e4e4e7",
+  resolved: "#a1a1aa",
 };
 const STATUS_BG = {
-  pending: "#FEE2E2",
-  inprogress: "#EBF5FB",
-  resolved: "#E8F8F0",
+  pending: "rgba(255, 255, 255, 0.2)",
+  inprogress: "rgba(255, 255, 255, 0.12)",
+  resolved: "rgba(255, 255, 255, 0.08)",
 };
 
 const buildingsLayer = {
@@ -110,7 +110,7 @@ function MapScreen({
     "resolved",
   ]);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [mapStyleId, setMapStyleId] = useState("streets-v12");
+  const [mapStyleId, setMapStyleId] = useState("dark-v11");
   const [isExiting, setIsExiting] = useState(false);
   const [barangayMarkers, setBarangayMarkers] = useState([]);
   const popupContentRef = useRef(null);
@@ -417,10 +417,10 @@ function MapScreen({
                 style={{
                   width: 18,
                   height: 18,
-                  background: "#3b82f6",
-                  border: "3px solid white",
+                  background: "#ffffff",
+                  border: "3px solid #000000",
                   borderRadius: "50%",
-                  boxShadow: "0 0 10px rgba(0,0,0,0.3)",
+                  boxShadow: "0 0 12px rgba(255,255,255,0.8)",
                 }}
               />
             </Marker>
@@ -540,24 +540,24 @@ function MapScreen({
             {/* Map Styles Pill */}
             <div
               style={{
-                background: "rgba(74, 94, 54, 0.95)",
-                backdropFilter: "blur(10px)",
-                WebkitBackdropFilter: "blur(10px)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(18, 18, 20, 0.94)",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
                 borderRadius: 40,
                 padding: "6px",
                 display: "flex",
                 flexDirection: "column",
                 gap: 6,
-                boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
+                boxShadow: "0 10px 28px rgba(0,0,0,0.6)",
                 alignItems: "center",
                 width: "100%",
               }}
             >
               {[
+                { id: "dark-v11", Icon: Moon },
                 { id: "streets-v12", Icon: MapIcon },
                 { id: "satellite-streets-v12", Icon: Globe },
-                { id: "dark-v11", Icon: Moon },
               ].map((layer) => {
                 const isActive = mapStyleId === layer.id;
                 return (
@@ -579,7 +579,7 @@ function MapScreen({
                   >
                     <layer.Icon
                       size={20}
-                      color={isActive ? "#4A5E36" : "rgba(255,255,255,0.7)"}
+                      color={isActive ? "#000000" : "rgba(255,255,255,0.6)"}
                       strokeWidth={isActive ? 2.5 : 2}
                     />
                   </button>
@@ -609,14 +609,14 @@ function MapScreen({
                 right: 14,
                 width: 64,
                 height: 64,
-                background: "white",
+                background: "#18181b",
                 borderRadius: 28,
-                boxShadow: "0 4px 14px rgba(0,0,0,0.15)",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                border: "none",
+                border: "1px solid rgba(255,255,255,0.16)",
                 zIndex: 10,
                 opacity: isMapFullView ? 1 : 0,
                 pointerEvents: isMapFullView ? "auto" : "none",
@@ -627,7 +627,7 @@ function MapScreen({
               }}
               aria-label="Back to my location"
             >
-              <LocateFixed size={24} color="#2d8119" />
+              <LocateFixed size={24} color="#ffffff" />
             </button>
           </>
         )}

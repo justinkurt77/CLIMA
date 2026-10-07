@@ -310,7 +310,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
   ) => (
     <div style={{ position: "relative", marginBottom: 14 }}>
       <div
-        style={{ position: "absolute", left: 14, top: 14, color: "#4B6043" }}
+        style={{ position: "absolute", left: 14, top: 14, color: "#ffffff" }}
       >
         {icon}
       </div>
@@ -324,21 +324,22 @@ export default function AuthScreen({ onLoginSuccess, session }) {
           width: "100%",
           padding: "14px 16px 14px 44px",
           borderRadius: 14,
-          border: "2px solid #E5E7EB",
-          background: "#F9FAFB",
+          border: "1px solid rgba(255, 255, 255, 0.15)",
+          background: "#18181b",
+          color: "#ffffff",
           fontSize: 15,
           outline: "none",
           transition: "all 0.3s ease",
           boxSizing: "border-box",
         }}
         onFocus={(e) => {
-          e.target.style.borderColor = "#4aaa1f";
-          e.target.style.background = "#fff";
-          e.target.style.boxShadow = "0 0 0 4px rgba(74, 170, 31, 0.1)";
+          e.target.style.borderColor = "#ffffff";
+          e.target.style.background = "#202024";
+          e.target.style.boxShadow = "0 0 0 3px rgba(255, 255, 255, 0.15)";
         }}
         onBlur={(e) => {
-          e.target.style.borderColor = "#E5E7EB";
-          e.target.style.background = "#F9FAFB";
+          e.target.style.borderColor = "rgba(255, 255, 255, 0.15)";
+          e.target.style.background = "#18181b";
           e.target.style.boxShadow = "none";
         }}
       />
@@ -367,7 +368,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
         overflow: "hidden",
       }}
     >
-      {/* Floating Island Header (Similar to HomeScreen) */}
+      {/* Floating Header */}
       <motion.div
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -375,14 +376,15 @@ export default function AuthScreen({ onLoginSuccess, session }) {
         style={{
           position: "relative",
           zIndex: 10,
-          background: "rgba(118, 144, 84, 0.95)",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
-          borderRadius: 32,
-          margin: "8px",
-          marginTop: "calc(8px + env(safe-area-inset-top, 0px))",
+          background: "rgba(16, 16, 18, 0.94)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          border: "1px solid rgba(255, 255, 255, 0.12)",
+          borderRadius: 28,
+          margin: "12px 14px 6px",
+          marginTop: "calc(12px + env(safe-area-inset-top, 0px))",
           padding: "20px 16px",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.7)",
           textAlign: "center",
           display: "flex",
           flexDirection: "column",
@@ -393,7 +395,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
         <div
           style={{
             fontFamily: "'Baloo 2', cursive",
-            fontSize: 32,
+            fontSize: 30,
             fontWeight: 900,
             lineHeight: 1,
             display: "flex",
@@ -403,25 +405,25 @@ export default function AuthScreen({ onLoginSuccess, session }) {
         >
           <div
             style={{
-              background: "white",
-              padding: 4,
+              background: "#ffffff",
+              padding: 5,
               borderRadius: "50%",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <MapPin size={20} fill="#2e5716" color="white" />
+            <MapPin size={18} fill="#000000" color="#000000" />
           </div>
           <div>
-            <span style={{ color: "#FFFFCC" }}>Pala</span>
-            <span style={{ color: "white" }}>Sumbong</span>
+            <span style={{ color: "#a1a1aa" }}>Pala</span>
+            <span style={{ color: "#ffffff" }}>Sumbong</span>
           </div>
         </div>
         <p
           style={{
-            color: "rgba(255,255,255,0.9)",
-            fontSize: 13,
+            color: "#71717a",
+            fontSize: 12,
             fontWeight: 600,
             margin: 0,
           }}
@@ -438,7 +440,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center", // Center content on screen
+          justifyContent: "center",
           padding: "0 16px",
         }}
       >
@@ -453,12 +455,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
             delay: 0.1,
           }}
           style={{
-            background: "white",
+            background: "#121214",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
             width: "100%",
             maxWidth: 400,
-            borderRadius: 24, // Round all borders since it is centered
-            padding: "28px 20px 32px",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.2)", // Standard shadow for floating
+            borderRadius: 24,
+            padding: "28px 22px 32px",
+            boxShadow: "0 16px 48px rgba(0,0,0,0.75)",
             display: "flex",
             flexDirection: "column",
             maxHeight: "80vh",
@@ -482,13 +485,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     fontSize: 26,
                     fontWeight: 900,
-                    color: "#1F2937",
+                    color: "#ffffff",
                     marginBottom: 8,
                   }}
                 >
                   Welcome back Palayano!
                 </h2>
-                <p style={{ color: "#6B7280", fontSize: 14, marginBottom: 24 }}>
+                <p style={{ color: "#a1a1aa", fontSize: 14, marginBottom: 24 }}>
                   Login to access your Palayan community.
                 </p>
 
@@ -497,8 +500,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#DC2626",
-                      background: "#FEF2F2",
+                      color: "#ffffff",
+                      background: "#27272a",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -532,10 +536,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   disabled={loading || !email || !password}
                   style={{
                     width: "100%",
-                    padding: "14px",
+                    padding: "15px",
                     borderRadius: 14,
-                    background: "#4B6043",
-                    color: "white",
+                    background: "#ffffff",
+                    color: "#000000",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
@@ -545,8 +549,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     justifyContent: "center",
                     gap: 8,
                     marginTop: 12,
-                    boxShadow: "0 4px 12px rgba(75, 96, 67, 0.3)",
-                    opacity: loading || !email || !password ? 0.7 : 1,
+                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
+                    opacity: loading || !email || !password ? 0.6 : 1,
                   }}
                 >
                   {loading ? <Loader2 className="spin" size={20} /> : "Login"}
@@ -567,7 +571,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                       setOtp("");
                     }}
                     style={{
-                      color: "#6B7280",
+                      color: "#a1a1aa",
                       cursor: "pointer",
                       fontWeight: 600,
                       fontSize: 14,
@@ -581,8 +585,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     textAlign: "center",
                     marginTop: 16,
-                    fontSize: 15,
-                    color: "#4B5563",
+                    fontSize: 14,
+                    color: "#71717a",
                     fontWeight: 600,
                   }}
                 >
@@ -593,9 +597,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                       setError(null);
                     }}
                     style={{
-                      color: "#4aaa1f",
+                      color: "#ffffff",
                       cursor: "pointer",
                       fontWeight: 800,
+                      textDecoration: "underline",
                     }}
                   >
                     Register
@@ -623,7 +628,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
-                    color: "#4B5563",
+                    color: "#a1a1aa",
                     fontWeight: 700,
                     padding: 0,
                     marginBottom: 20,
@@ -636,13 +641,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     fontSize: 26,
                     fontWeight: 900,
-                    color: "#1F2937",
+                    color: "#ffffff",
                     marginBottom: 8,
                   }}
                 >
                   Create Account
                 </h2>
-                <p style={{ color: "#6B7280", fontSize: 15, marginBottom: 28 }}>
+                <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 28 }}>
                   Enter your email address to get a verification code.
                 </p>
 
@@ -651,8 +656,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#DC2626",
-                      background: "#FEF2F2",
+                      color: "#ffffff",
+                      background: "#27272a",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -679,10 +685,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   disabled={loading || !email}
                   style={{
                     width: "100%",
-                    padding: "14px",
+                    padding: "15px",
                     borderRadius: 14,
-                    background: "#4B6043",
-                    color: "white",
+                    background: "#ffffff",
+                    color: "#000000",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
@@ -692,8 +698,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     justifyContent: "center",
                     gap: 8,
                     marginTop: 12,
-                    boxShadow: "0 4px 12px rgba(75, 96, 67, 0.3)",
-                    opacity: loading || !email ? 0.7 : 1,
+                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
+                    opacity: loading || !email ? 0.6 : 1,
                   }}
                 >
                   {loading ? (
@@ -737,13 +743,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     fontSize: 26,
                     fontWeight: 900,
-                    color: "#1F2937",
+                    color: "#ffffff",
                     marginBottom: 8,
                   }}
                 >
                   Verify Email
                 </h2>
-                <p style={{ color: "#6B7280", fontSize: 15, marginBottom: 12 }}>
+                <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 12 }}>
                   We sent a 8-digit code to {email}
                 </p>
 
@@ -752,8 +758,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#047857",
-                      background: "#D1FAE5",
+                      color: "#ffffff",
+                      background: "#27272a",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -770,8 +777,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#DC2626",
-                      background: "#FEF2F2",
+                      color: "#ffffff",
+                      background: "#27272a",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -798,10 +806,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   disabled={loading || !otp || otp.length < 6}
                   style={{
                     width: "100%",
-                    padding: "14px",
+                    padding: "15px",
                     borderRadius: 14,
-                    background: "#4B6043",
-                    color: "white",
+                    background: "#ffffff",
+                    color: "#000000",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
@@ -811,8 +819,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     justifyContent: "center",
                     gap: 8,
                     marginTop: 12,
-                    boxShadow: "0 4px 12px rgba(75, 96, 67, 0.3)",
-                    opacity: loading || !otp || otp.length < 6 ? 0.7 : 1,
+                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
+                    opacity: loading || !otp || otp.length < 6 ? 0.6 : 1,
                   }}
                 >
                   {loading ? (
@@ -838,13 +846,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     fontSize: 26,
                     fontWeight: 900,
-                    color: "#1F2937",
+                    color: "#ffffff",
                     marginBottom: 8,
                   }}
                 >
                   Complete Profile
                 </h2>
-                <p style={{ color: "#6B7280", fontSize: 15, marginBottom: 28 }}>
+                <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 28 }}>
                   Set up your profile details and password.
                 </p>
 
@@ -853,8 +861,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#DC2626",
-                      background: "#FEF2F2",
+                      color: "#ffffff",
+                      background: "#27272a",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -915,10 +924,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   }
                   style={{
                     width: "100%",
-                    padding: "14px",
+                    padding: "15px",
                     borderRadius: 14,
-                    background: "#4B6043",
-                    color: "white",
+                    background: "#ffffff",
+                    color: "#000000",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
@@ -928,14 +937,14 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     justifyContent: "center",
                     gap: 8,
                     marginTop: 12,
-                    boxShadow: "0 4px 12px rgba(75, 96, 67, 0.3)",
+                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
                     opacity:
                       loading ||
                       !firstName ||
                       !lastName ||
                       !password ||
                       !confirmPassword
-                        ? 0.7
+                        ? 0.6
                         : 1,
                   }}
                 >
@@ -971,7 +980,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
-                    color: "#4B5563",
+                    color: "#a1a1aa",
                     fontWeight: 700,
                     padding: 0,
                     marginBottom: 20,
@@ -985,29 +994,29 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     width: 64,
                     height: 64,
-                    background: "linear-gradient(135deg, #FFF3E0, #FFE0B2)",
+                    background: "rgba(255, 255, 255, 0.1)",
+                    border: "1px solid rgba(255, 255, 255, 0.18)",
                     borderRadius: "50%",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     marginBottom: 20,
-                    boxShadow: "0 4px 16px rgba(255, 152, 0, 0.15)",
                   }}
                 >
-                  <KeyRound size={30} color="#E65100" />
+                  <KeyRound size={28} color="#ffffff" />
                 </div>
 
                 <h2
                   style={{
                     fontSize: 26,
                     fontWeight: 900,
-                    color: "#1F2937",
+                    color: "#ffffff",
                     marginBottom: 8,
                   }}
                 >
                   Forgot Password?
                 </h2>
-                <p style={{ color: "#6B7280", fontSize: 15, marginBottom: 28 }}>
+                <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 28 }}>
                   Enter your email and we'll send you a code to reset your
                   password.
                 </p>
@@ -1017,8 +1026,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#DC2626",
-                      background: "#FEF2F2",
+                      color: "#ffffff",
+                      background: "#27272a",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -1045,10 +1055,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   disabled={loading || !email}
                   style={{
                     width: "100%",
-                    padding: "14px",
+                    padding: "15px",
                     borderRadius: 14,
-                    background: "#4B6043",
-                    color: "white",
+                    background: "#ffffff",
+                    color: "#000000",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
@@ -1058,8 +1068,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     justifyContent: "center",
                     gap: 8,
                     marginTop: 12,
-                    boxShadow: "0 4px 12px rgba(75, 96, 67, 0.3)",
-                    opacity: loading || !email ? 0.7 : 1,
+                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
+                    opacity: loading || !email ? 0.6 : 1,
                   }}
                 >
                   {loading ? (
@@ -1095,7 +1105,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
-                    color: "#4B5563",
+                    color: "#a1a1aa",
                     fontWeight: 700,
                     padding: 0,
                     marginBottom: 20,
@@ -1109,13 +1119,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     fontSize: 26,
                     fontWeight: 900,
-                    color: "#1F2937",
+                    color: "#ffffff",
                     marginBottom: 8,
                   }}
                 >
                   Verify Code
                 </h2>
-                <p style={{ color: "#6B7280", fontSize: 15, marginBottom: 12 }}>
+                <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 12 }}>
                   Enter the 8-digit code sent to {email}
                 </p>
 
@@ -1124,8 +1134,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#047857",
-                      background: "#D1FAE5",
+                      color: "#ffffff",
+                      background: "#27272a",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -1142,8 +1153,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#DC2626",
-                      background: "#FEF2F2",
+                      color: "#ffffff",
+                      background: "#27272a",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -1170,10 +1182,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   disabled={loading || !otp || otp.length < 6}
                   style={{
                     width: "100%",
-                    padding: "14px",
+                    padding: "15px",
                     borderRadius: 14,
-                    background: "#4B6043",
-                    color: "white",
+                    background: "#ffffff",
+                    color: "#000000",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
@@ -1183,8 +1195,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     justifyContent: "center",
                     gap: 8,
                     marginTop: 12,
-                    boxShadow: "0 4px 12px rgba(75, 96, 67, 0.3)",
-                    opacity: loading || !otp || otp.length < 6 ? 0.7 : 1,
+                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
+                    opacity: loading || !otp || otp.length < 6 ? 0.6 : 1,
                   }}
                 >
                   {loading ? (
@@ -1210,29 +1222,29 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     width: 64,
                     height: 64,
-                    background: "linear-gradient(135deg, #E8F5E9, #C8E6C9)",
+                    background: "rgba(255, 255, 255, 0.1)",
+                    border: "1px solid rgba(255, 255, 255, 0.18)",
                     borderRadius: "50%",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     marginBottom: 20,
-                    boxShadow: "0 4px 16px rgba(76, 175, 80, 0.15)",
                   }}
                 >
-                  <Lock size={30} color="#2E7D32" />
+                  <Lock size={28} color="#ffffff" />
                 </div>
 
                 <h2
                   style={{
                     fontSize: 26,
                     fontWeight: 900,
-                    color: "#1F2937",
+                    color: "#ffffff",
                     marginBottom: 8,
                   }}
                 >
                   Set New Password
                 </h2>
-                <p style={{ color: "#6B7280", fontSize: 15, marginBottom: 28 }}>
+                <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 28 }}>
                   Create a strong new password for your account.
                 </p>
 
@@ -1241,8 +1253,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#DC2626",
-                      background: "#FEF2F2",
+                      color: "#ffffff",
+                      background: "#27272a",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -1276,10 +1289,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   disabled={loading || !resetPassword || !resetConfirmPassword}
                   style={{
                     width: "100%",
-                    padding: "14px",
+                    padding: "15px",
                     borderRadius: 14,
-                    background: "#4B6043",
-                    color: "white",
+                    background: "#ffffff",
+                    color: "#000000",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
@@ -1289,10 +1302,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     justifyContent: "center",
                     gap: 8,
                     marginTop: 12,
-                    boxShadow: "0 4px 12px rgba(75, 96, 67, 0.3)",
+                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
                     opacity:
                       loading || !resetPassword || !resetConfirmPassword
-                        ? 0.7
+                        ? 0.6
                         : 1,
                   }}
                 >
@@ -1335,25 +1348,26 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     delay: 0.2,
                   }}
                   style={{
-                    width: 90,
-                    height: 90,
-                    background: "#E8F8F0",
+                    width: 80,
+                    height: 80,
+                    background: "rgba(255, 255, 255, 0.1)",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
                     borderRadius: "50%",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     marginBottom: 24,
-                    boxShadow: "0 8px 32px rgba(46, 172, 109, 0.25)",
+                    boxShadow: "0 0 30px rgba(255, 255, 255, 0.15)",
                   }}
                 >
-                  <CheckCircle size={54} color="#2eac6d" strokeWidth={2.5} />
+                  <CheckCircle size={48} color="#ffffff" strokeWidth={2.2} />
                 </motion.div>
 
                 <h2
                   style={{
                     fontSize: 28,
                     fontWeight: 900,
-                    color: "#1F2937",
+                    color: "#ffffff",
                     marginBottom: 8,
                     lineHeight: 1.2,
                   }}
@@ -1362,8 +1376,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 </h2>
                 <p
                   style={{
-                    color: "#6B7280",
-                    fontSize: 16,
+                    color: "#a1a1aa",
+                    fontSize: 15,
                     fontWeight: 600,
                     marginBottom: 24,
                   }}
@@ -1384,15 +1398,15 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     width: "100%",
                     maxWidth: 280,
-                    padding: "14px",
+                    padding: "15px",
                     borderRadius: 14,
-                    background: "#4B6043",
-                    color: "white",
+                    background: "#ffffff",
+                    color: "#000000",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
                     cursor: "pointer",
-                    boxShadow: "0 4px 12px rgba(75, 96, 67, 0.3)",
+                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
                   }}
                 >
                   Go to Login
@@ -1430,25 +1444,26 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     delay: 0.2,
                   }}
                   style={{
-                    width: 90,
-                    height: 90,
-                    background: "#E8F8F0",
+                    width: 80,
+                    height: 80,
+                    background: "rgba(255, 255, 255, 0.1)",
+                    border: "1px solid rgba(255, 255, 255, 0.2)",
                     borderRadius: "50%",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     marginBottom: 24,
-                    boxShadow: "0 8px 32px rgba(46, 172, 109, 0.25)",
+                    boxShadow: "0 0 30px rgba(255, 255, 255, 0.15)",
                   }}
                 >
-                  <CheckCircle size={54} color="#2eac6d" strokeWidth={2.5} />
+                  <CheckCircle size={48} color="#ffffff" strokeWidth={2.2} />
                 </motion.div>
 
                 <h2
                   style={{
                     fontSize: 28,
                     fontWeight: 900,
-                    color: "#1F2937",
+                    color: "#ffffff",
                     marginBottom: 8,
                     lineHeight: 1.2,
                   }}
@@ -1459,15 +1474,15 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 </h2>
                 <p
                   style={{
-                    color: "#6B7280",
-                    fontSize: 16,
+                    color: "#a1a1aa",
+                    fontSize: 15,
                     fontWeight: 600,
                     marginBottom: 24,
                   }}
                 >
                   Your account is fully ready. Taking you to the home screen...
                 </p>
-                <Loader2 className="spin" size={28} color="#4B6043" />
+                <Loader2 className="spin" size={28} color="#ffffff" />
               </motion.div>
             )}
           </AnimatePresence>

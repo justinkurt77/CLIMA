@@ -1,7 +1,7 @@
 import {
   MapPin,
   Clock,
-  CheckCircle,
+  CheckCircle2,
   AlertTriangle,
   ShieldAlert,
   Wrench,
@@ -24,22 +24,25 @@ const ICON_MAP = {
 
 export const STATUS_META = {
   pending: {
-    color: "#e67e22",
-    bg: "#fff3e0",
+    color: "#a1a1aa",
+    bg: "rgba(255, 255, 255, 0.06)",
+    border: "1px solid rgba(255, 255, 255, 0.12)",
     label: "Pending",
-    Icon: Clock,
-  },
-  inprogress: {
-    color: "#3498db",
-    bg: "#ebf5fb",
-    label: "In Progress",
     Icon: AlertTriangle,
   },
+  inprogress: {
+    color: "#ffffff",
+    bg: "rgba(255, 255, 255, 0.12)",
+    border: "1px solid rgba(255, 255, 255, 0.22)",
+    label: "In Progress",
+    Icon: Clock,
+  },
   resolved: {
-    color: "#2ecc71",
-    bg: "#e8f8f0",
+    color: "#000000",
+    bg: "#ffffff",
+    border: "none",
     label: "Resolved",
-    Icon: CheckCircle,
+    Icon: CheckCircle2,
   },
 };
 
@@ -49,13 +52,14 @@ export default function ReportCard({ report }) {
   return (
     <div
       style={{
-        background: "white",
-        borderRadius: 24,
-        padding: "10px 14px",
+        background: "#141416",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
+        borderRadius: 22,
+        padding: "12px 16px",
         display: "flex",
         alignItems: "center",
-        gap: 12,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
+        gap: 14,
+        boxShadow: "0 6px 20px rgba(0, 0, 0, 0.4)",
       }}
     >
       {report.photoPreview ? (
@@ -65,9 +69,10 @@ export default function ReportCard({ report }) {
           style={{
             width: 44,
             height: 44,
-            borderRadius: 22,
+            borderRadius: 14,
             objectFit: "cover",
             flexShrink: 0,
+            border: "1px solid rgba(255, 255, 255, 0.15)",
           }}
         />
       ) : (
@@ -75,19 +80,21 @@ export default function ReportCard({ report }) {
           style={{
             width: 44,
             height: 44,
-            borderRadius: 22,
+            borderRadius: 14,
             flexShrink: 0,
-            background: "#e8f4e0",
+            background: "rgba(255, 255, 255, 0.08)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             fontSize: 18,
+            color: "#ffffff",
           }}
         >
           {ICON_MAP[report.icon]
             ? (() => {
                 const DynamicIcon = ICON_MAP[report.icon];
-                return <DynamicIcon size={20} color="#2d8119" />;
+                return <DynamicIcon size={20} color="#ffffff" />;
               })()
             : report.icon || "📝"}
         </div>
@@ -95,50 +102,53 @@ export default function ReportCard({ report }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
-            fontWeight: 700,
-            fontSize: 12,
-            color: "#1a1108",
-            marginBottom: 2,
+            fontWeight: 800,
+            fontSize: 13,
+            color: "#ffffff",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            lineHeight: 1.2,
+          }}
+        >
+          {report.title || report.category || "Reported Issue"}
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            color: "#a1a1aa",
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            marginTop: 3,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
           }}
         >
-          {report.title}
-        </div>
-        <div
-          style={{
-            fontSize: 10,
-            color: "#888",
-            marginBottom: 4,
-            display: "flex",
-            alignItems: "center",
-            gap: 3,
-          }}
-        >
-          <MapPin size={10} color="#888" />
-          {report.location}
-        </div>
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4,
-            background: meta.bg,
-            borderRadius: 20,
-            padding: "2px 6px",
-          }}
-        >
-          <Icon size={10} color={meta.color} />
-          <span style={{ fontSize: 9, fontWeight: 700, color: meta.color }}>
-            {meta.label}
-          </span>
+          <MapPin size={11} color="#71717a" style={{ flexShrink: 0 }} />
+          <span>{report.location || "Palayan City"}</span>
         </div>
       </div>
       <div
-        style={{ fontSize: 9, color: "#aaa", flexShrink: 0, fontWeight: 600 }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          background: meta.bg,
+          border: meta.border,
+          color: meta.color,
+          fontSize: 10,
+          fontWeight: 800,
+          textTransform: "uppercase",
+          padding: "5px 10px",
+          borderRadius: 12,
+          flexShrink: 0,
+          letterSpacing: 0.3,
+        }}
       >
-        {report.time}
+        <Icon size={12} strokeWidth={2.5} />
+        <span>{meta.label}</span>
       </div>
     </div>
   );

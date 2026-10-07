@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { ClipboardList, Inbox } from "lucide-react";
+import { ClipboardList, Inbox, Plus } from "lucide-react";
 import ReportCard from "../components/ui/ReportCard";
 
 function MyReportsScreen({ onOpenModal, userReports = [] }) {
   const [filter, setFilter] = useState("all");
-  // Merge static sample data + user-submitted reports
   const allReports = [...userReports];
 
   const filteredReports = allReports.filter(
@@ -14,16 +13,18 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
   const isEmptyDueToFilter = allReports.length > 0 && filteredReports.length === 0;
 
   return (
-    <>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#000000" }}>
+      {/* Header Card */}
       <div
         style={{
-          background: "linear-gradient(135deg, #769054 0%, #4b6043 100%)",
-          borderRadius: 28,
-          margin: "16px",
-          marginTop: "calc(16px + env(safe-area-inset-top, 0px))",
-          padding: "24px",
+          background: "linear-gradient(145deg, #18181b 0%, #0d0d0f 100%)",
+          borderRadius: 26,
+          border: "1px solid rgba(255, 255, 255, 0.12)",
+          margin: "12px 14px",
+          marginTop: "calc(12px + env(safe-area-inset-top, 0px))",
+          padding: "22px",
           flexShrink: 0,
-          boxShadow: "0 8px 24px rgba(75, 96, 67, 0.2)",
+          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.7)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -31,18 +32,15 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
           overflow: "hidden",
         }}
       >
-        {/* Decorative circle */}
-        <div style={{ position: "absolute", top: "-20px", right: "-20px", width: 90, height: 90, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
-        
         <div>
           <div
             style={{
-              fontFamily: "'Baloo 2', cursive",
-              fontSize: 28,
+              fontSize: 26,
               fontWeight: 900,
-              color: "white",
+              color: "#ffffff",
               lineHeight: 1.1,
               marginBottom: 4,
+              letterSpacing: -0.5,
             }}
           >
             My Reports
@@ -50,34 +48,33 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
           <div
             style={{
               fontSize: 13,
-              color: "rgba(255, 255, 255, 0.85)",
+              color: "#a1a1aa",
               fontWeight: 600,
             }}
           >
-            All your reported problems
+            All your submitted incident reports
           </div>
         </div>
 
         <div
           style={{
-            background: "rgba(255, 255, 255, 0.2)",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
+            background: "rgba(255, 255, 255, 0.1)",
+            border: "1px solid rgba(255, 255, 255, 0.18)",
             padding: "8px 14px",
-            borderRadius: 20,
-            color: "white",
-            fontSize: 13,
+            borderRadius: 18,
+            color: "#ffffff",
+            fontSize: 12,
             fontWeight: 800,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
           }}
         >
           {allReports.length} {allReports.length === 1 ? "Report" : "Reports"}
         </div>
       </div>
 
+      {/* Filter Tabs */}
       <div
         style={{
-          padding: "8px 16px 16px 16px",
+          padding: "4px 14px 14px",
           display: "flex",
           gap: 8,
           overflowX: "auto",
@@ -90,30 +87,34 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
           { id: "pending", label: "Pending" },
           { id: "inprogress", label: "In Progress" },
           { id: "resolved", label: "Resolved" },
-        ].map((f) => (
-          <button
-            key={f.id}
-            onClick={() => setFilter(f.id)}
-            style={{
-              padding: "8px 18px",
-              borderRadius: 24,
-              border: filter === f.id ? "none" : "1px solid rgba(75, 96, 67, 0.15)",
-              background: filter === f.id ? "#4B6043" : "rgba(255, 255, 255, 0.95)",
-              color: filter === f.id ? "white" : "#4B6043",
-              fontWeight: 800,
-              fontSize: 12,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-              transition: "all 0.2s ease",
-              boxShadow:
-                filter === f.id
-                  ? "0 4px 12px rgba(75, 96, 67, 0.2)"
-                  : "0 2px 6px rgba(0,0,0,0.04)",
-            }}
-          >
-            {f.label}
-          </button>
-        ))}
+        ].map((f) => {
+          const isActive = filter === f.id;
+          return (
+            <button
+              key={f.id}
+              onClick={() => setFilter(f.id)}
+              style={{
+                padding: "8px 18px",
+                borderRadius: 22,
+                border: isActive
+                  ? "none"
+                  : "1px solid rgba(255, 255, 255, 0.12)",
+                background: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.05)",
+                color: isActive ? "#000000" : "#a1a1aa",
+                fontWeight: 800,
+                fontSize: 12,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                transition: "all 0.2s ease",
+                boxShadow: isActive
+                  ? "0 4px 14px rgba(255, 255, 255, 0.2)"
+                  : "none",
+              }}
+            >
+              {f.label}
+            </button>
+          );
+        })}
       </div>
 
       <div
@@ -125,15 +126,13 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
           minHeight: 0,
         }}
       >
-
-
         <div
           className="scroll-area hide-scroll"
           style={{
-            padding: "16px",
+            padding: "0 14px 100px",
             display: "flex",
             flexDirection: "column",
-            gap: 12,
+            gap: 10,
           }}
         >
           {filteredReports.length === 0 ? (
@@ -142,52 +141,52 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
               style={{
                 borderRadius: 24,
                 padding: "48px 24px",
-                background: "white",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.04)",
+                background: "#121214",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                boxShadow: "0 8px 30px rgba(0, 0, 0, 0.5)",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 gap: 16,
-                border: "1px solid rgba(75, 96, 67, 0.08)",
-                margin: "8px 0"
+                margin: "12px 0",
               }}
             >
               <div
                 style={{
-                  width: 80,
-                  height: 80,
+                  width: 72,
+                  height: 72,
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg, #f0fcf5, #e3f2dc)",
+                  background: "rgba(255, 255, 255, 0.08)",
+                  border: "1px solid rgba(255, 255, 255, 0.14)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "#4B6043",
+                  color: "#ffffff",
                   marginBottom: 4,
                 }}
               >
                 {isEmptyDueToFilter ? (
-                  <Inbox size={34} strokeWidth={1.5} />
+                  <Inbox size={32} strokeWidth={1.8} />
                 ) : (
-                  <ClipboardList size={34} strokeWidth={1.5} />
+                  <ClipboardList size={32} strokeWidth={1.8} />
                 )}
               </div>
-              
+
               <div style={{ display: "flex", flexDirection: "column", gap: 6, maxWidth: 280, textAlign: "center" }}>
                 <div
                   style={{
-                    fontFamily: "'Baloo 2', cursive",
                     fontSize: 18,
                     fontWeight: 800,
-                    color: "#4B6043",
+                    color: "#ffffff",
                     lineHeight: 1.3,
                   }}
                 >
-                  {isEmptyDueToFilter ? "No matching reports" : "You haven't reported anything yet!"}
+                  {isEmptyDueToFilter ? "No matching reports" : "No reports yet"}
                 </div>
                 <div
                   style={{
                     fontSize: 13,
-                    color: "rgba(75, 96, 67, 0.65)",
+                    color: "#71717a",
                     fontWeight: 600,
                     lineHeight: 1.4,
                   }}
@@ -202,22 +201,16 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
                 onClick={isEmptyDueToFilter ? () => setFilter("all") : onOpenModal}
                 style={{
                   marginTop: 8,
-                  background: "#4B6043",
-                  color: "white",
+                  background: "#ffffff",
+                  color: "#000000",
                   border: "none",
-                  borderRadius: 20,
-                  padding: "12px 28px",
-                  fontSize: 14,
+                  borderRadius: 22,
+                  padding: "11px 26px",
+                  fontSize: 13,
                   fontWeight: 800,
                   cursor: "pointer",
-                  boxShadow: "0 4px 12px rgba(75, 96, 67, 0.25)",
-                  transition: "transform 0.15s, box-shadow 0.15s",
-                }}
-                onMouseDown={(e) => {
-                  e.currentTarget.style.transform = "scale(0.96)";
-                }}
-                onMouseUp={(e) => {
-                  e.currentTarget.style.transform = "scale(1)";
+                  boxShadow: "0 4px 16px rgba(255, 255, 255, 0.15)",
+                  transition: "all 0.2s ease",
                 }}
               >
                 {isEmptyDueToFilter ? "Show All Reports" : "Make a Report"}
@@ -232,7 +225,7 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

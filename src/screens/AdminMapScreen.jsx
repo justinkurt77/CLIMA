@@ -909,10 +909,10 @@ export default function AdminMapScreen({
             transition={{ duration: 0.4 }}
             style={{
               position: "absolute",
-              bottom: 12,
+              bottom: 16,
               left: 344, // Beside the sidebar
-              right: 12,
-              height: 180,
+              right: 16,
+              height: 160,
               zIndex: 15,
               background: "rgba(24, 36, 22, 0.95)",
               backdropFilter: "blur(10px)",
@@ -951,11 +951,12 @@ export default function AdminMapScreen({
       
       </AnimatePresence>
 
-      {/* MAP CONTROLS (bottom-right) */}
+      {/* MAP CONTROLS (floating above bottom panel) */}
       <div
+        className="map-controls"
         style={{
           position: "absolute",
-          bottom: 24,
+          bottom: 192,
           right: 16,
           zIndex: 20,
           display: "flex",
@@ -966,15 +967,15 @@ export default function AdminMapScreen({
       >
         <div
           style={{
-            background: "rgba(255,255,255,0.95)",
+            background: "rgba(24, 36, 22, 0.92)",
             backdropFilter: "blur(16px)",
-            border: `1px solid ${Z[200]}`,
+            border: `1px solid ${Z[300]}`,
             borderRadius: 28,
             padding: 5,
             display: "flex",
             flexDirection: "column",
             gap: 3,
-            boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
           }}
         >
           {[
@@ -999,7 +1000,7 @@ export default function AdminMapScreen({
                   justifyContent: "center",
                   cursor: "pointer",
                   transition: "all 0.2s",
-                  color: active ? "#fff" : Z[400],
+                  color: active ? "#182416" : Z[600],
                 }}
               >
                 <Icon size={18} strokeWidth={active ? 2.5 : 2} />
@@ -1014,10 +1015,10 @@ export default function AdminMapScreen({
             width: 40,
             height: 40,
             borderRadius: "50%",
-            background: "rgba(255,255,255,0.95)",
+            background: "rgba(24, 36, 22, 0.92)",
             backdropFilter: "blur(16px)",
-            border: `1px solid ${Z[200]}`,
-            color: Z[500],
+            border: `1px solid ${Z[300]}`,
+            color: Z[600],
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1039,9 +1040,9 @@ export default function AdminMapScreen({
           top: 16,
           right: 16,
           zIndex: 20,
-          background: "rgba(255,255,255,0.95)",
+          background: "rgba(24, 36, 22, 0.92)",
           backdropFilter: "blur(16px)",
-          border: `1px solid ${Z[200]}`,
+          border: `1px solid ${Z[300]}`,
           borderRadius: 14,
           padding: "10px 14px",
           display: "flex",

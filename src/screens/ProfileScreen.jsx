@@ -205,16 +205,16 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                   onClick={() => setView("menu")}
                   style={{
                     padding: "8px 16px 8px 12px",
-                    background: "white",
+                    background: "#18181b",
                     borderRadius: "20px",
-                    border: "none",
+                    border: "1px solid rgba(255, 255, 255, 0.14)",
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
                     fontSize: 14,
                     fontWeight: 800,
-                    color: "#4B6043",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                    color: "#ffffff",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.5)",
                     cursor: "pointer",
                   }}
                 >
@@ -257,16 +257,16 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                   onClick={() => setView("menu")}
                   style={{
                     padding: "8px 16px 8px 12px",
-                    background: "white",
+                    background: "#18181b",
                     borderRadius: "20px",
-                    border: "none",
+                    border: "1px solid rgba(255, 255, 255, 0.14)",
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
                     fontSize: 14,
                     fontWeight: 800,
-                    color: "#4B6043",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                    color: "#ffffff",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.5)",
                     cursor: "pointer",
                   }}
                 >
@@ -289,7 +289,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                       fontFamily: "Baloo 2, cursive",
                       fontSize: 24,
                       fontWeight: 800,
-                      color: "white",
+                      color: "#ffffff",
                       margin: 0,
                     }}
                   >
@@ -298,7 +298,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                   <p
                     style={{
                       fontSize: 13,
-                      color: "rgba(255, 255, 255, 0.85)",
+                      color: "#a1a1aa",
                       fontWeight: 600,
                       marginTop: -15,
                       marginBottom: 5,
@@ -310,10 +310,11 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                   {error && (
                     <div
                       style={{
-                        color: "#D32F2F",
-                        background: "#FFEBEE",
+                        color: "#ffffff",
+                        background: "#27272a",
+                        border: "1px solid rgba(255, 255, 255, 0.2)",
                         padding: "12px 16px",
-                        borderRadius: 12,
+                        borderRadius: 14,
                         fontSize: 13,
                         fontWeight: 700,
                       }}
@@ -325,12 +326,12 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                   {success && (
                     <div
                       style={{
-                        color: "#2E7D32",
-                        background: "#E8F5E9",
+                        color: "#000000",
+                        background: "#ffffff",
                         padding: "12px 16px",
-                        borderRadius: 12,
+                        borderRadius: 14,
                         fontSize: 13,
-                        fontWeight: 700,
+                        fontWeight: 800,
                         display: "flex",
                         alignItems: "center",
                         gap: 8,
@@ -364,8 +365,8 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                             height: 100,
                             borderRadius: "50%",
                             objectFit: "cover",
-                            border: "3px solid #4B6043",
-                            boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                            border: "2px solid rgba(255, 255, 255, 0.3)",
+                            boxShadow: "0 6px 16px rgba(0,0,0,0.5)",
                           }}
                         />
                       ) : (
@@ -374,15 +375,15 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                             width: 100,
                             height: 100,
                             borderRadius: "50%",
-                            background: "#c8ddb0",
+                            background: "#18181b",
+                            border: "2px solid rgba(255, 255, 255, 0.2)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             fontSize: 36,
                             fontWeight: "bold",
-                            color: "#4B6043",
-                            border: "3px solid #4B6043",
-                            boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                            color: "#ffffff",
+                            boxShadow: "0 6px 16px rgba(0,0,0,0.5)",
                           }}
                         >
                           {firstName?.charAt(0).toUpperCase() || "P"}
@@ -394,16 +395,16 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                           position: "absolute",
                           bottom: 0,
                           right: 0,
-                          background: "#4B6043",
+                          background: "#ffffff",
                           borderRadius: "50%",
                           width: 32,
                           height: 32,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          color: "white",
-                          border: "2px solid white",
-                          boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+                          color: "#000000",
+                          border: "2px solid #000000",
+                          boxShadow: "0 2px 8px rgba(255,255,255,0.2)",
                         }}
                       >
                         <Camera size={16} />
@@ -420,8 +421,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                       style={{
                         fontSize: 12,
                         fontWeight: 700,
-                        color: "#4B6043",
-                        opacity: 0.8,
+                        color: "#a1a1aa",
                       }}
                     >
                       Tap circle to change photo
@@ -435,8 +435,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                         style={{
                           fontSize: 12,
                           fontWeight: 800,
-                          color: "#4B6043",
-                          opacity: 0.9,
+                          color: "#ffffff",
                         }}
                       >
                         First Name
@@ -452,8 +451,9 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                           width: "100%",
                           padding: "14px 16px",
                           borderRadius: 14,
-                          border: "2px solid #E5E7EB",
-                          background: "#F9FAFB",
+                          border: "1px solid rgba(255, 255, 255, 0.15)",
+                          background: "#141416",
+                          color: "#ffffff",
                           fontSize: 15,
                           fontWeight: 600,
                           outline: "none",
@@ -467,8 +467,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                         style={{
                           fontSize: 12,
                           fontWeight: 800,
-                          color: "#4B6043",
-                          opacity: 0.9,
+                          color: "#ffffff",
                         }}
                       >
                         Last Name
@@ -484,8 +483,9 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                           width: "100%",
                           padding: "14px 16px",
                           borderRadius: 14,
-                          border: "2px solid #E5E7EB",
-                          background: "#F9FAFB",
+                          border: "1px solid rgba(255, 255, 255, 0.15)",
+                          background: "#141416",
+                          color: "#ffffff",
                           fontSize: 15,
                           fontWeight: 600,
                           outline: "none",
@@ -499,8 +499,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                         style={{
                           fontSize: 12,
                           fontWeight: 800,
-                          color: "#4B6043",
-                          opacity: 0.9,
+                          color: "#ffffff",
                         }}
                       >
                         Phone Number
@@ -515,8 +514,9 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                           width: "100%",
                           padding: "14px 16px",
                           borderRadius: 14,
-                          border: "2px solid #E5E7EB",
-                          background: "#F9FAFB",
+                          border: "1px solid rgba(255, 255, 255, 0.15)",
+                          background: "#141416",
+                          color: "#ffffff",
                           fontSize: 15,
                           fontWeight: 600,
                           outline: "none",
@@ -533,10 +533,10 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                     style={{
                       width: "100%",
                       padding: "16px",
-                      borderRadius: 14,
-                      background: "#4B6043",
-                      color: "white",
-                      fontSize: 16,
+                      borderRadius: 16,
+                      background: "#ffffff",
+                      color: "#000000",
+                      fontSize: 15,
                       fontWeight: 800,
                       border: "none",
                       cursor: "pointer",
@@ -545,10 +545,10 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                       justifyContent: "center",
                       gap: 8,
                       marginTop: 10,
-                      boxShadow: "0 4px 12px rgba(75, 96, 67, 0.3)",
+                      boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
                       opacity:
                         saving || !firstName.trim() || !lastName.trim()
-                          ? 0.7
+                          ? 0.6
                           : 1,
                       transition: "opacity 0.2s",
                     }}
@@ -588,16 +588,16 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                   onClick={() => setView("menu")}
                   style={{
                     padding: "8px 16px 8px 12px",
-                    background: "white",
+                    background: "#18181b",
                     borderRadius: "20px",
-                    border: "none",
+                    border: "1px solid rgba(255, 255, 255, 0.14)",
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
                     fontSize: 14,
                     fontWeight: 800,
-                    color: "#4B6043",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                    color: "#ffffff",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.5)",
                     cursor: "pointer",
                   }}
                 >
@@ -625,7 +625,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                       fontFamily: "Baloo 2, cursive",
                       fontSize: 24,
                       fontWeight: 800,
-                      color: "white",
+                      color: "#ffffff",
                       margin: 0,
                     }}
                   >
@@ -634,7 +634,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                   <p
                     style={{
                       fontSize: 13,
-                      color: "rgba(255, 255, 255, 0.85)",
+                      color: "#a1a1aa",
                       fontWeight: 600,
                       marginTop: -15,
                       marginBottom: 5,
@@ -646,11 +646,11 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                   {/* Reach out to ICT Division card */}
                   <div
                     style={{
-                      background: "white",
-                      borderRadius: 20,
+                      background: "#121214",
+                      borderRadius: 22,
                       padding: 20,
-                      boxShadow: "0 4px 16px rgba(0,0,0,0.04)",
-                      border: "1px solid rgba(75, 96, 67, 0.08)",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
                       display: "flex",
                       flexDirection: "column",
                       gap: 16,
@@ -661,9 +661,10 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                         style={{
                           width: 44,
                           height: 44,
-                          borderRadius: 12,
-                          background: "#c8ddb0",
-                          color: "#4B6043",
+                          borderRadius: 14,
+                          background: "rgba(255, 255, 255, 0.08)",
+                          border: "1px solid rgba(255, 255, 255, 0.12)",
+                          color: "#ffffff",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -672,23 +673,23 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                         <HelpCircle size={22} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 16, fontWeight: 800, color: "#4B6043" }}>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>
                           City ICT Division
                         </div>
-                        <div style={{ fontSize: 12, color: "rgba(75, 96, 67, 0.6)", fontWeight: 600 }}>
+                        <div style={{ fontSize: 12, color: "#71717a", fontWeight: 600 }}>
                           Official Support Channel
                         </div>
                       </div>
                     </div>
 
-                    <div style={{ width: "100%", height: 1, background: "rgba(0,0,0,0.05)" }} />
+                    <div style={{ width: "100%", height: 1, background: "rgba(255,255,255,0.08)" }} />
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                         <span style={{ fontSize: 16 }}>📧</span>
                         <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(75, 96, 67, 0.5)" }}>EMAIL ADDRESS</span>
-                          <a href="mailto:ict@palayancity.gov.ph" style={{ fontSize: 13, fontWeight: 700, color: "#4B6043", textDecoration: "none" }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "#71717a", letterSpacing: 0.5 }}>EMAIL ADDRESS</span>
+                          <a href="mailto:ict@palayancity.gov.ph" style={{ fontSize: 13, fontWeight: 700, color: "#ffffff", textDecoration: "none" }}>
                             ict@palayancity.gov.ph
                           </a>
                         </div>
@@ -697,8 +698,8 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                         <span style={{ fontSize: 16 }}>📞</span>
                         <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(75, 96, 67, 0.5)" }}>CONTACT NUMBER</span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "#4B6043" }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "#71717a", letterSpacing: 0.5 }}>CONTACT NUMBER</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff" }}>
                             (044) 940-1234
                           </span>
                         </div>
@@ -707,8 +708,8 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                         <span style={{ fontSize: 16 }}>🏢</span>
                         <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(75, 96, 67, 0.5)" }}>OFFICE LOCATION</span>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: "#4B6043", lineHeight: 1.4 }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "#71717a", letterSpacing: 0.5 }}>OFFICE LOCATION</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#a1a1aa", lineHeight: 1.4 }}>
                             2nd Floor, City Hall Building,<br />Brgy. Singalat, Palayan City
                           </span>
                         </div>
@@ -737,10 +738,10 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                     }}
                   />
                   <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: "rgba(255, 255, 255, 0.85)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#71717a" }}>
                       Powered by
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 900, color: "white", fontFamily: "Baloo 2, cursive" }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#ffffff" }}>
                       Palayan City ICT Division
                     </div>
                   </div>
@@ -761,18 +762,18 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                 width: "100%",
               }}
             >
-              {/* Light-green outer header card */}
+              {/* Outer header card */}
               <div className="profile-header-card">
-                {/* Dark green pill: avatar + name */}
+                {/* Monochrome pill: avatar + name */}
                 <div className="profile-pill">
-                  {session.user.user_metadata?.avatar_url ? (
+                  {session?.user?.user_metadata?.avatar_url ? (
                     <img
                       src={session.user.user_metadata.avatar_url}
                       alt="Profile"
                       className="profile-avatar-green"
                       style={{
                         objectFit: "cover",
-                        border: "2px solid rgba(255, 255, 255, 0.4)",
+                        border: "2px solid rgba(255, 255, 255, 0.3)",
                       }}
                     />
                   ) : (
@@ -784,15 +785,15 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                         justifyContent: "center",
                         fontSize: "24px",
                         fontWeight: "bold",
-                        color: "#4B6043",
-                        background: "#c8ddb0",
+                        color: "#ffffff",
+                        background: "#27272a",
                       }}
                     >
-                      {session.user.user_metadata?.first_name?.charAt(0).toUpperCase() || "P"}
+                      {session?.user?.user_metadata?.first_name?.charAt(0).toUpperCase() || "P"}
                     </div>
                   )}
                   <span className="profile-name-green">
-                    {session.user.user_metadata?.full_name || "Palayano User"}
+                    {session?.user?.user_metadata?.full_name || "Palayano User"}
                   </span>
                 </div>
 

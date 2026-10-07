@@ -121,8 +121,10 @@ export default function SearchBar({
             : isPill
               ? 40
               : 12,
-          background: "rgba(74, 94, 54, 0.95)",
-          border: `2px solid ${focused ? "rgba(255,255,255,0.4)" : "transparent"}`,
+          background: "rgba(18, 18, 20, 0.94)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          border: `1px solid ${focused ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.12)"}`,
           transition: "border-color 0.2s",
           padding: isPill ? "8px 12px" : "10px 14px",
           height: isPill ? 56 : "auto",
@@ -153,7 +155,7 @@ export default function SearchBar({
               flexShrink: 0,
             }}
           >
-            <Search size={18} color="#4A5E36" />
+            <Search size={18} color="#000000" />
           </div>
         ) : (
           <Search
@@ -202,9 +204,11 @@ export default function SearchBar({
             top: "100%",
             left: 0,
             right: 0,
-            background: "white",
+            background: "#121214",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            borderTop: "none",
             borderRadius: "0 0 12px 12px",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.14)",
+            boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
             overflow: "hidden",
             zIndex: 9999,
           }}
@@ -214,7 +218,7 @@ export default function SearchBar({
               style={{
                 padding: "12px 16px",
                 fontSize: 12,
-                color: "var(--gray)",
+                color: "#a1a1aa",
                 fontWeight: 600,
               }}
             >
@@ -234,17 +238,17 @@ export default function SearchBar({
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                borderTop: "1px solid #f0eee9",
+                borderTop: "1px solid rgba(255,255,255,0.08)",
                 textAlign: "left",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#faf7f4")
+                (e.currentTarget.style.background = "#1c1c1f")
               }
               onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
             >
               <MapPin
                 size={13}
-                color="#2d8119"
+                color="#ffffff"
                 style={{ marginTop: 3, flexShrink: 0 }}
               />
               <div>
@@ -252,7 +256,7 @@ export default function SearchBar({
                   style={{
                     fontSize: 13,
                     fontWeight: 700,
-                    color: "var(--dark)",
+                    color: "#ffffff",
                   }}
                 >
                   {feat.name}
@@ -260,7 +264,7 @@ export default function SearchBar({
                 <div
                   style={{
                     fontSize: 11,
-                    color: "var(--gray)",
+                    color: "#a1a1aa",
                     marginTop: 2,
                     lineHeight: 1.4,
                   }}

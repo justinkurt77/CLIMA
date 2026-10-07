@@ -58,7 +58,7 @@ export default function Step2DetailsForm({
       style={{
         position: "absolute",
         inset: 0,
-        background: "#F9FDF7",
+        background: "#000000",
         zIndex: 10000,
         display: "flex",
         flexDirection: "column",
@@ -70,20 +70,19 @@ export default function Step2DetailsForm({
         style={{
           padding: "16px 20px",
           paddingTop: "calc(16px + env(safe-area-inset-top, 0px))",
-          background: "white",
+          background: "#000000",
           display: "flex",
           alignItems: "center",
           gap: 12,
-          borderBottom: "1px solid #E8EBE5",
-          boxShadow: "0 1px 8px rgba(0,0,0,0.04)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
           zIndex: 10,
         }}
       >
         <button
           onClick={onBack}
           style={{
-            background: "#f5f0ed",
-            border: "none",
+            background: "#18181b",
+            border: "1px solid rgba(255, 255, 255, 0.14)",
             cursor: "pointer",
             padding: "8px",
             borderRadius: "50%",
@@ -91,16 +90,17 @@ export default function Step2DetailsForm({
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
+            color: "#ffffff",
           }}
         >
-          <ChevronLeft size={20} strokeWidth={2.5} color="#1A330B" />
+          <ChevronLeft size={20} strokeWidth={2.5} color="#ffffff" />
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#7B936B",
+              fontSize: 10,
+              fontWeight: 800,
+              color: "#a1a1aa",
               textTransform: "uppercase",
               letterSpacing: 0.8,
               marginBottom: 2,
@@ -112,7 +112,7 @@ export default function Step2DetailsForm({
             style={{
               fontSize: 15,
               fontWeight: 800,
-              color: "#1a1108",
+              color: "#ffffff",
               margin: 0,
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -123,7 +123,7 @@ export default function Step2DetailsForm({
           >
             <CategoryIcon
               size={16}
-              color="#3F6F23"
+              color="#ffffff"
               style={{ marginRight: 6, flexShrink: 0 }}
             />
             <span
@@ -139,8 +139,9 @@ export default function Step2DetailsForm({
         </div>
         <div
           style={{
-            background: "#F2F7EF",
-            color: "#3F6F23",
+            background: "rgba(255, 255, 255, 0.1)",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            color: "#ffffff",
             fontSize: 11,
             fontWeight: 800,
             padding: "4px 10px",
@@ -153,7 +154,7 @@ export default function Step2DetailsForm({
         </div>
       </div>
 
-      {/* Scrollable body (Location, Photo, Description) */}
+      {/* Scrollable body */}
       <div
         className="hide-scroll"
         style={{
@@ -240,7 +241,7 @@ export default function Step2DetailsForm({
           padding: "12px 20px",
           paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
           background:
-            "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 30%)",
+            "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.95) 30%)",
         }}
       >
         <motion.button
@@ -250,22 +251,20 @@ export default function Step2DetailsForm({
             width: "100%",
             padding: "15px 16px",
             borderRadius: 30,
-            background: isSubmitting
-              ? "#A8C29D"
-              : "linear-gradient(135deg, #4aaa1f 0%, #3F6F23 100%)",
-            color: "white",
+            background: isSubmitting ? "#27272a" : "#ffffff",
+            color: isSubmitting ? "#71717a" : "#000000",
             border: "none",
             fontSize: 15,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: isSubmitting ? "not-allowed" : "pointer",
             boxShadow: isSubmitting
               ? "none"
-              : "0 4px 20px rgba(63, 111, 35, 0.4)",
+              : "0 4px 20px rgba(255, 255, 255, 0.25)",
             letterSpacing: 0.3,
             transition: "all 0.2s",
           }}
         >
-          {isSubmitting ? "Sinisave…" : "Submit Report"}
+          {isSubmitting ? "Submitting…" : "Submit Report"}
         </motion.button>
       </div>
     </motion.div>
