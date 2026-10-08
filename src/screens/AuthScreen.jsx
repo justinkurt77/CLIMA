@@ -416,8 +416,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
             <MapPin size={18} fill="#000000" color="#000000" />
           </div>
           <div>
-            <span style={{ color: "#a1a1aa" }}>Pala</span>
-            <span style={{ color: "#ffffff" }}>Sumbong</span>
+            <span style={{ color: "#ffffff", letterSpacing: 1.5 }}>CLIMA</span>
           </div>
         </div>
         <p
@@ -426,9 +425,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
             fontSize: 12,
             fontWeight: 600,
             margin: 0,
+            textAlign: "center",
           }}
         >
-          Palayan City Sumbong System
+          Climate Information Monitoring and Awareness
         </p>
       </motion.div>
 

@@ -235,12 +235,7 @@ function App() {
 
   return (
     <div
-      className="app-shell"
-      style={{
-        maxWidth: isAdminView ? "none" : "480px",
-        margin: isAdminView ? "0" : "0 auto",
-        background: isAdminView ? "transparent" : "#111318",
-      }}
+      className={`app-shell ${isAdminView ? "admin-mode" : "citizen-mode"}`}
     >
       {/* ADMIN LAYER (Handled as a screen now) */}
 
@@ -253,11 +248,9 @@ function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
+            className="citizen-screen-view"
             style={{
-              position: "absolute",
-              inset: 0,
               zIndex: 10,
-              overflowY: "auto",
             }}
           >
             <HomeScreen
@@ -278,8 +271,8 @@ function App() {
             animate="animate"
             exit="exit"
             transition={screenVariants.transition}
-            className="screen active"
-            style={{ zIndex: 10, background: "transparent", position: "absolute", inset: 0 }}
+            className="screen active citizen-screen-view"
+            style={{ zIndex: 10, background: "transparent" }}
           >
             <EmergencyScreen />
           </motion.div>
@@ -292,9 +285,8 @@ function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
+            className="citizen-screen-view"
             style={{
-              position: "absolute",
-              inset: 0,
               zIndex: 10,
             }}
           >
@@ -332,7 +324,7 @@ function App() {
             animate="animate"
             exit="exit"
             transition={screenVariants.transition}
-            className="screen active"
+            className="screen active citizen-screen-view"
             style={{
               zIndex: 10,
               background: "transparent",
@@ -343,6 +335,27 @@ function App() {
               userReports={userReports}
               session={session}
               setActiveScreen={setActiveScreen}
+            />
+          </motion.div>
+        )}
+
+        {activeScreen === "reports" && (
+          <motion.div
+            key="reports"
+            variants={screenVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={screenVariants.transition}
+            className="screen active citizen-screen-view"
+            style={{
+              zIndex: 10,
+              background: "transparent",
+            }}
+          >
+            <MyReportsScreen
+              onOpenModal={openModal}
+              userReports={userReports}
             />
           </motion.div>
         )}
@@ -619,6 +632,8 @@ function App() {
         <CitizenNav
           activeScreen={activeScreen}
           setActiveScreen={setActiveScreen}
+          session={session}
+          onOpenModal={openModal}
         />
       )}
 
