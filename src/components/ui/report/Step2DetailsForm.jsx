@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, ClipboardList } from "lucide-react";
 import { CATEGORY_GROUPS, PALAYAN_BARANGAYS } from "./reportConstants";
 import { motion } from "framer-motion";
+import { useTheme } from "../../../context/ThemeContext";
 
 import { LocationCard } from "./LocationCard";
 import { PhotoCard } from "./PhotoCard";
@@ -36,6 +37,7 @@ export default function Step2DetailsForm({
   isSubmitting,
   setErrors,
 }) {
+  const { isDark } = useTheme();
   const [barangayOpen, setBarangayOpen] = useState(false);
 
   const barangayMatches =
@@ -58,7 +60,7 @@ export default function Step2DetailsForm({
       style={{
         position: "absolute",
         inset: 0,
-        background: "#000000",
+        background: isDark ? "#000000" : "var(--bg-app)",
         zIndex: 10000,
         display: "flex",
         flexDirection: "column",
@@ -70,19 +72,19 @@ export default function Step2DetailsForm({
         style={{
           padding: "16px 20px",
           paddingTop: "calc(16px + env(safe-area-inset-top, 0px))",
-          background: "#000000",
+          background: isDark ? "#000000" : "var(--bg-app)",
           display: "flex",
           alignItems: "center",
           gap: 12,
-          borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+          borderBottom: "1px solid var(--border-subtle)",
           zIndex: 10,
         }}
       >
         <button
           onClick={onBack}
           style={{
-            background: "#18181b",
-            border: "1px solid rgba(255, 255, 255, 0.14)",
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-subtle)",
             cursor: "pointer",
             padding: "8px",
             borderRadius: "50%",
@@ -90,17 +92,18 @@ export default function Step2DetailsForm({
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-            color: "#ffffff",
+            color: "var(--text-primary)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
           }}
         >
-          <ChevronLeft size={20} strokeWidth={2.5} color="#ffffff" />
+          <ChevronLeft size={20} strokeWidth={2.5} color="var(--text-primary)" />
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
               fontSize: 10,
               fontWeight: 800,
-              color: "#a1a1aa",
+              color: "var(--text-secondary)",
               textTransform: "uppercase",
               letterSpacing: 0.8,
               marginBottom: 2,
@@ -112,7 +115,7 @@ export default function Step2DetailsForm({
             style={{
               fontSize: 15,
               fontWeight: 800,
-              color: "#ffffff",
+              color: "var(--text-primary)",
               margin: 0,
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -123,7 +126,7 @@ export default function Step2DetailsForm({
           >
             <CategoryIcon
               size={16}
-              color="#ffffff"
+              color="var(--text-primary)"
               style={{ marginRight: 6, flexShrink: 0 }}
             />
             <span
@@ -139,9 +142,9 @@ export default function Step2DetailsForm({
         </div>
         <div
           style={{
-            background: "rgba(255, 255, 255, 0.1)",
-            border: "1px solid rgba(255, 255, 255, 0.15)",
-            color: "#ffffff",
+            background: "var(--border-subtle)",
+            border: "1px solid var(--border-subtle)",
+            color: "var(--text-primary)",
             fontSize: 11,
             fontWeight: 800,
             padding: "4px 10px",
@@ -240,8 +243,9 @@ export default function Step2DetailsForm({
           right: 0,
           padding: "12px 20px",
           paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
-          background:
-            "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.95) 30%)",
+          background: isDark
+            ? "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.95) 30%)"
+            : "linear-gradient(180deg, rgba(248,249,250,0) 0%, rgba(248,249,250,0.98) 30%)",
         }}
       >
         <motion.button
@@ -251,15 +255,19 @@ export default function Step2DetailsForm({
             width: "100%",
             padding: "15px 16px",
             borderRadius: 30,
-            background: isSubmitting ? "#27272a" : "#ffffff",
-            color: isSubmitting ? "#71717a" : "#000000",
+            background: isSubmitting
+              ? "var(--border-subtle)"
+              : "var(--btn-primary-bg)",
+            color: isSubmitting
+              ? "var(--text-muted)"
+              : "var(--btn-primary-text)",
             border: "none",
             fontSize: 15,
             fontWeight: 800,
             cursor: isSubmitting ? "not-allowed" : "pointer",
             boxShadow: isSubmitting
               ? "none"
-              : "0 4px 20px rgba(255, 255, 255, 0.25)",
+              : "0 4px 20px rgba(0, 0, 0, 0.15)",
             letterSpacing: 0.3,
             transition: "all 0.2s",
           }}

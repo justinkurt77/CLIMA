@@ -12,6 +12,8 @@ import {
   CarFront,
 } from "lucide-react";
 
+import { useTheme } from "../../context/ThemeContext";
+
 const ICON_MAP = {
   ShieldAlert,
   Wrench,
@@ -22,44 +24,51 @@ const ICON_MAP = {
   CarFront,
 };
 
-export const STATUS_META = {
-  pending: {
-    color: "#a1a1aa",
-    bg: "rgba(255, 255, 255, 0.06)",
-    border: "1px solid rgba(255, 255, 255, 0.12)",
-    label: "Pending",
-    Icon: AlertTriangle,
-  },
-  inprogress: {
-    color: "#ffffff",
-    bg: "rgba(255, 255, 255, 0.12)",
-    border: "1px solid rgba(255, 255, 255, 0.22)",
-    label: "In Progress",
-    Icon: Clock,
-  },
-  resolved: {
-    color: "#000000",
-    bg: "#ffffff",
-    border: "none",
-    label: "Resolved",
-    Icon: CheckCircle2,
-  },
-};
+export function getStatusMeta(status, isDark) {
+  switch (status) {
+    case "resolved":
+      return {
+        color: isDark ? "#000000" : "#ffffff",
+        bg: isDark ? "#ffffff" : "#09090b",
+        border: "none",
+        label: "Resolved",
+        Icon: CheckCircle2,
+      };
+    case "inprogress":
+      return {
+        color: isDark ? "#ffffff" : "#09090b",
+        bg: isDark ? "rgba(255, 255, 255, 0.14)" : "rgba(0, 0, 0, 0.08)",
+        border: isDark ? "1px solid rgba(255, 255, 255, 0.22)" : "1px solid rgba(0, 0, 0, 0.12)",
+        label: "In Progress",
+        Icon: Clock,
+      };
+    default:
+      return {
+        color: isDark ? "#a1a1aa" : "#71717a",
+        bg: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)",
+        border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.08)",
+        label: "Pending",
+        Icon: AlertTriangle,
+      };
+  }
+}
 
 export default function ReportCard({ report }) {
-  const meta = STATUS_META[report.status] || STATUS_META.pending;
+  const { isDark } = useTheme();
+  const meta = getStatusMeta(report.status, isDark);
   const { Icon } = meta;
   return (
     <div
       style={{
-        background: "#141416",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
+        background: "var(--bg-card)",
+        border: "1px solid var(--border-subtle)",
         borderRadius: 22,
         padding: "12px 16px",
         display: "flex",
         alignItems: "center",
         gap: 14,
-        boxShadow: "0 6px 20px rgba(0, 0, 0, 0.4)",
+        boxShadow: "var(--shadow-card)",
+        transition: "all 0.2s ease",
       }}
     >
       {report.photoPreview ? (
@@ -82,19 +91,19 @@ export default function ReportCard({ report }) {
             height: 44,
             borderRadius: 14,
             flexShrink: 0,
-            background: "rgba(255, 255, 255, 0.08)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
+            background: "var(--bg-card-subtle)",
+            border: "1px solid var(--border-subtle)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             fontSize: 18,
-            color: "#ffffff",
+            color: "var(--text-primary)",
           }}
         >
           {ICON_MAP[report.icon]
             ? (() => {
                 const DynamicIcon = ICON_MAP[report.icon];
-                return <DynamicIcon size={20} color="#ffffff" />;
+                return <DynamicIcon size={20} color={isDark ? "#ffffff" : "#09090b"} />;
               })()
             : report.icon || "📝"}
         </div>
@@ -104,7 +113,7 @@ export default function ReportCard({ report }) {
           style={{
             fontWeight: 800,
             fontSize: 13,
-            color: "#ffffff",
+            color: "var(--text-primary)",
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -116,7 +125,7 @@ export default function ReportCard({ report }) {
         <div
           style={{
             fontSize: 11,
-            color: "#a1a1aa",
+            color: "var(--text-muted)",
             display: "flex",
             alignItems: "center",
             gap: 4,
@@ -126,7 +135,7 @@ export default function ReportCard({ report }) {
             textOverflow: "ellipsis",
           }}
         >
-          <MapPin size={11} color="#71717a" style={{ flexShrink: 0 }} />
+          <MapPin size={11} color="var(--text-muted)" style={{ flexShrink: 0 }} />
           <span>{report.location || "Palayan City"}</span>
         </div>
       </div>

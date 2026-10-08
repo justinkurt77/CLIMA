@@ -13,17 +13,17 @@ export function CardHeader({ icon, label, badge }) {
           width: 28,
           height: 28,
           borderRadius: "50%",
-          background: "rgba(255, 255, 255, 0.1)",
-          border: "1px solid rgba(255, 255, 255, 0.15)",
+          background: "var(--border-subtle)",
+          border: "1px solid var(--border-subtle)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "#ffffff",
+          color: "var(--text-primary)",
         }}
       >
         {icon}
       </div>
-      <span style={{ fontSize: 13, fontWeight: 800, color: "#ffffff" }}>
+      <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)" }}>
         {label}
       </span>
       {badge && (
@@ -31,10 +31,10 @@ export function CardHeader({ icon, label, badge }) {
           style={{
             marginLeft: "auto",
             fontSize: 10,
-            color: "#ffffff",
+            color: "var(--text-secondary)",
             fontWeight: 800,
-            background: "rgba(255, 255, 255, 0.08)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
+            background: "var(--border-subtle)",
+            border: "1px solid var(--border-subtle)",
             padding: "2px 8px",
             borderRadius: 10,
             textTransform: "uppercase",

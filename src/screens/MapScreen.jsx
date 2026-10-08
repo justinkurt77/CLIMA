@@ -85,6 +85,7 @@ import { MapOverlayActions } from "../components/map/MapOverlayActions";
 import { MapPopupContent } from "../components/map/MapPopupContent";
 import { PhotoLightbox } from "../components/map/PhotoLightbox";
 import { DescriptionModal } from "../components/map/DescriptionModal";
+import { useTheme } from "../context/ThemeContext";
 
 function MapScreen({
   onOpenModal,
@@ -98,6 +99,7 @@ function MapScreen({
   activeScreen,
   isNavMinimized,
 }) {
+  const { theme, isDark } = useTheme();
   const [selectedReport, setSelectedReport] = useState(null);
   const [searchPin, setSearchPin] = useState(null);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
@@ -110,12 +112,16 @@ function MapScreen({
     "resolved",
   ]);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [mapStyleId, setMapStyleId] = useState("dark-v11");
+  const [mapStyleId, setMapStyleId] = useState(isDark ? "dark-v11" : "streets-v12");
   const [isExiting, setIsExiting] = useState(false);
   const [barangayMarkers, setBarangayMarkers] = useState([]);
   const popupContentRef = useRef(null);
   const mapRef = useRef(null);
   const hasJumped = useRef(false);
+
+  useEffect(() => {
+    setMapStyleId(isDark ? "dark-v11" : "streets-v12");
+  }, [isDark]);
 
   const closePopup = () => {
     setIsExiting(true);
@@ -540,16 +546,22 @@ function MapScreen({
             {/* Map Styles Pill */}
             <div
               style={{
-                background: "rgba(18, 18, 20, 0.94)",
+                background: isDark
+                  ? "rgba(18, 18, 20, 0.94)"
+                  : "rgba(255, 255, 255, 0.96)",
                 backdropFilter: "blur(16px)",
                 WebkitBackdropFilter: "blur(16px)",
-                border: "1px solid rgba(255, 255, 255, 0.12)",
+                border: isDark
+                  ? "1px solid rgba(255, 255, 255, 0.12)"
+                  : "1px solid rgba(0, 0, 0, 0.08)",
                 borderRadius: 40,
                 padding: "6px",
                 display: "flex",
                 flexDirection: "column",
                 gap: 6,
-                boxShadow: "0 10px 28px rgba(0,0,0,0.6)",
+                boxShadow: isDark
+                  ? "0 10px 28px rgba(0,0,0,0.6)"
+                  : "0 10px 28px rgba(0,0,0,0.12)",
                 alignItems: "center",
                 width: "100%",
               }}
@@ -568,7 +580,11 @@ function MapScreen({
                       width: 52,
                       height: 52,
                       borderRadius: "50%",
-                      background: isActive ? "#ffffff" : "transparent",
+                      background: isActive
+                        ? isDark
+                          ? "#ffffff"
+                          : "#09090b"
+                        : "transparent",
                       border: "none",
                       display: "flex",
                       alignItems: "center",
@@ -579,7 +595,15 @@ function MapScreen({
                   >
                     <layer.Icon
                       size={20}
-                      color={isActive ? "#000000" : "rgba(255,255,255,0.6)"}
+                      color={
+                        isActive
+                          ? isDark
+                            ? "#000000"
+                            : "#ffffff"
+                          : isDark
+                            ? "rgba(255,255,255,0.6)"
+                            : "rgba(0,0,0,0.5)"
+                      }
                       strokeWidth={isActive ? 2.5 : 2}
                     />
                   </button>
@@ -609,14 +633,18 @@ function MapScreen({
                 right: 14,
                 width: 64,
                 height: 64,
-                background: "#18181b",
+                background: isDark ? "#18181b" : "#ffffff",
                 borderRadius: 28,
-                boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                boxShadow: isDark
+                  ? "0 8px 24px rgba(0,0,0,0.5)"
+                  : "0 8px 24px rgba(0,0,0,0.12)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                border: "1px solid rgba(255,255,255,0.16)",
+                border: isDark
+                  ? "1px solid rgba(255,255,255,0.16)"
+                  : "1px solid rgba(0,0,0,0.08)",
                 zIndex: 10,
                 opacity: isMapFullView ? 1 : 0,
                 pointerEvents: isMapFullView ? "auto" : "none",
@@ -627,7 +655,7 @@ function MapScreen({
               }}
               aria-label="Back to my location"
             >
-              <LocateFixed size={24} color="#ffffff" />
+              <LocateFixed size={24} color={isDark ? "#ffffff" : "#09090b"} />
             </button>
           </>
         )}

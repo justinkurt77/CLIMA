@@ -11,13 +11,13 @@ export function GuestInfoCard({
   const inputStyle = (error) => ({
     width: "100%",
     borderRadius: 14,
-    border: error ? "1px solid #ffffff" : "1px solid rgba(255, 255, 255, 0.12)",
+    border: error ? "1px solid #ef4444" : "1px solid var(--border-subtle)",
     padding: "12px 14px",
     fontSize: 13,
-    color: "#ffffff",
+    color: "var(--text-primary)",
     outline: "none",
     fontFamily: "inherit",
-    background: "#18181b",
+    background: "var(--bg-app)",
     boxSizing: "border-box",
     marginBottom: error ? 4 : 12,
   });
@@ -25,7 +25,7 @@ export function GuestInfoCard({
   const errorRender = (error) => (
     <div
       style={{
-        color: "#ffffff",
+        color: "#ef4444",
         fontSize: 11,
         fontWeight: 700,
         marginBottom: 12,
@@ -33,7 +33,7 @@ export function GuestInfoCard({
         alignItems: "center",
       }}
     >
-      <AlertTriangle size={12} color="#ffffff" style={{ marginRight: 4 }} />
+      <AlertTriangle size={12} color="#ef4444" style={{ marginRight: 4 }} />
       {error}
     </div>
   );
@@ -41,16 +41,16 @@ export function GuestInfoCard({
   return (
     <div
       style={{
-        background: "#121214",
+        background: "var(--bg-card)",
         borderRadius: 22,
         padding: "16px 18px",
-        boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
+        boxShadow: "0 6px 20px rgba(0,0,0,0.06)",
+        border: "1px solid var(--border-subtle)",
         flexShrink: 0,
       }}
     >
       <CardHeader
-        icon={<User size={14} color="#ffffff" />}
+        icon={<User size={14} color="var(--text-primary)" />}
         label="Your Information"
         badge="Required"
       />

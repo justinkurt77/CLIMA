@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { ClipboardList, Inbox, Plus } from "lucide-react";
 import ReportCard from "../components/ui/ReportCard";
+import { useTheme } from "../context/ThemeContext";
 
 function MyReportsScreen({ onOpenModal, userReports = [] }) {
+  const { isDark } = useTheme();
   const [filter, setFilter] = useState("all");
   const allReports = [...userReports];
 
@@ -13,18 +15,20 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
   const isEmptyDueToFilter = allReports.length > 0 && filteredReports.length === 0;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#000000" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--bg-app)", transition: "background-color 0.25s ease" }}>
       {/* Header Card */}
       <div
         style={{
-          background: "linear-gradient(145deg, #18181b 0%, #0d0d0f 100%)",
+          background: isDark
+            ? "linear-gradient(145deg, #18181b 0%, #0d0d0f 100%)"
+            : "linear-gradient(145deg, #ffffff 0%, #f4f4f6 100%)",
           borderRadius: 26,
-          border: "1px solid rgba(255, 255, 255, 0.12)",
+          border: "1px solid var(--border-medium)",
           margin: "12px 14px",
           marginTop: "calc(12px + env(safe-area-inset-top, 0px))",
           padding: "22px",
           flexShrink: 0,
-          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.7)",
+          boxShadow: "var(--shadow-card)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -37,7 +41,7 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
             style={{
               fontSize: 26,
               fontWeight: 900,
-              color: "#ffffff",
+              color: "var(--text-primary)",
               lineHeight: 1.1,
               marginBottom: 4,
               letterSpacing: -0.5,
@@ -48,7 +52,7 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
           <div
             style={{
               fontSize: 13,
-              color: "#a1a1aa",
+              color: "var(--text-muted)",
               fontWeight: 600,
             }}
           >
@@ -58,11 +62,11 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
 
         <div
           style={{
-            background: "rgba(255, 255, 255, 0.1)",
-            border: "1px solid rgba(255, 255, 255, 0.18)",
+            background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)",
+            border: isDark ? "1px solid rgba(255, 255, 255, 0.18)" : "1px solid rgba(0, 0, 0, 0.1)",
             padding: "8px 14px",
             borderRadius: 18,
-            color: "#ffffff",
+            color: "var(--text-primary)",
             fontSize: 12,
             fontWeight: 800,
           }}
@@ -98,16 +102,16 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
                 borderRadius: 22,
                 border: isActive
                   ? "none"
-                  : "1px solid rgba(255, 255, 255, 0.12)",
-                background: isActive ? "#ffffff" : "rgba(255, 255, 255, 0.05)",
-                color: isActive ? "#000000" : "#a1a1aa",
+                  : "1px solid var(--border-subtle)",
+                background: isActive ? "var(--btn-primary-bg)" : "var(--bg-card)",
+                color: isActive ? "var(--btn-primary-text)" : "var(--text-muted)",
                 fontWeight: 800,
                 fontSize: 12,
                 cursor: "pointer",
                 whiteSpace: "nowrap",
                 transition: "all 0.2s ease",
                 boxShadow: isActive
-                  ? "0 4px 14px rgba(255, 255, 255, 0.2)"
+                  ? "var(--shadow-card)"
                   : "none",
               }}
             >
@@ -141,9 +145,9 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
               style={{
                 borderRadius: 24,
                 padding: "48px 24px",
-                background: "#121214",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
-                boxShadow: "0 8px 30px rgba(0, 0, 0, 0.5)",
+                background: "var(--bg-card)",
+                border: "1px solid var(--border-subtle)",
+                boxShadow: "var(--shadow-card)",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -156,12 +160,12 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
                   width: 72,
                   height: 72,
                   borderRadius: "50%",
-                  background: "rgba(255, 255, 255, 0.08)",
-                  border: "1px solid rgba(255, 255, 255, 0.14)",
+                  background: "var(--bg-card-subtle)",
+                  border: "1px solid var(--border-medium)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "#ffffff",
+                  color: "var(--text-primary)",
                   marginBottom: 4,
                 }}
               >
@@ -177,7 +181,7 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
                   style={{
                     fontSize: 18,
                     fontWeight: 800,
-                    color: "#ffffff",
+                    color: "var(--text-primary)",
                     lineHeight: 1.3,
                   }}
                 >
@@ -186,7 +190,7 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
                 <div
                   style={{
                     fontSize: 13,
-                    color: "#71717a",
+                    color: "var(--text-muted)",
                     fontWeight: 600,
                     lineHeight: 1.4,
                   }}
@@ -201,15 +205,15 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
                 onClick={isEmptyDueToFilter ? () => setFilter("all") : onOpenModal}
                 style={{
                   marginTop: 8,
-                  background: "#ffffff",
-                  color: "#000000",
+                  background: "var(--btn-primary-bg)",
+                  color: "var(--btn-primary-text)",
                   border: "none",
                   borderRadius: 22,
                   padding: "11px 26px",
                   fontSize: 13,
                   fontWeight: 800,
                   cursor: "pointer",
-                  boxShadow: "0 4px 16px rgba(255, 255, 255, 0.15)",
+                  boxShadow: "var(--shadow-card)",
                   transition: "all 0.2s ease",
                 }}
               >

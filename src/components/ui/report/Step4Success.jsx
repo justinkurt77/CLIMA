@@ -1,8 +1,11 @@
 import { CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
+import { useTheme } from "../../../context/ThemeContext";
 
 export default function Step4Success({ onClose }) {
+  const { isDark } = useTheme();
+
   useEffect(() => {
     const timer = setTimeout(onClose, 3500);
     return () => clearTimeout(timer);
@@ -17,7 +20,7 @@ export default function Step4Success({ onClose }) {
       style={{
         position: "absolute",
         inset: 0,
-        background: "#000000",
+        background: isDark ? "#000000" : "var(--bg-app)",
         zIndex: 10000,
         display: "flex",
         flexDirection: "column",
@@ -39,13 +42,15 @@ export default function Step4Success({ onClose }) {
           width: 80,
           height: 80,
           borderRadius: "50%",
-          background: "rgba(255, 255, 255, 0.1)",
-          border: "1px solid rgba(255, 255, 255, 0.2)",
+          background: "var(--border-subtle)",
+          border: "1px solid var(--border-subtle)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           marginBottom: 24,
-          boxShadow: "0 0 30px rgba(255, 255, 255, 0.15)",
+          boxShadow: isDark
+            ? "0 0 30px rgba(255, 255, 255, 0.15)"
+            : "0 0 30px rgba(0, 0, 0, 0.08)",
         }}
       >
         <motion.div
@@ -53,7 +58,7 @@ export default function Step4Success({ onClose }) {
           animate={{ pathLength: 1, opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <CheckCircle size={40} color="#ffffff" strokeWidth={2.2} />
+          <CheckCircle size={40} color="var(--text-primary)" strokeWidth={2.2} />
         </motion.div>
       </motion.div>
 
@@ -64,7 +69,7 @@ export default function Step4Success({ onClose }) {
         style={{
           fontSize: 24,
           fontWeight: 900,
-          color: "#ffffff",
+          color: "var(--text-primary)",
           marginBottom: 10,
           textAlign: "center",
           letterSpacing: -0.5,
@@ -79,7 +84,7 @@ export default function Step4Success({ onClose }) {
         transition={{ duration: 0.4, delay: 0.5, ease: "easeOut" }}
         style={{
           fontSize: 14,
-          color: "#a1a1aa",
+          color: "var(--text-secondary)",
           textAlign: "center",
           lineHeight: 1.5,
           marginBottom: 32,
@@ -102,13 +107,13 @@ export default function Step4Success({ onClose }) {
           maxWidth: 300,
           padding: "16px",
           borderRadius: 30,
-          background: "#ffffff",
-          color: "#000000",
+          background: "var(--btn-primary-bg)",
+          color: "var(--btn-primary-text)",
           fontWeight: 800,
           fontSize: 15,
           border: "none",
           cursor: "pointer",
-          boxShadow: "0 4px 20px rgba(255, 255, 255, 0.25)",
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
           transition: "transform 0.1s",
         }}
       >

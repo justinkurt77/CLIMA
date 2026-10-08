@@ -7,16 +7,16 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
   return (
     <div
       style={{
-        background: "#121214",
+        background: "var(--bg-card)",
         borderRadius: 22,
         padding: "16px 18px",
-        boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
+        boxShadow: "0 6px 20px rgba(0,0,0,0.06)",
+        border: "1px solid var(--border-subtle)",
         flexShrink: 0,
       }}
     >
       <CardHeader
-        icon={<ImageIcon size={14} color="#ffffff" />}
+        icon={<ImageIcon size={14} color="var(--text-primary)" />}
         label="Attach Photo"
         badge="Optional"
       />
@@ -44,7 +44,7 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
                 overflow: "hidden",
                 width: "100%",
                 height: 120,
-                border: "1px solid rgba(255, 255, 255, 0.15)",
+                border: "1px solid var(--border-subtle)",
               }}
             >
               <img
@@ -95,7 +95,7 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
               onClick={() => fileRef.current?.click()}
               style={{
                 height: 120,
-                border: "1.5px dashed rgba(255, 255, 255, 0.2)",
+                border: "1.5px dashed var(--border-subtle)",
                 borderRadius: 14,
                 display: "flex",
                 flexDirection: "column",
@@ -103,7 +103,7 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
                 justifyContent: "center",
                 gap: 8,
                 cursor: "pointer",
-                background: "#18181b",
+                background: "var(--bg-app)",
               }}
             >
               <div
@@ -111,15 +111,15 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
                   width: 32,
                   height: 32,
                   borderRadius: "50%",
-                  background: "rgba(255, 255, 255, 0.1)",
+                  background: "var(--border-subtle)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <ImageIcon size={14} color="#ffffff" strokeWidth={1.5} />
+                <ImageIcon size={14} color="var(--text-primary)" strokeWidth={1.5} />
               </div>
-              <div style={{ fontSize: 11, color: "#ffffff", fontWeight: 700 }}>
+              <div style={{ fontSize: 11, color: "var(--text-primary)", fontWeight: 700 }}>
                 Add more
               </div>
             </div>
@@ -131,7 +131,7 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
           style={{
             width: "100%",
             height: 120,
-            border: "1.5px dashed rgba(255, 255, 255, 0.2)",
+            border: "1.5px dashed var(--border-subtle)",
             borderRadius: 14,
             display: "flex",
             flexDirection: "column",
@@ -139,7 +139,7 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
             justifyContent: "center",
             gap: 8,
             cursor: "pointer",
-            background: "#18181b",
+            background: "var(--bg-app)",
           }}
         >
           <div
@@ -147,18 +147,18 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
               width: 44,
               height: 44,
               borderRadius: "50%",
-              background: "rgba(255, 255, 255, 0.1)",
+              background: "var(--border-subtle)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <ImageIcon size={20} color="#ffffff" strokeWidth={1.5} />
+            <ImageIcon size={20} color="var(--text-primary)" strokeWidth={1.5} />
           </div>
-          <div style={{ fontSize: 13, color: "#ffffff", fontWeight: 700 }}>
+          <div style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 700 }}>
             Tap to add photos
           </div>
-          <div style={{ fontSize: 11, color: "#71717a", fontWeight: 500 }}>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>
             Up to 4 JPG, PNG or HEIC
           </div>
         </div>

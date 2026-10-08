@@ -3,10 +3,12 @@ import { ChevronLeft, Folder, Loader2, ShieldAlert, Wrench, Trash2, Dog, Constru
 import { motion } from "framer-motion";
 import { supabase } from "../../../lib/supabase";
 import { CATEGORY_GROUPS } from "./reportConstants";
+import { useTheme } from "../../../context/ThemeContext";
 
 const ICON_MAP = { ShieldAlert, Wrench, Trash2, Dog, Construction, TreePine, CarFront, ClipboardList, Folder };
 
 export default function Step1CategoryPicker({ onNext, onClose }) {
+  const { isDark } = useTheme();
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedIcon, setSelectedIcon] = useState("ClipboardList");
   const [expandedGroups, setExpandedGroups] = useState({});
@@ -63,7 +65,7 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
       style={{
         position: "absolute",
         inset: 0,
-        background: "#000000",
+        background: isDark ? "#000000" : "var(--bg-app)",
         zIndex: 10000,
         display: "flex",
         flexDirection: "column",
@@ -77,15 +79,15 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
           paddingTop: "calc(20px + env(safe-area-inset-top, 0px))",
           display: "flex",
           alignItems: "center",
-          background: "#000000",
+          background: isDark ? "#000000" : "var(--bg-app)",
           zIndex: 10,
         }}
       >
         <button
           onClick={onClose}
           style={{
-            background: "rgba(255, 255, 255, 0.08)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-subtle)",
             borderRadius: "50%",
             width: 40,
             height: 40,
@@ -93,10 +95,11 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "#ffffff",
+            color: "var(--text-primary)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
           }}
         >
-          <ChevronLeft size={22} strokeWidth={2.2} color="#ffffff" />
+          <ChevronLeft size={22} strokeWidth={2.2} color="var(--text-primary)" />
         </button>
       </div>
 
@@ -108,7 +111,7 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
             fontWeight: 900,
             fontSize: 24,
             letterSpacing: -0.5,
-            color: "#ffffff",
+            color: "var(--text-primary)",
             marginBottom: 28,
             lineHeight: 1.25,
           }}
@@ -124,8 +127,8 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
               style={{
                 width: 32,
                 height: 32,
-                border: "3px solid rgba(255,255,255,0.15)",
-                borderTopColor: "#ffffff",
+                border: "3px solid var(--border-subtle)",
+                borderTopColor: "var(--text-primary)",
                 borderRadius: "50%",
               }}
             />
@@ -150,21 +153,21 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
                     style={{
                       fontSize: 14,
                       fontWeight: 800,
-                      color: "#ffffff",
+                      color: "var(--text-primary)",
                       margin: 0,
                       display: "flex",
                       alignItems: "center",
                       gap: 8,
                     }}
                   >
-                    <GroupIcon size={16} color="#ffffff" />
+                    <GroupIcon size={16} color="var(--text-primary)" />
                     {group.name}
                   </h2>
                   <div
                     style={{
                       transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
                       transition: "transform 0.2s",
-                      color: "#71717a",
+                      color: "var(--text-muted)",
                       fontSize: 12,
                     }}
                   >
@@ -193,17 +196,17 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
                             style={{
                               padding: "9px 18px",
                               borderRadius: 30,
-                              background: isSelected ? "#ffffff" : "#141416",
+                              background: isSelected ? "var(--btn-primary-bg)" : "var(--bg-card)",
                               border: isSelected
-                                ? "1px solid #ffffff"
-                                : "1px solid rgba(255, 255, 255, 0.12)",
+                                ? "1px solid var(--btn-primary-bg)"
+                                : "1px solid var(--border-subtle)",
                               fontSize: 12,
                               fontWeight: 700,
-                              color: isSelected ? "#000000" : "#a1a1aa",
+                              color: isSelected ? "var(--btn-primary-text)" : "var(--text-secondary)",
                               cursor: "pointer",
                               transition: "all 0.2s ease",
                               boxShadow: isSelected
-                                ? "0 4px 14px rgba(255, 255, 255, 0.25)"
+                                ? "0 4px 14px rgba(0,0,0,0.15)"
                                 : "none",
                             }}
                           >
@@ -216,7 +219,7 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
                 </div>
 
                 {i < categoryGroups.length - 1 && (
-                  <div style={{ height: 1, background: "rgba(255, 255, 255, 0.08)", marginTop: 24 }} />
+                  <div style={{ height: 1, background: "var(--border-subtle)", marginTop: 24 }} />
                 )}
               </div>
             );
@@ -233,8 +236,9 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
           right: 0,
           padding: "16px 20px",
           paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
-          background:
-            "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.95) 30%)",
+          background: isDark
+            ? "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.95) 30%)"
+            : "linear-gradient(180deg, rgba(248,249,250,0) 0%, rgba(248,249,250,0.98) 30%)",
           display: "flex",
           justifyContent: "center",
         }}
@@ -247,15 +251,15 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
             maxWidth: 400,
             padding: "15px 16px",
             borderRadius: 30,
-            background: selectedCategory ? "#ffffff" : "#27272a",
-            color: selectedCategory ? "#000000" : "#71717a",
+            background: selectedCategory ? "var(--btn-primary-bg)" : "var(--border-subtle)",
+            color: selectedCategory ? "var(--btn-primary-text)" : "var(--text-muted)",
             border: "none",
             fontSize: 15,
             fontWeight: 800,
             cursor: selectedCategory ? "pointer" : "not-allowed",
             transition: "all 0.2s ease",
             boxShadow: selectedCategory
-              ? "0 4px 20px rgba(255, 255, 255, 0.2)"
+              ? "0 4px 20px rgba(0, 0, 0, 0.15)"
               : "none",
           }}
         >

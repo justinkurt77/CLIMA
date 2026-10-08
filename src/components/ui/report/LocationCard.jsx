@@ -20,11 +20,11 @@ export function LocationCard({
   return (
     <div
       style={{
-        background: "#121214",
+        background: "var(--bg-card)",
         borderRadius: 22,
         padding: "16px 18px",
-        boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
+        boxShadow: "0 6px 20px rgba(0,0,0,0.06)",
+        border: "1px solid var(--border-subtle)",
         marginBottom: 10,
         flexShrink: 0,
       }}
@@ -43,26 +43,26 @@ export function LocationCard({
             width: 28,
             height: 28,
             borderRadius: "50%",
-            background: "rgba(255, 255, 255, 0.1)",
-            border: "1px solid rgba(255, 255, 255, 0.15)",
+            background: "var(--border-subtle)",
+            border: "1px solid var(--border-subtle)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <MapPin size={14} color="#ffffff" />
+          <MapPin size={14} color="var(--text-primary)" />
         </div>
-        <span style={{ fontSize: 13, fontWeight: 800, color: "#ffffff" }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)" }}>
           Choose Location
         </span>
         <span
           style={{
             marginLeft: "auto",
             fontSize: 10,
-            color: "#ffffff",
+            color: "var(--text-secondary)",
             fontWeight: 800,
-            background: "rgba(255, 255, 255, 0.08)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
+            background: "var(--border-subtle)",
+            border: "1px solid var(--border-subtle)",
             padding: "2px 8px",
             borderRadius: 10,
             textTransform: "uppercase",
@@ -78,8 +78,8 @@ export function LocationCard({
         onClick={onOpenMap}
         style={{
           height: 150,
-          background: "#18181b",
-          border: "1px solid rgba(255, 255, 255, 0.12)",
+          background: "var(--bg-app)",
+          border: "1px solid var(--border-subtle)",
           borderRadius: 14,
           position: "relative",
           overflow: "hidden",
@@ -101,10 +101,10 @@ export function LocationCard({
           >
             <Loader
               size={24}
-              color="#ffffff"
+              color="var(--text-primary)"
               style={{ animation: "spin 0.8s linear infinite" }}
             />
-            <span style={{ fontSize: 12, color: "#a1a1aa", fontWeight: 600 }}>
+            <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 600 }}>
               Getting location…
             </span>
           </div>
@@ -112,7 +112,7 @@ export function LocationCard({
           <>
             {coords ? (
               <img
-                src={`https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/pin-s+ffffff(${coords.lng},${coords.lat})/${coords.lng},${coords.lat},17,0/600x320?access_token=${MAPBOX_TOKEN}`}
+                src={`https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-s+09090b(${coords.lng},${coords.lat})/${coords.lng},${coords.lat},17,0/600x320?access_token=${MAPBOX_TOKEN}`}
                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 alt="Map preview"
               />
@@ -121,7 +121,7 @@ export function LocationCard({
                 style={{
                   position: "absolute",
                   inset: 0,
-                  background: "#18181b",
+                  background: "var(--bg-app)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -129,9 +129,9 @@ export function LocationCard({
                   gap: 8,
                 }}
               >
-                <MapPin size={26} color="#ffffff" strokeWidth={1.8} />
+                <MapPin size={26} color="var(--text-primary)" strokeWidth={1.8} />
                 <span
-                  style={{ fontSize: 13, color: "#a1a1aa", fontWeight: 600 }}
+                  style={{ fontSize: 13, color: "var(--text-secondary)", fontWeight: 600 }}
                 >
                   Tap to pin location on map
                 </span>
@@ -153,7 +153,7 @@ export function LocationCard({
                   display: "flex",
                   alignItems: "center",
                   gap: 5,
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
                 }}
               >
                 <MapPin size={12} color="#ffffff" />
@@ -170,8 +170,8 @@ export function LocationCard({
           style={{
             marginBottom: 12,
             padding: "9px 12px",
-            background: "#18181b",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            background: "var(--bg-app)",
+            border: "1px solid var(--border-subtle)",
             borderRadius: 12,
             display: "flex",
             alignItems: "flex-start",
@@ -180,13 +180,13 @@ export function LocationCard({
         >
           <Crosshair
             size={14}
-            color="#ffffff"
+            color="var(--text-primary)"
             style={{ flexShrink: 0, marginTop: 2 }}
           />
           <span
             style={{
               fontSize: 11,
-              color: "#a1a1aa",
+              color: "var(--text-secondary)",
               lineHeight: 1.5,
               fontWeight: 500,
             }}
@@ -199,14 +199,14 @@ export function LocationCard({
         <div
           style={{
             marginBottom: 10,
-            color: "#ffffff",
+            color: "#ef4444",
             fontSize: 11,
             fontWeight: 700,
           }}
         >
           <AlertTriangle
             size={12}
-            color="#ffffff"
+            color="#ef4444"
             style={{ marginRight: 4, marginBottom: -2 }}
           />
           {errors.location}
@@ -230,12 +230,12 @@ export function LocationCard({
             width: "100%",
             padding: "12px 14px",
             borderRadius: 12,
-            border: "1px solid rgba(255, 255, 255, 0.12)",
+            border: "1px solid var(--border-subtle)",
             fontSize: 13,
             outline: "none",
-            color: "#ffffff",
+            color: "var(--text-primary)",
             fontFamily: "inherit",
-            background: "#18181b",
+            background: "var(--bg-app)",
             boxSizing: "border-box",
           }}
         />
@@ -256,13 +256,13 @@ export function LocationCard({
                   ? "12px 12px 0 0"
                   : 12,
               border: errors.addressLine2
-                ? "1px solid #ffffff"
-                : "1px solid rgba(255, 255, 255, 0.12)",
+                ? "1px solid #ef4444"
+                : "1px solid var(--border-subtle)",
               fontSize: 13,
               outline: "none",
-              color: "#ffffff",
+              color: "var(--text-primary)",
               fontFamily: "inherit",
-              background: "#18181b",
+              background: "var(--bg-app)",
               boxSizing: "border-box",
             }}
           />
@@ -273,14 +273,14 @@ export function LocationCard({
                 top: "100%",
                 left: 0,
                 right: 0,
-                background: "#18181b",
-                border: "1px solid rgba(255, 255, 255, 0.18)",
+                background: "var(--bg-card)",
+                border: "1px solid var(--border-subtle)",
                 borderTop: "none",
                 borderRadius: "0 0 12px 12px",
                 maxHeight: 160,
                 overflowY: "auto",
                 zIndex: 200,
-                boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
               }}
             >
               {barangayMatches.map((b) => (
@@ -290,7 +290,7 @@ export function LocationCard({
                   style={{
                     padding: "10px 14px",
                     fontSize: 13,
-                    color: "#ffffff",
+                    color: "var(--text-primary)",
                     cursor: "pointer",
                     fontWeight:
                       addressLine2.toLowerCase() === b.toLowerCase()
@@ -298,18 +298,18 @@ export function LocationCard({
                         : 500,
                     background:
                       addressLine2.toLowerCase() === b.toLowerCase()
-                        ? "rgba(255,255,255,0.12)"
-                        : "#18181b",
-                    borderBottom: "1px solid rgba(255,255,255,0.06)",
+                        ? "var(--border-subtle)"
+                        : "transparent",
+                    borderBottom: "1px solid var(--border-subtle)",
                   }}
                   onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = "rgba(255,255,255,0.08)")
+                    (e.currentTarget.style.background = "var(--border-subtle)")
                   }
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.background =
                       addressLine2.toLowerCase() === b.toLowerCase()
-                        ? "rgba(255,255,255,0.12)"
-                        : "#18181b")
+                        ? "var(--border-subtle)"
+                        : "transparent")
                   }
                 >
                   {b}
@@ -320,7 +320,7 @@ export function LocationCard({
           {errors.addressLine2 && (
             <div
               style={{
-                color: "#ffffff",
+                color: "#ef4444",
                 fontSize: 11,
                 marginTop: 4,
                 fontWeight: 700,
@@ -328,7 +328,7 @@ export function LocationCard({
             >
               <AlertTriangle
                 size={12}
-                color="#ffffff"
+                color="#ef4444"
                 style={{ marginRight: 4, marginBottom: -2 }}
               />
               {errors.addressLine2}

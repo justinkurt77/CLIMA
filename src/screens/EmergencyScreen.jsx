@@ -9,8 +9,10 @@ import {
   CarFront,
   HeartPulse,
 } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
 export default function EmergencyScreen() {
+  const { isDark } = useTheme();
   const departments = [
     {
       name: "Palayan City CDRRMO",
@@ -64,9 +66,10 @@ export default function EmergencyScreen() {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        background: "#000000",
+        background: "var(--bg-app)",
         fontFamily: "'Nunito', -apple-system, sans-serif",
         pointerEvents: "auto",
+        transition: "background-color 0.25s ease",
       }}
     >
       {/* Scrollable Content */}
@@ -85,28 +88,29 @@ export default function EmergencyScreen() {
         {/* Floating Header */}
         <div
           style={{
-            background: "rgba(16, 16, 18, 0.94)",
+            background: "var(--bg-glass)",
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
             borderRadius: 26,
-            border: "1px solid rgba(255, 255, 255, 0.12)",
+            border: "1px solid var(--border-medium)",
             margin: "12px 14px 6px",
             marginTop: "calc(12px + env(safe-area-inset-top, 0px))",
             padding: "20px 22px",
             flexShrink: 0,
-            boxShadow: "0 10px 30px rgba(0, 0, 0, 0.8)",
+            boxShadow: "var(--shadow-lg)",
+            transition: "all 0.25s ease",
           }}
         >
           <div
             style={{
               display: "inline-block",
-              background: "rgba(255, 255, 255, 0.1)",
-              border: "1px solid rgba(255, 255, 255, 0.18)",
+              background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)",
+              border: isDark ? "1px solid rgba(255, 255, 255, 0.18)" : "1px solid rgba(0, 0, 0, 0.1)",
               padding: "4px 10px",
               borderRadius: 12,
               fontSize: 10,
               fontWeight: 800,
-              color: "#ffffff",
+              color: "var(--text-primary)",
               letterSpacing: 0.8,
               textTransform: "uppercase",
               marginBottom: 8,
@@ -118,7 +122,7 @@ export default function EmergencyScreen() {
             style={{
               fontSize: 26,
               fontWeight: 900,
-              color: "#ffffff",
+              color: "var(--text-primary)",
               margin: "0 0 4px",
               lineHeight: 1.15,
               letterSpacing: -0.5,
@@ -128,7 +132,7 @@ export default function EmergencyScreen() {
           </h1>
           <p
             style={{
-              color: "#a1a1aa",
+              color: "var(--text-muted)",
               fontSize: 13,
               fontWeight: 600,
               margin: 0,
@@ -157,13 +161,14 @@ export default function EmergencyScreen() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: i * 0.05 }}
                 style={{
-                  background: "#121214",
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border-subtle)",
                   borderRadius: 22,
                   padding: "16px 18px",
                   display: "flex",
                   flexDirection: "column",
-                  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.5)",
+                  boxShadow: "var(--shadow-card)",
+                  transition: "all 0.25s ease",
                 }}
               >
                 {/* Dept Header */}
@@ -179,14 +184,14 @@ export default function EmergencyScreen() {
                       width: 42,
                       height: 42,
                       borderRadius: 14,
-                      background: "rgba(255, 255, 255, 0.08)",
-                      border: "1px solid rgba(255, 255, 255, 0.14)",
+                      background: "var(--bg-card-subtle)",
+                      border: "1px solid var(--border-medium)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       marginRight: 12,
                       flexShrink: 0,
-                      color: "#ffffff",
+                      color: "var(--text-primary)",
                     }}
                   >
                     <IconObj size={20} strokeWidth={2.2} />
@@ -196,7 +201,7 @@ export default function EmergencyScreen() {
                       style={{
                         fontSize: 16,
                         fontWeight: 800,
-                        color: "#ffffff",
+                        color: "var(--text-primary)",
                         margin: 0,
                         lineHeight: 1.2,
                       }}
@@ -206,7 +211,7 @@ export default function EmergencyScreen() {
                     <span
                       style={{
                         fontSize: 12,
-                        color: "#71717a",
+                        color: "var(--text-muted)",
                         fontWeight: 600,
                       }}
                     >
@@ -227,8 +232,8 @@ export default function EmergencyScreen() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        background: "rgba(255, 255, 255, 0.04)",
-                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        background: isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.03)",
+                        border: "1px solid var(--border-subtle)",
                         padding: "11px 14px",
                         borderRadius: 16,
                         textDecoration: "none",
@@ -239,7 +244,7 @@ export default function EmergencyScreen() {
                         style={{
                           fontSize: 14,
                           fontWeight: 800,
-                          color: "#f4f4f5",
+                          color: "var(--text-primary)",
                           letterSpacing: "0.5px",
                         }}
                       >
@@ -250,17 +255,17 @@ export default function EmergencyScreen() {
                           display: "flex",
                           alignItems: "center",
                           gap: 6,
-                          color: "#000000",
+                          color: "var(--btn-primary-text)",
                           fontWeight: 800,
                           fontSize: 12,
-                          background: "#ffffff",
+                          background: "var(--btn-primary-bg)",
                           padding: "6px 12px",
                           borderRadius: 20,
-                          boxShadow: "0 2px 8px rgba(255, 255, 255, 0.2)",
+                          boxShadow: "var(--shadow-card)",
                         }}
                       >
                         <span>Call</span>
-                        <Phone size={13} fill="#000000" color="#000000" />
+                        <Phone size={13} fill={isDark ? "#000000" : "#ffffff"} color={isDark ? "#000000" : "#ffffff"} />
                       </div>
                     </a>
                   ))}

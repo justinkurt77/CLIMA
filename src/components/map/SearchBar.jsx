@@ -6,6 +6,7 @@ import {
   PSA_NAME_MAP,
   BARANGAY_CENTROIDS,
 } from "../ui/report/reportConstants";
+import { useTheme } from "../../context/ThemeContext";
 
 export function useDebounce(value, delay) {
   const [dv, setDv] = useState(value);
@@ -107,6 +108,8 @@ export default function SearchBar({
     onSearchSelect(null);
     inputRef.current?.focus();
   };
+
+  const { isDark } = useTheme();
   const showDropdown = focused && (loading || results.length > 0);
 
   return (
@@ -121,10 +124,15 @@ export default function SearchBar({
             : isPill
               ? 40
               : 12,
-          background: "rgba(18, 18, 20, 0.94)",
+          background: isDark ? "rgba(18, 18, 20, 0.94)" : "rgba(255, 255, 255, 0.96)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
-          border: `1px solid ${focused ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.12)"}`,
+          border: isDark
+            ? `1px solid ${focused ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.12)"}`
+            : `1px solid ${focused ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.08)"}`,
+          boxShadow: isDark
+            ? "0 6px 20px rgba(0,0,0,0.5)"
+            : "0 6px 20px rgba(0,0,0,0.08)",
           transition: "border-color 0.2s",
           padding: isPill ? "8px 12px" : "10px 14px",
           height: isPill ? 56 : "auto",
@@ -135,8 +143,10 @@ export default function SearchBar({
             style={{
               width: isPill ? 40 : 14,
               height: isPill ? 40 : 14,
-              border: "2px solid rgba(255,255,255,0.2)",
-              borderTopColor: "white",
+              border: isDark
+                ? "2px solid rgba(255,255,255,0.2)"
+                : "2px solid rgba(0,0,0,0.15)",
+              borderTopColor: isDark ? "white" : "#09090b",
               borderRadius: "50%",
               animation: "spin 0.7s linear infinite",
               flexShrink: 0,
@@ -147,7 +157,7 @@ export default function SearchBar({
             style={{
               width: 40,
               height: 40,
-              background: "white",
+              background: isDark ? "white" : "#09090b",
               borderRadius: "50%",
               display: "flex",
               alignItems: "center",
@@ -155,12 +165,20 @@ export default function SearchBar({
               flexShrink: 0,
             }}
           >
-            <Search size={18} color="#000000" />
+            <Search size={18} color={isDark ? "#000000" : "#ffffff"} />
           </div>
         ) : (
           <Search
             size={14}
-            color={focused ? "white" : "rgba(255,255,255,0.7)"}
+            color={
+              focused
+                ? isDark
+                  ? "white"
+                  : "#09090b"
+                : isDark
+                  ? "rgba(255,255,255,0.7)"
+                  : "rgba(0,0,0,0.5)"
+            }
           />
         )}
         <input
@@ -178,7 +196,7 @@ export default function SearchBar({
             fontFamily: "Nunito, sans-serif",
             fontSize: 14,
             fontWeight: 700,
-            color: "white",
+            color: isDark ? "white" : "#09090b",
             marginLeft: isPill ? 4 : 0,
           }}
         />
@@ -193,7 +211,10 @@ export default function SearchBar({
               lineHeight: 0,
             }}
           >
-            <X size={16} color="rgba(255,255,255,0.7)" />
+            <X
+              size={16}
+              color={isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)"}
+            />
           </button>
         )}
       </div>
@@ -204,11 +225,15 @@ export default function SearchBar({
             top: "100%",
             left: 0,
             right: 0,
-            background: "#121214",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
+            background: isDark ? "#121214" : "#ffffff",
+            border: isDark
+              ? "1px solid rgba(255, 255, 255, 0.12)"
+              : "1px solid rgba(0, 0, 0, 0.1)",
             borderTop: "none",
             borderRadius: "0 0 12px 12px",
-            boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
+            boxShadow: isDark
+              ? "0 12px 30px rgba(0,0,0,0.6)"
+              : "0 12px 30px rgba(0,0,0,0.12)",
             overflow: "hidden",
             zIndex: 9999,
           }}
@@ -218,7 +243,7 @@ export default function SearchBar({
               style={{
                 padding: "12px 16px",
                 fontSize: 12,
-                color: "#a1a1aa",
+                color: isDark ? "#a1a1aa" : "#71717a",
                 fontWeight: 600,
               }}
             >
@@ -238,17 +263,21 @@ export default function SearchBar({
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                borderTop: "1px solid rgba(255,255,255,0.08)",
+                borderTop: isDark
+                  ? "1px solid rgba(255,255,255,0.08)"
+                  : "1px solid rgba(0,0,0,0.06)",
                 textAlign: "left",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#1c1c1f")
+                (e.currentTarget.style.background = isDark
+                  ? "#1c1c1f"
+                  : "#f4f4f5")
               }
               onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
             >
               <MapPin
                 size={13}
-                color="#ffffff"
+                color={isDark ? "#ffffff" : "#09090b"}
                 style={{ marginTop: 3, flexShrink: 0 }}
               />
               <div>
@@ -256,7 +285,7 @@ export default function SearchBar({
                   style={{
                     fontSize: 13,
                     fontWeight: 700,
-                    color: "#ffffff",
+                    color: isDark ? "#ffffff" : "#09090b",
                   }}
                 >
                   {feat.name}
@@ -264,7 +293,7 @@ export default function SearchBar({
                 <div
                   style={{
                     fontSize: 11,
-                    color: "#a1a1aa",
+                    color: isDark ? "#a1a1aa" : "#71717a",
                     marginTop: 2,
                     lineHeight: 1.4,
                   }}

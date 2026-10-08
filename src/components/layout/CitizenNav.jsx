@@ -1,5 +1,6 @@
 import { Home, MapPin, AlertTriangle, User } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTheme } from "../../context/ThemeContext";
 
 const NAV_ITEMS = [
   { id: "home", label: "Home", icon: Home },
@@ -9,6 +10,8 @@ const NAV_ITEMS = [
 ];
 
 export default function CitizenNav({ activeScreen, setActiveScreen }) {
+  const { isDark } = useTheme();
+
   return (
     <motion.nav
       initial={{ y: 80, opacity: 0 }}
@@ -24,20 +27,25 @@ export default function CitizenNav({ activeScreen, setActiveScreen }) {
         marginLeft: 14,
         marginRight: 14,
         borderRadius: 26,
-        background: "rgba(12, 12, 14, 0.94)",
+        background: "var(--nav-bg)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
-        border: "1px solid rgba(255, 255, 255, 0.12)",
-        boxShadow: "0 16px 40px rgba(0, 0, 0, 0.75)",
+        border: "1px solid var(--nav-border)",
+        boxShadow: "var(--shadow-lg)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-around",
         zIndex: 1000,
         padding: "0 8px",
+        transition: "background 0.25s ease, border-color 0.25s ease",
       }}
     >
       {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
         const isActive = activeScreen === id;
+        const iconColor = isActive 
+          ? (isDark ? "#ffffff" : "#09090b") 
+          : (isDark ? "#71717a" : "#71717a");
+
         return (
           <button
             key={id}
@@ -65,8 +73,8 @@ export default function CitizenNav({ activeScreen, setActiveScreen }) {
                 width: 42,
                 height: 34,
                 borderRadius: 14,
-                background: isActive ? "rgba(255, 255, 255, 0.14)" : "transparent",
-                border: isActive ? "1px solid rgba(255, 255, 255, 0.18)" : "1px solid transparent",
+                background: isActive ? "var(--nav-active-bg)" : "transparent",
+                border: isActive ? "1px solid var(--nav-active-border)" : "1px solid transparent",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -76,36 +84,20 @@ export default function CitizenNav({ activeScreen, setActiveScreen }) {
               <Icon
                 size={20}
                 strokeWidth={isActive ? 2.4 : 1.8}
-                color={isActive ? "#ffffff" : "#71717a"}
+                color={iconColor}
               />
             </motion.div>
             <span
               style={{
                 fontSize: 10,
                 fontWeight: isActive ? 800 : 600,
-                color: isActive ? "#ffffff" : "#71717a",
+                color: isActive ? "var(--text-primary)" : "var(--text-muted)",
                 letterSpacing: 0.2,
                 transition: "color 0.2s ease",
               }}
             >
               {label}
             </span>
-
-            {/* Active dot indicator */}
-            {isActive && (
-              <motion.div
-                layoutId="citizen-nav-dot"
-                style={{
-                  position: "absolute",
-                  top: 6,
-                  width: 4,
-                  height: 4,
-                  borderRadius: "50%",
-                  background: "#ffffff",
-                  boxShadow: "0 0 10px rgba(255, 255, 255, 0.9)",
-                }}
-              />
-            )}
           </button>
         );
       })}

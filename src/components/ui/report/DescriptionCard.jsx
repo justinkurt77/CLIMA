@@ -5,16 +5,16 @@ export function DescriptionCard({ description, errors, onChange }) {
   return (
     <div
       style={{
-        background: "#121214",
+        background: "var(--bg-card)",
         borderRadius: 22,
         padding: "16px 18px",
-        boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
+        boxShadow: "0 6px 20px rgba(0,0,0,0.06)",
+        border: "1px solid var(--border-subtle)",
         flexShrink: 0,
       }}
     >
       <CardHeader
-        icon={<Pencil size={14} color="#ffffff" />}
+        icon={<Pencil size={14} color="var(--text-primary)" />}
         label="What Happened?"
         badge="Required"
       />
@@ -27,15 +27,15 @@ export function DescriptionCard({ description, errors, onChange }) {
           height: 130,
           borderRadius: 14,
           border: errors.description
-            ? "1px solid #ffffff"
-            : "1px solid rgba(255, 255, 255, 0.12)",
+            ? "1px solid #ef4444"
+            : "1px solid var(--border-subtle)",
           padding: "12px 14px",
           fontSize: 13,
-          color: "#ffffff",
+          color: "var(--text-primary)",
           resize: "none",
           outline: "none",
           fontFamily: "inherit",
-          background: "#18181b",
+          background: "var(--bg-app)",
           boxSizing: "border-box",
           lineHeight: 1.6,
         }}
@@ -49,10 +49,10 @@ export function DescriptionCard({ description, errors, onChange }) {
         }}
       >
         {errors.description ? (
-          <div style={{ color: "#ffffff", fontSize: 11, fontWeight: 700 }}>
+          <div style={{ color: "#ef4444", fontSize: 11, fontWeight: 700 }}>
             <AlertTriangle
               size={12}
-              color="#ffffff"
+              color="#ef4444"
               style={{ marginRight: 4, marginBottom: -2 }}
             />
             {errors.description}
@@ -63,7 +63,7 @@ export function DescriptionCard({ description, errors, onChange }) {
         <div
           style={{
             fontSize: 11,
-            color: "#71717a",
+            color: "var(--text-muted)",
             fontWeight: 600,
           }}
         >

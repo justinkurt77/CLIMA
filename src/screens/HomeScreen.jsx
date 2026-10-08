@@ -18,8 +18,10 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
+  Moon,
 } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
+import { useTheme } from "../context/ThemeContext";
 
 const WEATHER_ICONS = {
   Sun,
@@ -45,6 +47,7 @@ export default function HomeScreen({
   userLocation,
   setActiveScreen,
 }) {
+  const { isDark, toggleTheme } = useTheme();
   const [currentTemp, setCurrentTemp] = useState(33);
   const [weatherInfo, setWeatherInfo] = useState({ msg: "Loading...", icon: "CloudSun", high: 35, low: 27 });
   const [humidity, setHumidity] = useState(68);
@@ -143,25 +146,25 @@ export default function HomeScreen({
     switch (status) {
       case "resolved":
         return {
-          bg: "#ffffff",
-          color: "#000000",
+          bg: isDark ? "#ffffff" : "#09090b",
+          color: isDark ? "#000000" : "#ffffff",
           border: "none",
           label: "Resolved",
           Icon: CheckCircle2,
         };
       case "inprogress":
         return {
-          bg: "rgba(255, 255, 255, 0.12)",
-          color: "#ffffff",
-          border: "1px solid rgba(255, 255, 255, 0.2)",
+          bg: isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)",
+          color: isDark ? "#ffffff" : "#09090b",
+          border: isDark ? "1px solid rgba(255, 255, 255, 0.2)" : "1px solid rgba(0, 0, 0, 0.12)",
           label: "In Progress",
           Icon: Clock,
         };
       default:
         return {
-          bg: "rgba(255, 255, 255, 0.05)",
-          color: "#a1a1aa",
-          border: "1px solid rgba(255, 255, 255, 0.1)",
+          bg: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
+          color: isDark ? "#a1a1aa" : "#71717a",
+          border: isDark ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid rgba(0, 0, 0, 0.08)",
           label: "Pending",
           Icon: AlertTriangle,
         };
@@ -173,10 +176,11 @@ export default function HomeScreen({
       style={{
         height: "100%",
         overflowY: "auto",
-        background: "#000000",
-        color: "#ffffff",
+        background: "var(--bg-app)",
+        color: "var(--text-primary)",
         fontFamily: "'Nunito', -apple-system, sans-serif",
         paddingBottom: 96,
+        transition: "background-color 0.25s ease, color 0.25s ease",
       }}
       className="hide-scroll"
     >
@@ -197,43 +201,74 @@ export default function HomeScreen({
               alignItems: "center",
               gap: 5,
               fontSize: 12,
-              color: "#a1a1aa",
+              color: "var(--text-muted)",
               fontWeight: 600,
               marginBottom: 4,
             }}
           >
-            <MapPin size={13} color="#ffffff" strokeWidth={2.2} />
+            <MapPin size={13} color="var(--text-primary)" strokeWidth={2.2} />
             <span>Palayan City, Nueva Ecija</span>
           </div>
-          <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#ffffff", letterSpacing: -0.3 }}>
+          <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--text-primary)", letterSpacing: -0.3 }}>
             {greeting}, {displayName}!
           </p>
         </div>
 
-        {/* Modern Black & White Report Button */}
-        <motion.button
-          whileTap={{ scale: 0.94 }}
-          onClick={onOpenModal}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            background: "#ffffff",
-            color: "#000000",
-            border: "none",
-            borderRadius: 22,
-            padding: "9px 18px",
-            fontSize: 13,
-            fontWeight: 800,
-            cursor: "pointer",
-            boxShadow: "0 4px 18px rgba(255, 255, 255, 0.18)",
-            flexShrink: 0,
-            transition: "all 0.2s ease",
-          }}
-        >
-          <Plus size={15} strokeWidth={3} color="#000000" />
-          Report
-        </motion.button>
+        {/* Action Controls: Theme Toggle & Report Button */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          {/* Light / Dark Mode Toggle Button */}
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-medium)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "var(--text-primary)",
+              boxShadow: "var(--shadow-card)",
+              transition: "all 0.2s ease",
+            }}
+          >
+            {isDark ? (
+              <Sun size={17} strokeWidth={2.2} color="#ffffff" />
+            ) : (
+              <Moon size={17} strokeWidth={2.2} color="#09090b" />
+            )}
+          </motion.button>
+
+          {/* Report Button */}
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            onClick={onOpenModal}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: "var(--btn-primary-bg)",
+              color: "var(--btn-primary-text)",
+              border: "none",
+              borderRadius: 22,
+              padding: "9px 18px",
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: "pointer",
+              boxShadow: "var(--shadow-card)",
+              flexShrink: 0,
+              transition: "all 0.2s ease",
+            }}
+          >
+            <Plus size={15} strokeWidth={3} color="var(--btn-primary-text)" />
+            Report
+          </motion.button>
+        </div>
       </div>
 
       {/* ── HERO WEATHER CARD ── */}
@@ -242,14 +277,17 @@ export default function HomeScreen({
           style={{
             borderRadius: 28,
             padding: "26px 24px 22px",
-            background: "linear-gradient(150deg, #161619 0%, #0d0d0f 60%, #060607 100%)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
-            boxShadow: "0 20px 50px rgba(0, 0, 0, 0.75)",
+            background: isDark
+              ? "linear-gradient(150deg, #161619 0%, #0d0d0f 60%, #060607 100%)"
+              : "linear-gradient(150deg, #ffffff 0%, #f4f4f6 60%, #e9eaec 100%)",
+            border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.08)",
+            boxShadow: "var(--shadow-card)",
             position: "relative",
             overflow: "hidden",
+            transition: "all 0.25s ease",
           }}
         >
-          {/* Subtle monochrome ambient glow behind temp */}
+          {/* Subtle ambient glow behind temp */}
           <div
             style={{
               position: "absolute",
@@ -258,7 +296,9 @@ export default function HomeScreen({
               width: 220,
               height: 220,
               borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 70%)",
+              background: isDark
+                ? "radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 70%)"
+                : "radial-gradient(circle, rgba(0, 0, 0, 0.04) 0%, transparent 70%)",
               pointerEvents: "none",
             }}
           />
@@ -272,43 +312,43 @@ export default function HomeScreen({
                   fontWeight: 900,
                   lineHeight: 1,
                   letterSpacing: -3.5,
-                  color: "#ffffff",
+                  color: "var(--text-primary)",
                 }}
               >
                 {currentTemp}°
               </div>
               <div
-                style={{ marginTop: 8, fontSize: 18, fontWeight: 700, color: "#f4f4f5" }}
+                style={{ marginTop: 8, fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}
               >
                 {weatherInfo.msg}
               </div>
-              <div style={{ marginTop: 4, fontSize: 12, color: "#71717a", fontWeight: 600 }}>
+              <div style={{ marginTop: 4, fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>
                 Palayan City
               </div>
 
               <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
                 <span
                   style={{
-                    background: "rgba(255, 255, 255, 0.1)",
-                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)",
+                    border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.08)",
                     padding: "4px 10px",
                     borderRadius: 12,
                     fontSize: 12,
                     fontWeight: 700,
-                    color: "#ffffff",
+                    color: "var(--text-primary)",
                   }}
                 >
                   H {weatherInfo.high}°
                 </span>
                 <span
                   style={{
-                    background: "rgba(255, 255, 255, 0.05)",
-                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    background: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.03)",
+                    border: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.05)",
                     padding: "4px 10px",
                     borderRadius: 12,
                     fontSize: 12,
                     fontWeight: 700,
-                    color: "#a1a1aa",
+                    color: "var(--text-muted)",
                   }}
                 >
                   L {weatherInfo.low}°
@@ -320,9 +360,9 @@ export default function HomeScreen({
             <div style={{ textAlign: "right" }}>
               <div
                 style={{
-                  background: "rgba(255, 255, 255, 0.1)",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                  color: "#ffffff",
+                  background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)",
+                  border: isDark ? "1px solid rgba(255, 255, 255, 0.2)" : "1px solid rgba(0, 0, 0, 0.12)",
+                  color: "var(--text-primary)",
                   padding: "6px 12px",
                   borderRadius: 14,
                   fontSize: 11,
@@ -335,17 +375,17 @@ export default function HomeScreen({
               </div>
               <div
                 style={{
-                  background: "rgba(255, 255, 255, 0.04)",
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  background: isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.03)",
+                  border: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.06)",
                   borderRadius: 14,
                   padding: "8px 12px",
                   textAlign: "center",
                 }}
               >
-                <div style={{ fontSize: 9, color: "#71717a", fontWeight: 800, letterSpacing: 0.5, marginBottom: 4 }}>
+                <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 800, letterSpacing: 0.5, marginBottom: 4 }}>
                   HEAT INDEX
                 </div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
+                <div style={{ fontSize: 20, fontWeight: 900, color: "var(--text-primary)" }}>
                   {currentTemp + 6}°C
                 </div>
               </div>
@@ -360,7 +400,7 @@ export default function HomeScreen({
               gap: 8,
               marginTop: 20,
               paddingTop: 16,
-              borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+              borderTop: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.06)",
               position: "relative",
               zIndex: 1,
             }}
@@ -378,15 +418,15 @@ export default function HomeScreen({
                     justifyContent: "center",
                     gap: 4,
                     fontSize: 10,
-                    color: "#71717a",
+                    color: "var(--text-muted)",
                     fontWeight: 700,
                     marginBottom: 4,
                   }}
                 >
-                  <Icon size={12} color="#ffffff" />
+                  <Icon size={12} color="var(--text-primary)" />
                   {label}
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#f4f4f5" }}>{val}</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>{val}</div>
               </div>
             ))}
           </div>
@@ -397,10 +437,12 @@ export default function HomeScreen({
       <div style={{ padding: "14px 16px 0" }}>
         <div
           style={{
-            background: "#101012",
+            background: "var(--bg-card)",
             borderRadius: 22,
             padding: "16px 12px",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-card)",
+            transition: "all 0.25s ease",
           }}
         >
           <div
@@ -425,23 +467,25 @@ export default function HomeScreen({
                     padding: "10px 12px",
                     borderRadius: 16,
                     background: isFirst
-                      ? "rgba(255, 255, 255, 0.14)"
+                      ? (isDark ? "rgba(255, 255, 255, 0.14)" : "rgba(0, 0, 0, 0.07)")
                       : "transparent",
-                    border: isFirst ? "1px solid rgba(255, 255, 255, 0.24)" : "1px solid transparent",
+                    border: isFirst
+                      ? (isDark ? "1px solid rgba(255, 255, 255, 0.24)" : "1px solid rgba(0, 0, 0, 0.12)")
+                      : "1px solid transparent",
                     minWidth: 54,
                     flexShrink: 0,
                     transition: "all 0.2s ease",
                   }}
                 >
-                  <span style={{ fontSize: 11, color: isFirst ? "#ffffff" : "#71717a", fontWeight: isFirst ? 700 : 600 }}>
+                  <span style={{ fontSize: 11, color: isFirst ? "var(--text-primary)" : "var(--text-muted)", fontWeight: isFirst ? 700 : 600 }}>
                     {slot.time}
                   </span>
-                  <Sun size={20} color={isFirst ? "#ffffff" : "#71717a"} strokeWidth={1.8} />
+                  <Sun size={20} color={isFirst ? "var(--text-primary)" : "var(--text-muted)"} strokeWidth={1.8} />
                   <span
                     style={{
                       fontSize: 14,
                       fontWeight: 800,
-                      color: isFirst ? "#ffffff" : "#a1a1aa",
+                      color: isFirst ? "var(--text-primary)" : "var(--text-secondary)",
                     }}
                   >
                     {slot.temp}°
@@ -457,10 +501,12 @@ export default function HomeScreen({
       <div style={{ padding: "14px 16px 0" }}>
         <div
           style={{
-            background: "#101012",
+            background: "var(--bg-card)",
             borderRadius: 22,
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            border: "1px solid var(--border-subtle)",
             overflow: "hidden",
+            boxShadow: "var(--shadow-card)",
+            transition: "all 0.25s ease",
           }}
         >
           {weeklyDays.map((d, idx) => {
@@ -473,29 +519,31 @@ export default function HomeScreen({
                   alignItems: "center",
                   justifyContent: "space-between",
                   padding: "13px 20px",
-                  borderBottom: idx < 6 ? "1px solid rgba(255, 255, 255, 0.05)" : "none",
-                  background: d.isToday ? "rgba(255, 255, 255, 0.05)" : "transparent",
+                  borderBottom: idx < 6 ? "1px solid var(--border-subtle)" : "none",
+                  background: d.isToday
+                    ? (isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.03)")
+                    : "transparent",
                 }}
               >
                 <span
                   style={{
                     fontSize: 13,
                     fontWeight: d.isToday ? 800 : 600,
-                    color: d.isToday ? "#ffffff" : "#a1a1aa",
+                    color: d.isToday ? "var(--text-primary)" : "var(--text-secondary)",
                     width: 52,
                   }}
                 >
                   {d.day}
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
-                  <Icon size={18} color={d.isToday ? "#ffffff" : "#71717a"} strokeWidth={1.8} />
+                  <Icon size={18} color={d.isToday ? "var(--text-primary)" : "var(--text-muted)"} strokeWidth={1.8} />
                   {d.rain && (
                     <span
                       style={{
                         fontSize: 10,
-                        color: "#ffffff",
+                        color: "var(--text-primary)",
                         fontWeight: 700,
-                        background: "rgba(255, 255, 255, 0.1)",
+                        background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)",
                         padding: "2px 6px",
                         borderRadius: 6,
                       }}
@@ -505,10 +553,10 @@ export default function HomeScreen({
                   )}
                 </div>
                 <div style={{ display: "flex", gap: 14 }}>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: "#ffffff" }}>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>
                     {d.high}°
                   </span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "#71717a" }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-muted)" }}>
                     {d.low}°
                   </span>
                 </div>
@@ -522,10 +570,12 @@ export default function HomeScreen({
       <div style={{ padding: "14px 16px 0" }}>
         <div
           style={{
-            background: "#101012",
+            background: "var(--bg-card)",
             borderRadius: 22,
             padding: "18px 18px",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-card)",
+            transition: "all 0.25s ease",
           }}
         >
           <div
@@ -536,14 +586,14 @@ export default function HomeScreen({
               marginBottom: 12,
             }}
           >
-            <span style={{ fontSize: 14, fontWeight: 800, color: "#ffffff" }}>
+            <span style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>
               Live Conditions
             </span>
             <span
               style={{
-                background: "rgba(255, 255, 255, 0.1)",
-                border: "1px solid rgba(255, 255, 255, 0.2)",
-                color: "#ffffff",
+                background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)",
+                border: isDark ? "1px solid rgba(255, 255, 255, 0.2)" : "1px solid rgba(0, 0, 0, 0.1)",
+                color: "var(--text-primary)",
                 fontSize: 10,
                 fontWeight: 800,
                 padding: "3px 10px",
@@ -560,25 +610,25 @@ export default function HomeScreen({
                 <Line
                   type="natural"
                   dataKey="v"
-                  stroke="#ffffff"
+                  stroke={isDark ? "#ffffff" : "#09090b"}
                   strokeWidth={2.2}
-                  dot={{ r: 3, fill: "#ffffff", stroke: "#000000", strokeWidth: 2 }}
-                  activeDot={{ r: 5, fill: "#ffffff" }}
+                  dot={{ r: 3, fill: isDark ? "#ffffff" : "#09090b", stroke: isDark ? "#000000" : "#ffffff", strokeWidth: 2 }}
+                  activeDot={{ r: 5, fill: isDark ? "#ffffff" : "#09090b" }}
                 />
                 <Tooltip
                   contentStyle={{
-                    background: "#18181b",
-                    border: "1px solid rgba(255,255,255,0.18)",
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border-medium)",
                     borderRadius: 8,
                     fontSize: 12,
-                    color: "#ffffff",
+                    color: "var(--text-primary)",
                   }}
                   formatter={(v) => [`${v}°C`, "Temp"]}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div style={{ fontSize: 11, color: "#71717a", textAlign: "center" }}>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "center" }}>
             Temperature trend today · Updated live
           </div>
         </div>
@@ -592,13 +642,16 @@ export default function HomeScreen({
           style={{
             borderRadius: 22,
             padding: "18px 20px",
-            background: "linear-gradient(145deg, #18181b 0%, #0d0d0f 100%)",
-            border: "1px solid rgba(255, 255, 255, 0.14)",
+            background: isDark
+              ? "linear-gradient(145deg, #18181b 0%, #0d0d0f 100%)"
+              : "linear-gradient(145deg, #ffffff 0%, #f4f4f6 100%)",
+            border: "1px solid var(--border-medium)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             cursor: "pointer",
-            boxShadow: "0 8px 30px rgba(0, 0, 0, 0.6)",
+            boxShadow: "var(--shadow-card)",
+            transition: "all 0.25s ease",
           }}
         >
           <div>
@@ -606,7 +659,7 @@ export default function HomeScreen({
               style={{
                 fontSize: 10,
                 fontWeight: 800,
-                color: "#a1a1aa",
+                color: "var(--text-muted)",
                 textTransform: "uppercase",
                 letterSpacing: 0.8,
                 marginBottom: 4,
@@ -614,10 +667,10 @@ export default function HomeScreen({
             >
               Community Map
             </div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: "#ffffff" }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>
               Palayan Hotspots
             </div>
-            <div style={{ fontSize: 12, color: "#71717a", marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
               {userReports.length > 0 ? userReports.length : "12"} active incident reports
             </div>
           </div>
@@ -626,13 +679,13 @@ export default function HomeScreen({
               width: 48,
               height: 48,
               borderRadius: "50%",
-              background: "rgba(255, 255, 255, 0.1)",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
+              background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)",
+              border: isDark ? "1px solid rgba(255, 255, 255, 0.2)" : "1px solid rgba(0, 0, 0, 0.12)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#ffffff",
-              boxShadow: "0 0 20px rgba(255, 255, 255, 0.08)",
+              color: "var(--text-primary)",
+              boxShadow: "0 0 20px rgba(0, 0, 0, 0.05)",
             }}
           >
             <Compass size={22} strokeWidth={2.2} />
@@ -644,10 +697,12 @@ export default function HomeScreen({
       <div style={{ padding: "14px 16px 0" }}>
         <div
           style={{
-            background: "#101012",
+            background: "var(--bg-card)",
             borderRadius: 22,
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            border: "1px solid var(--border-subtle)",
             overflow: "hidden",
+            boxShadow: "var(--shadow-card)",
+            transition: "all 0.25s ease",
           }}
         >
           {/* Header */}
@@ -661,7 +716,7 @@ export default function HomeScreen({
               cursor: "pointer",
             }}
           >
-            <span style={{ fontSize: 14, fontWeight: 800, color: "#ffffff" }}>
+            <span style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>
               Recent Reports
             </span>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -673,7 +728,7 @@ export default function HomeScreen({
                 style={{
                   background: "none",
                   border: "none",
-                  color: "#ffffff",
+                  color: "var(--text-primary)",
                   fontSize: 11,
                   fontWeight: 700,
                   cursor: "pointer",
@@ -682,9 +737,9 @@ export default function HomeScreen({
                 See All ›
               </button>
               {showReports ? (
-                <ChevronUp size={16} color="#71717a" />
+                <ChevronUp size={16} color="var(--text-muted)" />
               ) : (
-                <ChevronDown size={16} color="#71717a" />
+                <ChevronDown size={16} color="var(--text-muted)" />
               )}
             </div>
           </div>
@@ -709,7 +764,7 @@ export default function HomeScreen({
                         alignItems: "center",
                         justifyContent: "space-between",
                         padding: "12px 18px",
-                        borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+                        borderTop: "1px solid var(--border-subtle)",
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -718,22 +773,22 @@ export default function HomeScreen({
                             width: 34,
                             height: 34,
                             borderRadius: 12,
-                            background: "rgba(255, 255, 255, 0.08)",
-                            border: "1px solid rgba(255, 255, 255, 0.1)",
+                            background: "var(--bg-card-subtle)",
+                            border: "1px solid var(--border-subtle)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            color: "#ffffff",
+                            color: "var(--text-primary)",
                             flexShrink: 0,
                           }}
                         >
                           <StatusIcon size={16} />
                         </div>
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: "#f4f4f5" }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>
                             {r.title || r.category}
                           </div>
-                          <div style={{ fontSize: 11, color: "#71717a", marginTop: 1 }}>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
                             {r.location || "Palayan City"}
                           </div>
                         </div>
@@ -779,8 +834,8 @@ export default function HomeScreen({
                     key={i}
                     style={{
                       flex: 1,
-                      background: "rgba(255, 255, 255, 0.04)",
-                      border: "1px solid rgba(255, 255, 255, 0.06)",
+                      background: "var(--bg-card-subtle)",
+                      border: "1px solid var(--border-subtle)",
                       borderRadius: 12,
                       padding: "8px 10px",
                       textAlign: "center",
@@ -791,12 +846,14 @@ export default function HomeScreen({
                         width: 8,
                         height: 8,
                         borderRadius: "50%",
-                        background: isResolved ? "#ffffff" : "#71717a",
-                        boxShadow: isResolved ? "0 0 6px rgba(255,255,255,0.7)" : "none",
+                        background: isResolved
+                          ? (isDark ? "#ffffff" : "#09090b")
+                          : "var(--text-muted)",
+                        boxShadow: isResolved ? `0 0 6px ${isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.3)"}` : "none",
                         margin: "0 auto 5px",
                       }}
                     />
-                    <div style={{ fontSize: 10, color: "#a1a1aa", fontWeight: 600, lineHeight: 1.2 }}>
+                    <div style={{ fontSize: 10, color: "var(--text-secondary)", fontWeight: 600, lineHeight: 1.2 }}>
                       {r.title?.split(" ").slice(0, 2).join(" ") || r.category}
                     </div>
                   </div>

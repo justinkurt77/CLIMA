@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { MapPin, ChevronDown } from "lucide-react";
 import SearchBar from "./SearchBar";
+import { useTheme } from "../../context/ThemeContext";
 
 export function MapOverlayActions({
   isMapFullView,
@@ -13,6 +14,7 @@ export function MapOverlayActions({
   userLocation,
   mapRef,
 }) {
+  const { isDark } = useTheme();
   return (
     <AnimatePresence>
       {isMapFullView && (
@@ -66,7 +68,9 @@ export function MapOverlayActions({
                 style={{
                   width: "100%",
                   height: "100%",
-                  background: "rgba(18, 18, 20, 0.94)",
+                  background: isDark
+                    ? "rgba(18, 18, 20, 0.94)"
+                    : "rgba(255, 255, 255, 0.96)",
                   backdropFilter: "blur(16px)",
                   WebkitBackdropFilter: "blur(16px)",
                   borderRadius: 40,
@@ -75,8 +79,12 @@ export function MapOverlayActions({
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 8,
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                  boxShadow: "0 6px 20px rgba(0,0,0,0.5)",
+                  border: isDark
+                    ? "1px solid rgba(255, 255, 255, 0.12)"
+                    : "1px solid rgba(0, 0, 0, 0.08)",
+                  boxShadow: isDark
+                    ? "0 6px 20px rgba(0,0,0,0.5)"
+                    : "0 6px 20px rgba(0,0,0,0.08)",
                   cursor: "pointer",
                   paddingTop: 14,
                   paddingBottom: 14,
@@ -89,7 +97,7 @@ export function MapOverlayActions({
                         width: 8,
                         height: 8,
                         borderRadius: "50%",
-                        background: "#ffffff",
+                        background: isDark ? "#ffffff" : "#09090b",
                       }}
                     />
                   )}
@@ -116,7 +124,7 @@ export function MapOverlayActions({
                 </div>
                 <ChevronDown
                   size={14}
-                  color="white"
+                  color={isDark ? "white" : "#09090b"}
                   style={{
                     flexShrink: 0,
                     opacity: 0.7,
@@ -139,16 +147,24 @@ export function MapOverlayActions({
                       top: "calc(100% + 10px)",
                       right: 0,
                       width: 160,
-                      background: "#121214",
-                      border: "1px solid rgba(255, 255, 255, 0.12)",
+                      background: isDark ? "#121214" : "#ffffff",
+                      border: isDark
+                        ? "1px solid rgba(255, 255, 255, 0.12)"
+                        : "1px solid rgba(0, 0, 0, 0.1)",
                       borderRadius: 18,
                       padding: 8,
-                      boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
+                      boxShadow: isDark
+                        ? "0 12px 30px rgba(0,0,0,0.6)"
+                        : "0 12px 30px rgba(0,0,0,0.12)",
                       zIndex: 100,
                     }}
                   >
                     {[
-                      { id: "pending", label: "Pending", bg: "#ffffff" },
+                      {
+                        id: "pending",
+                        label: "Pending",
+                        bg: isDark ? "#ffffff" : "#09090b",
+                      },
                       { id: "inprogress", label: "In Progress", bg: "#a1a1aa" },
                       { id: "resolved", label: "Resolved", bg: "#52525b" },
                     ].map((item) => {
@@ -170,7 +186,11 @@ export function MapOverlayActions({
                             width: "100%",
                             padding: "10px 12px",
                             borderRadius: 12,
-                            background: isActive ? "rgba(255, 255, 255, 0.1)" : "transparent",
+                            background: isActive
+                              ? isDark
+                                ? "rgba(255, 255, 255, 0.1)"
+                                : "rgba(0, 0, 0, 0.05)"
+                              : "transparent",
                             border: "none",
                             cursor: "pointer",
                             marginBottom: 4,
@@ -182,7 +202,11 @@ export function MapOverlayActions({
                               width: 14,
                               height: 14,
                               borderRadius: 4,
-                              background: isActive ? item.bg : "#27272a",
+                              background: isActive
+                                ? item.bg
+                                : isDark
+                                  ? "#27272a"
+                                  : "#e4e4e7",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -195,7 +219,7 @@ export function MapOverlayActions({
                                   width: 6,
                                   height: 6,
                                   borderRadius: "50%",
-                                  background: "#000000",
+                                  background: isDark ? "#000000" : "#ffffff",
                                 }}
                               />
                             )}
@@ -204,7 +228,13 @@ export function MapOverlayActions({
                             style={{
                               fontSize: 12,
                               fontWeight: 700,
-                              color: isActive ? "#ffffff" : "#71717a",
+                              color: isActive
+                                ? isDark
+                                  ? "#ffffff"
+                                  : "#09090b"
+                                : isDark
+                                  ? "#71717a"
+                                  : "#71717a",
                             }}
                           >
                             {item.label}
