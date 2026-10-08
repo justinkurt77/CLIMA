@@ -19,7 +19,7 @@ export function DescriptionCard({ description, errors, onChange }) {
         badge="Required"
       />
       <textarea
-        placeholder="Describe the incident clearly — include key details like time, what you observed, and how it affects the community."
+        placeholder="Describe the issue clearly — include key details like time, what you observed, and how it affects the community."
         value={description}
         onChange={(e) => onChange(e.target.value)}
         style={{

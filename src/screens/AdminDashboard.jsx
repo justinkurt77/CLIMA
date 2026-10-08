@@ -4,7 +4,7 @@ import {
   BarChart3, FileText, Users, LogOut, Map as MapIcon, RefreshCw,
   Plus, Trash2, Building, CheckCircle, Clock, TrendingUp, Search, X, Edit2, Check, Download,
   MapPin, Calendar, Phone, AlertCircle, ChevronRight, ChevronDown, Navigation,
-  ShieldAlert
+  ShieldAlert, Activity, Megaphone, HeartPulse
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect from "../components/ui/CustomSelect";
@@ -160,10 +160,13 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
 
   const tabs = [
     { id: "overview", label: "Dashboard", icon: <BarChart3 size={18} /> },
-    { id: "reports", label: "Reports", icon: <FileText size={18} /> },
+    { id: "reports", label: "Citizen Reports", icon: <FileText size={18} /> },
+    { id: "advisories", label: "Official Advisories", icon: <Megaphone size={18} /> },
+    { id: "hospitals", label: "Hospital Monitoring", icon: <HeartPulse size={18} /> },
     ...(isSuperadmin ? [
       { id: "users", label: "Users", icon: <Users size={18} /> },
       { id: "settings", label: "Offices & Categories", icon: <Building size={18} /> },
+      { id: "logs", label: "Activity Logs", icon: <Activity size={18} /> },
     ] : []),
   ];
 
@@ -233,8 +236,11 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>
               {activeTab === "overview" && "Dashboard Overview"}
               {activeTab === "reports" && "Citizen Reports"}
+              {activeTab === "advisories" && "Official Advisories"}
+              {activeTab === "hospitals" && "Hospital Capacity & Health Analytics"}
               {activeTab === "users" && "User Management"}
               {activeTab === "settings" && "Offices & Categories"}
+              {activeTab === "logs" && "System Activity Logs"}
             </h2>
             {!isSuperadmin && adminDepartment?.name && activeTab === "overview" && (
               <p style={{ margin: 0, fontSize: 11, color: S.muted, fontWeight: 700 }}>Showing reports for {adminDepartment.name}</p>
@@ -277,6 +283,24 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             <ReportsTab reports={reports} onUpdate={() => fetchData(true)} S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} onViewReport={setDetailReport} />
           </motion.div>
 
+          <motion.div
+            variants={tabVariants}
+            initial="inactive"
+            animate={activeTab === "advisories" ? "active" : "inactive"}
+            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+          >
+            <AdvisoriesTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} />
+          </motion.div>
+
+          <motion.div
+            variants={tabVariants}
+            initial="inactive"
+            animate={activeTab === "hospitals" ? "active" : "inactive"}
+            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+          >
+            <HospitalsTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} />
+          </motion.div>
+
           {isSuperadmin && (
             <>
               <motion.div
@@ -295,6 +319,15 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                 style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
               >
                 <SettingsTab departments={departments} categories={categories} onUpdate={() => fetchData(true)} S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} />
+              </motion.div>
+
+              <motion.div
+                variants={tabVariants}
+                initial="inactive"
+                animate={activeTab === "logs" ? "active" : "inactive"}
+                style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+              >
+                <ActivityLogsTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} />
               </motion.div>
             </>
           )}
@@ -1240,5 +1273,487 @@ function DashboardReportModal({ report, S, onClose, onStatusChange }) {
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+/* ── Activity Logs Tab ── */
+function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle }) {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [usersMap, setUsersMap] = useState({});
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  const fetchLogs = async () => {
+    setLoading(true);
+    try {
+      // Fetch logs
+      const { data: logsData } = await supabase
+        .from("audit_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      // Fetch users to map actor_id to name
+      const { data: usersData } = await supabase.rpc("get_auth_users");
+      const uMap = {};
+      if (usersData) {
+        usersData.forEach(u => {
+          uMap[u.id] = u.full_name || u.email;
+        });
+      }
+
+      setLogs(logsData || []);
+      setUsersMap(uMap);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <p style={{ textAlign: "center", color: S.muted, padding: 40 }}>Loading logs…</p>;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={cardStyle}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div>
+            <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Audit Logs</h3>
+            <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Tracking system modifications for accountability and compliance.</p>
+          </div>
+          <button onClick={fetchLogs} style={{ padding: "8px 12px", borderRadius: 8, border: `1px solid ${S.border}`, background: "#fff", cursor: "pointer", fontFamily: S.font, fontWeight: 700, fontSize: 13, color: S.text, display: "flex", alignItems: "center", gap: 6 }}>
+            <RefreshCw size={14} /> Refresh
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {logs.map(log => {
+            const actorName = log.actor_id ? (usersMap[log.actor_id] || "Unknown User") : "System / Guest";
+            const actionColor = log.action === "DELETE" ? "#ef4444" : log.action === "INSERT" ? "#10b981" : "#3b82f6";
+            const actionBg = log.action === "DELETE" ? "#fef2f2" : log.action === "INSERT" ? "#ecfdf5" : "#eff6ff";
+            
+            return (
+              <div key={log.id} style={{ padding: "14px 16px", borderRadius: 12, border: `1px solid ${S.border}`, background: "#fafcf9", display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ padding: "4px 10px", borderRadius: 6, background: actionBg, color: actionColor, fontSize: 11, fontWeight: 900 }}>{log.action}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "#18181b" }}>{log.table_name}</span>
+                  </div>
+                  <span style={{ fontSize: 11, color: S.muted, fontWeight: 700 }}>
+                    {new Date(log.created_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}
+                  </span>
+                </div>
+                
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: S.muted, fontWeight: 600 }}>
+                  <Users size={14} /> {actorName} 
+                  <span style={{ color: "#d4d4d8" }}>|</span> 
+                  <span style={{ fontFamily: "monospace", fontSize: 11 }}>ID: {log.record_id.slice(0, 8)}...</span>
+                </div>
+              </div>
+            );
+          })}
+          {logs.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No audit logs recorded yet.</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Advisories Tab (Phase 3) ── */
+function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
+  const [advisories, setAdvisories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [newAdvisory, setNewAdvisory] = useState({ title: "", content: "", category: "General", status: "Draft", scheduled_for: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [usersMap, setUsersMap] = useState({});
+  const [filterStatus, setFilterStatus] = useState("All");
+
+  useEffect(() => {
+    fetchAdvisories();
+  }, [adminDepartment, isSuperadmin]);
+
+  const fetchAdvisories = async () => {
+    setLoading(true);
+    try {
+      let query = supabase.from("advisories").select("*, departments(name)").order("created_at", { ascending: false });
+      
+      const { data } = await query;
+      setAdvisories(data || []);
+
+      const { data: usersData } = await supabase.rpc("get_auth_users");
+      const uMap = {};
+      if (usersData) {
+        usersData.forEach(u => { uMap[u.id] = u.full_name || u.email; });
+      }
+      setUsersMap(uMap);
+    } catch (e) {
+      console.error("Advisories fetch error:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!newAdvisory.title || !newAdvisory.content) return;
+    setSubmitting(true);
+    
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      
+      const insertData = {
+        title: newAdvisory.title,
+        content: newAdvisory.content,
+        category: newAdvisory.category,
+        status: isSuperadmin ? "Published" : "Pending", // Superadmins auto-publish, others pending approval
+        author_id: userData?.user?.id,
+      };
+
+      if (!isSuperadmin && adminDepartment?.id) {
+        insertData.department_id = adminDepartment.id;
+      }
+      if (isSuperadmin) insertData.published_at = new Date().toISOString();
+      if (newAdvisory.scheduled_for) insertData.scheduled_for = new Date(newAdvisory.scheduled_for).toISOString();
+
+      await supabase.from("advisories").insert(insertData);
+      
+      setNewAdvisory({ title: "", content: "", category: "General", status: "Draft", scheduled_for: "" });
+      setShowForm(false);
+      fetchAdvisories();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const updateStatus = async (id, status) => {
+    const payload = { status };
+    if (status === "Published") {
+      const { data: userData } = await supabase.auth.getUser();
+      payload.approved_by = userData?.user?.id;
+      payload.published_at = new Date().toISOString();
+    }
+    await supabase.from("advisories").update(payload).eq("id", id);
+    fetchAdvisories();
+  };
+
+  const deleteAdvisory = async (id) => {
+    if (confirm("Are you sure you want to delete this advisory?")) {
+      await supabase.from("advisories").delete().eq("id", id);
+      fetchAdvisories();
+    }
+  };
+
+  const filteredAdvisories = advisories.filter(a => filterStatus === "All" || a.status === filterStatus);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {showForm ? (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Create Advisory</h3>
+            <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
+          </div>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Headline</label>
+              <input value={newAdvisory.title} onChange={e => setNewAdvisory({...newAdvisory, title: e.target.value})} placeholder="E.g. Heavy Rainfall Warning" required style={inputStyle} />
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Category</label>
+                <CustomSelect
+                  value={newAdvisory.category}
+                  onChange={v => setNewAdvisory({...newAdvisory, category: v})}
+                  options={[{value: "Weather", label: "Weather"}, {value: "Water", label: "Water Interruption"}, {value: "Power", label: "Power Outage"}, {value: "Health", label: "Health / Safety"}, {value: "General", label: "General"}]}
+                  accent={S.accent}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Schedule (Optional)</label>
+                <input type="datetime-local" value={newAdvisory.scheduled_for} onChange={e => setNewAdvisory({...newAdvisory, scheduled_for: e.target.value})} style={inputStyle} />
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Content</label>
+              <textarea value={newAdvisory.content} onChange={e => setNewAdvisory({...newAdvisory, content: e.target.value})} placeholder="Advisory details..." required style={{ ...inputStyle, minHeight: 120, resize: "vertical" }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
+              <button type="button" onClick={() => setShowForm(false)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: "#fff", fontWeight: 800, cursor: "pointer", fontFamily: S.font }}>Cancel</button>
+              <button type="submit" disabled={submitting} style={btnPrimary}>
+                <Check size={16} /> {submitting ? "Submitting..." : (isSuperadmin ? "Publish Now" : "Submit for Approval")}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", ...cardStyle, padding: "16px 24px" }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Official Advisories</h3>
+            <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage public announcements and warnings.</p>
+          </div>
+          <button onClick={() => setShowForm(true)} style={btnPrimary}><Plus size={16} /> New Advisory</button>
+        </div>
+      )}
+
+      {!showForm && (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 900 }}>{filteredAdvisories.length} Advisories</h3>
+            <CustomSelect
+              value={filterStatus}
+              onChange={setFilterStatus}
+              options={[{value: "All", label: "All Statuses"}, {value: "Published", label: "Published"}, {value: "Pending", label: "Pending Approval"}, {value: "Draft", label: "Drafts"}, {value: "Archived", label: "Archived"}]}
+              compact accent={S.accent} style={{ minWidth: 150 }}
+            />
+          </div>
+          
+          {loading ? <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p> : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {filteredAdvisories.map(adv => {
+                const isPublished = adv.status === "Published";
+                const isPending = adv.status === "Pending";
+                const author = usersMap[adv.author_id] || "Unknown User";
+                
+                return (
+                  <div key={adv.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ padding: "2px 8px", borderRadius: 20, background: S.accentBg, color: S.accent, fontSize: 10, fontWeight: 900, textTransform: "uppercase" }}>{adv.category}</span>
+                          {adv.departments?.name && <span style={{ fontSize: 10, color: S.muted, fontWeight: 700 }}>• {adv.departments.name}</span>}
+                          {adv.scheduled_for && <span style={{ fontSize: 10, color: "#d97706", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}><Clock size={10} /> Scheduled: {new Date(adv.scheduled_for).toLocaleString()}</span>}
+                        </div>
+                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#18181b" }}>{adv.title}</h4>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800, 
+                          background: isPublished ? "#ecfdf5" : isPending ? "#fffbeb" : "#f4f4f5", 
+                          color: isPublished ? "#10b981" : isPending ? "#d97706" : "#71717a" }}>
+                          {adv.status}
+                        </span>
+                        
+                        {(isSuperadmin || isPending) && (
+                          <CustomSelect
+                            value={adv.status}
+                            onChange={(s) => updateStatus(adv.id, s)}
+                            options={[{value: "Pending", label: "Pending"}, {value: "Published", label: "Publish"}, {value: "Archived", label: "Archive"}]}
+                            compact accent={S.accent} style={{ minWidth: 110 }}
+                          />
+                        )}
+                        <button onClick={() => deleteAdvisory(adv.id)} style={btnDanger}><Trash2 size={16} /></button>
+                      </div>
+                    </div>
+                    <p style={{ margin: "0 0 12px", fontSize: 13, color: "#3f3f46", lineHeight: 1.5 }}>{adv.content}</p>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: S.muted, fontWeight: 600 }}>
+                      <span>Author: {author}</span>
+                      <span>Created: {new Date(adv.created_at).toLocaleString()}</span>
+                    </div>
+                  </div>
+                );
+              })}
+              {filteredAdvisories.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No advisories found.</p>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Hospitals Tab (Phase 5) ── */
+function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
+  const [hospitals, setHospitals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [formData, setFormData] = useState({ name: "", location: "", total_beds: 0, available_beds: 0, heat_stroke_cases: 0, heat_exhaustion_cases: 0, dehydration_cases: 0 });
+
+  useEffect(() => {
+    fetchHospitals();
+  }, [adminDepartment, isSuperadmin]);
+
+  const fetchHospitals = async () => {
+    setLoading(true);
+    try {
+      let query = supabase.from("hospitals").select("*").order("name");
+      const { data } = await query;
+      setHospitals(data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const payload = {
+      name: formData.name,
+      location: formData.location,
+      total_beds: parseInt(formData.total_beds) || 0,
+      available_beds: parseInt(formData.available_beds) || 0,
+      heat_stroke_cases: parseInt(formData.heat_stroke_cases) || 0,
+      heat_exhaustion_cases: parseInt(formData.heat_exhaustion_cases) || 0,
+      dehydration_cases: parseInt(formData.dehydration_cases) || 0,
+      last_updated: new Date().toISOString()
+    };
+
+    if (editId) {
+      await supabase.from("hospitals").update(payload).eq("id", editId);
+    } else {
+      if (adminDepartment?.id) payload.department_id = adminDepartment.id;
+      await supabase.from("hospitals").insert(payload);
+    }
+    
+    setShowForm(false);
+    setEditId(null);
+    fetchHospitals();
+  };
+
+  const editHospital = (h) => {
+    setFormData({ name: h.name, location: h.location || "", total_beds: h.total_beds, available_beds: h.available_beds, heat_stroke_cases: h.heat_stroke_cases, heat_exhaustion_cases: h.heat_exhaustion_cases, dehydration_cases: h.dehydration_cases });
+    setEditId(h.id);
+    setShowForm(true);
+  };
+
+  const deleteHospital = async (id) => {
+    if (confirm("Delete this hospital record?")) {
+      await supabase.from("hospitals").delete().eq("id", id);
+      fetchHospitals();
+    }
+  };
+
+  const totalHeatStroke = hospitals.reduce((sum, h) => sum + (h.heat_stroke_cases || 0), 0);
+  const totalExhaustion = hospitals.reduce((sum, h) => sum + (h.heat_exhaustion_cases || 0), 0);
+  const totalDehydration = hospitals.reduce((sum, h) => sum + (h.dehydration_cases || 0), 0);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <div style={{ ...cardStyle, background: "#fff1f2", borderColor: "#fecdd3" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#e11d48", textTransform: "uppercase" }}>Heat Stroke</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#9f1239" }}>{totalHeatStroke}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Heat Exhaustion</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#9a3412" }}>{totalExhaustion}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#f0f9ff", borderColor: "#bae6fd" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#0284c7", textTransform: "uppercase" }}>Dehydration</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#075985" }}>{totalDehydration}</p>
+        </div>
+      </div>
+
+      {showForm ? (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>{editId ? "Update Hospital" : "Add Hospital"}</h3>
+            <button onClick={() => { setShowForm(false); setEditId(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
+          </div>
+          <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Hospital Name</label>
+                <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required style={inputStyle} />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Location</label>
+                <input value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Total Beds</label>
+                <input type="number" min="0" value={formData.total_beds} onChange={e => setFormData({...formData, total_beds: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Available Beds</label>
+                <input type="number" min="0" value={formData.available_beds} onChange={e => setFormData({...formData, available_beds: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Heat Stroke Cases</label>
+                <input type="number" min="0" value={formData.heat_stroke_cases} onChange={e => setFormData({...formData, heat_stroke_cases: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Heat Exhaustion Cases</label>
+                <input type="number" min="0" value={formData.heat_exhaustion_cases} onChange={e => setFormData({...formData, heat_exhaustion_cases: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Dehydration Cases</label>
+                <input type="number" min="0" value={formData.dehydration_cases} onChange={e => setFormData({...formData, dehydration_cases: e.target.value})} style={inputStyle} />
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
+              <button type="submit" style={btnPrimary}><Check size={16} /> Save</button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Hospitals & Capacity</h3>
+              <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage hospital availability and track health analytics.</p>
+            </div>
+            <button onClick={() => { setFormData({ name: "", location: "", total_beds: 0, available_beds: 0, heat_stroke_cases: 0, heat_exhaustion_cases: 0, dehydration_cases: 0 }); setShowForm(true); }} style={btnPrimary}>
+              <Plus size={16} /> Add Hospital
+            </button>
+          </div>
+          
+          {loading ? <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p> : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {hospitals.map(h => {
+                const capacityPercent = h.total_beds > 0 ? ((h.total_beds - h.available_beds) / h.total_beds) * 100 : 0;
+                const capacityColor = capacityPercent > 90 ? "#ef4444" : capacityPercent > 70 ? "#d97706" : "#22c55e";
+                return (
+                  <div key={h.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9", display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#18181b", display: "flex", alignItems: "center", gap: 6 }}>
+                          <HeartPulse size={16} color="#ef4444" /> {h.name}
+                        </h4>
+                        <p style={{ margin: "4px 0 0", fontSize: 12, color: S.muted, fontWeight: 600 }}><MapPin size={12} /> {h.location}</p>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => editHospital(h)} style={{ background: "none", border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: "pointer", color: S.text }}><Edit2 size={14} /></button>
+                        <button onClick={() => deleteHospital(h.id)} style={btnDanger}><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
+                      <div style={{ flex: 1, minWidth: 150 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: 11, fontWeight: 800 }}>
+                          <span style={{ color: S.muted }}>Bed Capacity</span>
+                          <span style={{ color: capacityColor }}>{h.available_beds} / {h.total_beds} available</span>
+                        </div>
+                        <div style={{ height: 8, background: "#e4e4e7", borderRadius: 4, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${capacityPercent}%`, background: capacityColor, borderRadius: 4 }} />
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: "flex", gap: 12 }}>
+                        <div style={{ textAlign: "center" }}>
+                          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase" }}>Heat Stroke</p>
+                          <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#e11d48" }}>{h.heat_stroke_cases}</p>
+                        </div>
+                        <div style={{ textAlign: "center" }}>
+                          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase" }}>Exhaustion</p>
+                          <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#ea580c" }}>{h.heat_exhaustion_cases}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {hospitals.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No hospitals found.</p>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

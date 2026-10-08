@@ -116,7 +116,7 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
             lineHeight: 1.25,
           }}
         >
-          Select incident category
+          Select report category
         </h1>
 
         {loading ? (

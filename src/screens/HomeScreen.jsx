@@ -209,7 +209,7 @@ export default function HomeScreen({
             <div className="desktop-loc-date">{formattedDate}</div>
           </div>
 
-          {/* Right: Search, Report Incident Button, and Theme Toggle */}
+          {/* Right: Search, Report Button, and Theme Toggle */}
           <div className="desktop-header-actions">
             {/* Search Button & Expandable Input */}
             <div className="desktop-search-wrapper">
@@ -247,7 +247,7 @@ export default function HomeScreen({
               className="desktop-report-btn"
             >
               <Plus size={16} strokeWidth={2.6} />
-              <span>Report Incident</span>
+              <span>Submit Report</span>
             </motion.button>
 
             {/* Theme Toggle Button */}
@@ -901,7 +901,7 @@ export default function HomeScreen({
                 Palayan Hotspots
               </div>
               <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                {userReports.length > 0 ? userReports.length : "12"} active incident reports
+                {userReports.length > 0 ? userReports.length : "12"} active climate reports
               </div>
             </div>
             <div
