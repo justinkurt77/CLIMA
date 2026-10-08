@@ -27,7 +27,7 @@ function buildTheme(accent, name = "") {
     muted: `rgba(${Math.round(r * 0.4)},${Math.round(g * 0.4)},${Math.round(b * 0.4)},0.55)`,
     card: "#fff",
     title: name ? `${name} Dashboard` : "Admin Console",
-    subtitle: name || "PalaSumbong Portal",
+    subtitle: name || "CLIMA Portal",
     accentBg: `rgba(${r},${g},${b},0.08)`,
   };
 }
@@ -40,7 +40,7 @@ const DEPT_DEFAULTS = {
 
 const DEFAULT_THEME = {
   accent: "#373D20", bg: "#f4f6f1", border: "#e8ebe4", text: "#1a2612", muted: "rgba(55,61,32,0.5)", card: "#ffffff",
-  title: "Admin Console", subtitle: "PalaSumbong Portal", accentBg: "rgba(55,61,32,0.06)",
+  title: "Admin Console", subtitle: "CLIMA Portal", accentBg: "rgba(55,61,32,0.06)",
 };
 
 function getTheme(dept) {
@@ -446,7 +446,7 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
 
     doc.setFontSize(18);
     doc.setTextColor(S.accent || "#000000");
-    doc.text("PalaSumbong Citizen Reports", 14, 22);
+    doc.text("CLIMA Citizen Reports", 14, 22);
     
     doc.setFontSize(11);
     doc.setTextColor(100);
@@ -469,7 +469,7 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
       }
     });
 
-    doc.save(`PalaSumbong_Reports_${new Date().getTime()}.pdf`);
+    doc.save(`CLIMA_Reports_${new Date().getTime()}.pdf`);
   };
 
   const updateStatus = async (id, status) => {
@@ -655,10 +655,10 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
     try {
       const { error } = await supabase.rpc('admin_reset_user_password', {
         target_user_id: selectedUser.id,
-        new_password: 'PalaSumbong123!'
+        new_password: 'CLIMA123!'
       });
       if (error) throw error;
-      setMsg({ type: "success", text: `Password for "${selectedUser.full_name || selectedUser.email}" has been reset to PalaSumbong123!` });
+      setMsg({ type: "success", text: `Password for "${selectedUser.full_name || selectedUser.email}" has been reset to CLIMA123!` });
       setResetOpen(false);
       setSelectedUser(null);
     } catch (err) {
@@ -797,7 +797,7 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
                 Are you sure you want to reset the password for <strong style={{ fontWeight: 800 }}>{selectedUser.full_name || selectedUser.email}</strong>?
               </p>
               <div style={{ background: "#fffbeb", border: "1px solid #fef3c7", borderRadius: 8, padding: 12, marginBottom: 20, fontSize: 13, color: "#92400e" }}>
-                Their password will be set to: <strong style={{ background: "#fef3c7", padding: "2px 6px", borderRadius: 4, fontFamily: "monospace", fontSize: 14 }}>PalaSumbong123!</strong>
+                Their password will be set to: <strong style={{ background: "#fef3c7", padding: "2px 6px", borderRadius: 4, fontFamily: "monospace", fontSize: 14 }}>CLIMA123!</strong>
                 <br /><br />
                 They will be locked out of their account until they log in with this temporary password and choose a new one.
               </div>

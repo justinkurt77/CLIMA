@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: "autoUpdate",
       devOptions: { enabled: true },
       manifest: {
-        name: "PalaSumbong",
-        short_name: "PalaSumbong",
-        description: "Community issue reporting app for Palayanos.",
+        name: "CLIMA - Climate Information Monitoring and Awareness",
+        short_name: "CLIMA",
+        description: "Climate Information Monitoring and Awareness",
         theme_color: "#f5f3f0",
         background_color: "#f5f3f0",
         display: "fullscreen",

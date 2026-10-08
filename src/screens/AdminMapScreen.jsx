@@ -493,7 +493,7 @@ export default function AdminMapScreen({
                       textTransform: "uppercase",
                     }}
                   >
-                    PalaSumbong Portal
+                    CLIMA Portal
                   </p>
                 </div>
               </div>

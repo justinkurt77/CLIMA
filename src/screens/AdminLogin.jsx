@@ -221,7 +221,7 @@ export default function AdminLogin({ onLogin }) {
             letterSpacing: 1,
             textTransform: "uppercase"
           }}>
-            {step === 'force_reset' ? "Required for new accounts" : "PalaSumbong System"}
+            {step === 'force_reset' ? "Required for new accounts" : "CLIMA System"}
           </p>
         </div>
 
