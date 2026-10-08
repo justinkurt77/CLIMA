@@ -60,29 +60,28 @@
 - [x] Public Health Advisories (Integrated with Phase 3)
 
 ### PHASE 6 - CDRRMO OPERATIONS
-- [ ] Dispatch Tracking
-- [ ] Rescue Operations Dashboard
-- [ ] Emergency Incident Management
-- [ ] Ambulance Monitoring
-- [ ] GIS Incident Layer
+- [x] Dispatch Tracking
+- [x] Evacuation Center Management
+- [x] Relief Goods Inventory
+- [x] Resource Allocation
 
 ### PHASE 7 - BFP OPERATIONS
-- [ ] Fire Incident Tracking
-- [ ] Fire Risk Dashboard
-- [ ] Fire Analytics
-- [ ] Fire Dispatch Monitoring
+- [x] Fire Station Management
+- [x] Resource Tracking (Fire Trucks & Personnel)
+- [x] BFP Operations Dashboard
+- [x] Hydrant Monitoring Database
 
 ### PHASE 8 - WATER UTILITY MODULE
-- [ ] Water Interruption Scheduling
-- [ ] Tanker Dispatch Tracking
-- [ ] Water Advisory Management
-- [ ] Water Facility Mapping
+- [x] Water Facility Mapping (Pumping Stations & Reservoirs)
+- [x] Facility Status Tracking (Operational, Maintenance, Offline)
+- [x] Water Interruption Database
+- [x] Tanker Dispatch Tracking
 
 ### PHASE 9 - POWER UTILITY MODULE
-- [ ] Power Interruption Scheduling
-- [ ] Feeder Monitoring
-- [ ] Restoration Tracking
-- [ ] Outage Analytics
+- [x] Feeder Monitoring
+- [x] Power Interruption Scheduling
+- [x] Restoration Tracking
+- [x] Outage Analytics
 
 ### PHASE 10 - GIS EXPANSION
 - [ ] Barangay Boundaries
