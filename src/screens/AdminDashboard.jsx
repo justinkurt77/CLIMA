@@ -1463,13 +1463,31 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
       if (isSuperadmin) insertData.published_at = new Date().toISOString();
       if (newAdvisory.scheduled_for) insertData.scheduled_for = new Date(newAdvisory.scheduled_for).toISOString();
 
-      await supabase.from("advisories").insert(insertData);
+      const { data, error } = await supabase.from("advisories").insert(insertData);
+      
+      if (error) {
+        console.error("Insert error:", error);
+        alert(`Failed to submit advisory: ${error.message}`);
+        return;
+      }
+      
+      console.log("Advisory submitted successfully:", data);
       
       setNewAdvisory({ title: "", content: "", category: "General", status: "Draft", scheduled_for: "" });
       setShowForm(false);
+      
+      // Set filter to show pending items if admin submitted for approval
+      if (!isSuperadmin) {
+        setFilterStatus("Pending");
+      }
+      
       fetchAdvisories();
+      
+      // Show success message
+      alert(isSuperadmin ? "Advisory published successfully!" : "Advisory submitted for approval!");
     } catch (err) {
-      console.error(err);
+      console.error("Submit error:", err);
+      alert(`Error: ${err.message}`);
     } finally {
       setSubmitting(false);
     }

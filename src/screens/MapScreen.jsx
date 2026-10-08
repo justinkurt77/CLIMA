@@ -85,7 +85,9 @@ import { MapOverlayActions } from "../components/map/MapOverlayActions";
 import { MapPopupContent } from "../components/map/MapPopupContent";
 import { PhotoLightbox } from "../components/map/PhotoLightbox";
 import { DescriptionModal } from "../components/map/DescriptionModal";
+import { LayerControls } from "../components/map/LayerControls";
 import { useTheme } from "../context/ThemeContext";
+import { supabase } from "../lib/supabase";
 
 function MapScreen({
   onOpenModal,
@@ -119,9 +121,79 @@ function MapScreen({
   const mapRef = useRef(null);
   const hasJumped = useRef(false);
 
+  // Layer Management States
+  const [activeLayers, setActiveLayers] = useState({
+    barangays: true,
+    heatmap: false,
+    reports: true,
+    hospitals: false,
+    fireStations: false,
+    evacuationCenters: false,
+    waterFacilities: false,
+    powerFeeders: false,
+    hotels: false,
+    restaurants: false,
+    attractions: false,
+  });
+
+  // Data States for Dynamic Layers
+  const [hospitals, setHospitals] = useState([]);
+  const [tourismData, setTourismData] = useState({
+    hotels: [],
+    restaurants: [],
+    attractions: [],
+  });
+
   useEffect(() => {
     setMapStyleId(isDark ? "dark-v11" : "streets-v12");
   }, [isDark]);
+
+  const toggleLayer = (layerId) => {
+    setActiveLayers((prev) => ({ ...prev, [layerId]: !prev[layerId] }));
+  };
+
+  // Load Hospitals from Supabase
+  useEffect(() => {
+    const fetchHospitals = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("hospitals")
+          .select("*")
+          .not("lat", "is", null)
+          .not("lng", "is", null);
+        
+        if (error) throw error;
+        setHospitals(data || []);
+      } catch (err) {
+        console.error("Failed to load hospitals:", err);
+      }
+    };
+
+    fetchHospitals();
+  }, []);
+
+  // Load Tourism Data
+  useEffect(() => {
+    const loadTourismData = async () => {
+      try {
+        const [hotelsRes, restaurantsRes, attractionsRes] = await Promise.all([
+          fetch("/tourism-data/Hotels_14.json").then(r => r.json()).catch(() => ({ features: [] })),
+          fetch("/tourism-data/Resto_8.json").then(r => r.json()).catch(() => ({ features: [] })),
+          fetch("/tourism-data/Attraction_12.json").then(r => r.json()).catch(() => ({ features: [] })),
+        ]);
+
+        setTourismData({
+          hotels: hotelsRes.features || [],
+          restaurants: restaurantsRes.features || [],
+          attractions: attractionsRes.features || [],
+        });
+      } catch (err) {
+        console.error("Failed to load tourism data:", err);
+      }
+    };
+
+    loadTourismData();
+  }, []);
 
   const closePopup = () => {
     setIsExiting(true);
@@ -268,6 +340,21 @@ function MapScreen({
     return activeFilters.includes(r.status);
   });
 
+  // Generate heatmap GeoJSON from reports
+  const heatmapGeoJSON = {
+    type: "FeatureCollection",
+    features: allReports.map((report) => ({
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates: [report.lng, report.lat],
+      },
+      properties: {
+        weight: report.status === "pending" ? 3 : report.status === "inprogress" ? 2 : 1,
+      },
+    })),
+  };
+
   // Reverse geocode and zoom whenever a pin is selected
   useEffect(() => {
     if (!selectedReport?.lat || !selectedReport?.lng) {
@@ -345,6 +432,13 @@ function MapScreen({
         flexDirection: "column",
       }}
     >
+      {/* Layer Controls */}
+      <LayerControls
+        activeLayers={activeLayers}
+        onToggleLayer={toggleLayer}
+        isMapFullView={isMapFullView}
+      />
+
       <MapOverlayActions
         isMapFullView={isMapFullView}
         onOpenModal={onOpenModal}
@@ -396,22 +490,151 @@ function MapScreen({
           )}
           {mapStyleId === "streets-v12" && <Layer {...buildingsLayer} />}
 
-          <Source
-            id="palayan-barangays"
-            type="geojson"
-            data="/palayan-barangays.geojson"
-          >
-            <Layer
-              id="barangay-outlines"
-              type="line"
-              paint={{
-                "line-color": mapStyleId === "dark-v11" ? "#ffffff" : mapStyleId === "streets-v12" ? "#000000" : "#4ADE80",
-                "line-width": 1.5,
-                "line-opacity": mapStyleId === "dark-v11" ? 0.6 : 0.75,
-                "line-dasharray": [3, 2],
+          {/* Barangay Boundaries */}
+          {activeLayers.barangays && (
+            <Source
+              id="palayan-barangays"
+              type="geojson"
+              data="/palayan-barangays.geojson"
+            >
+              <Layer
+                id="barangay-outlines"
+                type="line"
+                paint={{
+                  "line-color": mapStyleId === "dark-v11" ? "#ffffff" : mapStyleId === "streets-v12" ? "#000000" : "#4ADE80",
+                  "line-width": 1.5,
+                  "line-opacity": mapStyleId === "dark-v11" ? 0.6 : 0.75,
+                  "line-dasharray": [3, 2],
+                }}
+              />
+            </Source>
+          )}
+
+          {/* Incident Heatmap Layer */}
+          {activeLayers.heatmap && allReports.length > 0 && (
+            <Source
+              id="incident-heatmap"
+              type="geojson"
+              data={heatmapGeoJSON}
+            >
+              <Layer
+                id="heatmap-layer"
+                type="heatmap"
+                paint={{
+                  // Increase weight as diameter breast height increases
+                  "heatmap-weight": ["get", "weight"],
+                  // Increase intensity as zoom level increases
+                  "heatmap-intensity": [
+                    "interpolate",
+                    ["linear"],
+                    ["zoom"],
+                    0, 1,
+                    15, 3
+                  ],
+                  // Color ramp for heatmap
+                  "heatmap-color": [
+                    "interpolate",
+                    ["linear"],
+                    ["heatmap-density"],
+                    0, "rgba(236, 222, 239, 0)",
+                    0.2, "rgb(208, 209, 230)",
+                    0.4, "rgb(166, 189, 219)",
+                    0.6, "rgb(103, 169, 207)",
+                    0.8, "rgb(28, 144, 153)",
+                    1, "rgb(1, 108, 89)"
+                  ],
+                  // Radius of each heatmap point
+                  "heatmap-radius": [
+                    "interpolate",
+                    ["linear"],
+                    ["zoom"],
+                    0, 2,
+                    15, 20
+                  ],
+                  // Transition from heatmap to circle layer
+                  "heatmap-opacity": [
+                    "interpolate",
+                    ["linear"],
+                    ["zoom"],
+                    7, 1,
+                    15, 0.8
+                  ]
+                }}
+              />
+            </Source>
+          )}
+
+          {/* Tourism: Hotels Layer */}
+          {activeLayers.hotels && tourismData.hotels.length > 0 && (
+            <Source
+              id="tourism-hotels"
+              type="geojson"
+              data={{
+                type: "FeatureCollection",
+                features: tourismData.hotels,
               }}
-            />
-          </Source>
+            >
+              <Layer
+                id="hotels-layer"
+                type="circle"
+                paint={{
+                  "circle-radius": 8,
+                  "circle-color": "#8B5CF6",
+                  "circle-stroke-width": 2,
+                  "circle-stroke-color": "#ffffff",
+                  "circle-opacity": 0.8,
+                }}
+              />
+            </Source>
+          )}
+
+          {/* Tourism: Restaurants Layer */}
+          {activeLayers.restaurants && tourismData.restaurants.length > 0 && (
+            <Source
+              id="tourism-restaurants"
+              type="geojson"
+              data={{
+                type: "FeatureCollection",
+                features: tourismData.restaurants,
+              }}
+            >
+              <Layer
+                id="restaurants-layer"
+                type="circle"
+                paint={{
+                  "circle-radius": 8,
+                  "circle-color": "#EC4899",
+                  "circle-stroke-width": 2,
+                  "circle-stroke-color": "#ffffff",
+                  "circle-opacity": 0.8,
+                }}
+              />
+            </Source>
+          )}
+
+          {/* Tourism: Attractions Layer */}
+          {activeLayers.attractions && tourismData.attractions.length > 0 && (
+            <Source
+              id="tourism-attractions"
+              type="geojson"
+              data={{
+                type: "FeatureCollection",
+                features: tourismData.attractions,
+              }}
+            >
+              <Layer
+                id="attractions-layer"
+                type="circle"
+                paint={{
+                  "circle-radius": 8,
+                  "circle-color": "#10B981",
+                  "circle-stroke-width": 2,
+                  "circle-stroke-color": "#ffffff",
+                  "circle-opacity": 0.8,
+                }}
+              />
+            </Source>
+          )}
 
           {userLocation && (
             <Marker
@@ -432,7 +655,8 @@ function MapScreen({
             </Marker>
           )}
 
-          {allReports.map((report) => (
+          {/* Report Pins - Only show if reports layer is active */}
+          {activeLayers.reports && allReports.map((report) => (
             <Marker
               key={report.id}
               longitude={report.lng}
@@ -453,6 +677,58 @@ function MapScreen({
                 color={STATUS_COLORS[report.status]}
                 icon={report.icon}
               />
+            </Marker>
+          ))}
+
+          {/* Hospital Markers */}
+          {activeLayers.hospitals && hospitals.map((hospital) => (
+            <Marker
+              key={`hospital-${hospital.id}`}
+              longitude={hospital.lng}
+              latitude={hospital.lat}
+              anchor="bottom"
+            >
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  cursor: "pointer",
+                }}
+                title={hospital.name}
+              >
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    background: "#EF4444",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "3px solid #ffffff",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                    fontSize: 18,
+                  }}
+                >
+                  🏥
+                </div>
+                <div
+                  style={{
+                    marginTop: 4,
+                    padding: "2px 6px",
+                    background: "rgba(239, 68, 68, 0.9)",
+                    color: "#ffffff",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    borderRadius: 4,
+                    whiteSpace: "nowrap",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  {hospital.name}
+                </div>
+              </div>
             </Marker>
           ))}
 
