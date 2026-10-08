@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 import { useTheme } from "../context/ThemeContext";
+import { supabase } from "../lib/supabase";
 
 const WEATHER_ICONS = {
   Sun,
@@ -65,6 +66,8 @@ export default function HomeScreen({
   const [showReports, setShowReports] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchInput, setShowSearchInput] = useState(false);
+  const [advisories, setAdvisories] = useState([]);
+  const [showAdvisories, setShowAdvisories] = useState(true);
 
   const firstName = session?.user?.user_metadata?.first_name;
   const displayName = firstName || "Palayano";
@@ -153,6 +156,49 @@ export default function HomeScreen({
       })
       .catch(() => {});
   }, [userLocation]);
+
+  // Fetch published advisories
+  useEffect(() => {
+    const fetchAdvisories = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("advisories")
+          .select("*")
+          .eq("status", "Published")
+          .order("published_at", { ascending: false })
+          .limit(5);
+        
+        if (!error && data) {
+          setAdvisories(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch advisories:", err);
+      }
+    };
+
+    fetchAdvisories();
+
+    // Subscribe to real-time updates
+    const subscription = supabase
+      .channel("public_advisories")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "advisories",
+          filter: "status=eq.Published",
+        },
+        () => {
+          fetchAdvisories();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const recentReports =
     userReports?.length > 0
@@ -613,6 +659,172 @@ export default function HomeScreen({
               transition: "all 0.25s ease",
             }}
           >
+
+        {/* ── OFFICIAL ADVISORIES SECTION ── */}
+        {advisories.length > 0 && (
+          <div style={{ padding: "16px 16px 0" }}>
+            <div
+              style={{
+                background: "var(--bg-card)",
+                borderRadius: 22,
+                padding: "18px",
+                border: "1px solid var(--border-subtle)",
+                boxShadow: "var(--shadow-card)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 14,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <AlertTriangle size={18} color={isDark ? "#fbbf24" : "#f59e0b"} strokeWidth={2.4} />
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: 16,
+                      fontWeight: 800,
+                      color: "var(--text-primary)",
+                      letterSpacing: -0.2,
+                    }}
+                  >
+                    Official Advisories
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowAdvisories(!showAdvisories)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 4,
+                    display: "flex",
+                    alignItems: "center",
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  {showAdvisories ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </button>
+              </div>
+
+              <AnimatePresence>
+                {showAdvisories && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {advisories.map((advisory) => {
+                        const getCategoryColor = (cat) => {
+                          switch (cat) {
+                            case "Weather":
+                              return isDark ? "#60a5fa" : "#3b82f6";
+                            case "Water":
+                              return isDark ? "#06b6d4" : "#0891b2";
+                            case "Power":
+                              return isDark ? "#fbbf24" : "#f59e0b";
+                            case "Health":
+                              return isDark ? "#ef4444" : "#dc2626";
+                            default:
+                              return isDark ? "#a1a1aa" : "#71717a";
+                          }
+                        };
+
+                        return (
+                          <div
+                            key={advisory.id}
+                            style={{
+                              background: isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.02)",
+                              border: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.06)",
+                              borderRadius: 16,
+                              padding: "14px 16px",
+                              transition: "all 0.2s ease",
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                              <div
+                                style={{
+                                  width: 4,
+                                  height: 40,
+                                  borderRadius: 2,
+                                  background: getCategoryColor(advisory.category),
+                                  flexShrink: 0,
+                                }}
+                              />
+                              <div style={{ flex: 1 }}>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 8,
+                                    marginBottom: 6,
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      padding: "2px 8px",
+                                      borderRadius: 8,
+                                      background: getCategoryColor(advisory.category) + "20",
+                                      color: getCategoryColor(advisory.category),
+                                      fontSize: 10,
+                                      fontWeight: 800,
+                                      textTransform: "uppercase",
+                                      letterSpacing: 0.3,
+                                    }}
+                                  >
+                                    {advisory.category}
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontSize: 10,
+                                      color: "var(--text-muted)",
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    {new Date(advisory.published_at).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                <h4
+                                  style={{
+                                    margin: "0 0 6px",
+                                    fontSize: 14,
+                                    fontWeight: 800,
+                                    color: "var(--text-primary)",
+                                    lineHeight: 1.3,
+                                  }}
+                                >
+                                  {advisory.title}
+                                </h4>
+                                <p
+                                  style={{
+                                    margin: 0,
+                                    fontSize: 13,
+                                    color: "var(--text-muted)",
+                                    lineHeight: 1.5,
+                                  }}
+                                >
+                                  {advisory.content.length > 120
+                                    ? advisory.content.substring(0, 120) + "..."
+                                    : advisory.content}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        )}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative", zIndex: 1 }}>
               <div>
                 <div
