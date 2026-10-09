@@ -2251,6 +2251,25 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
         if (error) throw error;
         showSuccessModal("Record Updated", "Hospital record updated successfully");
       } else {
+        // Check if record already exists for this date
+        const { data: existingRecord } = await supabase
+          .from("hospital_daily_records")
+          .select("*")
+          .eq("record_date", formData.record_date)
+          .single();
+
+        if (existingRecord) {
+          // Record exists - show friendly message with update option
+          showConfirmModal(
+            "Record Already Exists",
+            `A record for ${new Date(formData.record_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} already exists. Would you like to update it with the new data?`,
+            () => editRecord(existingRecord),
+            "Update Record",
+            "Cancel"
+          );
+          return;
+        }
+
         const { error } = await supabase
           .from("hospital_daily_records")
           .insert(payload);
