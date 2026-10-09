@@ -333,9 +333,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
           boxSizing: "border-box",
         }}
         onFocus={(e) => {
-          e.target.style.borderColor = "#ffffff";
+          e.target.style.borderColor = "#f97316";
           e.target.style.background = "#202024";
-          e.target.style.boxShadow = "0 0 0 3px rgba(255, 255, 255, 0.15)";
+          e.target.style.boxShadow = "0 0 0 3px rgba(249, 115, 22, 0.25)";
         }}
         onBlur={(e) => {
           e.target.style.borderColor = "rgba(255, 255, 255, 0.15)";
@@ -376,15 +376,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
         style={{
           position: "relative",
           zIndex: 10,
-          background: "rgba(16, 16, 18, 0.94)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          border: "1px solid rgba(255, 255, 255, 0.12)",
+          background: "#f97316",
+          border: "1px solid rgba(255, 255, 255, 0.25)",
           borderRadius: 28,
           margin: "12px 14px 6px",
           marginTop: "calc(12px + env(safe-area-inset-top, 0px))",
           padding: "20px 16px",
-          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.7)",
+          boxShadow: "0 10px 30px rgba(249, 115, 22, 0.45)",
           textAlign: "center",
           display: "flex",
           flexDirection: "column",
@@ -411,9 +409,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              boxShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
             }}
           >
-            <MapPin size={18} fill="#000000" color="#000000" />
+            <MapPin size={18} fill="#f97316" color="#f97316" />
           </div>
           <div>
             <span style={{ color: "#ffffff", letterSpacing: 1.5 }}>CLIMA</span>
@@ -421,9 +420,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
         </div>
         <p
           style={{
-            color: "#71717a",
+            color: "rgba(255, 255, 255, 0.95)",
             fontSize: 12,
-            fontWeight: 600,
+            fontWeight: 700,
             margin: 0,
             textAlign: "center",
           }}
@@ -456,7 +455,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
           }}
           style={{
             background: "#121214",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
+            border: "1px solid rgba(249, 115, 22, 0.25)",
             width: "100%",
             maxWidth: 400,
             borderRadius: 24,
@@ -530,7 +529,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 )}
 
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, backgroundColor: "#ea580c" }}
                   whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={loading || !email || !password}
@@ -538,8 +537,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     width: "100%",
                     padding: "15px",
                     borderRadius: 14,
-                    background: "#ffffff",
-                    color: "#000000",
+                    background: "#f97316",
+                    color: "#ffffff",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
@@ -549,11 +548,11 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     justifyContent: "center",
                     gap: 8,
                     marginTop: 12,
-                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
+                    boxShadow: "0 4px 18px rgba(249, 115, 22, 0.35)",
                     opacity: loading || !email || !password ? 0.6 : 1,
                   }}
                 >
-                  {loading ? <Loader2 className="spin" size={20} /> : "Login"}
+                  {loading ? <Loader2 className="spin" size={20} color="#ffffff" /> : "Login"}
                 </motion.button>
 
                 {/* Forgot Password Link */}
@@ -597,7 +596,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                       setError(null);
                     }}
                     style={{
-                      color: "#ffffff",
+                      color: "#f97316",
                       cursor: "pointer",
                       fontWeight: 800,
                       textDecoration: "underline",
@@ -679,7 +678,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 )}
 
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, backgroundColor: "#ea580c" }}
                   whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={loading || !email}
@@ -687,8 +686,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     width: "100%",
                     padding: "15px",
                     borderRadius: 14,
-                    background: "#ffffff",
-                    color: "#000000",
+                    background: "#f97316",
+                    color: "#ffffff",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
@@ -698,12 +697,12 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     justifyContent: "center",
                     gap: 8,
                     marginTop: 12,
-                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
+                    boxShadow: "0 4px 18px rgba(249, 115, 22, 0.35)",
                     opacity: loading || !email ? 0.6 : 1,
                   }}
                 >
                   {loading ? (
-                    <Loader2 className="spin" size={20} />
+                    <Loader2 className="spin" size={20} color="#ffffff" />
                   ) : (
                     "Send Code"
                   )}
@@ -800,7 +799,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 )}
 
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, backgroundColor: "#ea580c" }}
                   whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={loading || !otp || otp.length < 6}
@@ -808,8 +807,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     width: "100%",
                     padding: "15px",
                     borderRadius: 14,
-                    background: "#ffffff",
-                    color: "#000000",
+                    background: "#f97316",
+                    color: "#ffffff",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
@@ -819,12 +818,12 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     justifyContent: "center",
                     gap: 8,
                     marginTop: 12,
-                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
+                    boxShadow: "0 4px 18px rgba(249, 115, 22, 0.35)",
                     opacity: loading || !otp || otp.length < 6 ? 0.6 : 1,
                   }}
                 >
                   {loading ? (
-                    <Loader2 className="spin" size={20} />
+                    <Loader2 className="spin" size={20} color="#ffffff" />
                   ) : (
                     "Verify Code"
                   )}
@@ -912,7 +911,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 )}
 
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, backgroundColor: "#ea580c" }}
                   whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={
@@ -926,8 +925,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     width: "100%",
                     padding: "15px",
                     borderRadius: 14,
-                    background: "#ffffff",
-                    color: "#000000",
+                    background: "#f97316",
+                    color: "#ffffff",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
@@ -937,7 +936,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     justifyContent: "center",
                     gap: 8,
                     marginTop: 12,
-                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
+                    boxShadow: "0 4px 18px rgba(249, 115, 22, 0.35)",
                     opacity:
                       loading ||
                       !firstName ||
@@ -949,7 +948,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   }}
                 >
                   {loading ? (
-                    <Loader2 className="spin" size={20} />
+                    <Loader2 className="spin" size={20} color="#ffffff" />
                   ) : (
                     "Finish Setup"
                   )}
@@ -1003,7 +1002,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     marginBottom: 20,
                   }}
                 >
-                  <KeyRound size={28} color="#ffffff" />
+                  <KeyRound size={28} color="#f97316" />
                 </div>
 
                 <h2
@@ -1049,7 +1048,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 )}
 
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, backgroundColor: "#ea580c" }}
                   whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={loading || !email}
@@ -1057,8 +1056,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     width: "100%",
                     padding: "15px",
                     borderRadius: 14,
-                    background: "#ffffff",
-                    color: "#000000",
+                    background: "#f97316",
+                    color: "#ffffff",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
@@ -1068,12 +1067,12 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     justifyContent: "center",
                     gap: 8,
                     marginTop: 12,
-                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
+                    boxShadow: "0 4px 18px rgba(249, 115, 22, 0.35)",
                     opacity: loading || !email ? 0.6 : 1,
                   }}
                 >
                   {loading ? (
-                    <Loader2 className="spin" size={20} />
+                    <Loader2 className="spin" size={20} color="#ffffff" />
                   ) : (
                     "Send Reset Code"
                   )}
@@ -1176,7 +1175,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 )}
 
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, backgroundColor: "#ea580c" }}
                   whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={loading || !otp || otp.length < 6}
@@ -1184,8 +1183,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     width: "100%",
                     padding: "15px",
                     borderRadius: 14,
-                    background: "#ffffff",
-                    color: "#000000",
+                    background: "#f97316",
+                    color: "#ffffff",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
@@ -1195,12 +1194,12 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     justifyContent: "center",
                     gap: 8,
                     marginTop: 12,
-                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
+                    boxShadow: "0 4px 18px rgba(249, 115, 22, 0.35)",
                     opacity: loading || !otp || otp.length < 6 ? 0.6 : 1,
                   }}
                 >
                   {loading ? (
-                    <Loader2 className="spin" size={20} />
+                    <Loader2 className="spin" size={20} color="#ffffff" />
                   ) : (
                     "Verify Code"
                   )}
@@ -1231,7 +1230,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     marginBottom: 20,
                   }}
                 >
-                  <Lock size={28} color="#ffffff" />
+                  <Lock size={28} color="#f97316" />
                 </div>
 
                 <h2
@@ -1283,7 +1282,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 )}
 
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, backgroundColor: "#ea580c" }}
                   whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={loading || !resetPassword || !resetConfirmPassword}
@@ -1291,8 +1290,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     width: "100%",
                     padding: "15px",
                     borderRadius: 14,
-                    background: "#ffffff",
-                    color: "#000000",
+                    background: "#f97316",
+                    color: "#ffffff",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
@@ -1302,7 +1301,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     justifyContent: "center",
                     gap: 8,
                     marginTop: 12,
-                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
+                    boxShadow: "0 4px 18px rgba(249, 115, 22, 0.35)",
                     opacity:
                       loading || !resetPassword || !resetConfirmPassword
                         ? 0.6
@@ -1310,7 +1309,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   }}
                 >
                   {loading ? (
-                    <Loader2 className="spin" size={20} />
+                    <Loader2 className="spin" size={20} color="#ffffff" />
                   ) : (
                     "Reset Password"
                   )}
@@ -1386,7 +1385,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 </p>
 
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: 1.02, backgroundColor: "#ea580c" }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
                     setMode("login");
@@ -1400,13 +1399,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     maxWidth: 280,
                     padding: "15px",
                     borderRadius: 14,
-                    background: "#ffffff",
-                    color: "#000000",
+                    background: "#f97316",
+                    color: "#ffffff",
                     fontSize: 15,
                     fontWeight: 800,
                     border: "none",
                     cursor: "pointer",
-                    boxShadow: "0 4px 18px rgba(255, 255, 255, 0.2)",
+                    boxShadow: "0 4px 18px rgba(249, 115, 22, 0.35)",
                   }}
                 >
                   Go to Login
@@ -1482,7 +1481,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 >
                   Your account is fully ready. Taking you to the home screen...
                 </p>
-                <Loader2 className="spin" size={28} color="#ffffff" />
+                <Loader2 className="spin" size={28} color="#f97316" />
               </motion.div>
             )}
           </AnimatePresence>

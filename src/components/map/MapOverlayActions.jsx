@@ -91,33 +91,33 @@ export function MapOverlayActions({
                 }}
               >
                 <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
-                  {activeFilters.includes("pending") && (
+                  {activeFilters.includes("water") && (
                     <div
                       style={{
                         width: 8,
                         height: 8,
                         borderRadius: "50%",
-                        background: isDark ? "#ffffff" : "#09090b",
+                        background: "#0284c7",
                       }}
                     />
                   )}
-                  {activeFilters.includes("inprogress") && (
+                  {activeFilters.includes("recreation") && (
                     <div
                       style={{
                         width: 8,
                         height: 8,
                         borderRadius: "50%",
-                        background: "#a1a1aa",
+                        background: "#16a34a",
                       }}
                     />
                   )}
-                  {activeFilters.includes("resolved") && (
+                  {activeFilters.includes("health") && (
                     <div
                       style={{
                         width: 8,
                         height: 8,
                         borderRadius: "50%",
-                        background: "#52525b",
+                        background: "#dc2626",
                       }}
                     />
                   )}
@@ -146,7 +146,8 @@ export function MapOverlayActions({
                       position: "absolute",
                       top: "calc(100% + 10px)",
                       right: 0,
-                      width: 160,
+                      minWidth: 235,
+                      width: "max-content",
                       background: isDark ? "#121214" : "#ffffff",
                       border: isDark
                         ? "1px solid rgba(255, 255, 255, 0.12)"
@@ -161,12 +162,20 @@ export function MapOverlayActions({
                   >
                     {[
                       {
-                        id: "pending",
-                        label: "Pending",
-                        bg: isDark ? "#ffffff" : "#09090b",
+                        id: "water",
+                        label: "Rivers & Water Areas",
+                        bg: "#0284c7",
                       },
-                      { id: "inprogress", label: "In Progress", bg: "#a1a1aa" },
-                      { id: "resolved", label: "Resolved", bg: "#52525b" },
+                      {
+                        id: "recreation",
+                        label: "Resorts & Recreation Areas",
+                        bg: "#16a34a",
+                      },
+                      {
+                        id: "health",
+                        label: "Health & Emergency Facilities",
+                        bg: "#dc2626",
+                      },
                     ].map((item) => {
                       const isActive = activeFilters.includes(item.id);
                       return (
@@ -195,13 +204,14 @@ export function MapOverlayActions({
                             cursor: "pointer",
                             marginBottom: 4,
                             transition: "background 0.2s",
+                            textAlign: "left",
                           }}
                         >
                           <div
                             style={{
-                              width: 14,
-                              height: 14,
-                              borderRadius: 4,
+                              width: 16,
+                              height: 16,
+                              borderRadius: 5,
                               background: isActive
                                 ? item.bg
                                 : isDark
@@ -210,6 +220,7 @@ export function MapOverlayActions({
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
+                              flexShrink: 0,
                               transition: "background 0.2s",
                             }}
                           >
@@ -219,7 +230,7 @@ export function MapOverlayActions({
                                   width: 6,
                                   height: 6,
                                   borderRadius: "50%",
-                                  background: isDark ? "#000000" : "#ffffff",
+                                  background: "#ffffff",
                                 }}
                               />
                             )}
@@ -233,8 +244,9 @@ export function MapOverlayActions({
                                   ? "#ffffff"
                                   : "#09090b"
                                 : isDark
-                                  ? "#71717a"
+                                  ? "#a1a1aa"
                                   : "#71717a",
+                              whiteSpace: "nowrap",
                             }}
                           >
                             {item.label}

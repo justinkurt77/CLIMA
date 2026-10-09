@@ -167,8 +167,8 @@ export default function HomeScreen({
     switch (status) {
       case "resolved":
         return {
-          bg: isDark ? "#ffffff" : "#09090b",
-          color: isDark ? "#000000" : "#ffffff",
+          bg: "var(--accent-orange)",
+          color: "#ffffff",
           border: "none",
           label: "Resolved",
           Icon: CheckCircle2,
@@ -586,7 +586,7 @@ export default function HomeScreen({
                 fontSize: 13,
                 fontWeight: 800,
                 cursor: "pointer",
-                boxShadow: "var(--shadow-card)",
+                boxShadow: "0 4px 14px var(--accent-glow)",
                 flexShrink: 0,
                 transition: "all 0.2s ease",
               }}

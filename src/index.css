@@ -1,7 +1,7 @@
 :root,
 html.light {
-  --red: #09090b;
-  --red-dark: #27272a;
+  --red: #f97316;
+  --red-dark: #ea580c;
   --yellow: #f4f4f5;
   --cream: #ffffff;
   --dark: #ffffff;
@@ -9,7 +9,7 @@ html.light {
   --light-gray: #f4f4f5;
   --green: #18181b;
   --blue: #27272a;
-  --orange: #71717a;
+  --orange: #f97316;
   --white: #ffffff;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -26,20 +26,26 @@ html.light {
   --text-primary: #09090b;
   --text-secondary: #52525b;
   --text-muted: #71717a;
-  --btn-primary-bg: #09090b;
+
+  /* Accent Color Tokens - Solid Orange (No Gradient) */
+  --accent-orange: #f97316;
+  --accent-orange-hover: #ea580c;
+  --accent-glow: rgba(249, 115, 22, 0.35);
+
+  --btn-primary-bg: #f97316;
   --btn-primary-text: #ffffff;
   --nav-bg: rgba(255, 255, 255, 0.92);
   --nav-border: rgba(0, 0, 0, 0.1);
-  --nav-active-bg: rgba(0, 0, 0, 0.08);
-  --nav-active-border: rgba(0, 0, 0, 0.14);
-  --nav-active-text: #09090b;
+  --nav-active-bg: rgba(249, 115, 22, 0.12);
+  --nav-active-border: rgba(249, 115, 22, 0.4);
+  --nav-active-text: #ea580c;
   --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.1);
 }
 
 html.dark {
-  --red: #ffffff;
-  --red-dark: #e4e4e7;
+  --red: #f97316;
+  --red-dark: #ea580c;
   --yellow: #f4f4f5;
   --cream: #18181b;
   --dark: #000000;
@@ -47,7 +53,7 @@ html.dark {
   --light-gray: #18181b;
   --green: #ffffff;
   --blue: #e4e4e7;
-  --orange: #a1a1aa;
+  --orange: #f97316;
   --white: #ffffff;
   --map-land: #09090b;
 
@@ -62,13 +68,19 @@ html.dark {
   --text-primary: #ffffff;
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
-  --btn-primary-bg: #ffffff;
-  --btn-primary-text: #000000;
+
+  /* Accent Color Tokens - Solid Orange (No Gradient) */
+  --accent-orange: #f97316;
+  --accent-orange-hover: #ea580c;
+  --accent-glow: rgba(249, 115, 22, 0.45);
+
+  --btn-primary-bg: #f97316;
+  --btn-primary-text: #ffffff;
   --nav-bg: rgba(12, 12, 14, 0.94);
   --nav-border: rgba(255, 255, 255, 0.12);
-  --nav-active-bg: rgba(255, 255, 255, 0.14);
-  --nav-active-border: rgba(255, 255, 255, 0.18);
-  --nav-active-text: #ffffff;
+  --nav-active-bg: rgba(249, 115, 22, 0.2);
+  --nav-active-border: rgba(249, 115, 22, 0.5);
+  --nav-active-text: #f97316;
   --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.75);
 }
@@ -1458,11 +1470,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 6px 20px var(--accent-glow);
+}
+
+.profile-logout-btn:hover {
+  background: var(--accent-orange-hover);
+  box-shadow: 0 8px 24px var(--accent-glow);
 }
 
 .profile-logout-btn:active {
-  background: #e4e4e7;
+  background: var(--accent-orange-hover);
   transform: scale(0.92);
 }
 
@@ -1699,9 +1716,17 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
 }
 
 .desktop-nav-btn.active {
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-text);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  background: var(--accent-orange);
+  color: #ffffff;
+  border: 1px solid var(--accent-orange);
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+.desktop-nav-btn.active:hover {
+  background: var(--accent-orange-hover);
+  border-color: var(--accent-orange-hover);
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .desktop-sidebar-bottom {
@@ -1838,6 +1863,12 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
   font-size: 13px;
   font-weight: 600;
   outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.desktop-search-input:focus {
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.18);
 }
 
 .desktop-circle-btn {
@@ -1864,8 +1895,8 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
   height: 40px;
   padding: 0 20px;
   border-radius: 20px;
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-text);
+  background: var(--accent-orange);
+  color: #ffffff;
   border: none;
   font-size: 13px;
   font-weight: 800;
@@ -1873,13 +1904,14 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
   display: flex;
   align-items: center;
   gap: 6px;
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 4px 14px var(--accent-glow);
   transition: all 0.2s ease;
 }
 
 .desktop-report-btn:hover {
-  opacity: 0.92;
+  background: var(--accent-orange-hover);
   transform: translateY(-1px);
+  box-shadow: 0 6px 20px var(--accent-glow);
 }
 
 /* ── Desktop Main Grid (2 columns: ~62% left, ~38% right) ── */
@@ -2017,7 +2049,8 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
 
 .desktop-hourly-item.active-slot {
   background: var(--nav-active-bg);
-  border: 1px solid var(--nav-active-border);
+  border: 1.5px solid var(--accent-orange);
+  box-shadow: 0 2px 8px var(--accent-glow);
 }
 
 .desktop-hourly-time {
@@ -2155,13 +2188,14 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
 }
 
 .desktop-danger-badge {
-  background: #b45309;
+  background: var(--accent-orange);
   color: #ffffff;
   font-size: 11px;
   font-weight: 800;
   padding: 4px 12px;
   border-radius: 12px;
   letter-spacing: 0.3px;
+  box-shadow: 0 2px 8px var(--accent-glow);
 }
 
 .desktop-wave-container {
@@ -2333,15 +2367,16 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #ffffff;
-  color: #09090b;
+  background: var(--accent-orange);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  transition: transform 0.2s ease;
+  box-shadow: 0 4px 16px var(--accent-glow);
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .desktop-wind-card:hover .desktop-wind-pin-btn {
   transform: scale(1.08);
+  background: var(--accent-orange-hover);
 }
