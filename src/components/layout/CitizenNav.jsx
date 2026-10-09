@@ -117,9 +117,7 @@ export default function CitizenNav({
         {MOBILE_NAV_ITEMS.map(({ id, label, icon: Icon }) => {
           const isActive = activeScreen === id;
           const iconColor = isActive
-            ? isDark
-              ? "#ffffff"
-              : "#09090b"
+            ? "#ffffff"
             : isDark
             ? "#71717a"
             : "#71717a";
@@ -139,10 +137,13 @@ export default function CitizenNav({
                   width: 42,
                   height: 34,
                   borderRadius: 14,
-                  background: isActive ? "var(--nav-active-bg)" : "transparent",
+                  background: isActive ? "var(--accent-orange)" : "transparent",
                   border: isActive
-                    ? "1px solid var(--nav-active-border)"
+                    ? "1px solid var(--accent-orange)"
                     : "1px solid transparent",
+                  boxShadow: isActive
+                    ? "0 4px 14px var(--accent-glow)"
+                    : "none",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -159,7 +160,7 @@ export default function CitizenNav({
                 style={{
                   fontSize: 10,
                   fontWeight: isActive ? 800 : 600,
-                  color: isActive ? "var(--text-primary)" : "var(--text-muted)",
+                  color: isActive ? "var(--nav-active-text)" : "var(--text-muted)",
                   letterSpacing: 0.2,
                   transition: "color 0.2s ease",
                 }}

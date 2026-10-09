@@ -265,7 +265,7 @@ export default function EmergencyScreen() {
                         }}
                       >
                         <span>Call</span>
-                        <Phone size={13} fill={isDark ? "#000000" : "#ffffff"} color={isDark ? "#000000" : "#ffffff"} />
+                        <Phone size={13} fill="#ffffff" color="#ffffff" />
                       </div>
                     </a>
                   ))}

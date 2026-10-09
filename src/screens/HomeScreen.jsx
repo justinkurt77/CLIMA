@@ -35,14 +35,57 @@ const WEATHER_ICONS = {
   Moon,
 };
 
-function getWeatherInfo(code, temp) {
-  if (code === 0) return { msg: "Clear sky", sub: "with bright sunshine", icon: "Sun", high: temp + 2, low: temp - 5 };
-  if ([1, 2].includes(code)) return { msg: "Partly cloudy", sub: "with gentle breeze", icon: "CloudSun", high: temp + 2, low: temp - 5 };
-  if (code === 3) return { msg: "Overcast", sub: "with partly cloudy", icon: "Cloud", high: temp + 1, low: temp - 5 };
-  if ([61, 63, 80, 81].includes(code)) return { msg: "Rain showers", sub: "with cool winds", icon: "CloudRain", high: temp + 1, low: temp - 4 };
-  if ([95, 96, 99].includes(code)) return { msg: "Stormy", sub: "with partly cloudy", icon: "CloudLightning", high: temp, low: temp - 4 };
-  return { msg: "Stormy", sub: "with partly cloudy", icon: "CloudLightning", high: 29, low: 12 };
+function getWeatherIcon(code, isDay = true) {
+  if (code === 0) return isDay ? "Sun" : "Moon";
+  if ([1, 2].includes(code)) return isDay ? "CloudSun" : "Moon";
+  if (code === 3 || [45, 48, 71, 73, 75, 77].includes(code)) return "Cloud";
+  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 85, 86].includes(code)) return "CloudRain";
+  if ([95, 96, 99].includes(code)) return "CloudLightning";
+  return isDay ? "Sun" : "Moon";
 }
+
+function getWeatherIconColor(iconName) {
+  if (iconName === "Sun") return "#eab308";
+  if (iconName === "CloudRain") return "#60a5fa";
+  if (iconName === "CloudLightning") return "#f59e0b";
+  if (iconName === "Moon") return "#a78bfa";
+  return "#94a3b8";
+}
+
+function getWeatherInfo(code, temp, high, low, isDay = true) {
+  const h = high !== undefined ? Math.round(high) : Math.round(temp + 2);
+  const l = low !== undefined ? Math.round(low) : Math.round(temp - 4);
+
+  if (code === 0) return { msg: "Clear sky", sub: "with bright sunshine", icon: isDay ? "Sun" : "Moon", high: h, low: l };
+  if ([1, 2].includes(code)) return { msg: "Partly cloudy", sub: "with gentle breeze", icon: isDay ? "CloudSun" : "Moon", high: h, low: l };
+  if (code === 3) return { msg: "Overcast", sub: "with dense cloud cover", icon: "Cloud", high: h, low: l };
+  if ([45, 48].includes(code)) return { msg: "Foggy", sub: "with reduced visibility", icon: "Cloud", high: h, low: l };
+  if ([51, 53, 55, 56, 57].includes(code)) return { msg: "Light Drizzle", sub: "with cool breezes", icon: "CloudRain", high: h, low: l };
+  if ([61, 63, 65, 80, 81, 82].includes(code)) return { msg: "Rain showers", sub: "with steady precipitation", icon: "CloudRain", high: h, low: l };
+  if ([95, 96, 99].includes(code)) return { msg: "Thunderstorm", sub: "with lightning & gusts", icon: "CloudLightning", high: h, low: l };
+  return { msg: "Partly cloudy", sub: "with pleasant breeze", icon: isDay ? "CloudSun" : "Moon", high: h, low: l };
+}
+
+const DEFAULT_HOURLY = [
+  { time: "Now", temp: 28, icon: "Sun", rain: null, active: true },
+  { time: "10 AM", temp: 29, icon: "Sun", rain: null },
+  { time: "11 AM", temp: 30, icon: "CloudSun", rain: null },
+  { time: "12 PM", temp: 31, icon: "CloudSun", rain: null },
+  { time: "1 PM", temp: 31, icon: "CloudRain", rain: "30%" },
+  { time: "2 PM", temp: 31, icon: "CloudRain", rain: "40%" },
+  { time: "3 PM", temp: 30, icon: "Cloud", rain: null },
+  { time: "4 PM", temp: 29, icon: "Cloud", rain: null },
+];
+
+const DEFAULT_WEEKLY = [
+  { day: "Today", dayShort: "Fri", icon: "Sun", iconColor: "#eab308", high: 31, low: 24, rain: null, isToday: true },
+  { day: "Sat", dayShort: "Sat", icon: "CloudLightning", iconColor: "#f59e0b", high: 31, low: 24, rain: "80%", isToday: false },
+  { day: "Sun", dayShort: "Sun", icon: "CloudLightning", iconColor: "#f59e0b", high: 31, low: 25, rain: "70%", isToday: false },
+  { day: "Mon", dayShort: "Mon", icon: "CloudSun", iconColor: "#94a3b8", high: 30, low: 25, rain: "40%", isToday: false },
+  { day: "Tue", dayShort: "Tue", icon: "CloudRain", iconColor: "#60a5fa", high: 30, low: 24, rain: "60%", isToday: false },
+  { day: "Wed", dayShort: "Wed", icon: "CloudRain", iconColor: "#60a5fa", high: 30, low: 24, rain: "50%", isToday: false },
+  { day: "Thu", dayShort: "Thu", icon: "CloudSun", iconColor: "#94a3b8", high: 31, low: 23, rain: null, isToday: false },
+];
 
 export default function HomeScreen({
   onOpenModal,
@@ -52,17 +95,19 @@ export default function HomeScreen({
   setActiveScreen,
 }) {
   const { isDark, toggleTheme } = useTheme();
-  const [currentTemp, setCurrentTemp] = useState(18);
+  const [currentTemp, setCurrentTemp] = useState(28);
   const [weatherInfo, setWeatherInfo] = useState({
-    msg: "Stormy",
-    sub: "with partly cloudy",
-    icon: "CloudLightning",
-    high: 29,
-    low: 12,
+    msg: "Clear sky",
+    sub: "with bright sunshine",
+    icon: "Sun",
+    high: 31,
+    low: 24,
   });
   const [humidity, setHumidity] = useState(78);
   const [windSpeed, setWindSpeed] = useState(12);
-  const [hourlyData, setHourlyData] = useState([]);
+  const [pressure, setPressure] = useState("1008 hPa");
+  const [hourlyForecast, setHourlyForecast] = useState(DEFAULT_HOURLY);
+  const [weeklyForecast, setWeeklyForecast] = useState(DEFAULT_WEEKLY);
   const [showReports, setShowReports] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchInput, setShowSearchInput] = useState(false);
@@ -81,80 +126,109 @@ export default function HomeScreen({
     day: "numeric",
   });
 
-  // Heat Index Label
+  // Heat Index Label based on temperature
   const heatIndex =
-    currentTemp >= 38 ? "Extreme Danger" :
-    currentTemp >= 35 ? "Dangerous" :
-    currentTemp >= 32 ? "Warning" : "Dangerous";
-
-  // Live condition trend for mobile recharts
-  const liveWaveData = [
-    { t: "6AM", v: 15 },
-    { t: "8AM", v: 17 },
-    { t: "10AM", v: 18 },
-    { t: "12PM", v: 20 },
-    { t: "2PM", v: 19 },
-    { t: "4PM", v: 18 },
-    { t: "6PM", v: 16 },
-  ];
-
-  // Mobile 7-day forecast
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const today = new Date().getDay();
-  const weeklyDays = Array.from({ length: 7 }, (_, i) => ({
-    day: i === 0 ? "Today" : dayNames[(today + i) % 7],
-    high: i === 0 ? 29 : Math.round(24 + (i % 3) * 2),
-    low: i === 0 ? 12 : Math.round(10 + (i % 2) * 2),
-    icon: i === 3 ? "CloudRain" : i === 5 ? "Cloud" : "Sun",
-    rain: i === 3 ? "40%" : null,
-    isToday: i === 0,
-  }));
-
-  // Desktop specific 8 hourly forecast slots matching reference photo
-  const desktopHourly = [
-    { time: "Now", temp: currentTemp, icon: "Cloud", rain: null, active: true },
-    { time: "2 PM", temp: 19, icon: "Cloud", rain: null },
-    { time: "3 PM", temp: 20, icon: "Cloud", rain: null },
-    { time: "4 PM", temp: 20, icon: "CloudRain", rain: "60%" },
-    { time: "5 PM", temp: 19, icon: "CloudRain", rain: "60%" },
-    { time: "6 PM", temp: 18, icon: "Cloud", rain: null },
-    { time: "7 PM", temp: 17, icon: "Cloud", rain: null },
-    { time: "8 PM", temp: 16, icon: "Moon", rain: null },
-  ];
-
-  // Desktop specific 7-day forecast matching reference photo
-  const desktopWeekly = [
-    { day: "Sun", icon: "Sun", high: 28, low: 12, rain: null, iconColor: "#eab308" },
-    { day: "Mon", icon: "CloudSun", high: 26, low: 11, rain: null, iconColor: "#94a3b8" },
-    { day: "Tue", icon: "Cloud", high: 27, low: 12, rain: null, iconColor: "#94a3b8" },
-    { day: "Wed", icon: "CloudRain", high: 23, low: 13, rain: "60%", iconColor: "#60a5fa" },
-    { day: "Thu", icon: "Cloud", high: 30, low: 14, rain: null, iconColor: "#94a3b8" },
-    { day: "Fri", icon: "CloudSun", high: 23, low: 10, rain: null, iconColor: "#94a3b8" },
-    { day: "Sat", icon: "Sun", high: 24, low: 9, rain: null, iconColor: "#eab308" },
-  ];
+    currentTemp >= 42 ? "Extreme Danger" :
+    currentTemp >= 38 ? "Danger" :
+    currentTemp >= 33 ? "Extreme Caution" :
+    currentTemp >= 27 ? "Caution" : "Normal";
 
   useEffect(() => {
     const lat = userLocation?.lat || 15.5398;
     const lng = userLocation?.lng || 121.0827;
-    fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m`
-    )
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,weather_code,is_day&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`;
+
+    fetch(url)
       .then((r) => r.json())
       .then((data) => {
-        if (data?.current_weather) {
-          const t = Math.round(data.current_weather.temperature);
-          const code = data.current_weather.weathercode;
+        if (!data) return;
+
+        // 1. Current conditions
+        if (data.current) {
+          const cur = data.current;
+          const t = Math.round(cur.temperature_2m);
+          const code = cur.weather_code;
+          const isDay = cur.is_day !== 0;
+
           setCurrentTemp(t);
-          setWeatherInfo(getWeatherInfo(code, t));
-          setWindSpeed(Math.round(data.current_weather.windspeed) || 12);
+          setWindSpeed(Math.round(cur.wind_speed_10m) || 12);
+          if (cur.relative_humidity_2m !== undefined) {
+            setHumidity(Math.round(cur.relative_humidity_2m));
+          }
+          if (cur.surface_pressure !== undefined) {
+            setPressure(`${Math.round(cur.surface_pressure)} hPa`);
+          }
+
+          const todayHigh = data.daily?.temperature_2m_max?.[0] !== undefined
+            ? Math.round(data.daily.temperature_2m_max[0])
+            : t + 2;
+          const todayLow = data.daily?.temperature_2m_min?.[0] !== undefined
+            ? Math.round(data.daily.temperature_2m_min[0])
+            : t - 4;
+
+          setWeatherInfo(getWeatherInfo(code, t, todayHigh, todayLow, isDay));
         }
-        if (data?.hourly) {
-          const now = new Date().getHours();
-          const humidities = data.hourly.relativehumidity_2m?.slice(now, now + 8) || [];
-          if (humidities.length > 0) setHumidity(Math.round(humidities[0]));
+
+        // 2. Next 8 Hourly Forecast Slots
+        if (data.hourly?.time && data.hourly?.temperature_2m) {
+          const currentTimeISO = data.current?.time || new Date().toISOString();
+          const currentHourPrefix = currentTimeISO.slice(0, 13);
+          let startIdx = data.hourly.time.findIndex((timeStr) => timeStr.startsWith(currentHourPrefix));
+          if (startIdx === -1) {
+            startIdx = new Date().getHours();
+          }
+
+          const slots = [];
+          for (let i = 0; i < 8; i++) {
+            const slotIdx = startIdx + i;
+            if (slotIdx >= data.hourly.time.length) break;
+            const timeStr = data.hourly.time[slotIdx];
+            const hourNum = parseInt(timeStr.slice(11, 13), 10);
+            const ampm = hourNum >= 12 ? "PM" : "AM";
+            const displayHour = hourNum % 12 === 0 ? 12 : hourNum % 12;
+            const isSlotDay = hourNum >= 6 && hourNum < 18;
+            const slotCode = data.hourly.weather_code?.[slotIdx] ?? 0;
+            const rainProb = data.hourly.precipitation_probability?.[slotIdx];
+
+            slots.push({
+              time: i === 0 ? "Now" : `${displayHour} ${ampm}`,
+              temp: Math.round(data.hourly.temperature_2m[slotIdx]),
+              icon: getWeatherIcon(slotCode, isSlotDay),
+              rain: rainProb && rainProb > 20 ? `${Math.round(rainProb)}%` : null,
+              active: i === 0,
+            });
+          }
+          if (slots.length > 0) setHourlyForecast(slots);
+        }
+
+        // 3. 7-Day Weekly Forecast
+        if (data.daily?.time && data.daily?.weather_code) {
+          const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+          const days = data.daily.time.slice(0, 7).map((dStr, idx) => {
+            const [year, month, day] = dStr.split("-").map(Number);
+            const dateObj = new Date(year, month - 1, day);
+            const dayName = dayNames[dateObj.getDay()];
+            const code = data.daily.weather_code[idx];
+            const iconName = getWeatherIcon(code, true);
+            const rainProb = data.daily.precipitation_probability_max?.[idx];
+
+            return {
+              day: idx === 0 ? "Today" : dayName,
+              dayShort: dayName,
+              icon: iconName,
+              iconColor: getWeatherIconColor(iconName),
+              high: Math.round(data.daily.temperature_2m_max[idx]),
+              low: Math.round(data.daily.temperature_2m_min[idx]),
+              rain: rainProb && rainProb > 20 ? `${Math.round(rainProb)}%` : null,
+              isToday: idx === 0,
+            };
+          });
+          if (days.length > 0) setWeeklyForecast(days);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn("Open-Meteo forecast fetch error:", err);
+      });
   }, [userLocation]);
 
   // Fetch published advisories
@@ -213,8 +287,8 @@ export default function HomeScreen({
     switch (status) {
       case "resolved":
         return {
-          bg: isDark ? "#ffffff" : "#09090b",
-          color: isDark ? "#000000" : "#ffffff",
+          bg: "var(--accent-orange)",
+          color: "#ffffff",
           border: "none",
           label: "Resolved",
           Icon: CheckCircle2,
@@ -341,7 +415,7 @@ export default function HomeScreen({
             {/* 2. HOURLY FORECAST ROW */}
             <div className="desktop-hourly-card">
               <div className="desktop-hourly-grid">
-                {desktopHourly.map((slot, idx) => {
+                {hourlyForecast.map((slot, idx) => {
                   const SlotIcon = WEATHER_ICONS[slot.icon] || Cloud;
                   return (
                     <div
@@ -365,7 +439,7 @@ export default function HomeScreen({
             {/* 3. 7-DAY FORECAST GRID */}
             <div className="desktop-weekly-card">
               <div className="desktop-weekly-grid">
-                {desktopWeekly.map((slot, idx) => {
+                {weeklyForecast.map((slot, idx) => {
                   const SlotIcon = WEATHER_ICONS[slot.icon] || Sun;
                   return (
                     <div key={idx} className="desktop-weekly-col">
@@ -406,7 +480,7 @@ export default function HomeScreen({
                   <ArrowUp size={14} strokeWidth={2.6} />
                   <span>23.8%</span>
                 </div>
-                <div className="desktop-danger-badge">Dangerous</div>
+                <div className="desktop-danger-badge">{heatIndex}</div>
               </div>
 
               {/* Smooth Gradient Wave with Glowing Marker */}
@@ -475,7 +549,7 @@ export default function HomeScreen({
                 <div className="desktop-stat-item">
                   <div className="desktop-stat-label">
                     <Gauge size={14} />
-                    <span>1 kPa</span>
+                    <span>{pressure}</span>
                   </div>
                   <div className="desktop-stat-sub">Pressure</div>
                 </div>
@@ -632,7 +706,7 @@ export default function HomeScreen({
                 fontSize: 13,
                 fontWeight: 800,
                 cursor: "pointer",
-                boxShadow: "var(--shadow-card)",
+                boxShadow: "0 4px 14px var(--accent-glow)",
                 flexShrink: 0,
                 transition: "all 0.2s ease",
               }}
@@ -927,7 +1001,7 @@ export default function HomeScreen({
               {[
                 { Icon: Droplets, label: "Humidity", val: `${humidity}%` },
                 { Icon: Wind, label: "Wind", val: `${windSpeed} km/h` },
-                { Icon: Gauge, label: "Pressure", val: "1 kPa" },
+                { Icon: Gauge, label: "Pressure", val: pressure },
               ].map(({ Icon, label, val }) => (
                 <div key={label} style={{ textAlign: "center" }}>
                   <div
@@ -972,7 +1046,7 @@ export default function HomeScreen({
               }}
               className="hide-scroll"
             >
-              {desktopHourly.map((slot, idx) => {
+              {hourlyForecast.map((slot, idx) => {
                 const isFirst = idx === 0;
                 const SlotIcon = WEATHER_ICONS[slot.icon] || Cloud;
                 return (
@@ -1020,7 +1094,7 @@ export default function HomeScreen({
               boxShadow: "var(--shadow-card)",
             }}
           >
-            {weeklyDays.map((d, idx) => {
+            {weeklyForecast.map((d, idx) => {
               const Icon = WEATHER_ICONS[d.icon] || Sun;
               return (
                 <div

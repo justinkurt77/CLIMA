@@ -146,7 +146,7 @@ export default function SearchBar({
               border: isDark
                 ? "2px solid rgba(255,255,255,0.2)"
                 : "2px solid rgba(0,0,0,0.15)",
-              borderTopColor: isDark ? "white" : "#09090b",
+              borderTopColor: "var(--accent-orange)",
               borderRadius: "50%",
               animation: "spin 0.7s linear infinite",
               flexShrink: 0,
@@ -157,15 +157,16 @@ export default function SearchBar({
             style={{
               width: 40,
               height: 40,
-              background: isDark ? "white" : "#09090b",
+              background: "var(--accent-orange)",
               borderRadius: "50%",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
+              boxShadow: "0 2px 10px var(--accent-glow)",
             }}
           >
-            <Search size={18} color={isDark ? "#000000" : "#ffffff"} />
+            <Search size={18} color="#ffffff" />
           </div>
         ) : (
           <Search
