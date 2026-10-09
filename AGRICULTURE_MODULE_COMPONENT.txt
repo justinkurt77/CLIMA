@@ -1,0 +1,693 @@
+/* ── Agricultural Damages Tab ── */
+function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editId, setEditId] = useState(null);
+  const [activeSubTab, setActiveSubTab] = useState("add");
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [formData, setFormData] = useState({
+    report_date: "",
+    report_time: "",
+    farmer_name: "",
+    barangay: "",
+    crop_type: "rice",
+    area_affected_hectares: 0,
+    damage_percentage: 0,
+    estimated_loss_value: 0,
+    cause: "drought",
+    description: "",
+    assistance_needed: "",
+    status: "pending",
+    assessed_by: ""
+  });
+
+  useEffect(() => {
+    fetchRecords();
+  }, []);
+
+  const fetchRecords = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("agriculture_damage_reports")
+      .select("*")
+      .order("report_date", { ascending: false })
+      .order("report_time", { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching agriculture damage reports:", error);
+      showErrorModal("Error", "Failed to load damage reports");
+    } else {
+      setRecords(data || []);
+    }
+    setLoading(false);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    
+    // Future date validation
+    const today = new Date().toISOString().split('T')[0];
+    if (formData.report_date > today) {
+      showErrorModal("Invalid Date", "Cannot add reports for future dates.");
+      return;
+    }
+
+    // Damage percentage validation
+    if (formData.damage_percentage < 0 || formData.damage_percentage > 100) {
+      showErrorModal("Invalid Percentage", "Damage percentage must be between 0 and 100.");
+      return;
+    }
+
+    const payload = {
+      ...formData,
+      area_affected_hectares: parseFloat(formData.area_affected_hectares) || 0,
+      damage_percentage: parseInt(formData.damage_percentage) || 0,
+      estimated_loss_value: parseFloat(formData.estimated_loss_value) || 0
+    };
+
+    if (editId) {
+      const { error } = await supabase
+        .from("agriculture_damage_reports")
+        .update(payload)
+        .eq("id", editId);
+      
+      if (error) {
+        showErrorModal("Error", "Failed to update report");
+        console.error(error);
+      } else {
+        showSuccessModal("Success", "Damage report updated successfully");
+        setEditId(null);
+        setFormData({
+          report_date: "",
+          report_time: "",
+          farmer_name: "",
+          barangay: "",
+          crop_type: "rice",
+          area_affected_hectares: 0,
+          damage_percentage: 0,
+          estimated_loss_value: 0,
+          cause: "drought",
+          description: "",
+          assistance_needed: "",
+          status: "pending",
+          assessed_by: ""
+        });
+        fetchRecords();
+      }
+    } else {
+      const { error } = await supabase
+        .from("agriculture_damage_reports")
+        .insert([payload]);
+      
+      if (error) {
+        showErrorModal("Error", "Failed to add report");
+        console.error(error);
+      } else {
+        showSuccessModal("Success", "Damage report added successfully");
+        setFormData({
+          report_date: "",
+          report_time: "",
+          farmer_name: "",
+          barangay: "",
+          crop_type: "rice",
+          area_affected_hectares: 0,
+          damage_percentage: 0,
+          estimated_loss_value: 0,
+          cause: "drought",
+          description: "",
+          assistance_needed: "",
+          status: "pending",
+          assessed_by: ""
+        });
+        fetchRecords();
+      }
+    }
+  };
+
+  const editRecord = (record) => {
+    setFormData({
+      report_date: record.report_date,
+      report_time: record.report_time || "",
+      farmer_name: record.farmer_name || "",
+      barangay: record.barangay || "",
+      crop_type: record.crop_type || "rice",
+      area_affected_hectares: record.area_affected_hectares || 0,
+      damage_percentage: record.damage_percentage || 0,
+      estimated_loss_value: record.estimated_loss_value || 0,
+      cause: record.cause || "drought",
+      description: record.description || "",
+      assistance_needed: record.assistance_needed || "",
+      status: record.status || "pending",
+      assessed_by: record.assessed_by || ""
+    });
+    setEditId(record.id);
+    setActiveSubTab("add");
+    setIsExpanded(true);
+  };
+
+  const deleteRecord = async (id) => {
+    showConfirmModal(
+      "Delete Report",
+      "Are you sure you want to delete this damage report?",
+      async () => {
+        const { error } = await supabase
+          .from("agriculture_damage_reports")
+          .delete()
+          .eq("id", id);
+        
+        if (error) {
+          showErrorModal("Error", "Failed to delete report");
+          console.error(error);
+        } else {
+          showSuccessModal("Success", "Report deleted successfully");
+          fetchRecords();
+        }
+      }
+    );
+  };
+
+  // Calculate analytics from last 30 days
+  const today = new Date();
+  const thirtyDaysAgo = new Date(today);
+  thirtyDaysAgo.setDate(today.getDate() - 30);
+
+  const last30Days = records.filter(r => {
+    const d = new Date(r.report_date + 'T00:00:00');
+    return d >= thirtyDaysAgo && d <= today;
+  });
+
+  const totalReports = last30Days.length;
+  const totalArea = last30Days.reduce((sum, r) => sum + (parseFloat(r.area_affected_hectares) || 0), 0);
+  const totalLoss = last30Days.reduce((sum, r) => sum + (parseFloat(r.estimated_loss_value) || 0), 0);
+  const avgDamage = totalReports > 0 ? last30Days.reduce((sum, r) => sum + (parseInt(r.damage_percentage) || 0), 0) / totalReports : 0;
+  const pendingCount = last30Days.filter(r => r.status === "pending").length;
+
+  // Most affected crop type
+  const cropCounts = {};
+  last30Days.forEach(r => {
+    cropCounts[r.crop_type] = (cropCounts[r.crop_type] || 0) + 1;
+  });
+  const mostAffectedCrop = Object.keys(cropCounts).reduce((a, b) => cropCounts[a] > cropCounts[b] ? a : b, "N/A");
+
+  // Top affected barangay
+  const barangayCounts = {};
+  last30Days.forEach(r => {
+    barangayCounts[r.barangay] = (barangayCounts[r.barangay] || 0) + 1;
+  });
+  const topBarangay = Object.keys(barangayCounts).reduce((a, b) => barangayCounts[a] > barangayCounts[b] ? a : b, "N/A");
+
+  // Group records by date for view tab
+  const groupedRecords = {};
+  records.forEach(r => {
+    if (!groupedRecords[r.report_date]) {
+      groupedRecords[r.report_date] = [];
+    }
+    groupedRecords[r.report_date].push(r);
+  });
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP',
+      minimumFractionDigits: 2
+    }).format(amount);
+  };
+
+  const formatNumber = (num, decimals = 2) => {
+    return Number(num).toFixed(decimals);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Header */}
+      <div>
+        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>Palayan City Agricultural Damage Reports</h3>
+        <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>Track Super El Niño crop damage and farmer assistance</p>
+      </div>
+
+      {/* Analytics Cards (Last 30 Days) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+        <div style={{ ...cardStyle, background: "#fef3c7", borderColor: "#fcd34d" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#d97706", textTransform: "uppercase" }}>Total Reports</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#92400e" }}>{totalReports}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 30 days</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#f0fdf4", borderColor: "#86efac" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#16a34a", textTransform: "uppercase" }}>Area Affected</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#14532d" }}>{formatNumber(totalArea)}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>hectares</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fef2f2", borderColor: "#fca5a5" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>Total Loss</p>
+          <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 900, color: "#991b1b" }}>{formatCurrency(totalLoss)}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>PHP value</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Avg Damage</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#9a3412" }}>{formatNumber(avgDamage, 1)}%</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>percentage</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#f5f3ff", borderColor: "#d8b4fe" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#9333ea", textTransform: "uppercase" }}>Most Affected</p>
+          <p style={{ margin: "4px 0 0", fontSize: 16, fontWeight: 900, color: "#581c87" }}>{mostAffectedCrop}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>crop type</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#eff6ff", borderColor: "#93c5fd" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#2563eb", textTransform: "uppercase" }}>Pending</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#1e3a8a" }}>{pendingCount}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>assessments</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#faf5ff", borderColor: "#e9d5ff" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#a855f7", textTransform: "uppercase" }}>Top Barangay</p>
+          <p style={{ margin: "4px 0 0", fontSize: 14, fontWeight: 900, color: "#6b21a8" }}>{topBarangay}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>most reports</p>
+        </div>
+      </div>
+
+      {/* Sub-tabs: Add Report / View Reports */}
+      <div style={cardStyle}>
+        <div style={{ display: "flex", gap: 12, borderBottom: `1px solid ${S.border}`, paddingBottom: 12, marginBottom: 16 }}>
+          <button
+            onClick={() => setActiveSubTab("add")}
+            style={{
+              background: activeSubTab === "add" ? S.accent : "transparent",
+              color: activeSubTab === "add" ? "#fff" : S.muted,
+              border: "none",
+              padding: "8px 16px",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer"
+            }}
+          >
+            Add Report
+          </button>
+          <button
+            onClick={() => setActiveSubTab("view")}
+            style={{
+              background: activeSubTab === "view" ? S.accent : "transparent",
+              color: activeSubTab === "view" ? "#fff" : S.muted,
+              border: "none",
+              padding: "8px 16px",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer"
+            }}
+          >
+            View Reports
+          </button>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              marginLeft: "auto",
+              background: "none",
+              border: `1px solid ${S.border}`,
+              padding: "8px 12px",
+              borderRadius: 8,
+              cursor: "pointer",
+              color: S.text,
+              display: "flex",
+              alignItems: "center",
+              gap: 6
+            }}
+          >
+            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {isExpanded ? "Collapse" : "Expand"}
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{ overflow: "hidden" }}
+            >
+              {activeSubTab === "add" && (
+                <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Report Date *
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.report_date}
+                        onChange={e => setFormData({ ...formData, report_date: e.target.value })}
+                        max={new Date().toISOString().split('T')[0]}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Report Time
+                      </label>
+                      <input
+                        type="time"
+                        value={formData.report_time}
+                        onChange={e => setFormData({ ...formData, report_time: e.target.value })}
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Farmer Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.farmer_name}
+                        onChange={e => setFormData({ ...formData, farmer_name: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Barangay *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.barangay}
+                        onChange={e => setFormData({ ...formData, barangay: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Crop Type *
+                      </label>
+                      <select
+                        value={formData.crop_type}
+                        onChange={e => setFormData({ ...formData, crop_type: e.target.value })}
+                        required
+                        style={selectStyle}
+                      >
+                        <option value="rice">Rice</option>
+                        <option value="corn">Corn</option>
+                        <option value="vegetables">Vegetables</option>
+                        <option value="fruits">Fruits</option>
+                        <option value="livestock">Livestock</option>
+                        <option value="fishery">Fishery</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Area Affected (hectares) *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.area_affected_hectares}
+                        onChange={e => setFormData({ ...formData, area_affected_hectares: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Damage Percentage (0-100%) *
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={formData.damage_percentage}
+                        onChange={e => setFormData({ ...formData, damage_percentage: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Estimated Loss Value (PHP) *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.estimated_loss_value}
+                        onChange={e => setFormData({ ...formData, estimated_loss_value: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Cause
+                      </label>
+                      <select
+                        value={formData.cause}
+                        onChange={e => setFormData({ ...formData, cause: e.target.value })}
+                        style={selectStyle}
+                      >
+                        <option value="drought">Drought</option>
+                        <option value="pest_infestation">Pest Infestation</option>
+                        <option value="crop_failure">Crop Failure</option>
+                        <option value="water_shortage">Water Shortage</option>
+                        <option value="heat_stress">Heat Stress</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Status
+                      </label>
+                      <select
+                        value={formData.status}
+                        onChange={e => setFormData({ ...formData, status: e.target.value })}
+                        style={selectStyle}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="assessed">Assessed</option>
+                        <option value="assistance_provided">Assistance Provided</option>
+                      </select>
+                    </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Description
+                      </label>
+                      <textarea
+                        value={formData.description}
+                        onChange={e => setFormData({ ...formData, description: e.target.value })}
+                        rows={3}
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Assistance Needed
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.assistance_needed}
+                        onChange={e => setFormData({ ...formData, assistance_needed: e.target.value })}
+                        placeholder="e.g. Seeds, Fertilizer, Irrigation"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Assessed By
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.assessed_by}
+                        onChange={e => setFormData({ ...formData, assessed_by: e.target.value })}
+                        style={inputStyle}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
+                    {editId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditId(null);
+                          setFormData({
+                            report_date: "",
+                            report_time: "",
+                            farmer_name: "",
+                            barangay: "",
+                            crop_type: "rice",
+                            area_affected_hectares: 0,
+                            damage_percentage: 0,
+                            estimated_loss_value: 0,
+                            cause: "drought",
+                            description: "",
+                            assistance_needed: "",
+                            status: "pending",
+                            assessed_by: ""
+                          });
+                        }}
+                        style={{
+                          background: "none",
+                          border: `1px solid ${S.border}`,
+                          color: S.text,
+                          padding: "10px 20px",
+                          borderRadius: 8,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor: "pointer"
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button type="submit" style={btnPrimary}>
+                      <Check size={16} /> {editId ? "Update" : "Save"}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {activeSubTab === "view" && (
+                <div>
+                  {loading ? (
+                    <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p>
+                  ) : Object.keys(groupedRecords).length === 0 ? (
+                    <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No reports found.</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                      {Object.keys(groupedRecords).map(date => {
+                        const dayRecords = groupedRecords[date];
+                        const dayTotalLoss = dayRecords.reduce((sum, r) => sum + (parseFloat(r.estimated_loss_value) || 0), 0);
+                        const dayTotalArea = dayRecords.reduce((sum, r) => sum + (parseFloat(r.area_affected_hectares) || 0), 0);
+                        
+                        return (
+                          <div key={date} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9" }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${S.border}` }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <Calendar size={18} color={S.accent} />
+                                <span style={{ fontWeight: 900, fontSize: 15 }}>
+                                  {new Date(date + 'T00:00:00').toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                                </span>
+                                <span style={{ fontSize: 12, color: S.muted, fontWeight: 700 }}>
+                                  • {dayRecords.length} report{dayRecords.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", gap: 16, fontSize: 12 }}>
+                                <span style={{ color: S.muted }}>
+                                  <strong style={{ color: S.accent }}>Area:</strong> {formatNumber(dayTotalArea)} ha
+                                </span>
+                                <span style={{ color: S.muted }}>
+                                  <strong style={{ color: "#dc2626" }}>Loss:</strong> {formatCurrency(dayTotalLoss)}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                              {dayRecords.map(r => {
+                                const statusColors = {
+                                  pending: { bg: "#fef2f2", color: "#dc2626", label: "Pending" },
+                                  assessed: { bg: "#eff6ff", color: "#2563eb", label: "Assessed" },
+                                  assistance_provided: { bg: "#f0fdf4", color: "#16a34a", label: "Assistance Provided" }
+                                };
+                                const statusStyle = statusColors[r.status] || statusColors.pending;
+                                
+                                return (
+                                  <div key={r.id} style={{ 
+                                    border: `1px solid ${S.border}`, 
+                                    borderRadius: 10, 
+                                    padding: 14, 
+                                    background: "#fff",
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "flex-start"
+                                  }}>
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                                        {r.report_time && (
+                                          <span style={{ fontSize: 12, fontWeight: 800, color: S.accent }}>
+                                            {r.report_time}
+                                          </span>
+                                        )}
+                                        <span style={{ fontSize: 14, fontWeight: 900 }}>
+                                          {r.farmer_name}
+                                        </span>
+                                        <span style={{ fontSize: 12, color: S.muted }}>• {r.barangay}</span>
+                                        <span 
+                                          style={{ 
+                                            padding: "2px 8px", 
+                                            borderRadius: 6, 
+                                            background: statusStyle.bg, 
+                                            color: statusStyle.color, 
+                                            fontSize: 10, 
+                                            fontWeight: 800 
+                                          }}
+                                        >
+                                          {statusStyle.label}
+                                        </span>
+                                      </div>
+                                      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }}>
+                                        <span style={{ color: S.muted }}>
+                                          <strong style={{ color: "#16a34a" }}>Crop:</strong> {r.crop_type}
+                                        </span>
+                                        <span style={{ color: S.muted }}>
+                                          <strong style={{ color: "#2563eb" }}>Area:</strong> {formatNumber(r.area_affected_hectares)} ha
+                                        </span>
+                                        <span style={{ color: S.muted }}>
+                                          <strong style={{ color: "#ea580c" }}>Damage:</strong> {r.damage_percentage}%
+                                        </span>
+                                        <span style={{ color: S.muted }}>
+                                          <strong style={{ color: "#dc2626" }}>Loss:</strong> {formatCurrency(r.estimated_loss_value)}
+                                        </span>
+                                        {r.cause && (
+                                          <span style={{ color: S.muted }}>
+                                            <strong>Cause:</strong> {r.cause.replace(/_/g, ' ')}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {r.description && (
+                                        <p style={{ margin: "8px 0 0", fontSize: 12, color: S.muted, fontStyle: "italic" }}>
+                                          "{r.description}"
+                                        </p>
+                                      )}
+                                      {r.assistance_needed && (
+                                        <p style={{ margin: "4px 0 0", fontSize: 11, color: "#2563eb", fontWeight: 700 }}>
+                                          Assistance needed: {r.assistance_needed}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8 }}>
+                                      <button
+                                        onClick={() => editRecord(r)}
+                                        style={{
+                                          background: "none",
+                                          border: `1px solid ${S.border}`,
+                                          borderRadius: 8,
+                                          padding: 8,
+                                          cursor: "pointer",
+                                          color: S.text
+                                        }}
+                                      >
+                                        <Edit2 size={14} />
+                                      </button>
+                                      <button onClick={() => deleteRecord(r.id)} style={btnDanger}>
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}

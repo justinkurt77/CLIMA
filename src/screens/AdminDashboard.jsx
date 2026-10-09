@@ -4,7 +4,7 @@ import {
   BarChart3, FileText, Users, LogOut, Map as MapIcon, RefreshCw,
   Plus, Trash2, Building, CheckCircle, CheckCircle2, Clock, TrendingUp, Search, X, Edit2, Check, Download,
   MapPin, Calendar, Phone, AlertCircle, AlertTriangle, ChevronRight, ChevronDown, ChevronUp, Navigation,
-  ShieldAlert, Activity, Megaphone, HeartPulse, Tent, Truck, Flame, Droplet, Zap
+  ShieldAlert, Activity, Megaphone, HeartPulse, Tent, Truck, Flame, Droplet, Zap, Sprout
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect from "../components/ui/CustomSelect";
@@ -199,6 +199,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
     { id: "hospitals", label: "Hospital Monitoring", icon: <HeartPulse size={18} /> },
     { id: "operations", label: "CDRRMO Operations", icon: <Tent size={18} /> },
     { id: "bfp", label: "BFP Operations", icon: <Flame size={18} /> },
+    { id: "agriculture", label: "Agricultural Damages", icon: <Sprout size={18} /> },
     { id: "water", label: "Water Utility", icon: <Droplet size={18} /> },
     { id: "power", label: "Power Utility", icon: <Zap size={18} /> },
     ...(isSuperadmin ? [
@@ -278,6 +279,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
               {activeTab === "hospitals" && "Hospital Capacity & Health Analytics"}
               {activeTab === "operations" && "CDRRMO Operations & Evacuations"}
               {activeTab === "bfp" && "BFP Operations & Fire Risk"}
+              {activeTab === "agriculture" && "Agricultural Damage Reports"}
               {activeTab === "water" && "Water Utility & Interruptions"}
               {activeTab === "power" && "Power Utility & Outages"}
               {activeTab === "users" && "User Management"}
@@ -383,6 +385,27 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
           >
             <BfpOperationsTab 
+              S={S} 
+              cardStyle={cardStyle} 
+              inputStyle={inputStyle} 
+              selectStyle={selectStyle} 
+              btnPrimary={btnPrimary} 
+              btnDanger={btnDanger} 
+              isSuperadmin={isSuperadmin} 
+              adminDepartment={adminDepartment}
+              showSuccessModal={showSuccessModal}
+              showErrorModal={showErrorModal}
+              showConfirmModal={showConfirmModal}
+            />
+          </motion.div>
+
+          <motion.div
+            variants={tabVariants}
+            initial="inactive"
+            animate={activeTab === "agriculture" ? "active" : "inactive"}
+            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+          >
+            <AgricultureDamagesTab 
               S={S} 
               cardStyle={cardStyle} 
               inputStyle={inputStyle} 
@@ -4074,6 +4097,473 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
                                         <span>🚒 {record.fire_trucks_dispatched} trucks</span>
                                         {record.casualties > 0 && <span style={{ color: "#dc2626", fontWeight: 700 }}>⚠️ {record.casualties} casualties</span>}
                                         {record.property_damage_estimate > 0 && <span>💰 ₱{record.property_damage_estimate.toLocaleString()}</span>}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+/* ── Agricultural Damages Tab ── */
+function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeSubTab, setActiveSubTab] = useState("view");
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [editId, setEditId] = useState(null);
+  const [expandedDays, setExpandedDays] = useState({});
+  const [formData, setFormData] = useState({
+    report_date: new Date().toISOString().split('T')[0],
+    report_time: "",
+    farmer_name: "",
+    barangay: "",
+    crop_type: "rice",
+    area_affected_hectares: 0,
+    damage_percentage: 0,
+    estimated_loss_value: 0,
+    cause: "drought",
+    description: "",
+    assistance_needed: "",
+    status: "pending",
+    assessed_by: ""
+  });
+
+  useEffect(() => {
+    fetchRecords();
+  }, []);
+
+  const fetchRecords = async () => {
+    setLoading(true);
+    try {
+      const { data } = await supabase
+        .from("agriculture_damage_reports")
+        .select("*")
+        .order("report_date", { ascending: false })
+        .order("report_time", { ascending: false });
+      setRecords(data || []);
+      
+      // Auto-expand first day only
+      if (data && data.length > 0) {
+        const firstDate = data[0].report_date;
+        setExpandedDays({ [firstDate]: true });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const selectedDate = new Date(formData.report_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      selectedDate.setHours(0, 0, 0, 0);
+      
+      if (selectedDate > today) {
+        showErrorModal("Invalid Date", "Cannot add records for future dates. Please select today or a past date.");
+        return;
+      }
+
+      // Validate damage percentage
+      const damagePercent = parseInt(formData.damage_percentage);
+      if (damagePercent < 0 || damagePercent > 100) {
+        showErrorModal("Invalid Damage Percentage", "Damage percentage must be between 0 and 100.");
+        return;
+      }
+
+      const payload = {
+        report_date: formData.report_date,
+        report_time: formData.report_time,
+        farmer_name: formData.farmer_name,
+        barangay: formData.barangay,
+        crop_type: formData.crop_type,
+        area_affected_hectares: parseFloat(formData.area_affected_hectares) || 0,
+        damage_percentage: damagePercent,
+        estimated_loss_value: parseFloat(formData.estimated_loss_value) || 0,
+        cause: formData.cause,
+        description: formData.description || null,
+        assistance_needed: formData.assistance_needed || null,
+        status: formData.status,
+        assessed_by: formData.assessed_by || null
+      };
+
+      if (editId) {
+        const { error } = await supabase.from("agriculture_damage_reports").update(payload).eq("id", editId);
+        if (error) throw error;
+        showSuccessModal("Record Updated", "Agricultural damage report updated successfully");
+      } else {
+        const { error } = await supabase.from("agriculture_damage_reports").insert(payload);
+        if (error) throw error;
+        showSuccessModal("Record Added", "Agricultural damage report added successfully");
+      }
+      
+      setEditId(null);
+      setFormData({
+        report_date: new Date().toISOString().split('T')[0],
+        report_time: "",
+        farmer_name: "",
+        barangay: "",
+        crop_type: "rice",
+        area_affected_hectares: 0,
+        damage_percentage: 0,
+        estimated_loss_value: 0,
+        cause: "drought",
+        description: "",
+        assistance_needed: "",
+        status: "pending",
+        assessed_by: ""
+      });
+      fetchRecords();
+      setActiveSubTab("view");
+    } catch (error) {
+      showErrorModal("Error", error.message || "Failed to save record");
+    }
+  };
+
+  const editRecord = (record) => {
+    setFormData({
+      report_date: record.report_date,
+      report_time: record.report_time || "",
+      farmer_name: record.farmer_name,
+      barangay: record.barangay,
+      crop_type: record.crop_type,
+      area_affected_hectares: record.area_affected_hectares,
+      damage_percentage: record.damage_percentage,
+      estimated_loss_value: record.estimated_loss_value,
+      cause: record.cause || "drought",
+      description: record.description || "",
+      assistance_needed: record.assistance_needed || "",
+      status: record.status,
+      assessed_by: record.assessed_by || ""
+    });
+    setEditId(record.id);
+    setActiveSubTab("add");
+  };
+
+  const deleteRecord = async (id) => {
+    showConfirmModal(
+      "Delete Report",
+      "Are you sure you want to delete this agricultural damage report? This action cannot be undone.",
+      async () => {
+        try {
+          const { error } = await supabase.from("agriculture_damage_reports").delete().eq("id", id);
+          if (error) throw error;
+          fetchRecords();
+          showSuccessModal("Deleted", "Agricultural damage report deleted successfully");
+        } catch (error) {
+          showErrorModal("Error", "Failed to delete record");
+        }
+      },
+      "Delete"
+    );
+  };
+
+  // Analytics - last 30 days
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const last30DaysRecords = records.filter(r => new Date(r.report_date) >= thirtyDaysAgo);
+  
+  const totalReports = last30DaysRecords.length;
+  const totalHectares = last30DaysRecords.reduce((sum, r) => sum + (parseFloat(r.area_affected_hectares) || 0), 0);
+  const totalLoss = last30DaysRecords.reduce((sum, r) => sum + (parseFloat(r.estimated_loss_value) || 0), 0);
+  const avgDamagePercent = totalReports > 0 
+    ? Math.round(last30DaysRecords.reduce((sum, r) => sum + (r.damage_percentage || 0), 0) / totalReports)
+    : 0;
+  
+  // Most affected crop
+  const cropCounts = last30DaysRecords.reduce((acc, r) => {
+    acc[r.crop_type] = (acc[r.crop_type] || 0) + 1;
+    return acc;
+  }, {});
+  const mostAffectedCrop = Object.keys(cropCounts).length > 0
+    ? Object.keys(cropCounts).reduce((a, b) => cropCounts[a] > cropCounts[b] ? a : b)
+    : "N/A";
+  
+  const pendingAssessments = last30DaysRecords.filter(r => r.status === "pending").length;
+
+  // Group records by date
+  const groupedByDate = records.reduce((acc, record) => {
+    if (!acc[record.report_date]) {
+      acc[record.report_date] = [];
+    }
+    acc[record.report_date].push(record);
+    return acc;
+  }, {});
+
+  const cropTypeLabels = {
+    rice: "Rice",
+    corn: "Corn",
+    vegetables: "Vegetables",
+    fruits: "Fruits",
+    livestock: "Livestock",
+    fishery: "Fishery",
+    other: "Other"
+  };
+
+  const causeLabels = {
+    drought: "Drought",
+    pest_infestation: "Pest Infestation",
+    crop_failure: "Crop Failure",
+    water_shortage: "Water Shortage",
+    heat_stress: "Heat Stress",
+    other: "Other"
+  };
+
+  const statusBadge = (status) => {
+    const colors = {
+      pending: { bg: "#fef3c7", color: "#92400e" },
+      assessed: { bg: "#dbeafe", color: "#1e40af" },
+      assistance_provided: { bg: "#f0fdf4", color: "#14532d" }
+    };
+    const style = colors[status] || { bg: "#f3f4f6", color: "#6b7280" };
+    const statusLabels = {
+      pending: "Pending",
+      assessed: "Assessed",
+      assistance_provided: "Assistance Provided"
+    };
+    return (
+      <span style={{
+        padding: "4px 10px",
+        borderRadius: 6,
+        fontSize: 11,
+        fontWeight: 800,
+        background: style.bg,
+        color: style.color,
+        textTransform: "uppercase"
+      }}>
+        {statusLabels[status] || status}
+      </span>
+    );
+  };
+
+  const barangays = [
+    "Atate", "Bagong Buhay I", "Bagong Buhay II", "Bagong Buhay III", "Bundagul",
+    "Caalibangbangan", "Caanawan", "Calibutbut", "Camanacsacan", "Cuyapo",
+    "Gabaldon Road", "Imelda", "Langka", "Lawang Bato", "Maligaya",
+    "Mangino", "Mataas na Parang", "Maunlad", "Pinagpanaan", "Poblacion East",
+    "Poblacion West", "Putlod", "Santo Niño", "Signal Village", "Singalat",
+    "Sta. Cruz", "Sto. Tomas", "Tabuating", "Tagumpay", "Talipapa"
+  ];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div>
+        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>Palayan City Agricultural Damage Reports</h3>
+        <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>Track agricultural damages and crop losses from Super El Niño</p>
+      </div>
+
+      {/* Analytics Cards - Last 30 Days */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+        <div style={{ ...cardStyle, background: "#f0fdf4", borderColor: "#86efac", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#14532d", textTransform: "uppercase" }}>Total Reports</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#166534" }}>{totalReports}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#f0fdf4", borderColor: "#86efac", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#14532d", textTransform: "uppercase" }}>Total Hectares</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#166534" }}>{totalHectares.toFixed(2)}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fef3c7", borderColor: "#fcd34d", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#92400e", textTransform: "uppercase" }}>Total Loss (PHP)</p>
+          <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 900, color: "#78350f" }}>₱{totalLoss.toLocaleString()}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#9a3412", textTransform: "uppercase" }}>Avg Damage %</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#7c2d12" }}>{avgDamagePercent}%</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fef3c7", borderColor: "#fcd34d", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#92400e", textTransform: "uppercase" }}>Most Affected</p>
+          <p style={{ margin: "4px 0 0", fontSize: 16, fontWeight: 900, color: "#78350f" }}>{cropTypeLabels[mostAffectedCrop] || mostAffectedCrop}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fef2f2", borderColor: "#fca5a5", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#991b1b", textTransform: "uppercase" }}>Pending</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#7f1d1d" }}>{pendingAssessments}</p>
+        </div>
+      </div>
+
+      {/* Sub-tabs */}
+      <div style={cardStyle}>
+        <div style={{ display: "flex", gap: 12, paddingBottom: 12, marginBottom: 16, borderBottom: `1px solid ${S.border}` }}>
+          <button onClick={() => { setActiveSubTab("add"); setIsExpanded(true); }} style={{ ...btnPrimary, background: activeSubTab === "add" ? S.accent : "transparent", color: activeSubTab === "add" ? "#fff" : S.text, boxShadow: "none", padding: "8px 16px", fontSize: 13 }}>
+            <Plus size={14} /> Add Record
+          </button>
+          <button onClick={() => { setActiveSubTab("view"); setIsExpanded(true); }} style={{ ...btnPrimary, background: activeSubTab === "view" ? S.accent : "transparent", color: activeSubTab === "view" ? "#fff" : S.text, boxShadow: "none", padding: "8px 16px", fontSize: 13 }}>
+            <FileText size={14} /> View Records
+          </button>
+          <button onClick={() => setIsExpanded(!isExpanded)} style={{ marginLeft: "auto", background: "none", border: `1px solid ${S.border}`, padding: "8px", borderRadius: 8, cursor: "pointer", color: S.text, display: "flex", alignItems: "center" }}>
+            <ChevronDown size={16} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} style={{ overflow: "hidden" }}>
+              {activeSubTab === "add" && (
+                <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Report Date</label>
+                      <input type="date" value={formData.report_date} onChange={e => setFormData({ ...formData, report_date: e.target.value })} max={new Date().toISOString().split('T')[0]} required style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Report Time</label>
+                      <input type="time" value={formData.report_time} onChange={e => setFormData({ ...formData, report_time: e.target.value })} style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Farmer Name</label>
+                      <input type="text" value={formData.farmer_name} onChange={e => setFormData({ ...formData, farmer_name: e.target.value })} required placeholder="Name of farmer" style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Barangay</label>
+                      <select value={formData.barangay} onChange={e => setFormData({ ...formData, barangay: e.target.value })} required style={selectStyle}>
+                        <option value="">Select Barangay</option>
+                        {barangays.map(b => <option key={b} value={b}>{b}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Crop Type</label>
+                      <select value={formData.crop_type} onChange={e => setFormData({ ...formData, crop_type: e.target.value })} required style={selectStyle}>
+                        <option value="rice">Rice</option>
+                        <option value="corn">Corn</option>
+                        <option value="vegetables">Vegetables</option>
+                        <option value="fruits">Fruits</option>
+                        <option value="livestock">Livestock</option>
+                        <option value="fishery">Fishery</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Area Affected (hectares)</label>
+                      <input type="number" min="0" step="0.01" value={formData.area_affected_hectares} onChange={e => setFormData({ ...formData, area_affected_hectares: e.target.value })} required style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Damage Percentage (0-100%)</label>
+                      <input type="number" min="0" max="100" value={formData.damage_percentage} onChange={e => setFormData({ ...formData, damage_percentage: e.target.value })} required style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>₱ Estimated Loss Value</label>
+                      <input type="number" min="0" step="0.01" value={formData.estimated_loss_value} onChange={e => setFormData({ ...formData, estimated_loss_value: e.target.value })} required style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Cause</label>
+                      <select value={formData.cause} onChange={e => setFormData({ ...formData, cause: e.target.value })} required style={selectStyle}>
+                        <option value="drought">Drought</option>
+                        <option value="pest_infestation">Pest Infestation</option>
+                        <option value="crop_failure">Crop Failure</option>
+                        <option value="water_shortage">Water Shortage</option>
+                        <option value="heat_stress">Heat Stress</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Assistance Needed</label>
+                      <select value={formData.assistance_needed} onChange={e => setFormData({ ...formData, assistance_needed: e.target.value })} style={selectStyle}>
+                        <option value="">Select assistance type</option>
+                        <option value="seeds">Seeds</option>
+                        <option value="fertilizer">Fertilizer</option>
+                        <option value="irrigation">Irrigation</option>
+                        <option value="financial">Financial</option>
+                        <option value="equipment">Equipment</option>
+                        <option value="none">None</option>
+                      </select>
+                    </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Description</label>
+                      <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Details of agricultural damage..." style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Status</label>
+                      <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} required style={selectStyle}>
+                        <option value="pending">Pending</option>
+                        <option value="assessed">Assessed</option>
+                        <option value="assistance_provided">Assistance Provided</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Assessed By</label>
+                      <input type="text" value={formData.assessed_by} onChange={e => setFormData({ ...formData, assessed_by: e.target.value })} placeholder="Name of assessor" style={inputStyle} />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 12, borderTop: `1px solid ${S.border}` }}>
+                    {editId && (
+                      <button type="button" onClick={() => { setEditId(null); setFormData({ report_date: new Date().toISOString().split('T')[0], report_time: "", farmer_name: "", barangay: "", crop_type: "rice", area_affected_hectares: 0, damage_percentage: 0, estimated_loss_value: 0, cause: "drought", description: "", assistance_needed: "", status: "pending", assessed_by: "" }); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: "#fff", color: S.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                        Cancel
+                      </button>
+                    )}
+                    <button type="submit" style={btnPrimary}>
+                      <Check size={16} /> {editId ? "Update" : "Save"}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {activeSubTab === "view" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {loading ? (
+                    <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading records...</p>
+                  ) : Object.keys(groupedByDate).length === 0 ? (
+                    <p style={{ textAlign: "center", color: S.muted, padding: 40 }}>No agricultural damage reports found. Add your first report above.</p>
+                  ) : (
+                    Object.keys(groupedByDate).map(date => {
+                      const dayRecords = groupedByDate[date];
+                      const isExpanded = expandedDays[date];
+                      const dayTotalLoss = dayRecords.reduce((sum, r) => sum + (parseFloat(r.estimated_loss_value) || 0), 0);
+                      return (
+                        <div key={date} style={{ border: `1px solid ${S.border}`, borderRadius: 12, overflow: "hidden" }}>
+                          <button onClick={() => setExpandedDays(prev => ({ ...prev, [date]: !prev[date] }))} style={{ width: "100%", padding: 16, border: "none", background: S.accentBg, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, fontWeight: 800, color: S.text }}>
+                            <span>📅 {new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · {dayRecords.length} report{dayRecords.length > 1 ? 's' : ''} · ₱{dayTotalLoss.toLocaleString()}</span>
+                            <ChevronDown size={18} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
+                          </button>
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} transition={{ duration: 0.2 }} style={{ overflow: "hidden", background: "#fff" }}>
+                                <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                                  {dayRecords.map(record => (
+                                    <div key={record.id} style={{ padding: 12, border: `1px solid ${S.border}`, borderRadius: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", flex: 1 }}>
+                                          {record.report_time && <span style={{ fontSize: 13, fontWeight: 800, color: S.text }}>{record.report_time}</span>}
+                                          <span style={{ fontSize: 13, fontWeight: 800, color: S.text }}>{record.farmer_name}</span>
+                                          <span style={{ fontSize: 12, color: S.muted }}>📍 {record.barangay}</span>
+                                          <span style={{ fontSize: 11, color: S.muted, background: "#f0fdf4", padding: "2px 8px", borderRadius: 4 }}>{cropTypeLabels[record.crop_type]}</span>
+                                          {statusBadge(record.status)}
+                                        </div>
+                                        <div style={{ display: "flex", gap: 6 }}>
+                                          <button onClick={() => editRecord(record)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${S.border}`, background: "#fff", color: S.text, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                                            <Edit2 size={12} /> Edit
+                                          </button>
+                                          <button onClick={() => deleteRecord(record.id)} style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}>
+                                            <Trash2 size={12} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                      {record.description && (
+                                        <p style={{ margin: 0, fontSize: 12, color: S.text, lineHeight: 1.5 }}>{record.description}</p>
+                                      )}
+                                      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 11, color: S.muted }}>
+                                        <span>🌾 {parseFloat(record.area_affected_hectares).toFixed(2)} ha</span>
+                                        <span style={{ color: "#dc2626", fontWeight: 700 }}>📉 {record.damage_percentage}% damage</span>
+                                        <span>💰 ₱{parseFloat(record.estimated_loss_value).toLocaleString()}</span>
+                                        <span>⚠️ {causeLabels[record.cause]}</span>
+                                        {record.assistance_needed && <span>🤝 {record.assistance_needed}</span>}
+                                        {record.assessed_by && <span>✓ Assessed by {record.assessed_by}</span>}
                                       </div>
                                     </div>
                                   ))}
