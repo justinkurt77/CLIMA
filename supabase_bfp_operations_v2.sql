@@ -4,10 +4,16 @@
 -- Each row = one individual operation (not a daily aggregate)
 -- ============================================================================
 
--- Drop old per-day table and create new per-operation table
-DROP TABLE IF EXISTS bfp_daily_operations CASCADE;
+-- Drop existing indexes first (if they exist)
+DROP INDEX IF EXISTS idx_bfp_ops_date CASCADE;
+DROP INDEX IF EXISTS idx_bfp_ops_type CASCADE;
 
-CREATE TABLE IF NOT EXISTS bfp_operations (
+-- Drop old tables (both possible names)
+DROP TABLE IF EXISTS bfp_daily_operations CASCADE;
+DROP TABLE IF EXISTS bfp_operations CASCADE;
+
+-- Create new per-operation table
+CREATE TABLE bfp_operations (
   id BIGSERIAL PRIMARY KEY,
   operation_date DATE NOT NULL,
   operation_time TIME,
