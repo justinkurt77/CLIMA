@@ -4127,6 +4127,7 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
   const [editId, setEditId] = useState(null);
   const [expandedDays, setExpandedDays] = useState({});
   const [formData, setFormData] = useState({
+    category: "farm", // farm or livestock
     report_date: new Date().toISOString().split('T')[0],
     report_time: "",
     farmer_name: "",
@@ -4190,6 +4191,7 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
       }
 
       const payload = {
+        category: formData.category,
         report_date: formData.report_date,
         report_time: formData.report_time,
         farmer_name: formData.farmer_name,
@@ -4217,6 +4219,7 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
       
       setEditId(null);
       setFormData({
+        category: "farm",
         report_date: new Date().toISOString().split('T')[0],
         report_time: "",
         farmer_name: "",
@@ -4240,6 +4243,7 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
 
   const editRecord = (record) => {
     setFormData({
+      category: record.category || "farm",
       report_date: record.report_date,
       report_time: record.report_time || "",
       farmer_name: record.farmer_name,
@@ -4418,6 +4422,61 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
               {activeSubTab === "add" && (
                 <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label style={{ fontSize: 13, fontWeight: 900, color: S.text, display: "block", marginBottom: 8 }}>Category *</label>
+                      <div style={{ display: "flex", gap: 12 }}>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, category: "farm", crop_type: "rice" })}
+                          style={{
+                            flex: 1,
+                            padding: "16px 24px",
+                            borderRadius: 12,
+                            border: formData.category === "farm" ? `2px solid ${S.accent}` : `2px solid ${S.border}`,
+                            background: formData.category === "farm" ? S.accentBg : "#fff",
+                            color: formData.category === "farm" ? S.accent : S.text,
+                            fontWeight: 800,
+                            fontSize: 14,
+                            cursor: "pointer",
+                            fontFamily: S.font,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: 8,
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          <span style={{ fontSize: 28 }}>🌾</span>
+                          <span>Farm</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: S.muted }}>Crops & Plants</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, category: "livestock", crop_type: "livestock" })}
+                          style={{
+                            flex: 1,
+                            padding: "16px 24px",
+                            borderRadius: 12,
+                            border: formData.category === "livestock" ? `2px solid ${S.accent}` : `2px solid ${S.border}`,
+                            background: formData.category === "livestock" ? S.accentBg : "#fff",
+                            color: formData.category === "livestock" ? S.accent : S.text,
+                            fontWeight: 800,
+                            fontSize: 14,
+                            cursor: "pointer",
+                            fontFamily: S.font,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: 8,
+                            transition: "all 0.2s"
+                          }}
+                        >
+                          <span style={{ fontSize: 28 }}>🐄</span>
+                          <span>Livestock</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: S.muted }}>Animals & Poultry</span>
+                        </button>
+                      </div>
+                    </div>
                     <div>
                       <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Report Date</label>
                       <input type="date" value={formData.report_date} onChange={e => setFormData({ ...formData, report_date: e.target.value })} max={new Date().toISOString().split('T')[0]} required style={inputStyle} />
@@ -4503,7 +4562,7 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
                   </div>
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 12, borderTop: `1px solid ${S.border}` }}>
                     {editId && (
-                      <button type="button" onClick={() => { setEditId(null); setFormData({ report_date: new Date().toISOString().split('T')[0], report_time: "", farmer_name: "", barangay: "", crop_type: "rice", area_affected_hectares: 0, damage_percentage: 0, estimated_loss_value: 0, cause: "drought", description: "", assistance_needed: "", status: "pending", assessed_by: "" }); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: "#fff", color: S.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                      <button type="button" onClick={() => { setEditId(null); setFormData({ category: "farm", report_date: new Date().toISOString().split('T')[0], report_time: "", farmer_name: "", barangay: "", crop_type: "rice", area_affected_hectares: 0, damage_percentage: 0, estimated_loss_value: 0, cause: "drought", description: "", assistance_needed: "", status: "pending", assessed_by: "" }); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: "#fff", color: S.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                         Cancel
                       </button>
                     )}

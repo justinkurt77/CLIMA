@@ -6,6 +6,7 @@
 -- Agricultural Damage Reports Table
 CREATE TABLE agriculture_damage_reports (
   id BIGSERIAL PRIMARY KEY,
+  category TEXT NOT NULL DEFAULT 'farm',
   report_date DATE NOT NULL,
   report_time TIME,
   farmer_name TEXT NOT NULL,
@@ -25,6 +26,7 @@ CREATE TABLE agriculture_damage_reports (
 
 -- Create indexes for efficient queries
 CREATE INDEX idx_agri_damage_date ON agriculture_damage_reports(report_date DESC);
+CREATE INDEX idx_agri_damage_category ON agriculture_damage_reports(category);
 CREATE INDEX idx_agri_damage_barangay ON agriculture_damage_reports(barangay);
 CREATE INDEX idx_agri_damage_crop ON agriculture_damage_reports(crop_type);
 CREATE INDEX idx_agri_damage_status ON agriculture_damage_reports(status);
