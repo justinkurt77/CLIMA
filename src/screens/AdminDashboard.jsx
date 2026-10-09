@@ -3,13 +3,17 @@ import { supabase } from "../lib/supabase";
 import {
   BarChart3, FileText, Users, LogOut, Map as MapIcon, RefreshCw,
   Plus, Trash2, Building, CheckCircle, CheckCircle2, Clock, TrendingUp, Search, X, Edit2, Check, Download,
-  MapPin, Calendar, Phone, AlertCircle, AlertTriangle, ChevronRight, ChevronDown, Navigation,
+  MapPin, Calendar, Phone, AlertCircle, AlertTriangle, ChevronRight, ChevronDown, ChevronUp, Navigation,
   ShieldAlert, Activity, Megaphone, HeartPulse, Tent, Truck, Flame, Droplet, Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect from "../components/ui/CustomSelect";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from "recharts";
 
 /* ── Dynamic Theme from Accent Color ── */
 function hexToRgb(hex) {
@@ -585,41 +589,476 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
   );
 }
 
-/* ── Overview ── */
+/* ── Utility Helpers for Analytics ── */
+function formatTrend(current, previous) {
+  if (previous === 0) {
+    return { arrow: "→", pct: 0, color: "#71717a", label: "No change" };
+  }
+  const change = ((current - previous) / previous) * 100;
+  if (change > 0) {
+    return { 
+      arrow: "↑", 
+      pct: Math.abs(change).toFixed(1), 
+      color: "#ef4444", 
+      label: `+${Math.abs(change).toFixed(1)}%` 
+    };
+  } else if (change < 0) {
+    return { 
+      arrow: "↓", 
+      pct: Math.abs(change).toFixed(1), 
+      color: "#16a34a", 
+      label: `-${Math.abs(change).toFixed(1)}%` 
+    };
+  }
+  return { arrow: "→", pct: 0, color: "#71717a", label: "No change" };
+}
+
+function getDateDaysAgo(days) {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date.toISOString().split('T')[0];
+}
+
+function formatDateShort(dateStr) {
+  const date = new Date(dateStr);
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+/* ── Overview Tab - Analytics Dashboard ── */
 function OverviewTab({ reports, S, cardStyle, onViewReport }) {
-  const stats = {
-    total: reports.length,
-    pending: reports.filter(r => r.status === "pending").length,
-    inprogress: reports.filter(r => r.status === "inprogress").length,
-    resolved: reports.filter(r => r.status === "resolved").length,
+  const [analyticsData, setAnalyticsData] = useState({
+    hospitalRecords: [],
+    cdrrmoRecords: [],
+    bfpRecords: [],
+    advisories: []
+  });
+  const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState(30);
+
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [dateRange]);
+
+  const fetchAnalyticsData = async () => {
+    setLoading(true);
+    try {
+      const startDate = getDateDaysAgo(dateRange);
+      
+      const [hospitalRes, cdrrmoRes, bfpRes, advisoriesRes] = await Promise.all([
+        supabase
+          .from("hospital_daily_records")
+          .select("*")
+          .gte("record_date", startDate)
+          .order("record_date", { ascending: true }),
+        supabase
+          .from("cdrrmo_daily_operations")
+          .select("*")
+          .gte("operation_date", startDate)
+          .order("operation_date", { ascending: true }),
+        supabase
+          .from("bfp_daily_operations")
+          .select("*")
+          .gte("operation_date", startDate)
+          .order("operation_date", { ascending: true }),
+        supabase
+          .from("advisories")
+          .select("*")
+          .eq("status", "Published")
+      ]);
+
+      setAnalyticsData({
+        hospitalRecords: hospitalRes.data || [],
+        cdrrmoRecords: cdrrmoRes.data || [],
+        bfpRecords: bfpRes.data || [],
+        advisories: advisoriesRes.data || []
+      });
+    } catch (error) {
+      console.error("Analytics fetch error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
-  const cards = [
-    { label: "Total Reports", val: stats.total, icon: <FileText size={22} />, color: S.accent, bg: "rgba(55,61,32,0.06)" },
-    { label: "Pending", val: stats.pending, icon: <Clock size={22} />, color: S.red, bg: S.redBg },
-    { label: "In Progress", val: stats.inprogress, icon: <TrendingUp size={22} />, color: S.blue, bg: S.blueBg },
-    { label: "Resolved", val: stats.resolved, icon: <CheckCircle size={22} />, color: S.green, bg: S.greenBg },
-  ];
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-        {cards.map(c => (
-          <div key={c.label} style={{ ...cardStyle, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>{c.label}</p>
-              <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: c.color, lineHeight: 1 }}>{c.val}</p>
-            </div>
-            <div style={{ width: 48, height: 48, borderRadius: 14, background: c.bg, display: "flex", alignItems: "center", justifyContent: "center", color: c.color }}>{c.icon}</div>
-          </div>
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        {[1,2,3].map(i => (
+          <div key={i} style={{ ...cardStyle, height: 120, background: "#f9fafb", animation: "pulse 1.5s ease-in-out infinite" }} />
         ))}
       </div>
+    );
+  }
+
+  // Calculate summary metrics
+  const last7Days = getDateDaysAgo(7);
+  const prior7Days = getDateDaysAgo(14);
+  
+  const reportsLast7 = reports.filter(r => r.created_at >= last7Days).length;
+  const reportsPrior7 = reports.filter(r => r.created_at >= prior7Days && r.created_at < last7Days).length;
+  const reportsTrend = formatTrend(reportsLast7, reportsPrior7);
+
+  const hospitalAdmissionsLast7 = analyticsData.hospitalRecords
+    .filter(r => r.record_date >= last7Days)
+    .reduce((sum, r) => sum + (r.total_admissions || 0), 0);
+
+  const cdrrmoOpsLast7 = analyticsData.cdrrmoRecords
+    .filter(r => r.operation_date >= last7Days)
+    .reduce((sum, r) => sum + (r.relief_operations || 0) + (r.evacuations_conducted || 0), 0);
+
+  const bfpIncidentsLast7 = analyticsData.bfpRecords
+    .filter(r => r.operation_date >= last7Days)
+    .reduce((sum, r) => sum + (r.fire_incidents || 0), 0);
+
+  const ambulanceDispatchesLast7 = analyticsData.cdrrmoRecords
+    .filter(r => r.operation_date >= last7Days)
+    .reduce((sum, r) => sum + (r.ambulance_dispatches || 0), 0);
+
+  const emergencyOpsLast7 = cdrrmoOpsLast7 + bfpIncidentsLast7 + ambulanceDispatchesLast7;
+
+  // Prepare chart data
+  const reportsTimelineData = prepareReportsTimeline(reports, dateRange);
+  const reportsByCategoryData = prepareReportsByCategory(reports);
+  const healthOpsData = prepareHealthOpsTimeline(analyticsData.hospitalRecords);
+  const emergencyOpsData = prepareEmergencyOpsTimeline(analyticsData.cdrrmoRecords, analyticsData.bfpRecords);
+  const statusDistributionData = prepareStatusDistribution(reports);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {/* Date Range Selector */}
+      <div style={{ display: "flex", gap: 8, padding: "12px 16px", background: "#f9fafb", borderRadius: 12, border: `1px solid ${S.border}` }}>
+        <span style={{ fontSize: 12, fontWeight: 800, color: S.muted, marginRight: 8 }}>TIME RANGE:</span>
+        {[7, 30, 90].map(days => (
+          <button
+            key={days}
+            onClick={() => setDateRange(days)}
+            style={{
+              padding: "6px 16px",
+              borderRadius: 8,
+              border: dateRange === days ? `2px solid ${S.accent}` : `1px solid ${S.border}`,
+              background: dateRange === days ? S.accentBg : "#fff",
+              color: dateRange === days ? S.accent : S.muted,
+              fontWeight: 800,
+              fontSize: 12,
+              cursor: "pointer",
+              fontFamily: S.font,
+              transition: "all 0.15s"
+            }}
+          >
+            {days} Days
+          </button>
+        ))}
+      </div>
+
+      {/* Summary Cards Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+        <SummaryCard
+          label="Citizen Reports"
+          value={reportsLast7}
+          subtitle="Last 7 days"
+          trend={reportsTrend}
+          icon={<FileText size={22} />}
+          color={S.accent}
+          bg={S.accentBg}
+          S={S}
+        />
+        <SummaryCard
+          label="Active Advisories"
+          value={analyticsData.advisories.length}
+          subtitle="Published"
+          icon={<Megaphone size={22} />}
+          color="#3b82f6"
+          bg="rgba(59,130,246,0.08)"
+          S={S}
+        />
+        <SummaryCard
+          label="Hospital Admissions"
+          value={hospitalAdmissionsLast7}
+          subtitle="Last 7 days"
+          icon={<HeartPulse size={22} />}
+          color="#d97706"
+          bg="rgba(217,119,6,0.08)"
+          S={S}
+        />
+        <SummaryCard
+          label="CDRRMO Operations"
+          value={cdrrmoOpsLast7}
+          subtitle="Last 7 days"
+          icon={<Tent size={22} />}
+          color="#10b981"
+          bg="rgba(16,185,129,0.08)"
+          S={S}
+        />
+        <SummaryCard
+          label="Fire Incidents"
+          value={bfpIncidentsLast7}
+          subtitle="Last 7 days"
+          icon={<Flame size={22} />}
+          color="#ef4444"
+          bg="rgba(239,68,68,0.08)"
+          S={S}
+        />
+        <SummaryCard
+          label="Ambulance Dispatches"
+          value={ambulanceDispatchesLast7}
+          subtitle="Last 7 days"
+          icon={<Truck size={22} />}
+          color="#8b5cf6"
+          bg="rgba(139,92,246,0.08)"
+          S={S}
+        />
+      </div>
+
+      {/* Charts Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        {/* Citizen Reports Trend */}
+        <div style={cardStyle}>
+          <h4 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 900, color: S.text }}>
+            Citizen Reports Trend
+          </h4>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={reportsTimelineData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
+              <XAxis dataKey="date" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
+              <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
+              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
+              <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
+              <Line type="monotone" dataKey="reports" stroke={S.accent} strokeWidth={2} dot={{ fill: S.accent, r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Reports by Category */}
+        <div style={cardStyle}>
+          <h4 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 900, color: S.text }}>
+            Top Report Categories
+          </h4>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={reportsByCategoryData} layout="horizontal">
+              <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
+              <XAxis type="number" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
+              <YAxis type="category" dataKey="category" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} width={120} />
+              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
+              <Bar dataKey="count" fill={S.accent} radius={[0, 8, 8, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Health Operations Trend */}
+        <div style={cardStyle}>
+          <h4 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 900, color: S.text }}>
+            Health Operations (14 Days)
+          </h4>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={healthOpsData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
+              <XAxis dataKey="date" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
+              <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
+              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
+              <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
+              <Line type="monotone" dataKey="admissions" stroke="#d97706" strokeWidth={2} name="Total Admissions" />
+              <Line type="monotone" dataKey="elNinoCases" stroke="#ef4444" strokeWidth={2} name="El Niño Cases" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Emergency Operations */}
+        <div style={cardStyle}>
+          <h4 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 900, color: S.text }}>
+            Emergency Operations (14 Days)
+          </h4>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={emergencyOpsData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
+              <XAxis dataKey="date" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
+              <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
+              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
+              <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
+              <Line type="monotone" dataKey="cdrrmo" stroke="#10b981" strokeWidth={2} name="CDRRMO" />
+              <Line type="monotone" dataKey="bfp" stroke="#ef4444" strokeWidth={2} name="BFP" />
+              <Line type="monotone" dataKey="ambulance" stroke="#8b5cf6" strokeWidth={2} name="Ambulance" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Report Status Distribution */}
       <div style={cardStyle}>
-        <h3 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 900 }}>Recent Reports</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {reports.slice(0, 8).map(r => <ReportRow key={r.id} report={r} S={S} onClick={() => onViewReport(r)} />)}
-          {reports.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 40 }}>No reports found.</p>}
+        <h4 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 900, color: S.text }}>
+          Report Status Distribution
+        </h4>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={statusDistributionData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={renderPieLabel}
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {statusDistributionData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
+              <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
+  );
+}
+
+/* ── Summary Card Component ── */
+function SummaryCard({ label, value, subtitle, trend, icon, color, bg, S }) {
+  return (
+    <div style={{
+      background: S.card,
+      border: `1px solid ${S.border}`,
+      borderRadius: 16,
+      padding: 20,
+      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center"
+    }}>
+      <div style={{ flex: 1 }}>
+        <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+          {label}
+        </p>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 4 }}>
+          <p style={{ margin: 0, fontSize: 28, fontWeight: 900, color, lineHeight: 1 }}>
+            {value}
+          </p>
+          {trend && (
+            <span style={{ fontSize: 11, fontWeight: 800, color: trend.color }}>
+              {trend.arrow} {trend.pct}%
+            </span>
+          )}
+        </div>
+        <p style={{ margin: "4px 0 0", fontSize: 11, fontWeight: 700, color: S.muted }}>
+          {subtitle}
+        </p>
+      </div>
+      <div style={{
+        width: 48,
+        height: 48,
+        borderRadius: 14,
+        background: bg,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color
+      }}>
+        {icon}
+      </div>
+    </div>
+  );
+}
+
+/* ── Chart Data Preparation Functions ── */
+function prepareReportsTimeline(reports, days) {
+  const data = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    const count = reports.filter(r => r.created_at.startsWith(dateStr)).length;
+    data.push({
+      date: formatDateShort(dateStr),
+      reports: count
+    });
+  }
+  return data;
+}
+
+function prepareReportsByCategory(reports) {
+  const categories = {};
+  reports.forEach(r => {
+    const cat = r.category || "Uncategorized";
+    categories[cat] = (categories[cat] || 0) + 1;
+  });
+  
+  return Object.entries(categories)
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+}
+
+function prepareHealthOpsTimeline(hospitalRecords) {
+  const data = [];
+  for (let i = 13; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    const record = hospitalRecords.find(r => r.record_date === dateStr);
+    
+    const elNinoCases = record 
+      ? (record.heat_stroke_cases || 0) + (record.heat_exhaustion_cases || 0) + 
+        (record.dehydration_cases || 0) + (record.respiratory_cases || 0)
+      : 0;
+    
+    data.push({
+      date: formatDateShort(dateStr),
+      admissions: record?.total_admissions || 0,
+      elNinoCases
+    });
+  }
+  return data;
+}
+
+function prepareEmergencyOpsTimeline(cdrrmoRecords, bfpRecords) {
+  const data = [];
+  for (let i = 13; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    
+    const cdrrmoRecord = cdrrmoRecords.find(r => r.operation_date === dateStr);
+    const bfpRecord = bfpRecords.find(r => r.operation_date === dateStr);
+    
+    data.push({
+      date: formatDateShort(dateStr),
+      cdrrmo: (cdrrmoRecord?.relief_operations || 0) + (cdrrmoRecord?.evacuations_conducted || 0) + (cdrrmoRecord?.emergency_responses || 0),
+      bfp: (bfpRecord?.fire_incidents || 0) + (bfpRecord?.rescue_operations || 0),
+      ambulance: cdrrmoRecord?.ambulance_dispatches || 0
+    });
+  }
+  return data;
+}
+
+function prepareStatusDistribution(reports) {
+  const pending = reports.filter(r => r.status === "pending").length;
+  const inprogress = reports.filter(r => r.status === "inprogress").length;
+  const resolved = reports.filter(r => r.status === "resolved").length;
+  
+  return [
+    { name: "Pending", value: pending, color: "#ef4444" },
+    { name: "In Progress", value: inprogress, color: "#3b82f6" },
+    { name: "Resolved", value: resolved, color: "#22c55e" }
+  ].filter(item => item.value > 0);
+}
+
+function renderPieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }) {
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
+  const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
+
+  return (
+    <text 
+      x={x} 
+      y={y} 
+      fill="white" 
+      textAnchor={x > cx ? 'start' : 'end'} 
+      dominantBaseline="central"
+      style={{ fontSize: 12, fontWeight: 800 }}
+    >
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
   );
 }
 
@@ -747,16 +1186,137 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
   };
 
   return (
-    <div style={cardStyle}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 16 }}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Citizen Reports</h3>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted, fontWeight: 700 }}>{filtered.length} results found</p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {/* Status Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <div style={{ 
+          ...cardStyle, 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center",
+          padding: 20
+        }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              Total Reports
+            </p>
+            <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: S.accent, lineHeight: 1 }}>
+              {filtered.length}
+            </p>
+          </div>
+          <div style={{ 
+            width: 48, 
+            height: 48, 
+            borderRadius: 14, 
+            background: S.accentBg, 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "center", 
+            color: S.accent 
+          }}>
+            <FileText size={22} />
+          </div>
         </div>
-        <button onClick={exportToPDF} style={{ padding: "8px 16px", borderRadius: 10, border: `1.5px solid ${S.border}`, background: "#fff", color: S.text, fontWeight: 800, fontSize: 13, cursor: "pointer", fontFamily: S.font, display: "flex", alignItems: "center", gap: 8, transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "#fafafa"} onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
-          <Download size={16} color={S.accent} /> Export PDF
-        </button>
+
+        <div style={{ 
+          ...cardStyle, 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center",
+          padding: 20
+        }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              Pending
+            </p>
+            <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: S.red, lineHeight: 1 }}>
+              {filtered.filter(r => r.status === "pending").length}
+            </p>
+          </div>
+          <div style={{ 
+            width: 48, 
+            height: 48, 
+            borderRadius: 14, 
+            background: S.redBg, 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "center", 
+            color: S.red 
+          }}>
+            <Clock size={22} />
+          </div>
+        </div>
+
+        <div style={{ 
+          ...cardStyle, 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center",
+          padding: 20
+        }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              In Progress
+            </p>
+            <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: S.blue, lineHeight: 1 }}>
+              {filtered.filter(r => r.status === "inprogress").length}
+            </p>
+          </div>
+          <div style={{ 
+            width: 48, 
+            height: 48, 
+            borderRadius: 14, 
+            background: S.blueBg, 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "center", 
+            color: S.blue 
+          }}>
+            <TrendingUp size={22} />
+          </div>
+        </div>
+
+        <div style={{ 
+          ...cardStyle, 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center",
+          padding: 20
+        }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              Resolved
+            </p>
+            <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: S.green, lineHeight: 1 }}>
+              {filtered.filter(r => r.status === "resolved").length}
+            </p>
+          </div>
+          <div style={{ 
+            width: 48, 
+            height: 48, 
+            borderRadius: 14, 
+            background: S.greenBg, 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "center", 
+            color: S.green 
+          }}>
+            <CheckCircle size={22} />
+          </div>
+        </div>
       </div>
+
+      {/* Existing Reports List Card */}
+      <div style={cardStyle}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Citizen Reports</h3>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted, fontWeight: 700 }}>{filtered.length} results found</p>
+          </div>
+          <button onClick={exportToPDF} style={{ padding: "8px 16px", borderRadius: 10, border: `1.5px solid ${S.border}`, background: "#fff", color: S.text, fontWeight: 800, fontSize: 13, cursor: "pointer", fontFamily: S.font, display: "flex", alignItems: "center", gap: 8, transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "#fafafa"} onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+            <Download size={16} color={S.accent} /> Export PDF
+          </button>
+        </div>
       
       <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20, flexWrap: "wrap", background: "#f8fafc", padding: 12, borderRadius: 12, border: `1px solid ${S.border}` }}>
         <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
@@ -800,6 +1360,7 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {filtered.map(r => <ReportRow key={r.id} report={r} showActions onUpdateStatus={s => updateStatus(r.id, s)} S={S} inputStyle={inputStyle} selectStyle={selectStyle} onClick={() => onViewReport(r)} />)}
         {filtered.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 40 }}>No results.</p>}
+      </div>
       </div>
     </div>
   );
@@ -3486,111 +4047,309 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Overview Analytics */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+      {/* Header */}
+      <div>
+        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>Palayan City BFP Operations</h3>
+        <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>Track daily fire and emergency response operations</p>
+      </div>
+
+      {/* Last 7 Days Analytics */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
         <div style={{ ...cardStyle, background: "#fef2f2", borderColor: "#fca5a5" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>Total Stations</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#991b1b" }}>{stations.length}</p>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>Fire Incidents</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#991b1b" }}>{totalFires}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
         </div>
         <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Active Fire Trucks</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#9a3412" }}>{totalTrucks}</p>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Fire Inspections</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#9a3412" }}>{totalInspections}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#eff6ff", borderColor: "#93c5fd" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#2563eb", textTransform: "uppercase" }}>Rescue Operations</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#1e3a8a" }}>{totalRescues}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
         </div>
         <div style={{ ...cardStyle, background: "#f0fdf4", borderColor: "#86efac" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#16a34a", textTransform: "uppercase" }}>Ready Personnel</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#14532d" }}>{totalPersonnel}</p>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#16a34a", textTransform: "uppercase" }}>Medical Assists</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#14532d" }}>{totalMedical}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#faf5ff", borderColor: "#d8b4fe" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#9333ea", textTransform: "uppercase" }}>Emergency Responses</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#581c87" }}>{totalResponses}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
         </div>
       </div>
 
-      {showForm ? (
-        <div style={cardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>{editId ? "Update Station" : "Add Fire Station"}</h3>
-            <button onClick={() => { setShowForm(false); setEditId(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
-          </div>
-          <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Station Name</label>
-                <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required style={inputStyle} />
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Location</label>
-                <input value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} required style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Fire Trucks</label>
-                <input type="number" min="0" value={formData.fire_trucks} onChange={e => setFormData({...formData, fire_trucks: e.target.value})} style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Active Personnel</label>
-                <input type="number" min="0" value={formData.active_personnel} onChange={e => setFormData({...formData, active_personnel: e.target.value})} style={inputStyle} />
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Contact Number</label>
-                <input value={formData.contact_number} onChange={e => setFormData({...formData, contact_number: e.target.value})} style={inputStyle} />
-              </div>
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
-              <button type="submit" style={btnPrimary}><Check size={16} /> Save</button>
-            </div>
-          </form>
+      {/* Sub-tabs: Add Record / View Records */}
+      <div style={cardStyle}>
+        <div style={{ display: "flex", gap: 12, borderBottom: `1px solid ${S.border}`, paddingBottom: 12, marginBottom: 16 }}>
+          <button
+            onClick={() => setActiveSubTab("add")}
+            style={{
+              background: activeSubTab === "add" ? S.primary : "transparent",
+              color: activeSubTab === "add" ? "#fff" : S.muted,
+              border: "none",
+              padding: "8px 16px",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer"
+            }}
+          >
+            Add Record
+          </button>
+          <button
+            onClick={() => setActiveSubTab("view")}
+            style={{
+              background: activeSubTab === "view" ? S.primary : "transparent",
+              color: activeSubTab === "view" ? "#fff" : S.muted,
+              border: "none",
+              padding: "8px 16px",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer"
+            }}
+          >
+            View Records
+          </button>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              marginLeft: "auto",
+              background: "none",
+              border: `1px solid ${S.border}`,
+              padding: "8px 12px",
+              borderRadius: 8,
+              cursor: "pointer",
+              color: S.text,
+              display: "flex",
+              alignItems: "center",
+              gap: 6
+            }}
+          >
+            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {isExpanded ? "Collapse" : "Expand"}
+          </button>
         </div>
-      ) : (
-        <div style={cardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>BFP Operations</h3>
-              <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage fire stations and track firefighting resources.</p>
-            </div>
-            <button onClick={() => { setFormData({ name: "", location: "", fire_trucks: 0, active_personnel: 0, contact_number: "" }); setShowForm(true); }} style={btnPrimary}>
-              <Plus size={16} /> Add Station
-            </button>
-          </div>
-          
-          {loading ? <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {stations.map(s => {
-                return (
-                  <div key={s.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9", display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div>
-                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#18181b", display: "flex", alignItems: "center", gap: 6 }}>
-                          <Flame size={16} color="#dc2626" /> {s.name}
-                        </h4>
-                        <p style={{ margin: "4px 0 0", fontSize: 12, color: S.muted, fontWeight: 600 }}><MapPin size={12} /> {s.location}</p>
-                      </div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <button onClick={() => editStation(s)} style={{ background: "none", border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: "pointer", color: S.text }}><Edit2 size={14} /></button>
-                        <button onClick={() => deleteStation(s.id)} style={btnDanger}><Trash2 size={14} /></button>
-                      </div>
+
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{ overflow: "hidden" }}
+            >
+              {activeSubTab === "add" && (
+                <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Operation Date
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.operation_date}
+                        onChange={e => setFormData({ ...formData, operation_date: e.target.value })}
+                        max={new Date().toISOString().split('T')[0]}
+                        readOnly={!!editId}
+                        disabled={!!editId}
+                        required
+                        style={{
+                          ...inputStyle,
+                          ...(editId ? { background: "#f3f4f6", color: "#9ca3af", opacity: 0.7 } : {})
+                        }}
+                      />
                     </div>
-                    
-                    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
-                      <div style={{ display: "flex", gap: 12 }}>
-                        <div style={{ textAlign: "center" }}>
-                          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase" }}>Fire Trucks</p>
-                          <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#dc2626" }}>{s.fire_trucks}</p>
-                        </div>
-                        <div style={{ textAlign: "center" }}>
-                          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase" }}>Personnel</p>
-                          <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#16a34a" }}>{s.active_personnel}</p>
-                        </div>
-                      </div>
-                      {s.contact_number && (
-                        <div style={{ marginLeft: "auto" }}>
-                          <span style={{ fontSize: 12, color: S.muted, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}><Phone size={14}/> {s.contact_number}</span>
-                        </div>
-                      )}
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Fire Incidents
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.fire_incidents}
+                        onChange={e => setFormData({ ...formData, fire_incidents: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Fire Prevention Inspections
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.fire_prevention_inspections}
+                        onChange={e => setFormData({ ...formData, fire_prevention_inspections: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Fire Safety Seminars
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.fire_safety_seminars}
+                        onChange={e => setFormData({ ...formData, fire_safety_seminars: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Rescue Operations
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.rescue_operations}
+                        onChange={e => setFormData({ ...formData, rescue_operations: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Medical Assists
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.medical_assists}
+                        onChange={e => setFormData({ ...formData, medical_assists: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Emergency Responses
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.emergency_responses}
+                        onChange={e => setFormData({ ...formData, emergency_responses: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
                     </div>
                   </div>
-                );
-              })}
-              {stations.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No fire stations found.</p>}
-            </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
+                    {editId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditId(null);
+                          setFormData({ operation_date: "", fire_incidents: 0, fire_prevention_inspections: 0, fire_safety_seminars: 0, rescue_operations: 0, medical_assists: 0, emergency_responses: 0 });
+                        }}
+                        style={{
+                          background: "none",
+                          border: `1px solid ${S.border}`,
+                          color: S.text,
+                          padding: "10px 20px",
+                          borderRadius: 8,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor: "pointer"
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button type="submit" style={btnPrimary}>
+                      <Check size={16} /> {editId ? "Update" : "Save"}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {activeSubTab === "view" && (
+                <div>
+                  {loading ? (
+                    <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p>
+                  ) : records.length === 0 ? (
+                    <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No records found.</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {records.map(r => (
+                        <div
+                          key={r.id}
+                          style={{
+                            border: `1px solid ${S.border}`,
+                            borderRadius: 12,
+                            padding: 16,
+                            background: "#fafcf9",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center"
+                          }}
+                        >
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <Calendar size={16} color={S.primary} />
+                              <span style={{ fontWeight: 900, fontSize: 14 }}>
+                                {new Date(r.operation_date + 'T00:00:00').toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }}>
+                              <span style={{ color: S.muted }}>
+                                <strong style={{ color: "#dc2626" }}>Fire Incidents:</strong> {r.fire_incidents}
+                              </span>
+                              <span style={{ color: S.muted }}>
+                                <strong style={{ color: "#ea580c" }}>Inspections:</strong> {r.fire_prevention_inspections}
+                              </span>
+                              <span style={{ color: S.muted }}>
+                                <strong style={{ color: "#f59e0b" }}>Seminars:</strong> {r.fire_safety_seminars}
+                              </span>
+                              <span style={{ color: S.muted }}>
+                                <strong style={{ color: "#2563eb" }}>Rescues:</strong> {r.rescue_operations}
+                              </span>
+                              <span style={{ color: S.muted }}>
+                                <strong style={{ color: "#16a34a" }}>Medical:</strong> {r.medical_assists}
+                              </span>
+                              <span style={{ color: S.muted }}>
+                                <strong style={{ color: "#9333ea" }}>Emergency:</strong> {r.emergency_responses}
+                              </span>
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button
+                              onClick={() => editRecord(r)}
+                              style={{
+                                background: "none",
+                                border: `1px solid ${S.border}`,
+                                borderRadius: 8,
+                                padding: 8,
+                                cursor: "pointer",
+                                color: S.text
+                              }}
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button onClick={() => deleteRecord(r.id)} style={btnDanger}>
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
           )}
-        </div>
-      )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
