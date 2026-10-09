@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Map, {
   Marker,
@@ -294,9 +294,38 @@ import { MapOverlayActions } from "../components/map/MapOverlayActions";
 import { MapPopupContent } from "../components/map/MapPopupContent";
 import { PhotoLightbox } from "../components/map/PhotoLightbox";
 import { DescriptionModal } from "../components/map/DescriptionModal";
-import { LayerControls } from "../components/map/LayerControls";
 import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
+import { PALAYAN_KLOUDTECH_STATIONS } from "../services/kloudtechService";
+import { KloudtrackStationMarker } from "../components/map/KloudtrackStationMarker";
+import { KloudtrackStationPopup } from "../components/map/KloudtrackStationPopup";
+import { KloudtrackMapControls, IOT_METRIC_CONFIG } from "../components/map/KloudtrackMapControls";
+
+function createGeoJSONCircle(center, radiusInKm, points = 64) {
+  const [lng, lat] = center;
+  const coords = { latitude: lat, longitude: lng };
+  const km = radiusInKm;
+  const ret = [];
+  const distanceX = km / (111.32 * Math.cos((coords.latitude * Math.PI) / 180));
+  const distanceY = km / 110.574;
+
+  for (let i = 0; i < points; i++) {
+    const theta = (i / points) * (2 * Math.PI);
+    const x = distanceX * Math.cos(theta);
+    const y = distanceY * Math.sin(theta);
+    ret.push([coords.longitude + x, coords.latitude + y]);
+  }
+  ret.push(ret[0]);
+
+  return {
+    type: "Feature",
+    geometry: {
+      type: "Polygon",
+      coordinates: [ret],
+    },
+    properties: {},
+  };
+}
 
 function MapScreen({
   onOpenModal,
@@ -326,12 +355,17 @@ function MapScreen({
   const [mapStyleId, setMapStyleId] = useState(isDark ? "dark-v11" : "streets-v12");
   const [isExiting, setIsExiting] = useState(false);
   const [barangayMarkers, setBarangayMarkers] = useState([]);
+  const [selectedKloudtrackStation, setSelectedKloudtrackStation] = useState(null);
+  const [activeMetric, setActiveMetric] = useState("heatIndex");
   const popupContentRef = useRef(null);
   const mapRef = useRef(null);
   const hasJumped = useRef(false);
 
   // Layer Management States
   const [activeLayers, setActiveLayers] = useState({
+    kloudtrackStations: true,
+    stationCoverage: true,
+    heatIndexCoverage: true,
     barangays: true,
     heatmap: false,
     reports: true,
@@ -344,6 +378,21 @@ function MapScreen({
     restaurants: false,
     attractions: false,
   });
+
+  // Coverage GeoJSON for Popolon AWS station [121.0471, 15.5413]
+  const stationCoverageGeoJSON = useMemo(() => {
+    return {
+      type: "FeatureCollection",
+      features: [createGeoJSONCircle([121.0471, 15.5413], 3.2)],
+    };
+  }, []);
+
+  const heatIndexCoverageGeoJSON = useMemo(() => {
+    return {
+      type: "FeatureCollection",
+      features: [createGeoJSONCircle([121.0471, 15.5413], 1.8)],
+    };
+  }, []);
 
   // Data States for Dynamic Layers
   const [hospitals, setHospitals] = useState([]);
@@ -671,13 +720,6 @@ function MapScreen({
         flexDirection: "column",
       }}
     >
-      {/* Layer Controls */}
-      <LayerControls
-        activeLayers={activeLayers}
-        onToggleLayer={toggleLayer}
-        isMapFullView={isMapFullView}
-      />
-
       <MapOverlayActions
         isMapFullView={isMapFullView}
         onOpenModal={onOpenModal}
@@ -688,6 +730,8 @@ function MapScreen({
         setSearchPin={setSearchPin}
         userLocation={userLocation}
         mapRef={mapRef}
+        activeLayers={activeLayers}
+        onToggleLayer={toggleLayer}
       />
 
       <div className="map-container" style={{ position: "absolute", inset: 0 }}>
@@ -744,6 +788,54 @@ function MapScreen({
                   "line-width": 1.5,
                   "line-opacity": mapStyleId === "dark-v11" ? 0.6 : 0.75,
                   "line-dasharray": [3, 2],
+                }}
+              />
+            </Source>
+          )}
+
+          {/* KloudTrack Station Coverage (3.2km IoT range) */}
+          {activeLayers.stationCoverage && (
+            <Source id="kloudtrack-station-coverage" type="geojson" data={stationCoverageGeoJSON}>
+              <Layer
+                id="station-coverage-fill"
+                type="fill"
+                paint={{
+                  "fill-color": IOT_METRIC_CONFIG[activeMetric]?.fillColor || "#3B82F6",
+                  "fill-opacity": 0.08,
+                }}
+              />
+              <Layer
+                id="station-coverage-stroke"
+                type="line"
+                paint={{
+                  "line-color": IOT_METRIC_CONFIG[activeMetric]?.color || "#3B82F6",
+                  "line-width": 1.5,
+                  "line-opacity": 0.45,
+                  "line-dasharray": [4, 3],
+                }}
+              />
+            </Source>
+          )}
+
+          {/* KloudTrack Active Metric Severity Zone (1.8km radius) */}
+          {activeLayers.heatIndexCoverage && (
+            <Source id="kloudtrack-heat-coverage" type="geojson" data={heatIndexCoverageGeoJSON}>
+              <Layer
+                id="heat-coverage-fill"
+                type="fill"
+                paint={{
+                  "fill-color": IOT_METRIC_CONFIG[activeMetric]?.fillColor || "#EF4444",
+                  "fill-opacity": 0.14,
+                }}
+              />
+              <Layer
+                id="heat-coverage-stroke"
+                type="line"
+                paint={{
+                  "line-color": IOT_METRIC_CONFIG[activeMetric]?.color || "#EF4444",
+                  "line-width": 2,
+                  "line-opacity": 0.75,
+                  "line-dasharray": [2, 2],
                 }}
               />
             </Source>
@@ -1034,6 +1126,69 @@ function MapScreen({
             </Marker>
           )}
 
+          {/* KloudTrack IoT Weather Stations */}
+          {activeLayers.kloudtrackStations && PALAYAN_KLOUDTECH_STATIONS.map((station) => (
+            <Marker
+              key={station.station.id}
+              longitude={station.station.location[1]}
+              latitude={station.station.location[0]}
+              anchor="bottom"
+              onClick={(e) => {
+                e.originalEvent.stopPropagation();
+                closePopup();
+                setSelectedKloudtrackStation(station);
+              }}
+            >
+              <KloudtrackStationMarker
+                station={station}
+                isSelected={selectedKloudtrackStation?.station?.id === station.station.id}
+                onClick={(st) => {
+                  closePopup();
+                  setSelectedKloudtrackStation(st);
+                }}
+                isDark={isDark}
+                activeMetric={activeMetric}
+              />
+            </Marker>
+          ))}
+
+          {/* KloudTrack Station Telemetry Popup */}
+          {selectedKloudtrackStation && (
+            <Popup
+              longitude={selectedKloudtrackStation.station.location[1]}
+              latitude={selectedKloudtrackStation.station.location[0]}
+              anchor="top"
+              offset={16}
+              closeButton={false}
+              closeOnClick={false}
+              onClose={() => setSelectedKloudtrackStation(null)}
+              maxWidth="360px"
+              style={{ zIndex: 100, fontFamily: "Nunito, sans-serif" }}
+            >
+              <KloudtrackStationPopup
+                station={selectedKloudtrackStation}
+                onClose={() => setSelectedKloudtrackStation(null)}
+                onFocusStation={() => {
+                  if (mapRef.current) {
+                    mapRef.current.flyTo({
+                      center: [
+                        selectedKloudtrackStation.station.location[1],
+                        selectedKloudtrackStation.station.location[0],
+                      ],
+                      zoom: 17.5,
+                      pitch: 55,
+                      bearing: -20,
+                      duration: 1500,
+                    });
+                  }
+                }}
+                isDark={isDark}
+                activeMetric={activeMetric}
+                onSelectMetric={setActiveMetric}
+              />
+            </Popup>
+          )}
+
           {selectedReport && (
             <Popup
               longitude={selectedReport.lng}
@@ -1067,8 +1222,8 @@ function MapScreen({
           <div
             style={{
               position: "absolute",
-              bottom: "calc(16px + env(safe-area-inset-bottom, 0px) + 64px + 6px + 64px + 6px)",
-              right: 14,
+              bottom: "calc(16px + env(safe-area-inset-bottom, 0px) + 58px + 10px + 64px + 10px)",
+              right: 16,
               width: 64,
               zIndex: 9,
               opacity: isMapFullView ? 1 : 0,
@@ -1168,8 +1323,8 @@ function MapScreen({
               style={{
                 position: "absolute",
                 bottom:
-                  "calc(16px + env(safe-area-inset-bottom, 0px) + 64px + 6px)",
-                right: 14,
+                  "calc(16px + env(safe-area-inset-bottom, 0px) + 58px + 10px)",
+                right: 16,
                 width: 64,
                 height: 64,
                 background: isDark ? "#18181b" : "#ffffff",
@@ -1211,6 +1366,15 @@ function MapScreen({
         setDescModalOpen={setDescModalOpen}
         selectedReport={selectedReport}
       />
+
+      {/* KloudTrack Native IoT Weather Controls: Metric Switcher Bar & Advisory Scale Legend */}
+      {activeLayers.kloudtrackStations && (
+        <KloudtrackMapControls
+          activeMetric={activeMetric}
+          onSelectMetric={setActiveMetric}
+          isMapFullView={isMapFullView}
+        />
+      )}
     </div>
   );
 }
