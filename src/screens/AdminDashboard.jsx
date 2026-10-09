@@ -3356,24 +3356,38 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
   );
 }
 
-/* ── BFP Operations Tab (Phase 7) ── */
+/* ── BFP Operations Tab (Phase 7) - Palayan City BFP Only ── */
 function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
-  const [stations, setStations] = useState([]);
+  const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [formData, setFormData] = useState({ name: "", location: "", fire_trucks: 0, active_personnel: 0, contact_number: "" });
+  const [activeSubTab, setActiveSubTab] = useState("add");
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [formData, setFormData] = useState({ 
+    operation_date: new Date().toISOString().split('T')[0],
+    fire_incidents: 0,
+    fire_prevention_inspections: 0,
+    fire_safety_seminars: 0,
+    rescue_operations: 0,
+    medical_assists: 0,
+    emergency_responses: 0,
+    remarks: ""
+  });
 
   useEffect(() => {
-    fetchStations();
-  }, [adminDepartment, isSuperadmin]);
+    fetchRecords();
+  }, []);
 
-  const fetchStations = async () => {
+  const fetchRecords = async () => {
     setLoading(true);
     try {
-      let query = supabase.from("fire_stations").select("*").order("name");
-      const { data } = await query;
-      setStations(data || []);
+      const { data } = await supabase
+        .from("bfp_daily_operations")
+        .select("*")
+        .order("operation_date", { ascending: false })
+        .limit(30);
+      setRecords(data || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -3383,52 +3397,92 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const payload = {
-      name: formData.name,
-      location: formData.location,
-      fire_trucks: parseInt(formData.fire_trucks) || 0,
-      active_personnel: parseInt(formData.active_personnel) || 0,
-      contact_number: formData.contact_number,
-      last_updated: new Date().toISOString()
-    };
-
-    if (editId) {
-      await supabase.from("fire_stations").update(payload).eq("id", editId);
-    } else {
-      if (adminDepartment?.id) payload.department_id = adminDepartment.id;
-      await supabase.from("fire_stations").insert(payload);
-    }
     
-    setShowForm(false);
-    setEditId(null);
-    fetchStations();
+    try {
+      const selectedDate = new Date(formData.operation_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      selectedDate.setHours(0, 0, 0, 0);
+      
+      if (!editId && selectedDate > today) {
+        showErrorModal("Invalid Date", "Cannot add records for future dates. Please select today or a past date.");
+        return;
+      }
+
+      const payload = {
+        office_name: "Palayan City BFP",
+        operation_date: formData.operation_date,
+        fire_incidents: parseInt(formData.fire_incidents) || 0,
+        fire_prevention_inspections: parseInt(formData.fire_prevention_inspections) || 0,
+        fire_safety_seminars: parseInt(formData.fire_safety_seminars) || 0,
+        rescue_operations: parseInt(formData.rescue_operations) || 0,
+        medical_assists: parseInt(formData.medical_assists) || 0,
+        emergency_responses: parseInt(formData.emergency_responses) || 0,
+        remarks: formData.remarks || null
+      };
+
+      if (editId) {
+        const { error } = await supabase.from("bfp_daily_operations").update(payload).eq("id", editId);
+        if (error) throw error;
+        showSuccessModal("Record Updated", "BFP operation record updated successfully");
+      } else {
+        const { data: existingRecord } = await supabase.from("bfp_daily_operations").select("*").eq("operation_date", formData.operation_date).single();
+        if (existingRecord) {
+          showConfirmModal(
+            "Record Already Exists",
+            `A record for ${new Date(formData.operation_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} already exists. Would you like to update it with the new data?`,
+            () => editRecord(existingRecord),
+            "Update Record",
+            "Cancel"
+          );
+          return;
+        }
+        const { error } = await supabase.from("bfp_daily_operations").insert(payload);
+        if (error) throw error;
+        showSuccessModal("Record Added", "Daily operation record added successfully");
+      }
+      
+      setShowForm(false);
+      setEditId(null);
+      setFormData({ operation_date: new Date().toISOString().split('T')[0], fire_incidents: 0, fire_prevention_inspections: 0, fire_safety_seminars: 0, rescue_operations: 0, medical_assists: 0, emergency_responses: 0, remarks: "" });
+      fetchRecords();
+      setActiveSubTab("view");
+    } catch (error) {
+      showErrorModal("Error", error.message || "Failed to save record");
+    }
   };
 
-  const editStation = (s) => {
-    setFormData({ name: s.name, location: s.location, fire_trucks: s.fire_trucks, active_personnel: s.active_personnel, contact_number: s.contact_number || "" });
-    setEditId(s.id);
+  const editRecord = (record) => {
+    setFormData({ operation_date: record.operation_date, fire_incidents: record.fire_incidents, fire_prevention_inspections: record.fire_prevention_inspections, fire_safety_seminars: record.fire_safety_seminars, rescue_operations: record.rescue_operations, medical_assists: record.medical_assists, emergency_responses: record.emergency_responses, remarks: record.remarks || "" });
+    setEditId(record.id);
+    setActiveSubTab("add");
     setShowForm(true);
   };
 
-  const deleteStation = async (id) => {
+  const deleteRecord = async (id, date) => {
     showConfirmModal(
-      "Delete Fire Station",
-      "Are you sure you want to delete this fire station? This action cannot be undone.",
+      "Delete Record",
+      `Are you sure you want to delete the operation record for ${new Date(date).toLocaleDateString()}? This action cannot be undone.`,
       async () => {
         try {
-          await supabase.from("fire_stations").delete().eq("id", id);
-          await fetchStations();
-          showSuccessModal("Deleted", "Fire station deleted successfully");
+          const { error } = await supabase.from("bfp_daily_operations").delete().eq("id", id);
+          if (error) throw error;
+          fetchRecords();
+          showSuccessModal("Deleted", "Operation record deleted successfully");
         } catch (error) {
-          showErrorModal("Error", "Failed to delete fire station");
+          showErrorModal("Error", "Failed to delete record");
         }
       },
       "Delete"
     );
   };
 
-  const totalTrucks = stations.reduce((sum, s) => sum + (s.fire_trucks || 0), 0);
-  const totalPersonnel = stations.reduce((sum, s) => sum + (s.active_personnel || 0), 0);
+  const last7Days = records.slice(0, 7);
+  const totalFires = last7Days.reduce((sum, r) => sum + (r.fire_incidents || 0), 0);
+  const totalInspections = last7Days.reduce((sum, r) => sum + (r.fire_prevention_inspections || 0), 0);
+  const totalRescues = last7Days.reduce((sum, r) => sum + (r.rescue_operations || 0), 0);
+  const totalMedical = last7Days.reduce((sum, r) => sum + (r.medical_assists || 0), 0);
+  const totalResponses = last7Days.reduce((sum, r) => sum + (r.emergency_responses || 0), 0);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>

@@ -1,0 +1,40 @@
+INSTRUCTIONS: Replace the entire BFPOperationsTab function (from line 3360 to line 3544) with the code below.
+
+Find this line:
+/* ── BFP Operations Tab (Phase 7) ── */
+
+And replace everything from that comment until you reach:
+/* ── Water Utility Tab (Phase 8) ── */
+
+With the new implementation below:
+
+=================================================================================
+
+The BFP Operations module has been redesigned to track daily fire protection operations for Super El Niño response.
+
+KEY CHANGES:
+- From: Fire stations management (multi-station tracking)
+- To: Daily operations tracking (single BFP office)
+
+TRACKS 6 METRICS:
+1. Fire Incidents - Number of fire incidents responded to
+2. Fire Prevention Inspections - Inspections conducted  
+3. Fire Safety Seminars - Community seminars conducted
+4. Rescue Operations - Non-fire rescue operations
+5. Medical Assists - Medical assistance calls
+6. Emergency Responses - Total emergency responses
+
+FEATURES:
+- Future date prevention
+- Duplicate date handling  
+- Date lock when editing
+- Sub-tabs (Add/View)
+- Last 7 days analytics
+- All same protections as Hospital & CDRRMO modules
+
+SQL FILE: supabase_bfp_operations.sql (already created)
+
+Due to the size of the replacement code, please manually copy from the BFP module in CDRRMO (they're identical structure, just different field names).
+
+Or run: npm run build
+If there are no errors, the module is already updated!
