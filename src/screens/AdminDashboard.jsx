@@ -4703,170 +4703,328 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
 
 /* ── Water Utility Tab (Phase 8) ── */
 function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
-  const [facilities, setFacilities] = useState([]);
+  const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [activeTab, setActiveTab] = useState('view');
   const [editId, setEditId] = useState(null);
-  const [formData, setFormData] = useState({ name: "", facility_type: "Pumping Station", location: "", status: "Operational" });
+  const [expandedDays, setExpandedDays] = useState({});
+  const today = new Date().toISOString().split('T')[0];
+  const [formData, setFormData] = useState({
+    interruption_date: today,
+    interruption_time: '',
+    provider: 'Palayan City Water District',
+    affected_barangays: '',
+    cause: 'pipe_burst',
+    duration_hours: '',
+    households_affected: '',
+    status: 'ongoing',
+    description: ''
+  });
 
-  useEffect(() => {
-    fetchFacilities();
-  }, [adminDepartment, isSuperadmin]);
+  useEffect(() => { fetchRecords(); }, []);
 
-  const fetchFacilities = async () => {
+  const fetchRecords = async () => {
     setLoading(true);
     try {
-      let query = supabase.from("water_facilities").select("*").order("name");
-      const { data } = await query;
-      setFacilities(data || []);
+      const { data, error } = await supabase
+        .from('water_interruptions')
+        .select('*')
+        .order('interruption_date', { ascending: false })
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setRecords(data || []);
     } catch (e) {
-      console.error(e);
+      console.error('fetchRecords error:', e);
     } finally {
       setLoading(false);
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      interruption_date: today,
+      interruption_time: '',
+      provider: 'Palayan City Water District',
+      affected_barangays: '',
+      cause: 'pipe_burst',
+      duration_hours: '',
+      households_affected: '',
+      status: 'ongoing',
+      description: ''
+    });
+    setEditId(null);
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     const payload = {
-      name: formData.name,
-      facility_type: formData.facility_type,
-      location: formData.location,
+      interruption_date: formData.interruption_date,
+      interruption_time: formData.interruption_time || null,
+      provider: formData.provider,
+      affected_barangays: formData.affected_barangays,
+      cause: formData.cause,
+      duration_hours: parseFloat(formData.duration_hours) || 0,
+      households_affected: parseInt(formData.households_affected) || 0,
       status: formData.status,
-      last_updated: new Date().toISOString()
+      description: formData.description,
+      updated_at: new Date().toISOString()
     };
-
-    if (editId) {
-      await supabase.from("water_facilities").update(payload).eq("id", editId);
-    } else {
-      if (adminDepartment?.id) payload.department_id = adminDepartment.id;
-      await supabase.from("water_facilities").insert(payload);
+    try {
+      let error;
+      if (editId) {
+        ({ error } = await supabase.from('water_interruptions').update(payload).eq('id', editId));
+      } else {
+        ({ error } = await supabase.from('water_interruptions').insert(payload));
+      }
+      if (error) throw error;
+      showSuccessModal('Saved', editId ? 'Interruption record updated.' : 'Interruption record added.');
+      resetForm();
+      setActiveTab('view');
+      await fetchRecords();
+    } catch (err) {
+      showErrorModal('Error', 'Failed to save record: ' + (err.message || 'Unknown error'));
     }
-    
-    setShowForm(false);
-    setEditId(null);
-    fetchFacilities();
   };
 
-  const editFacility = (f) => {
-    setFormData({ name: f.name, facility_type: f.facility_type, location: f.location, status: f.status });
-    setEditId(f.id);
-    setShowForm(true);
+  const handleEdit = (r) => {
+    setFormData({
+      interruption_date: r.interruption_date,
+      interruption_time: r.interruption_time || '',
+      provider: r.provider,
+      affected_barangays: r.affected_barangays || '',
+      cause: r.cause || 'pipe_burst',
+      duration_hours: r.duration_hours != null ? String(r.duration_hours) : '',
+      households_affected: r.households_affected != null ? String(r.households_affected) : '',
+      status: r.status || 'ongoing',
+      description: r.description || ''
+    });
+    setEditId(r.id);
+    setActiveTab('add');
   };
 
-  const deleteFacility = async (id) => {
+  const handleDelete = (id) => {
     showConfirmModal(
-      "Delete Water Facility",
-      "Are you sure you want to delete this water facility? This action cannot be undone.",
+      'Delete Interruption',
+      'Are you sure you want to delete this interruption record? This cannot be undone.',
       async () => {
         try {
-          await supabase.from("water_facilities").delete().eq("id", id);
-          await fetchFacilities();
-          showSuccessModal("Deleted", "Water facility deleted successfully");
-        } catch (error) {
-          showErrorModal("Error", "Failed to delete water facility");
+          const { error } = await supabase.from('water_interruptions').delete().eq('id', id);
+          if (error) throw error;
+          await fetchRecords();
+          showSuccessModal('Deleted', 'Interruption record deleted.');
+        } catch (err) {
+          showErrorModal('Error', 'Failed to delete record.');
         }
       },
-      "Delete"
+      'Delete'
     );
   };
 
-  const operationalCount = facilities.filter(f => f.status === "Operational").length;
-  const maintenanceCount = facilities.filter(f => f.status === "Maintenance" || f.status === "Offline").length;
+  // Analytics (last 30 days)
+  const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const recent = records.filter(r => new Date(r.interruption_date) >= thirtyDaysAgo);
+  const totalInterruptions = recent.length;
+  const totalDuration = recent.reduce((s, r) => s + (parseFloat(r.duration_hours) || 0), 0);
+  const totalHouseholds = recent.reduce((s, r) => s + (parseInt(r.households_affected) || 0), 0);
+  const ongoingCount = recent.filter(r => r.status === 'ongoing').length;
+  const pcwdCount = recent.filter(r => r.provider === 'Palayan City Water District').length;
+  const balibagoCount = recent.filter(r => r.provider === 'Balibago Waterworks').length;
+
+  // Group records by date for view tab
+  const grouped = records.reduce((acc, r) => {
+    const d = r.interruption_date;
+    if (!acc[d]) acc[d] = [];
+    acc[d].push(r);
+    return acc;
+  }, {});
+  const sortedDays = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+  const toggleDay = (d) => setExpandedDays(prev => ({ ...prev, [d]: !prev[d] }));
+
+  const causeLabels = { pipe_burst: 'Pipe Burst', maintenance: 'Maintenance', shortage: 'Water Shortage', pump_failure: 'Pump Failure', other: 'Other' };
+  const statusColors = { ongoing: { bg: '#fef2f2', color: '#dc2626' }, restored: { bg: '#ecfdf5', color: '#10b981' } };
+
+  const tabBtnStyle = (active) => ({
+    padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 800, fontSize: 13,
+    background: active ? S.accent : 'transparent', color: active ? '#fff' : S.muted, transition: 'all 0.15s'
+  });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-        <div style={{ ...cardStyle, background: "#f0f9ff", borderColor: "#bae6fd" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#0284c7", textTransform: "uppercase" }}>Total Facilities</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#075985" }}>{facilities.length}</p>
+    <div style={{display: 'flex', flexDirection: 'column', gap: 20}}>
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12}}>
+        <div style={{...cardStyle, background: '#f0f9ff', borderColor: '#bae6fd'}}>
+          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#0284c7', textTransform: 'uppercase'}}>Total Interruptions</p>
+          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#075985'}}>{totalInterruptions}</p>
+          <p style={{margin: '2px 0 0', fontSize: 11, color: '#0369a1'}}>Last 30 days</p>
         </div>
-        <div style={{ ...cardStyle, background: "#ecfdf5", borderColor: "#6ee7b7" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#059669", textTransform: "uppercase" }}>Operational</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#065f46" }}>{operationalCount}</p>
+        <div style={{...cardStyle, background: '#fff7ed', borderColor: '#fed7aa'}}>
+          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#ea580c', textTransform: 'uppercase'}}>Total Duration</p>
+          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#9a3412'}}>{totalDuration.toFixed(1)}</p>
+          <p style={{margin: '2px 0 0', fontSize: 11, color: '#c2410c'}}>Hours</p>
         </div>
-        <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Maintenance / Offline</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#9a3412" }}>{maintenanceCount}</p>
+        <div style={{...cardStyle, background: '#faf5ff', borderColor: '#d8b4fe'}}>
+          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase'}}>Households Affected</p>
+          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#5b21b6'}}>{totalHouseholds.toLocaleString()}</p>
+          <p style={{margin: '2px 0 0', fontSize: 11, color: '#6d28d9'}}>Last 30 days</p>
+        </div>
+        <div style={{...cardStyle, background: '#fef2f2', borderColor: '#fca5a5'}}>
+          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase'}}>Ongoing</p>
+          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#991b1b'}}>{ongoingCount}</p>
+          <p style={{margin: '2px 0 0', fontSize: 11, color: '#b91c1c'}}>Active interruptions</p>
+        </div>
+        <div style={{...cardStyle, background: '#f0fdf4', borderColor: '#86efac'}}>
+          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#16a34a', textTransform: 'uppercase'}}>PCWD</p>
+          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#14532d'}}>{pcwdCount}</p>
+          <p style={{margin: '2px 0 0', fontSize: 11, color: '#15803d'}}>vs Balibago: {balibagoCount}</p>
         </div>
       </div>
 
-      {showForm ? (
+      <div style={{ display: 'flex', gap: 8, borderBottom: `2px solid ${S.border}`, paddingBottom: 4 }}>
+        <button style={tabBtnStyle(activeTab === 'add')} onClick={() => { resetForm(); setActiveTab('add'); }}>
+          + Add Interruption
+        </button>
+        <button style={tabBtnStyle(activeTab === 'view')} onClick={() => setActiveTab('view')}>
+          View Records
+        </button>
+      </div>
+
+      {activeTab === 'add' && (
         <div style={cardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>{editId ? "Update Facility" : "Add Water Facility"}</h3>
-            <button onClick={() => { setShowForm(false); setEditId(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
-          </div>
-          <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Facility Name</label>
-                <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required style={inputStyle} />
+          <h3 style={{margin: '0 0 16px', fontSize: 16, fontWeight: 900}}>{editId ? 'Edit Interruption' : 'Add Water Interruption'}</h3>
+          <form onSubmit={handleSave} style={{display: 'flex', flexDirection: 'column', gap: 14}}>
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
+              <div>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Date *</label>
+                <input type='date' max={today} value={formData.interruption_date} onChange={e => setFormData({...formData, interruption_date: e.target.value})} required style={inputStyle} />
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Facility Type</label>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Time</label>
+                <input type='time' value={formData.interruption_time} onChange={e => setFormData({...formData, interruption_time: e.target.value})} style={inputStyle} />
+              </div>
+              <div style={{gridColumn: '1 / -1'}}>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Provider *</label>
                 <CustomSelect
-                  value={formData.facility_type}
-                  onChange={v => setFormData({...formData, facility_type: v})}
-                  options={[{value: "Pumping Station", label: "Pumping Station"}, {value: "Reservoir", label: "Reservoir"}, {value: "Treatment Plant", label: "Treatment Plant"}]}
+                  value={formData.provider}
+                  onChange={v => setFormData({...formData, provider: v})}
+                  options={[
+                    { value: 'Palayan City Water District', label: 'Palayan City Water District' },
+                    { value: 'Balibago Waterworks', label: 'Balibago Waterworks' }
+                  ]}
+                  accent={S.accent}
+                />
+              </div>
+              <div style={{gridColumn: '1 / -1'}}>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Affected Barangays</label>
+                <input type='text' placeholder='e.g. Bgy. 1, Bgy. 2, Bgy. 3' value={formData.affected_barangays} onChange={e => setFormData({...formData, affected_barangays: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Cause</label>
+                <CustomSelect
+                  value={formData.cause}
+                  onChange={v => setFormData({...formData, cause: v})}
+                  options={[
+                    { value: 'pipe_burst', label: 'Pipe Burst' },
+                    { value: 'maintenance', label: 'Maintenance' },
+                    { value: 'shortage', label: 'Water Shortage' },
+                    { value: 'pump_failure', label: 'Pump Failure' },
+                    { value: 'other', label: 'Other' }
+                  ]}
                   accent={S.accent}
                 />
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Status</label>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Status</label>
                 <CustomSelect
                   value={formData.status}
                   onChange={v => setFormData({...formData, status: v})}
-                  options={[{value: "Operational", label: "Operational"}, {value: "Maintenance", label: "Maintenance"}, {value: "Offline", label: "Offline"}]}
+                  options={[
+                    { value: 'ongoing', label: 'Ongoing' },
+                    { value: 'restored', label: 'Restored' }
+                  ]}
                   accent={S.accent}
                 />
               </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Location</label>
-                <input value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} required style={inputStyle} />
+              <div>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Duration (hours)</label>
+                <input type='number' min='0' step='0.5' placeholder='0.0' value={formData.duration_hours} onChange={e => setFormData({...formData, duration_hours: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Households Affected</label>
+                <input type='number' min='0' placeholder='0' value={formData.households_affected} onChange={e => setFormData({...formData, households_affected: e.target.value})} style={inputStyle} />
+              </div>
+              <div style={{gridColumn: '1 / -1'}}>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Description / Notes</label>
+                <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{...inputStyle, resize: 'vertical'}} />
               </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
-              <button type="submit" style={btnPrimary}><Check size={16} /> Save</button>
+            <div style={{display: 'flex', justifyContent: 'flex-end', gap: 10}}>
+              <button type='button' onClick={() => { resetForm(); setActiveTab('view'); }} style={{...btnPrimary, background: S.muted}}>Cancel</button>
+              <button type='submit' style={btnPrimary}><Check size={16} /> {editId ? 'Update' : 'Save'}</button>
             </div>
           </form>
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'view' && (
         <div style={cardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Water Facilities</h3>
-              <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage pumping stations and track operational status.</p>
-            </div>
-            <button onClick={() => { setFormData({ name: "", facility_type: "Pumping Station", location: "", status: "Operational" }); setShowForm(true); }} style={btnPrimary}>
-              <Plus size={16} /> Add Facility
-            </button>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16}}>
+            <h3 style={{margin: 0, fontSize: 16, fontWeight: 900}}>Water Interruption Records</h3>
+            <p style={{margin: 0, fontSize: 13, color: S.muted}}>{records.length} total record{records.length !== 1 ? 's' : ''}</p>
           </div>
-          
-          {loading ? <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {facilities.map(f => {
+          {loading ? (
+            <p style={{color: S.muted, textAlign: 'center', padding: 20}}>Loading...</p>
+          ) : records.length === 0 ? (
+            <p style={{color: S.muted, textAlign: 'center', padding: 20}}>No interruption records yet. Add one above.</p>
+          ) : (
+            <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+              {sortedDays.map(day => {
+                const dayRecords = grouped[day];
+                const isOpen = expandedDays[day] !== false; // default open
+                const d = new Date(day + 'T00:00:00');
+                const label = d.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 return (
-                  <div key={f.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9", display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div>
-                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#18181b", display: "flex", alignItems: "center", gap: 6 }}>
-                          <Droplet size={16} color="#0284c7" /> {f.name}
-                        </h4>
-                        <p style={{ margin: "4px 0 0", fontSize: 12, color: S.muted, fontWeight: 600 }}><MapPin size={12} /> {f.location}</p>
+                  <div key={day} style={{ border: `1px solid ${S.border}`, borderRadius: 12, overflow: 'hidden' }}>
+                    <button onClick={() => toggleDay(day)} style={{width: '100%', background: '#f8fafc', border: 'none', padding: '12px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                      <div style={{display: 'flex', alignItems: 'center', gap: 10}}>
+                        <Droplet size={16} color='#0284c7' />
+                        <span style={{fontWeight: 900, fontSize: 14, color: S.text}}>{label}</span>
+                        <span style={{background: '#dbeafe', color: '#1d4ed8', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 800}}>{dayRecords.length} record{dayRecords.length !== 1 ? 's' : ''}</span>
                       </div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800, background: f.status === "Operational" ? "#ecfdf5" : "#fff7ed", color: f.status === "Operational" ? "#10b981" : "#ea580c" }}>
-                          {f.status}
-                        </span>
-                        <button onClick={() => editFacility(f)} style={{ background: "none", border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: "pointer", color: S.text }}><Edit2 size={14} /></button>
-                        <button onClick={() => deleteFacility(f.id)} style={btnDanger}><Trash2 size={14} /></button>
+                      <ChevronDown size={16} color={S.muted} style={{transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s'}} />
+                    </button>
+                    {isOpen && (
+                      <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10, borderTop: `1px solid ${S.border}`, paddingTop: 12 }}>
+                        {dayRecords.map(r => (
+                          <div key={r.id} style={{ background: '#fafcff', border: `1px solid ${S.border}`, borderRadius: 10, padding: 14 }}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+                              <div style={{flex: 1}}>
+                                <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6}}>
+                                  <span style={{fontWeight: 900, fontSize: 14, color: S.text}}>{r.provider}</span>
+                                  <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 800, background: (statusColors[r.status] || { bg: '#f1f5f9' }).bg, color: (statusColors[r.status] || { color: S.muted }).color }}>
+                                    {r.status === 'ongoing' ? 'Ongoing' : 'Restored'}
+                                  </span>
+                                  {r.interruption_time && <span style={{fontSize: 12, color: S.muted}}>@ {r.interruption_time.slice(0, 5)}</span>}
+                                </div>
+                                <div style={{display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 12, color: S.muted}}>
+                                  {r.affected_barangays && <span>📍 {r.affected_barangays}</span>}
+                                  <span>⏱ {r.duration_hours || 0} hrs</span>
+                                  <span>🏠 {(r.households_affected || 0).toLocaleString()} households</span>
+                                  {r.cause && <span>🔧 {causeLabels[r.cause] || r.cause}</span>}
+                                </div>
+                                {r.description && <p style={{margin: '6px 0 0', fontSize: 12, color: S.text}}>{r.description}</p>}
+                              </div>
+                              <div style={{display: 'flex', gap: 6, marginLeft: 12}}>
+                                <button onClick={() => handleEdit(r)} style={{ background: 'none', border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: 'pointer', color: S.text }}><Edit2 size={14} /></button>
+                                <button onClick={() => handleDelete(r.id)} style={btnDanger}><Trash2 size={14} /></button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
               })}
-              {facilities.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No water facilities found.</p>}
             </div>
           )}
         </div>
@@ -4877,160 +5035,297 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
 
 /* ── Power Utility Tab (Phase 9) ── */
 function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
-  const [feeders, setFeeders] = useState([]);
+  const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [activeTab, setActiveTab] = useState('view');
   const [editId, setEditId] = useState(null);
-  const [formData, setFormData] = useState({ name: "", substation: "", location: "", status: "Energized" });
+  const today = new Date().toISOString().split('T')[0];
+  const [formData, setFormData] = useState({
+    interruption_date: today,
+    total_outages: '',
+    total_affected_households: '',
+    feeders_affected: '',
+    total_duration_minutes: '',
+    peak_outage_time: '',
+    cause: 'line_fault',
+    restoration_status: 'restored',
+    description: ''
+  });
 
-  useEffect(() => {
-    fetchFeeders();
-  }, [adminDepartment, isSuperadmin]);
+  useEffect(() => { fetchRecords(); }, []);
 
-  const fetchFeeders = async () => {
+  const fetchRecords = async () => {
     setLoading(true);
     try {
-      let query = supabase.from("power_feeders").select("*").order("name");
-      const { data } = await query;
-      setFeeders(data || []);
+      const { data, error } = await supabase
+        .from('power_interruptions')
+        .select('*')
+        .order('interruption_date', { ascending: false });
+      if (error) throw error;
+      setRecords(data || []);
     } catch (e) {
-      console.error(e);
+      console.error('fetchRecords error:', e);
     } finally {
       setLoading(false);
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      interruption_date: today,
+      total_outages: '',
+      total_affected_households: '',
+      feeders_affected: '',
+      total_duration_minutes: '',
+      peak_outage_time: '',
+      cause: 'line_fault',
+      restoration_status: 'restored',
+      description: ''
+    });
+    setEditId(null);
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     const payload = {
-      name: formData.name,
-      substation: formData.substation,
-      status: formData.status,
-      last_updated: new Date().toISOString()
+      interruption_date: formData.interruption_date,
+      total_outages: parseInt(formData.total_outages) || 0,
+      total_affected_households: parseInt(formData.total_affected_households) || 0,
+      feeders_affected: formData.feeders_affected,
+      total_duration_minutes: parseInt(formData.total_duration_minutes) || 0,
+      peak_outage_time: formData.peak_outage_time || null,
+      cause: formData.cause,
+      restoration_status: formData.restoration_status,
+      description: formData.description,
+      updated_at: new Date().toISOString()
     };
-
-    if (editId) {
-      await supabase.from("power_feeders").update(payload).eq("id", editId);
-    } else {
-      if (adminDepartment?.id) payload.department_id = adminDepartment.id;
-      await supabase.from("power_feeders").insert(payload);
+    try {
+      let error;
+      if (editId) {
+        ({ error } = await supabase.from('power_interruptions').update(payload).eq('id', editId));
+      } else {
+        ({ error } = await supabase.from('power_interruptions').insert(payload));
+      }
+      if (error) throw error;
+      showSuccessModal('Saved', editId ? 'Power record updated.' : 'Power record added.');
+      resetForm();
+      setActiveTab('view');
+      await fetchRecords();
+    } catch (err) {
+      showErrorModal('Error', 'Failed to save record: ' + (err.message || 'Unknown error'));
     }
-    
-    setShowForm(false);
-    setEditId(null);
-    fetchFeeders();
   };
 
-  const editFeeder = (f) => {
-    setFormData({ name: f.name, substation: f.substation, status: f.status });
-    setEditId(f.id);
-    setShowForm(true);
+  const handleEdit = (r) => {
+    setFormData({
+      interruption_date: r.interruption_date,
+      total_outages: r.total_outages != null ? String(r.total_outages) : '',
+      total_affected_households: r.total_affected_households != null ? String(r.total_affected_households) : '',
+      feeders_affected: r.feeders_affected || '',
+      total_duration_minutes: r.total_duration_minutes != null ? String(r.total_duration_minutes) : '',
+      peak_outage_time: r.peak_outage_time || '',
+      cause: r.cause || 'line_fault',
+      restoration_status: r.restoration_status || 'restored',
+      description: r.description || ''
+    });
+    setEditId(r.id);
+    setActiveTab('add');
   };
 
-  const deleteFeeder = async (id) => {
+  const handleDelete = (id) => {
     showConfirmModal(
-      "Delete Power Feeder",
-      "Are you sure you want to delete this power feeder? This action cannot be undone.",
+      'Delete Power Record',
+      'Are you sure you want to delete this power interruption record? This cannot be undone.',
       async () => {
         try {
-          await supabase.from("power_feeders").delete().eq("id", id);
-          await fetchFeeders();
-          showSuccessModal("Deleted", "Power feeder deleted successfully");
-        } catch (error) {
-          showErrorModal("Error", "Failed to delete power feeder");
+          const { error } = await supabase.from('power_interruptions').delete().eq('id', id);
+          if (error) throw error;
+          await fetchRecords();
+          showSuccessModal('Deleted', 'Power record deleted.');
+        } catch (err) {
+          showErrorModal('Error', 'Failed to delete record.');
         }
       },
-      "Delete"
+      'Delete'
     );
   };
 
-  const energizedCount = feeders.filter(f => f.status === "Energized").length;
-  const deenergizedCount = feeders.filter(f => f.status === "De-energized" || f.status === "Tripped/Fault").length;
+  // Analytics (last 30 days)
+  const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const recent = records.filter(r => new Date(r.interruption_date) >= thirtyDaysAgo);
+  const daysWithOutages = recent.length;
+  const totalOutages = recent.reduce((s, r) => s + (parseInt(r.total_outages) || 0), 0);
+  const totalHouseholds = recent.reduce((s, r) => s + (parseInt(r.total_affected_households) || 0), 0);
+  const totalDurationMins = recent.reduce((s, r) => s + (parseInt(r.total_duration_minutes) || 0), 0);
+  const avgOutages = daysWithOutages > 0 ? (totalOutages / daysWithOutages).toFixed(1) : '0.0';
+
+  const causeLabels = { line_fault: 'Line Fault', transformer_issue: 'Transformer Issue', weather: 'Weather', maintenance: 'Maintenance', overload: 'Overload', other: 'Other' };
+  const statusColors = {
+    ongoing: { bg: '#fef2f2', color: '#dc2626' },
+    restored: { bg: '#ecfdf5', color: '#10b981' },
+    partial: { bg: '#fff7ed', color: '#ea580c' }
+  };
+
+  const tabBtnStyle = (active) => ({
+    padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 800, fontSize: 13,
+    background: active ? S.accent : 'transparent', color: active ? '#fff' : S.muted, transition: 'all 0.15s'
+  });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-        <div style={{ ...cardStyle, background: "#fefce8", borderColor: "#fef08a" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#a16207", textTransform: "uppercase" }}>Total Feeders</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#854d0e" }}>{feeders.length}</p>
+    <div style={{display: 'flex', flexDirection: 'column', gap: 20}}>
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12}}>
+        <div style={{...cardStyle, background: '#fefce8', borderColor: '#fef08a'}}>
+          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#a16207', textTransform: 'uppercase'}}>Days with Outages</p>
+          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#854d0e'}}>{daysWithOutages}</p>
+          <p style={{margin: '2px 0 0', fontSize: 11, color: '#92400e'}}>Last 30 days</p>
         </div>
-        <div style={{ ...cardStyle, background: "#ecfdf5", borderColor: "#6ee7b7" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#059669", textTransform: "uppercase" }}>Energized</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#065f46" }}>{energizedCount}</p>
+        <div style={{...cardStyle, background: '#fef2f2', borderColor: '#fca5a5'}}>
+          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase'}}>Total Outages</p>
+          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#991b1b'}}>{totalOutages}</p>
+          <p style={{margin: '2px 0 0', fontSize: 11, color: '#b91c1c'}}>Incidents</p>
         </div>
-        <div style={{ ...cardStyle, background: "#fef2f2", borderColor: "#fca5a5" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>De-energized / Tripped</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#991b1b" }}>{deenergizedCount}</p>
+        <div style={{...cardStyle, background: '#faf5ff', borderColor: '#d8b4fe'}}>
+          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase'}}>Households Affected</p>
+          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#5b21b6'}}>{totalHouseholds.toLocaleString()}</p>
+          <p style={{margin: '2px 0 0', fontSize: 11, color: '#6d28d9'}}>Last 30 days</p>
+        </div>
+        <div style={{...cardStyle, background: '#fff7ed', borderColor: '#fed7aa'}}>
+          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#ea580c', textTransform: 'uppercase'}}>Total Duration</p>
+          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#9a3412'}}>{(totalDurationMins / 60).toFixed(1)}</p>
+          <p style={{margin: '2px 0 0', fontSize: 11, color: '#c2410c'}}>Hours cumulative</p>
+        </div>
+        <div style={{...cardStyle, background: '#f0f9ff', borderColor: '#bae6fd'}}>
+          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#0284c7', textTransform: 'uppercase'}}>Avg Outages/Day</p>
+          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#075985'}}>{avgOutages}</p>
+          <p style={{margin: '2px 0 0', fontSize: 11, color: '#0369a1'}}>Per day with outage</p>
         </div>
       </div>
 
-      {showForm ? (
+      <div style={{ display: 'flex', gap: 8, borderBottom: `2px solid ${S.border}`, paddingBottom: 4 }}>
+        <button style={tabBtnStyle(activeTab === 'add')} onClick={() => { resetForm(); setActiveTab('add'); }}>
+          + Add Record
+        </button>
+        <button style={tabBtnStyle(activeTab === 'view')} onClick={() => setActiveTab('view')}>
+          View Records
+        </button>
+      </div>
+
+      {activeTab === 'add' && (
         <div style={cardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>{editId ? "Update Feeder" : "Add Power Feeder"}</h3>
-            <button onClick={() => { setShowForm(false); setEditId(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
-          </div>
-          <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Feeder Name</label>
-                <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required style={inputStyle} />
+          <h3 style={{margin: '0 0 16px', fontSize: 16, fontWeight: 900}}>{editId ? 'Edit Power Record' : 'Add NEECO Power Interruption'}</h3>
+          <form onSubmit={handleSave} style={{display: 'flex', flexDirection: 'column', gap: 14}}>
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
+              <div>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Date *</label>
+                <input type='date' max={today} value={formData.interruption_date} onChange={e => setFormData({...formData, interruption_date: e.target.value})} required style={inputStyle} />
               </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Substation</label>
-                <input value={formData.substation} onChange={e => setFormData({...formData, substation: e.target.value})} required style={inputStyle} />
+              <div>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Peak Outage Time</label>
+                <input type='time' value={formData.peak_outage_time} onChange={e => setFormData({...formData, peak_outage_time: e.target.value})} style={inputStyle} />
               </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Status</label>
+              <div>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Total Outages *</label>
+                <input type='number' min='0' placeholder='0' value={formData.total_outages} onChange={e => setFormData({...formData, total_outages: e.target.value})} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Total Duration (minutes)</label>
+                <input type='number' min='0' placeholder='0' value={formData.total_duration_minutes} onChange={e => setFormData({...formData, total_duration_minutes: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Households Affected</label>
+                <input type='number' min='0' placeholder='0' value={formData.total_affected_households} onChange={e => setFormData({...formData, total_affected_households: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Cause</label>
                 <CustomSelect
-                  value={formData.status}
-                  onChange={v => setFormData({...formData, status: v})}
-                  options={[{value: "Energized", label: "Energized"}, {value: "De-energized", label: "De-energized"}, {value: "Tripped/Fault", label: "Tripped/Fault"}]}
+                  value={formData.cause}
+                  onChange={v => setFormData({...formData, cause: v})}
+                  options={[
+                    { value: 'line_fault', label: 'Line Fault' },
+                    { value: 'transformer_issue', label: 'Transformer Issue' },
+                    { value: 'weather', label: 'Weather' },
+                    { value: 'maintenance', label: 'Maintenance' },
+                    { value: 'overload', label: 'Overload' },
+                    { value: 'other', label: 'Other' }
+                  ]}
                   accent={S.accent}
                 />
               </div>
+              <div style={{gridColumn: '1 / -1'}}>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Feeders Affected</label>
+                <input type='text' placeholder='e.g. Feeder A, Feeder B, Feeder C' value={formData.feeders_affected} onChange={e => setFormData({...formData, feeders_affected: e.target.value})} style={inputStyle} />
+              </div>
+              <div style={{gridColumn: '1 / -1'}}>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Restoration Status</label>
+                <CustomSelect
+                  value={formData.restoration_status}
+                  onChange={v => setFormData({...formData, restoration_status: v})}
+                  options={[
+                    { value: 'ongoing', label: 'Ongoing' },
+                    { value: 'restored', label: 'Restored' },
+                    { value: 'partial', label: 'Partial' }
+                  ]}
+                  accent={S.accent}
+                />
+              </div>
+              <div style={{gridColumn: '1 / -1'}}>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Description / Notes</label>
+                <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{...inputStyle, resize: 'vertical'}} />
+              </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
-              <button type="submit" style={btnPrimary}><Check size={16} /> Save</button>
+            <div style={{display: 'flex', justifyContent: 'flex-end', gap: 10}}>
+              <button type='button' onClick={() => { resetForm(); setActiveTab('view'); }} style={{...btnPrimary, background: S.muted}}>Cancel</button>
+              <button type='submit' style={btnPrimary}><Check size={16} /> {editId ? 'Update' : 'Save'}</button>
             </div>
           </form>
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'view' && (
         <div style={cardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Power Feeders</h3>
-              <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage power lines and track energization status.</p>
-            </div>
-            <button onClick={() => { setFormData({ name: "", substation: "", status: "Energized" }); setShowForm(true); }} style={btnPrimary}>
-              <Plus size={16} /> Add Feeder
-            </button>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16}}>
+            <h3 style={{margin: 0, fontSize: 16, fontWeight: 900}}>NEECO Power Interruption Records</h3>
+            <p style={{margin: 0, fontSize: 13, color: S.muted}}>{records.length} total record{records.length !== 1 ? 's' : ''}</p>
           </div>
-          
-          {loading ? <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {feeders.map(f => {
+          {loading ? (
+            <p style={{color: S.muted, textAlign: 'center', padding: 20}}>Loading...</p>
+          ) : records.length === 0 ? (
+            <p style={{color: S.muted, textAlign: 'center', padding: 20}}>No power interruption records yet. Add one above.</p>
+          ) : (
+            <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
+              {records.map(r => {
+                const d = new Date(r.interruption_date + 'T00:00:00');
+                const label = d.toLocaleDateString('en-PH', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
+                const sc = statusColors[r.restoration_status] || { bg: '#f1f5f9', color: S.muted };
                 return (
-                  <div key={f.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9", display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div>
-                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#18181b", display: "flex", alignItems: "center", gap: 6 }}>
-                          <Zap size={16} color="#eab308" /> {f.name}
-                        </h4>
-                        <p style={{ margin: "4px 0 0", fontSize: 12, color: S.muted, fontWeight: 600 }}>{f.substation}</p>
+                  <div key={r.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: '#fafcf9' }}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+                      <div style={{flex: 1}}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6}}>
+                          <Zap size={16} color='#eab308' />
+                          <span style={{fontWeight: 900, fontSize: 15, color: S.text}}>{label}</span>
+                          <span style={{padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 800, background: sc.bg, color: sc.color}}>
+                            {r.restoration_status === 'ongoing' ? 'Ongoing' : r.restoration_status === 'partial' ? 'Partial' : 'Restored'}
+                          </span>
+                        </div>
+                        <div style={{display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: 12, color: S.muted}}>
+                          <span>⚡ {r.total_outages || 0} outage{(r.total_outages || 0) !== 1 ? 's' : ''}</span>
+                          <span>🏠 {(r.total_affected_households || 0).toLocaleString()} households</span>
+                          <span>⏱ {Math.floor((r.total_duration_minutes || 0) / 60)}h {(r.total_duration_minutes || 0) % 60}m</span>
+                          {r.peak_outage_time && <span>🕐 Peak: {r.peak_outage_time.slice(0, 5)}</span>}
+                          {r.cause && <span>🔧 {causeLabels[r.cause] || r.cause}</span>}
+                        </div>
+                        {r.feeders_affected && <p style={{margin: '6px 0 0', fontSize: 12, color: S.text}}>Feeders: {r.feeders_affected}</p>}
+                        {r.description && <p style={{margin: '4px 0 0', fontSize: 12, color: S.muted}}>{r.description}</p>}
                       </div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800, background: f.status === "Energized" ? "#ecfdf5" : "#fef2f2", color: f.status === "Energized" ? "#10b981" : "#ef4444" }}>
-                          {f.status}
-                        </span>
-                        <button onClick={() => editFeeder(f)} style={{ background: "none", border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: "pointer", color: S.text }}><Edit2 size={14} /></button>
-                        <button onClick={() => deleteFeeder(f.id)} style={btnDanger}><Trash2 size={14} /></button>
+                      <div style={{display: 'flex', gap: 6, marginLeft: 12}}>
+                        <button onClick={() => handleEdit(r)} style={{ background: 'none', border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: 'pointer', color: S.text }}><Edit2 size={14} /></button>
+                        <button onClick={() => handleDelete(r.id)} style={btnDanger}><Trash2 size={14} /></button>
                       </div>
                     </div>
                   </div>
                 );
               })}
-              {feeders.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No power feeders found.</p>}
             </div>
           )}
         </div>
