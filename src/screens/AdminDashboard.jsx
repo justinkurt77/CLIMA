@@ -4496,24 +4496,51 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
                         {barangays.map(b => <option key={b} value={b}>{b}</option>)}
                       </select>
                     </div>
+                    
+                    {/* Conditional fields based on category */}
+                    {formData.category === "farm" ? (
+                      <>
+                        <div>
+                          <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Crop Type</label>
+                          <select value={formData.crop_type} onChange={e => setFormData({ ...formData, crop_type: e.target.value })} required style={selectStyle}>
+                            <option value="rice">Rice</option>
+                            <option value="corn">Corn</option>
+                            <option value="vegetables">Vegetables</option>
+                            <option value="fruits">Fruits</option>
+                            <option value="fishery">Fishery</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Area Affected (hectares)</label>
+                          <input type="number" min="0" step="0.01" value={formData.area_affected_hectares} onChange={e => setFormData({ ...formData, area_affected_hectares: e.target.value })} required style={inputStyle} />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Livestock Type</label>
+                          <select value={formData.crop_type} onChange={e => setFormData({ ...formData, crop_type: e.target.value })} required style={selectStyle}>
+                            <option value="cattle">Cattle</option>
+                            <option value="carabao">Carabao</option>
+                            <option value="swine">Swine</option>
+                            <option value="poultry">Poultry</option>
+                            <option value="goats">Goats</option>
+                            <option value="fish">Fish/Aquaculture</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Number of Animals Affected</label>
+                          <input type="number" min="0" value={formData.area_affected_hectares} onChange={e => setFormData({ ...formData, area_affected_hectares: e.target.value })} required style={inputStyle} placeholder="Count of animals" />
+                        </div>
+                      </>
+                    )}
+                    
                     <div>
-                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Crop Type</label>
-                      <select value={formData.crop_type} onChange={e => setFormData({ ...formData, crop_type: e.target.value })} required style={selectStyle}>
-                        <option value="rice">Rice</option>
-                        <option value="corn">Corn</option>
-                        <option value="vegetables">Vegetables</option>
-                        <option value="fruits">Fruits</option>
-                        <option value="livestock">Livestock</option>
-                        <option value="fishery">Fishery</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Area Affected (hectares)</label>
-                      <input type="number" min="0" step="0.01" value={formData.area_affected_hectares} onChange={e => setFormData({ ...formData, area_affected_hectares: e.target.value })} required style={inputStyle} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Damage Percentage (0-100%)</label>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        {formData.category === "farm" ? "Crop Damage %" : "Mortality Rate %"} (0-100%)
+                      </label>
                       <input type="number" min="0" max="100" value={formData.damage_percentage} onChange={e => setFormData({ ...formData, damage_percentage: e.target.value })} required style={inputStyle} />
                     </div>
                     <div>
@@ -4523,24 +4550,54 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
                     <div>
                       <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Cause</label>
                       <select value={formData.cause} onChange={e => setFormData({ ...formData, cause: e.target.value })} required style={selectStyle}>
-                        <option value="drought">Drought</option>
-                        <option value="pest_infestation">Pest Infestation</option>
-                        <option value="crop_failure">Crop Failure</option>
-                        <option value="water_shortage">Water Shortage</option>
-                        <option value="heat_stress">Heat Stress</option>
-                        <option value="other">Other</option>
+                        {formData.category === "farm" ? (
+                          <>
+                            <option value="drought">Drought</option>
+                            <option value="pest_infestation">Pest Infestation</option>
+                            <option value="crop_failure">Crop Failure</option>
+                            <option value="water_shortage">Water Shortage</option>
+                            <option value="heat_stress">Heat Stress</option>
+                            <option value="flood">Flood</option>
+                            <option value="other">Other</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="disease">Disease</option>
+                            <option value="heat_stress">Heat Stress</option>
+                            <option value="water_shortage">Water/Feed Shortage</option>
+                            <option value="drought">Drought Effects</option>
+                            <option value="malnutrition">Malnutrition</option>
+                            <option value="predator_attack">Predator Attack</option>
+                            <option value="other">Other</option>
+                          </>
+                        )}
                       </select>
                     </div>
                     <div>
                       <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Assistance Needed</label>
                       <select value={formData.assistance_needed} onChange={e => setFormData({ ...formData, assistance_needed: e.target.value })} style={selectStyle}>
                         <option value="">Select assistance type</option>
-                        <option value="seeds">Seeds</option>
-                        <option value="fertilizer">Fertilizer</option>
-                        <option value="irrigation">Irrigation</option>
-                        <option value="financial">Financial</option>
-                        <option value="equipment">Equipment</option>
-                        <option value="none">None</option>
+                        {formData.category === "farm" ? (
+                          <>
+                            <option value="seeds">Seeds</option>
+                            <option value="fertilizer">Fertilizer</option>
+                            <option value="irrigation">Irrigation</option>
+                            <option value="pesticides">Pesticides</option>
+                            <option value="financial">Financial Aid</option>
+                            <option value="equipment">Equipment</option>
+                            <option value="none">None</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="veterinary">Veterinary Services</option>
+                            <option value="medicine">Medicine/Vaccines</option>
+                            <option value="feed">Animal Feed</option>
+                            <option value="water">Water Supply</option>
+                            <option value="financial">Financial Aid</option>
+                            <option value="shelter">Shelter/Housing</option>
+                            <option value="none">None</option>
+                          </>
+                        )}
                       </select>
                     </div>
                     <div style={{ gridColumn: "1 / -1" }}>
