@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import {
   BarChart3, FileText, Users, LogOut, Map as MapIcon, RefreshCw,
-  Plus, Trash2, Building, CheckCircle, Clock, TrendingUp, Search, X, Edit2, Check, Download,
-  MapPin, Calendar, Phone, AlertCircle, ChevronRight, ChevronDown, Navigation,
+  Plus, Trash2, Building, CheckCircle, CheckCircle2, Clock, TrendingUp, Search, X, Edit2, Check, Download,
+  MapPin, Calendar, Phone, AlertCircle, AlertTriangle, ChevronRight, ChevronDown, Navigation,
   ShieldAlert, Activity, Megaphone, HeartPulse, Tent, Truck, Flame, Droplet, Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -120,7 +120,37 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
   const [detailReport, setDetailReport] = useState(null);
   const [selectedDeptId, setSelectedDeptId] = useState("all");
 
+  // Global modal state for all tabs
+  const [showModal, setShowModal] = useState(false);
+  const [modalConfig, setModalConfig] = useState({ type: "success", title: "", message: "", onConfirm: null, confirmText: "OK", cancelText: "Cancel" });
+
   const mainRef = useRef(null);
+
+  // Global modal helper functions
+  const showSuccessModal = (title, message) => {
+    setModalConfig({ type: "success", title, message, onConfirm: () => setShowModal(false), confirmText: "OK" });
+    setShowModal(true);
+  };
+
+  const showErrorModal = (title, message) => {
+    setModalConfig({ type: "error", title, message, onConfirm: () => setShowModal(false), confirmText: "OK" });
+    setShowModal(true);
+  };
+
+  const showConfirmModal = (title, message, onConfirm, confirmText = "Confirm", cancelText = "Cancel") => {
+    setModalConfig({
+      type: "confirm",
+      title,
+      message,
+      onConfirm: () => {
+        setShowModal(false);
+        onConfirm();
+      },
+      confirmText,
+      cancelText
+    });
+    setShowModal(true);
+  };
 
   useEffect(() => {
     if (mainRef.current) {
@@ -306,7 +336,19 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "hospitals" ? "active" : "inactive"}
             style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
           >
-            <HospitalsTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} />
+            <HospitalsTab 
+              S={S} 
+              cardStyle={cardStyle} 
+              inputStyle={inputStyle} 
+              selectStyle={selectStyle} 
+              btnPrimary={btnPrimary} 
+              btnDanger={btnDanger} 
+              isSuperadmin={isSuperadmin} 
+              adminDepartment={adminDepartment}
+              showSuccessModal={showSuccessModal}
+              showErrorModal={showErrorModal}
+              showConfirmModal={showConfirmModal}
+            />
           </motion.div>
 
           <motion.div
@@ -315,7 +357,19 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "operations" ? "active" : "inactive"}
             style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
           >
-            <OperationsTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} />
+            <OperationsTab 
+              S={S} 
+              cardStyle={cardStyle} 
+              inputStyle={inputStyle} 
+              selectStyle={selectStyle} 
+              btnPrimary={btnPrimary} 
+              btnDanger={btnDanger} 
+              isSuperadmin={isSuperadmin} 
+              adminDepartment={adminDepartment}
+              showSuccessModal={showSuccessModal}
+              showErrorModal={showErrorModal}
+              showConfirmModal={showConfirmModal}
+            />
           </motion.div>
 
           <motion.div
@@ -324,7 +378,19 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "bfp" ? "active" : "inactive"}
             style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
           >
-            <BfpOperationsTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} />
+            <BfpOperationsTab 
+              S={S} 
+              cardStyle={cardStyle} 
+              inputStyle={inputStyle} 
+              selectStyle={selectStyle} 
+              btnPrimary={btnPrimary} 
+              btnDanger={btnDanger} 
+              isSuperadmin={isSuperadmin} 
+              adminDepartment={adminDepartment}
+              showSuccessModal={showSuccessModal}
+              showErrorModal={showErrorModal}
+              showConfirmModal={showConfirmModal}
+            />
           </motion.div>
 
           <motion.div
@@ -333,7 +399,19 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "water" ? "active" : "inactive"}
             style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
           >
-            <WaterUtilityTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} />
+            <WaterUtilityTab 
+              S={S} 
+              cardStyle={cardStyle} 
+              inputStyle={inputStyle} 
+              selectStyle={selectStyle} 
+              btnPrimary={btnPrimary} 
+              btnDanger={btnDanger} 
+              isSuperadmin={isSuperadmin} 
+              adminDepartment={adminDepartment}
+              showSuccessModal={showSuccessModal}
+              showErrorModal={showErrorModal}
+              showConfirmModal={showConfirmModal}
+            />
           </motion.div>
 
           <motion.div
@@ -342,7 +420,19 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "power" ? "active" : "inactive"}
             style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
           >
-            <PowerUtilityTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} />
+            <PowerUtilityTab 
+              S={S} 
+              cardStyle={cardStyle} 
+              inputStyle={inputStyle} 
+              selectStyle={selectStyle} 
+              btnPrimary={btnPrimary} 
+              btnDanger={btnDanger} 
+              isSuperadmin={isSuperadmin} 
+              adminDepartment={adminDepartment}
+              showSuccessModal={showSuccessModal}
+              showErrorModal={showErrorModal}
+              showConfirmModal={showConfirmModal}
+            />
           </motion.div>
 
           {isSuperadmin && (
@@ -353,7 +443,19 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                 animate={activeTab === "users" ? "active" : "inactive"}
                 style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
               >
-                <UsersTab categories={categories} departments={departments} S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} />
+                <UsersTab 
+                  categories={categories} 
+                  departments={departments} 
+                  S={S} 
+                  cardStyle={cardStyle} 
+                  inputStyle={inputStyle} 
+                  selectStyle={selectStyle} 
+                  btnPrimary={btnPrimary} 
+                  btnDanger={btnDanger}
+                  showSuccessModal={showSuccessModal}
+                  showErrorModal={showErrorModal}
+                  showConfirmModal={showConfirmModal}
+                />
               </motion.div>
 
               <motion.div
@@ -362,7 +464,20 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                 animate={activeTab === "settings" ? "active" : "inactive"}
                 style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
               >
-                <SettingsTab departments={departments} categories={categories} onUpdate={() => fetchData(true)} S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} />
+                <SettingsTab 
+                  departments={departments} 
+                  categories={categories} 
+                  onUpdate={() => fetchData(true)} 
+                  S={S} 
+                  cardStyle={cardStyle} 
+                  inputStyle={inputStyle} 
+                  selectStyle={selectStyle} 
+                  btnPrimary={btnPrimary} 
+                  btnDanger={btnDanger}
+                  showSuccessModal={showSuccessModal}
+                  showErrorModal={showErrorModal}
+                  showConfirmModal={showConfirmModal}
+                />
               </motion.div>
 
               <motion.div
@@ -389,6 +504,83 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
           }}
         />
       )}
+
+      {/* Global Modal */}
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999
+            }}
+            onClick={() => modalConfig.type !== "confirm" && setShowModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "#fff",
+                borderRadius: 16,
+                padding: 24,
+                maxWidth: 420,
+                width: "90%",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
+              }}
+            >
+              <h3 style={{ margin: "0 0 12px", fontSize: 18, fontWeight: 800, color: modalConfig.type === "error" ? "#dc2626" : S.accent }}>
+                {modalConfig.title}
+              </h3>
+              <p style={{ margin: "0 0 20px", fontSize: 14, color: "#52525b", lineHeight: 1.6 }}>
+                {modalConfig.message}
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                {modalConfig.type === "confirm" && (
+                  <button
+                    onClick={() => setShowModal(false)}
+                    style={{
+                      padding: "10px 20px",
+                      borderRadius: 8,
+                      border: "1px solid #d4d4d8",
+                      background: "#fff",
+                      color: "#52525b",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: "pointer"
+                    }}
+                  >
+                    {modalConfig.cancelText}
+                  </button>
+                )}
+                <button
+                  onClick={modalConfig.onConfirm}
+                  style={{
+                    padding: "10px 20px",
+                    borderRadius: 8,
+                    border: "none",
+                    background: modalConfig.type === "error" ? "#dc2626" : S.accent,
+                    color: "#fff",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: "pointer"
+                  }}
+                >
+                  {modalConfig.confirmText}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -614,7 +806,7 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
 }
 
 /* ── Users Tab ── */
-function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger }) {
+function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, showSuccessModal, showErrorModal, showConfirmModal }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resetOpen, setResetOpen] = useState(false);
@@ -722,7 +914,22 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
     fetchUsers();
   };
 
-  const revoke = async (id) => { if (!confirm("Revoke admin access?")) return; await supabase.rpc("set_user_role", { target_user_id: id, new_role: null }); fetchUsers(); };
+  const revoke = async (id) => { 
+    showConfirmModal(
+      "Revoke Admin Access",
+      "Are you sure you want to revoke admin access for this user?",
+      async () => {
+        try {
+          await supabase.rpc("set_user_role", { target_user_id: id, new_role: null }); 
+          await fetchUsers();
+          showSuccessModal("Success", "Admin access revoked successfully");
+        } catch (error) {
+          showErrorModal("Error", "Failed to revoke admin access");
+        }
+      },
+      "Revoke"
+    );
+  };
   const admins = users.filter(u => u.role === "admin" || u.role === "superadmin");
 
   const confirmReset = async () => {
@@ -953,7 +1160,7 @@ function DeptRow({ d, onColorChange, onNameChange, onDelete, S, btnDanger }) {
 }
 
 /* ── Settings Tab ── */
-function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger }) {
+function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, showSuccessModal, showErrorModal, showConfirmModal }) {
   const [deptName, setDeptName] = useState("");
   const [catName, setCatName] = useState("");
   const [catGroup, setCatGroup] = useState("");
@@ -1005,8 +1212,39 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
     setCatName(""); setCatGroup(""); setNewGroupName(""); onUpdate();
   };
 
-  const delDept = async (id) => { if (!confirm("Delete this office?")) return; await supabase.from("departments").delete().eq("id", id); onUpdate(); };
-  const delCat = async (id) => { if (!confirm("Delete category?")) return; await supabase.from("categories").delete().eq("id", id); onUpdate(); };
+  const delDept = async (id) => { 
+    showConfirmModal(
+      "Delete Office",
+      "Are you sure you want to delete this office? This action cannot be undone.",
+      async () => {
+        try {
+          await supabase.from("departments").delete().eq("id", id); 
+          onUpdate();
+          showSuccessModal("Deleted", "Office deleted successfully");
+        } catch (error) {
+          showErrorModal("Error", "Failed to delete office");
+        }
+      },
+      "Delete"
+    );
+  };
+
+  const delCat = async (id) => { 
+    showConfirmModal(
+      "Delete Category",
+      "Are you sure you want to delete this category? This action cannot be undone.",
+      async () => {
+        try {
+          await supabase.from("categories").delete().eq("id", id); 
+          onUpdate();
+          showSuccessModal("Deleted", "Category deleted successfully");
+        } catch (error) {
+          showErrorModal("Error", "Failed to delete category");
+        }
+      },
+      "Delete"
+    );
+  };
 
   // Get unique group names for suggestions
   const existingGroups = [...new Set(categories.map(c => c.group_name).filter(Boolean))];
@@ -1406,15 +1644,18 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle }) {
   );
 }
 
-/* ── Advisories Tab (Phase 3) ── */
+/* ── Advisories Tab (Phase 3) - REDESIGNED WITH BETTER WORKFLOW ── */
 function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
   const [advisories, setAdvisories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingAdvisory, setEditingAdvisory] = useState(null);
   const [newAdvisory, setNewAdvisory] = useState({ title: "", content: "", category: "General", status: "Draft", scheduled_for: "" });
   const [submitting, setSubmitting] = useState(false);
   const [usersMap, setUsersMap] = useState({});
   const [filterStatus, setFilterStatus] = useState("All");
+  const [showModal, setShowModal] = useState(false);
+  const [modalConfig, setModalConfig] = useState({ title: "", message: "", onConfirm: null, confirmText: "Confirm", type: "info" });
 
   useEffect(() => {
     fetchAdvisories();
@@ -1441,6 +1682,42 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
     }
   };
 
+  const showSuccessModal = (message) => {
+    setModalConfig({
+      title: "Success",
+      message,
+      onConfirm: () => setShowModal(false),
+      confirmText: "OK",
+      type: "success"
+    });
+    setShowModal(true);
+  };
+
+  const showErrorModal = (message) => {
+    setModalConfig({
+      title: "Error",
+      message,
+      onConfirm: () => setShowModal(false),
+      confirmText: "OK",
+      type: "error"
+    });
+    setShowModal(true);
+  };
+
+  const showConfirmModal = (title, message, onConfirm, confirmText = "Confirm") => {
+    setModalConfig({
+      title,
+      message,
+      onConfirm: () => {
+        setShowModal(false);
+        onConfirm();
+      },
+      confirmText,
+      type: "warning"
+    });
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newAdvisory.title || !newAdvisory.content) return;
@@ -1449,77 +1726,273 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
     try {
       const { data: userData } = await supabase.auth.getUser();
       
-      const insertData = {
-        title: newAdvisory.title,
-        content: newAdvisory.content,
-        category: newAdvisory.category,
-        status: isSuperadmin ? "Published" : "Pending", // Superadmins auto-publish, others pending approval
-        author_id: userData?.user?.id,
-      };
+      if (editingAdvisory) {
+        // UPDATE existing advisory
+        const updateData = {
+          title: newAdvisory.title,
+          content: newAdvisory.content,
+          category: newAdvisory.category,
+        };
+        if (newAdvisory.scheduled_for) updateData.scheduled_for = new Date(newAdvisory.scheduled_for).toISOString();
 
-      if (!isSuperadmin && adminDepartment?.id) {
-        insertData.department_id = adminDepartment.id;
-      }
-      if (isSuperadmin) insertData.published_at = new Date().toISOString();
-      if (newAdvisory.scheduled_for) insertData.scheduled_for = new Date(newAdvisory.scheduled_for).toISOString();
+        const { error } = await supabase.from("advisories").update(updateData).eq("id", editingAdvisory.id);
+        
+        if (error) throw error;
+        
+        showSuccessModal("Advisory updated successfully!");
+        setEditingAdvisory(null);
+      } else {
+        // CREATE new advisory
+        const insertData = {
+          title: newAdvisory.title,
+          content: newAdvisory.content,
+          category: newAdvisory.category,
+          status: isSuperadmin ? "Published" : "Pending",
+          author_id: userData?.user?.id,
+        };
 
-      const { data, error } = await supabase.from("advisories").insert(insertData);
-      
-      if (error) {
-        console.error("Insert error:", error);
-        alert(`Failed to submit advisory: ${error.message}`);
-        return;
+        if (!isSuperadmin && adminDepartment?.id) {
+          insertData.department_id = adminDepartment.id;
+        }
+        if (isSuperadmin) insertData.published_at = new Date().toISOString();
+        if (newAdvisory.scheduled_for) insertData.scheduled_for = new Date(newAdvisory.scheduled_for).toISOString();
+
+        const { error } = await supabase.from("advisories").insert(insertData);
+        
+        if (error) throw error;
+        
+        showSuccessModal(isSuperadmin ? "Advisory published successfully!" : "Advisory submitted for approval!");
+        
+        if (!isSuperadmin) {
+          setFilterStatus("Pending");
+        }
       }
-      
-      console.log("Advisory submitted successfully:", data);
       
       setNewAdvisory({ title: "", content: "", category: "General", status: "Draft", scheduled_for: "" });
       setShowForm(false);
-      
-      // Set filter to show pending items if admin submitted for approval
-      if (!isSuperadmin) {
-        setFilterStatus("Pending");
-      }
-      
       fetchAdvisories();
-      
-      // Show success message
-      alert(isSuperadmin ? "Advisory published successfully!" : "Advisory submitted for approval!");
     } catch (err) {
       console.error("Submit error:", err);
-      alert(`Error: ${err.message}`);
+      showErrorModal(`Failed to save advisory: ${err.message}`);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const updateStatus = async (id, status) => {
-    const payload = { status };
-    if (status === "Published") {
-      const { data: userData } = await supabase.auth.getUser();
-      payload.approved_by = userData?.user?.id;
-      payload.published_at = new Date().toISOString();
-    }
-    await supabase.from("advisories").update(payload).eq("id", id);
-    fetchAdvisories();
+  const handlePublish = (id) => {
+    showConfirmModal(
+      "Publish Advisory",
+      "This will make the advisory visible to all citizens. Continue?",
+      async () => {
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          const { error } = await supabase.from("advisories").update({
+            status: "Published",
+            approved_by: userData?.user?.id,
+            published_at: new Date().toISOString()
+          }).eq("id", id);
+          
+          if (error) throw error;
+          showSuccessModal("Advisory published successfully!");
+          fetchAdvisories();
+        } catch (err) {
+          showErrorModal(`Failed to publish: ${err.message}`);
+        }
+      },
+      "Publish"
+    );
   };
 
-  const deleteAdvisory = async (id) => {
-    if (confirm("Are you sure you want to delete this advisory?")) {
-      await supabase.from("advisories").delete().eq("id", id);
-      fetchAdvisories();
-    }
+  const handleUnpublish = (id) => {
+    showConfirmModal(
+      "Unpublish Advisory",
+      "This will hide the advisory from citizens but keep it in the system. Continue?",
+      async () => {
+        try {
+          const { error } = await supabase.from("advisories").update({
+            status: "Draft",
+            published_at: null
+          }).eq("id", id);
+          
+          if (error) throw error;
+          showSuccessModal("Advisory unpublished successfully!");
+          fetchAdvisories();
+        } catch (err) {
+          showErrorModal(`Failed to unpublish: ${err.message}`);
+        }
+      },
+      "Unpublish"
+    );
+  };
+
+  const handleArchive = (id) => {
+    showConfirmModal(
+      "Archive Advisory",
+      "This will move the advisory to archive. You can restore it later if needed.",
+      async () => {
+        try {
+          const { error } = await supabase.from("advisories").update({
+            status: "Archived"
+          }).eq("id", id);
+          
+          if (error) throw error;
+          showSuccessModal("Advisory archived successfully!");
+          fetchAdvisories();
+        } catch (err) {
+          showErrorModal(`Failed to archive: ${err.message}`);
+        }
+      },
+      "Archive"
+    );
+  };
+
+  const handleRestore = (id) => {
+    showConfirmModal(
+      "Restore Advisory",
+      "Restore this advisory to draft status?",
+      async () => {
+        try {
+          const { error } = await supabase.from("advisories").update({
+            status: "Draft"
+          }).eq("id", id);
+          
+          if (error) throw error;
+          showSuccessModal("Advisory restored successfully!");
+          fetchAdvisories();
+        } catch (err) {
+          showErrorModal(`Failed to restore: ${err.message}`);
+        }
+      },
+      "Restore"
+    );
+  };
+
+  const handleDelete = (id, title) => {
+    showConfirmModal(
+      "Delete Advisory",
+      `Are you sure you want to permanently delete "${title}"? This action cannot be undone.`,
+      async () => {
+        try {
+          const { error } = await supabase.from("advisories").delete().eq("id", id);
+          
+          if (error) throw error;
+          showSuccessModal("Advisory deleted successfully!");
+          fetchAdvisories();
+        } catch (err) {
+          showErrorModal(`Failed to delete: ${err.message}`);
+        }
+      },
+      "Delete Permanently"
+    );
+  };
+
+  const handleEdit = (advisory) => {
+    setEditingAdvisory(advisory);
+    setNewAdvisory({
+      title: advisory.title,
+      content: advisory.content,
+      category: advisory.category,
+      scheduled_for: advisory.scheduled_for ? new Date(advisory.scheduled_for).toISOString().slice(0, 16) : ""
+    });
+    setShowForm(true);
   };
 
   const filteredAdvisories = advisories.filter(a => filterStatus === "All" || a.status === filterStatus);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Modal */}
+      <AnimatePresence>
+        {showModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0, 0, 0, 0.5)",
+                zIndex: 9998,
+                backdropFilter: "blur(4px)"
+              }}
+              onClick={() => setShowModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              style={{
+                position: "fixed",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                background: "#ffffff",
+                borderRadius: 16,
+                padding: 24,
+                maxWidth: 440,
+                width: "90%",
+                zIndex: 9999,
+                boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)"
+              }}
+            >
+              <div style={{ marginBottom: 16 }}>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: "#18181b", display: "flex", alignItems: "center", gap: 8 }}>
+                  {modalConfig.type === "success" && <CheckCircle2 size={22} color="#10b981" />}
+                  {modalConfig.type === "error" && <AlertTriangle size={22} color="#ef4444" />}
+                  {modalConfig.type === "warning" && <AlertTriangle size={22} color="#f59e0b" />}
+                  {modalConfig.title}
+                </h3>
+              </div>
+              <p style={{ margin: "0 0 24px", fontSize: 14, color: "#52525b", lineHeight: 1.6 }}>
+                {modalConfig.message}
+              </p>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                {modalConfig.type !== "success" && modalConfig.type !== "error" && (
+                  <button
+                    onClick={() => setShowModal(false)}
+                    style={{
+                      padding: "10px 20px",
+                      borderRadius: 10,
+                      border: `1px solid ${S.border}`,
+                      background: "#fff",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      fontFamily: S.font,
+                      fontSize: 14
+                    }}
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  onClick={modalConfig.onConfirm}
+                  style={{
+                    padding: "10px 20px",
+                    borderRadius: 10,
+                    border: "none",
+                    background: modalConfig.type === "error" ? "#ef4444" : modalConfig.type === "warning" ? "#f59e0b" : S.accent,
+                    color: "#ffffff",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    fontFamily: S.font,
+                    fontSize: 14
+                  }}
+                >
+                  {modalConfig.confirmText}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {showForm ? (
         <div style={cardStyle}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Create Advisory</h3>
-            <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>{editingAdvisory ? "Edit Advisory" : "Create Advisory"}</h3>
+            <button onClick={() => { setShowForm(false); setEditingAdvisory(null); setNewAdvisory({ title: "", content: "", category: "General", status: "Draft", scheduled_for: "" }); }} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
           </div>
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
@@ -1546,9 +2019,9 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
               <textarea value={newAdvisory.content} onChange={e => setNewAdvisory({...newAdvisory, content: e.target.value})} placeholder="Advisory details..." required style={{ ...inputStyle, minHeight: 120, resize: "vertical" }} />
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
-              <button type="button" onClick={() => setShowForm(false)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: "#fff", fontWeight: 800, cursor: "pointer", fontFamily: S.font }}>Cancel</button>
+              <button type="button" onClick={() => { setShowForm(false); setEditingAdvisory(null); setNewAdvisory({ title: "", content: "", category: "General", status: "Draft", scheduled_for: "" }); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: "#fff", fontWeight: 800, cursor: "pointer", fontFamily: S.font }}>Cancel</button>
               <button type="submit" disabled={submitting} style={btnPrimary}>
-                <Check size={16} /> {submitting ? "Submitting..." : (isSuperadmin ? "Publish Now" : "Submit for Approval")}
+                <Check size={16} /> {submitting ? "Saving..." : editingAdvisory ? "Update Advisory" : (isSuperadmin ? "Publish Now" : "Submit for Approval")}
               </button>
             </div>
           </form>
@@ -1580,12 +2053,14 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
               {filteredAdvisories.map(adv => {
                 const isPublished = adv.status === "Published";
                 const isPending = adv.status === "Pending";
+                const isArchived = adv.status === "Archived";
+                const isDraft = adv.status === "Draft";
                 const author = usersMap[adv.author_id] || "Unknown User";
                 
                 return (
                   <div key={adv.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                      <div>
+                      <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                           <span style={{ padding: "2px 8px", borderRadius: 20, background: S.accentBg, color: S.accent, fontSize: 10, fontWeight: 900, textTransform: "uppercase" }}>{adv.category}</span>
                           {adv.departments?.name && <span style={{ fontSize: 10, color: S.muted, fontWeight: 700 }}>• {adv.departments.name}</span>}
@@ -1593,28 +2068,115 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                         </div>
                         <h4 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#18181b" }}>{adv.title}</h4>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800, 
-                          background: isPublished ? "#ecfdf5" : isPending ? "#fffbeb" : "#f4f4f5", 
-                          color: isPublished ? "#10b981" : isPending ? "#d97706" : "#71717a" }}>
-                          {adv.status}
-                        </span>
-                        
-                        {(isSuperadmin || isPending) && (
-                          <CustomSelect
-                            value={adv.status}
-                            onChange={(s) => updateStatus(adv.id, s)}
-                            options={[{value: "Pending", label: "Pending"}, {value: "Published", label: "Publish"}, {value: "Archived", label: "Archive"}]}
-                            compact accent={S.accent} style={{ minWidth: 110 }}
-                          />
-                        )}
-                        <button onClick={() => deleteAdvisory(adv.id)} style={btnDanger}><Trash2 size={16} /></button>
-                      </div>
+                      <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800, 
+                        background: isPublished ? "#ecfdf5" : isPending ? "#fffbeb" : isArchived ? "#f4f4f5" : "#eff6ff", 
+                        color: isPublished ? "#10b981" : isPending ? "#d97706" : isArchived ? "#71717a" : "#3b82f6" }}>
+                        {adv.status}
+                      </span>
                     </div>
                     <p style={{ margin: "0 0 12px", fontSize: 13, color: "#3f3f46", lineHeight: 1.5 }}>{adv.content}</p>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: S.muted, fontWeight: 600 }}>
-                      <span>Author: {author}</span>
-                      <span>Created: {new Date(adv.created_at).toLocaleString()}</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: S.muted, fontWeight: 600 }}>
+                      <span>Author: {author} • Created: {new Date(adv.created_at).toLocaleDateString()}</span>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        {/* Edit button for drafts and pending */}
+                        {(isDraft || isPending) && (
+                          <button
+                            onClick={() => handleEdit(adv)}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: 8,
+                              border: `1px solid ${S.border}`,
+                              background: "#fff",
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4
+                            }}
+                          >
+                            <Edit2 size={12} /> Edit
+                          </button>
+                        )}
+                        
+                        {/* Pending: Can approve (superadmin only) */}
+                        {isPending && isSuperadmin && (
+                          <button onClick={() => handlePublish(adv.id)} style={{ ...btnPrimary, fontSize: 12, padding: "6px 12px" }}>
+                            <Check size={12} /> Approve & Publish
+                          </button>
+                        )}
+                        
+                        {/* Published: Can unpublish or archive */}
+                        {isPublished && isSuperadmin && (
+                          <>
+                            <button
+                              onClick={() => handleUnpublish(adv.id)}
+                              style={{
+                                padding: "6px 12px",
+                                borderRadius: 8,
+                                border: "1px solid #d97706",
+                                background: "#fff",
+                                color: "#d97706",
+                                fontSize: 12,
+                                fontWeight: 700,
+                                cursor: "pointer"
+                              }}
+                            >
+                              Unpublish
+                            </button>
+                            <button
+                              onClick={() => handleArchive(adv.id)}
+                              style={{
+                                padding: "6px 12px",
+                                borderRadius: 8,
+                                border: "1px solid #71717a",
+                                background: "#fff",
+                                color: "#71717a",
+                                fontSize: 12,
+                                fontWeight: 700,
+                                cursor: "pointer"
+                              }}
+                            >
+                              Archive
+                            </button>
+                          </>
+                        )}
+                        
+                        {/* Draft: Can publish or delete */}
+                        {isDraft && (
+                          <>
+                            {isSuperadmin && (
+                              <button onClick={() => handlePublish(adv.id)} style={{ ...btnPrimary, fontSize: 12, padding: "6px 12px" }}>
+                                <Check size={12} /> Publish
+                              </button>
+                            )}
+                          </>
+                        )}
+                        
+                        {/* Archived: Can restore or delete */}
+                        {isArchived && (
+                          <button
+                            onClick={() => handleRestore(adv.id)}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: 8,
+                              border: `1px solid ${S.accent}`,
+                              background: "#fff",
+                              color: S.accent,
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: "pointer"
+                            }}
+                          >
+                            Restore
+                          </button>
+                        )}
+                        
+                        {/* Delete button (always available for admins) */}
+                        <button onClick={() => handleDelete(adv.id, adv.title)} style={{ ...btnDanger, fontSize: 12, padding: "6px 12px" }}>
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -1628,24 +2190,37 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
   );
 }
 
-/* ── Hospitals Tab (Phase 5) ── */
-function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
-  const [hospitals, setHospitals] = useState([]);
+/* ── Hospital Monitoring Tab (Phase 5) - Palayan City Hospital Only ── */
+function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
+  const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [formData, setFormData] = useState({ name: "", location: "", total_beds: 0, available_beds: 0, heat_stroke_cases: 0, heat_exhaustion_cases: 0, dehydration_cases: 0 });
+  const [activeSubTab, setActiveSubTab] = useState("add"); // 'add' or 'view'
+  const [isExpanded, setIsExpanded] = useState(true); // Control expand/collapse
+  const [formData, setFormData] = useState({ 
+    record_date: new Date().toISOString().split('T')[0],
+    heat_stroke_cases: 0, 
+    heat_exhaustion_cases: 0, 
+    dehydration_cases: 0,
+    respiratory_cases: 0,
+    total_admissions: 0,
+    remarks: ""
+  });
 
   useEffect(() => {
-    fetchHospitals();
-  }, [adminDepartment, isSuperadmin]);
+    fetchRecords();
+  }, []);
 
-  const fetchHospitals = async () => {
+  const fetchRecords = async () => {
     setLoading(true);
     try {
-      let query = supabase.from("hospitals").select("*").order("name");
-      const { data } = await query;
-      setHospitals(data || []);
+      const { data } = await supabase
+        .from("hospital_daily_records")
+        .select("*")
+        .order("record_date", { ascending: false })
+        .limit(30); // Last 30 days
+      setRecords(data || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -1655,173 +2230,523 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const payload = {
-      name: formData.name,
-      location: formData.location,
-      total_beds: parseInt(formData.total_beds) || 0,
-      available_beds: parseInt(formData.available_beds) || 0,
-      heat_stroke_cases: parseInt(formData.heat_stroke_cases) || 0,
-      heat_exhaustion_cases: parseInt(formData.heat_exhaustion_cases) || 0,
-      dehydration_cases: parseInt(formData.dehydration_cases) || 0,
-      last_updated: new Date().toISOString()
-    };
-
-    if (editId) {
-      await supabase.from("hospitals").update(payload).eq("id", editId);
-    } else {
-      if (adminDepartment?.id) payload.department_id = adminDepartment.id;
-      await supabase.from("hospitals").insert(payload);
-    }
     
-    setShowForm(false);
-    setEditId(null);
-    fetchHospitals();
+    try {
+      const payload = {
+        hospital_name: "Palayan City Hospital",
+        record_date: formData.record_date,
+        heat_stroke_cases: parseInt(formData.heat_stroke_cases) || 0,
+        heat_exhaustion_cases: parseInt(formData.heat_exhaustion_cases) || 0,
+        dehydration_cases: parseInt(formData.dehydration_cases) || 0,
+        respiratory_cases: parseInt(formData.respiratory_cases) || 0,
+        total_admissions: parseInt(formData.total_admissions) || 0,
+        remarks: formData.remarks || null
+      };
+
+      if (editId) {
+        const { error } = await supabase
+          .from("hospital_daily_records")
+          .update(payload)
+          .eq("id", editId);
+        if (error) throw error;
+        showSuccessModal("Record Updated", "Hospital record updated successfully");
+      } else {
+        const { error } = await supabase
+          .from("hospital_daily_records")
+          .insert(payload);
+        if (error) throw error;
+        showSuccessModal("Record Added", "Daily hospital record added successfully");
+      }
+      
+      setShowForm(false);
+      setEditId(null);
+      setFormData({ 
+        record_date: new Date().toISOString().split('T')[0],
+        heat_stroke_cases: 0, 
+        heat_exhaustion_cases: 0, 
+        dehydration_cases: 0,
+        respiratory_cases: 0,
+        total_admissions: 0,
+        remarks: ""
+      });
+      fetchRecords();
+      setActiveSubTab("view"); // Switch to view after adding
+    } catch (error) {
+      showErrorModal("Error", error.message || "Failed to save record");
+    }
   };
 
-  const editHospital = (h) => {
-    setFormData({ name: h.name, location: h.location || "", total_beds: h.total_beds, available_beds: h.available_beds, heat_stroke_cases: h.heat_stroke_cases, heat_exhaustion_cases: h.heat_exhaustion_cases, dehydration_cases: h.dehydration_cases });
-    setEditId(h.id);
+  const editRecord = (record) => {
+    setFormData({ 
+      record_date: record.record_date,
+      heat_stroke_cases: record.heat_stroke_cases,
+      heat_exhaustion_cases: record.heat_exhaustion_cases,
+      dehydration_cases: record.dehydration_cases,
+      respiratory_cases: record.respiratory_cases,
+      total_admissions: record.total_admissions,
+      remarks: record.remarks || ""
+    });
+    setEditId(record.id);
+    setActiveSubTab("add"); // Switch to form tab
     setShowForm(true);
   };
 
-  const deleteHospital = async (id) => {
-    if (confirm("Delete this hospital record?")) {
-      await supabase.from("hospitals").delete().eq("id", id);
-      fetchHospitals();
-    }
+  const deleteRecord = async (id, date) => {
+    showConfirmModal(
+      "Delete Record",
+      `Are you sure you want to delete the record for ${new Date(date).toLocaleDateString()}? This action cannot be undone.`,
+      async () => {
+        try {
+          const { error } = await supabase
+            .from("hospital_daily_records")
+            .delete()
+            .eq("id", id);
+          if (error) throw error;
+          await fetchRecords();
+          showSuccessModal("Deleted", "Hospital record deleted successfully");
+        } catch (error) {
+          showErrorModal("Error", "Failed to delete hospital record");
+        }
+      },
+      "Delete"
+    );
   };
 
-  const totalHeatStroke = hospitals.reduce((sum, h) => sum + (h.heat_stroke_cases || 0), 0);
-  const totalExhaustion = hospitals.reduce((sum, h) => sum + (h.heat_exhaustion_cases || 0), 0);
-  const totalDehydration = hospitals.reduce((sum, h) => sum + (h.dehydration_cases || 0), 0);
+  // Calculate statistics for last 7 days
+  const last7Days = records.slice(0, 7);
+  const totalHeatStroke = last7Days.reduce((sum, r) => sum + (r.heat_stroke_cases || 0), 0);
+  const totalExhaustion = last7Days.reduce((sum, r) => sum + (r.heat_exhaustion_cases || 0), 0);
+  const totalDehydration = last7Days.reduce((sum, r) => sum + (r.dehydration_cases || 0), 0);
+  const totalRespiratory = last7Days.reduce((sum, r) => sum + (r.respiratory_cases || 0), 0);
+  const totalAdmissions = last7Days.reduce((sum, r) => sum + (r.total_admissions || 0), 0);
+  const totalElNinoCases = totalHeatStroke + totalExhaustion + totalDehydration + totalRespiratory;
+  const elNinoPercentage = totalAdmissions > 0 ? Math.round((totalElNinoCases / totalAdmissions) * 100) : 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-        <div style={{ ...cardStyle, background: "#fff1f2", borderColor: "#fecdd3" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#e11d48", textTransform: "uppercase" }}>Heat Stroke</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#9f1239" }}>{totalHeatStroke}</p>
+      {/* Hospital Header */}
+      <div style={{ ...cardStyle, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "#fff", padding: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 12 }}>
+          <div style={{ width: 56, height: 56, background: "rgba(255,255,255,0.2)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <HeartPulse size={32} color="#fff" />
+          </div>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 24, fontWeight: 900 }}>Palayan City Hospital</h2>
+            <p style={{ margin: "4px 0 0", fontSize: 14, opacity: 0.9 }}>El Niño Health Impact Monitoring</p>
+          </div>
         </div>
-        <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Heat Exhaustion</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#9a3412" }}>{totalExhaustion}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#f0f9ff", borderColor: "#bae6fd" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#0284c7", textTransform: "uppercase" }}>Dehydration</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#075985" }}>{totalDehydration}</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginTop: 20 }}>
+          <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 12, padding: 16, backdropFilter: "blur(10px)" }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, opacity: 0.8, textTransform: "uppercase" }}>Total Records</p>
+            <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900 }}>{records.length}</p>
+          </div>
+          <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 12, padding: 16, backdropFilter: "blur(10px)" }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, opacity: 0.8, textTransform: "uppercase" }}>El Niño Impact</p>
+            <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900 }}>{elNinoPercentage}%</p>
+            <p style={{ margin: "4px 0 0", fontSize: 10, opacity: 0.8 }}>of total admissions</p>
+          </div>
         </div>
       </div>
 
-      {showForm ? (
-        <div style={cardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>{editId ? "Update Hospital" : "Add Hospital"}</h3>
-            <button onClick={() => { setShowForm(false); setEditId(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
+      {/* Statistics Cards - Last 7 Days */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <div style={{ ...cardStyle, background: "#fff1f2", borderColor: "#fecdd3" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <AlertTriangle size={18} color="#e11d48" />
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#e11d48", textTransform: "uppercase" }}>Heat Stroke</p>
           </div>
-          <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Hospital Name</label>
-                <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required style={inputStyle} />
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Location</label>
-                <input value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Total Beds</label>
-                <input type="number" min="0" value={formData.total_beds} onChange={e => setFormData({...formData, total_beds: e.target.value})} style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Available Beds</label>
-                <input type="number" min="0" value={formData.available_beds} onChange={e => setFormData({...formData, available_beds: e.target.value})} style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Heat Stroke Cases</label>
-                <input type="number" min="0" value={formData.heat_stroke_cases} onChange={e => setFormData({...formData, heat_stroke_cases: e.target.value})} style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Heat Exhaustion Cases</label>
-                <input type="number" min="0" value={formData.heat_exhaustion_cases} onChange={e => setFormData({...formData, heat_exhaustion_cases: e.target.value})} style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Dehydration Cases</label>
-                <input type="number" min="0" value={formData.dehydration_cases} onChange={e => setFormData({...formData, dehydration_cases: e.target.value})} style={inputStyle} />
-              </div>
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
-              <button type="submit" style={btnPrimary}><Check size={16} /> Save</button>
-            </div>
-          </form>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#9f1239" }}>{totalHeatStroke}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#be123c" }}>Last 7 days</p>
         </div>
-      ) : (
-        <div style={cardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Hospitals & Capacity</h3>
-              <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage hospital availability and track health analytics.</p>
-            </div>
-            <button onClick={() => { setFormData({ name: "", location: "", total_beds: 0, available_beds: 0, heat_stroke_cases: 0, heat_exhaustion_cases: 0, dehydration_cases: 0 }); setShowForm(true); }} style={btnPrimary}>
-              <Plus size={16} /> Add Hospital
+        <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <AlertCircle size={18} color="#ea580c" />
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Heat Exhaustion</p>
+          </div>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#9a3412" }}>{totalExhaustion}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#c2410c" }}>Last 7 days</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#f0f9ff", borderColor: "#bae6fd" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <Droplet size={18} color="#0284c7" />
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase" }}>Dehydration</p>
+          </div>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#075985" }}>{totalDehydration}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#0369a1" }}>Last 7 days</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#faf5ff", borderColor: "#e9d5ff" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <Activity size={18} color="#9333ea" />
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#9333ea", textTransform: "uppercase" }}>Respiratory</p>
+          </div>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#6b21a8" }}>{totalRespiratory}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#7e22ce" }}>Last 7 days</p>
+        </div>
+      </div>
+
+      {/* Sub-tabs Navigation */}
+      <div style={cardStyle}>
+        <div style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "space-between",
+          paddingBottom: 16,
+          borderBottom: `2px solid ${S.border}`
+        }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => { setActiveSubTab("add"); setIsExpanded(true); }}
+              style={{
+                padding: "10px 20px",
+                borderRadius: 10,
+                border: "none",
+                background: activeSubTab === "add" ? S.accent : "transparent",
+                color: activeSubTab === "add" ? "#fff" : S.text,
+                fontSize: 14,
+                fontWeight: 800,
+                cursor: "pointer",
+                transition: "all 0.2s",
+                display: "flex",
+                alignItems: "center",
+                gap: 8
+              }}
+            >
+              <Plus size={16} /> Add Record
+            </button>
+            <button
+              onClick={() => { setActiveSubTab("view"); setIsExpanded(true); }}
+              style={{
+                padding: "10px 20px",
+                borderRadius: 10,
+                border: "none",
+                background: activeSubTab === "view" ? S.accent : "transparent",
+                color: activeSubTab === "view" ? "#fff" : S.text,
+                fontSize: 14,
+                fontWeight: 800,
+                cursor: "pointer",
+                transition: "all 0.2s",
+                display: "flex",
+                alignItems: "center",
+                gap: 8
+              }}
+            >
+              <FileText size={16} /> View Records
             </button>
           </div>
-          
-          {loading ? <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {hospitals.map(h => {
-                const capacityPercent = h.total_beds > 0 ? ((h.total_beds - h.available_beds) / h.total_beds) * 100 : 0;
-                const capacityColor = capacityPercent > 90 ? "#ef4444" : capacityPercent > 70 ? "#d97706" : "#22c55e";
-                return (
-                  <div key={h.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9", display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div>
-                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#18181b", display: "flex", alignItems: "center", gap: 6 }}>
-                          <HeartPulse size={16} color="#ef4444" /> {h.name}
-                        </h4>
-                        <p style={{ margin: "4px 0 0", fontSize: 12, color: S.muted, fontWeight: 600 }}><MapPin size={12} /> {h.location}</p>
-                      </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => editHospital(h)} style={{ background: "none", border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: "pointer", color: S.text }}><Edit2 size={14} /></button>
-                        <button onClick={() => deleteHospital(h.id)} style={btnDanger}><Trash2 size={14} /></button>
-                      </div>
-                    </div>
-                    
-                    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
-                      <div style={{ flex: 1, minWidth: 150 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: 11, fontWeight: 800 }}>
-                          <span style={{ color: S.muted }}>Bed Capacity</span>
-                          <span style={{ color: capacityColor }}>{h.available_beds} / {h.total_beds} available</span>
-                        </div>
-                        <div style={{ height: 8, background: "#e4e4e7", borderRadius: 4, overflow: "hidden" }}>
-                          <div style={{ height: "100%", width: `${capacityPercent}%`, background: capacityColor, borderRadius: 4 }} />
-                        </div>
-                      </div>
-                      
-                      <div style={{ display: "flex", gap: 12 }}>
-                        <div style={{ textAlign: "center" }}>
-                          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase" }}>Heat Stroke</p>
-                          <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#e11d48" }}>{h.heat_stroke_cases}</p>
-                        </div>
-                        <div style={{ textAlign: "center" }}>
-                          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase" }}>Exhaustion</p>
-                          <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#ea580c" }}>{h.heat_exhaustion_cases}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              {hospitals.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No hospitals found.</p>}
-            </div>
-          )}
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: S.muted,
+              padding: 8,
+              borderRadius: 8,
+              display: "flex",
+              alignItems: "center"
+            }}
+          >
+            {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+          </button>
         </div>
-      )}
+
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{ overflow: "hidden" }}
+            >
+              {/* Add Record Tab */}
+              {activeSubTab === "add" && (
+                <div style={{ padding: "24px 0" }}>
+                  <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Record Date</label>
+                        <input 
+                          type="date" 
+                          value={formData.record_date} 
+                          onChange={e => setFormData({...formData, record_date: e.target.value})} 
+                          required 
+                          style={inputStyle} 
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Heat Stroke Cases</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={formData.heat_stroke_cases} 
+                          onChange={e => setFormData({...formData, heat_stroke_cases: e.target.value})} 
+                          style={inputStyle} 
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Heat Exhaustion Cases</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={formData.heat_exhaustion_cases} 
+                          onChange={e => setFormData({...formData, heat_exhaustion_cases: e.target.value})} 
+                          style={inputStyle} 
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Dehydration Cases</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={formData.dehydration_cases} 
+                          onChange={e => setFormData({...formData, dehydration_cases: e.target.value})} 
+                          style={inputStyle} 
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Respiratory Cases</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={formData.respiratory_cases} 
+                          onChange={e => setFormData({...formData, respiratory_cases: e.target.value})} 
+                          style={inputStyle} 
+                        />
+                      </div>
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Total Admissions Today</label>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={formData.total_admissions} 
+                          onChange={e => setFormData({...formData, total_admissions: e.target.value})} 
+                          style={inputStyle} 
+                          placeholder="Include all hospital admissions for the day"
+                        />
+                      </div>
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Remarks (Optional)</label>
+                        <textarea 
+                          value={formData.remarks} 
+                          onChange={e => setFormData({...formData, remarks: e.target.value})} 
+                          placeholder="Any notable observations or incidents..."
+                          style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} 
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, padding: "16px 0", borderTop: `1px solid ${S.border}` }}>
+                      <p style={{ margin: 0, fontSize: 12, color: S.muted }}>
+                        {editId ? "Updating existing record" : "Adding new daily record"}
+                      </p>
+                      <div style={{ display: "flex", gap: 10 }}>
+                        {editId && (
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              setEditId(null);
+                              setFormData({ 
+                                record_date: new Date().toISOString().split('T')[0],
+                                heat_stroke_cases: 0, 
+                                heat_exhaustion_cases: 0, 
+                                dehydration_cases: 0,
+                                respiratory_cases: 0,
+                                total_admissions: 0,
+                                remarks: ""
+                              });
+                            }}
+                            style={{
+                              padding: "10px 20px",
+                              borderRadius: 10,
+                              border: `1px solid ${S.border}`,
+                              background: "#fff",
+                              color: S.text,
+                              fontSize: 14,
+                              fontWeight: 700,
+                              cursor: "pointer"
+                            }}
+                          >
+                            Cancel Edit
+                          </button>
+                        )}
+                        <button type="submit" style={btnPrimary}>
+                          <Check size={16} /> {editId ? "Update Record" : "Save Record"}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* View Records Tab */}
+              {activeSubTab === "view" && (
+                <div style={{ padding: "24px 0" }}>
+                  {loading ? (
+                    <div style={{ padding: 40, textAlign: "center" }}>
+                      <p style={{ color: S.muted }}>Loading records...</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {records.map(record => {
+                        const totalHeat = (record.heat_stroke_cases || 0) + (record.heat_exhaustion_cases || 0) + (record.dehydration_cases || 0);
+                        const elNinoCases = totalHeat + (record.respiratory_cases || 0);
+                        const elNinoPercent = record.total_admissions > 0 ? Math.round((elNinoCases / record.total_admissions) * 100) : 0;
+                        const criticalLevel = record.heat_stroke_cases > 5 ? "critical" : totalHeat > 10 ? "warning" : "normal";
+                
+                        return (
+                          <div 
+                            key={record.id} 
+                            style={{ 
+                              padding: "20px 24px", 
+                              borderRadius: 16, 
+                              border: `2px solid ${criticalLevel === "critical" ? "#fecdd3" : criticalLevel === "warning" ? "#fed7aa" : S.border}`, 
+                              background: criticalLevel === "critical" ? "#fff1f2" : criticalLevel === "warning" ? "#fff7ed" : "#fafafa",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "flex-start"
+                            }}
+                          >
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                                <div style={{ 
+                                  width: 48, 
+                                  height: 48, 
+                                  borderRadius: 12, 
+                                  background: criticalLevel === "critical" ? "#e11d48" : criticalLevel === "warning" ? "#ea580c" : S.accent,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center"
+                                }}>
+                                  <Calendar size={24} color="#fff" />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <h4 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: "#18181b" }}>
+                                    {new Date(record.record_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                  </h4>
+                                  <p style={{ margin: "2px 0 0", fontSize: 12, color: S.muted, fontWeight: 700 }}>
+                                    {record.total_admissions || 0} total admissions • 
+                                    <span style={{ color: elNinoPercent > 50 ? "#dc2626" : elNinoPercent > 30 ? "#ea580c" : "#10b981", fontWeight: 900, marginLeft: 6 }}>
+                                      {elNinoPercent}% El Niño related
+                                    </span>
+                                  </p>
+                                </div>
+                                {criticalLevel === "critical" && (
+                                  <span style={{ 
+                                    padding: "4px 12px", 
+                                    borderRadius: 20, 
+                                    background: "#e11d48", 
+                                    color: "#fff", 
+                                    fontSize: 11, 
+                                    fontWeight: 900,
+                                    textTransform: "uppercase",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 4
+                                  }}>
+                                    <AlertTriangle size={12} /> Critical
+                                  </span>
+                                )}
+                                {criticalLevel === "warning" && (
+                                  <span style={{ 
+                                    padding: "4px 12px", 
+                                    borderRadius: 20, 
+                                    background: "#ea580c", 
+                                    color: "#fff", 
+                                    fontSize: 11, 
+                                    fontWeight: 900,
+                                    textTransform: "uppercase",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 4
+                                  }}>
+                                    <AlertCircle size={12} /> Warning
+                                  </span>
+                                )}
+                              </div>
+                      
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 16, marginBottom: 12 }}>
+                                <div>
+                                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#e11d48", textTransform: "uppercase" }}>Heat Stroke</p>
+                                  <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#9f1239" }}>{record.heat_stroke_cases || 0}</p>
+                                </div>
+                                <div>
+                                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Heat Exhaustion</p>
+                                  <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#9a3412" }}>{record.heat_exhaustion_cases || 0}</p>
+                                </div>
+                                <div>
+                                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#0284c7", textTransform: "uppercase" }}>Dehydration</p>
+                                  <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#075985" }}>{record.dehydration_cases || 0}</p>
+                                </div>
+                                <div>
+                                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#9333ea", textTransform: "uppercase" }}>Respiratory</p>
+                                  <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#6b21a8" }}>{record.respiratory_cases || 0}</p>
+                                </div>
+                              </div>
+
+                              {record.remarks && (
+                                <div style={{ 
+                                  padding: "12px 16px", 
+                                  borderRadius: 10, 
+                                  background: "rgba(0,0,0,0.03)", 
+                                  marginTop: 12,
+                                  border: "1px solid rgba(0,0,0,0.06)"
+                                }}>
+                                  <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: S.muted, textTransform: "uppercase", marginBottom: 4 }}>Remarks</p>
+                                  <p style={{ margin: 0, fontSize: 13, color: "#3f3f46", lineHeight: 1.5 }}>{record.remarks}</p>
+                                </div>
+                              )}
+                            </div>
+
+                            <div style={{ display: "flex", gap: 8, marginLeft: 16 }}>
+                              <button 
+                                onClick={() => editRecord(record)} 
+                                style={{ 
+                                  background: "none", 
+                                  border: `1px solid ${S.border}`, 
+                                  borderRadius: 10, 
+                                  padding: "8px 12px", 
+                                  cursor: "pointer", 
+                                  color: S.text,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  fontWeight: 700,
+                                  fontSize: 13
+                                }}
+                              >
+                                <Edit2 size={14} /> Edit
+                              </button>
+                              <button 
+                                onClick={() => deleteRecord(record.id, record.record_date)} 
+                                style={btnDanger}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {records.length === 0 && (
+                        <div style={{ padding: 60, textAlign: "center" }}>
+                          <HeartPulse size={48} color={S.muted} style={{ opacity: 0.3, marginBottom: 16 }} />
+                          <p style={{ margin: 0, color: S.muted, fontSize: 15, fontWeight: 700 }}>No health records yet</p>
+                          <p style={{ margin: "8px 0 0", color: S.muted, fontSize: 13 }}>Switch to "Add Record" tab to start tracking daily health data</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
 
 /* ── Operations Tab (Phase 6) ── */
-function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
+function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
   const [centers, setCenters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -1877,10 +2802,20 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
   };
 
   const deleteCenter = async (id) => {
-    if (confirm("Delete this evacuation center?")) {
-      await supabase.from("evacuation_centers").delete().eq("id", id);
-      fetchCenters();
-    }
+    showConfirmModal(
+      "Delete Evacuation Center",
+      "Are you sure you want to delete this evacuation center? This action cannot be undone.",
+      async () => {
+        try {
+          await supabase.from("evacuation_centers").delete().eq("id", id);
+          await fetchCenters();
+          showSuccessModal("Deleted", "Evacuation center deleted successfully");
+        } catch (error) {
+          showErrorModal("Error", "Failed to delete evacuation center");
+        }
+      },
+      "Delete"
+    );
   };
 
   const totalCapacity = centers.reduce((sum, c) => sum + (c.max_capacity || 0), 0);
@@ -2016,7 +2951,7 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
 }
 
 /* ── BFP Operations Tab (Phase 7) ── */
-function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
+function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -2070,10 +3005,20 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
   };
 
   const deleteStation = async (id) => {
-    if (confirm("Delete this fire station?")) {
-      await supabase.from("fire_stations").delete().eq("id", id);
-      fetchStations();
-    }
+    showConfirmModal(
+      "Delete Fire Station",
+      "Are you sure you want to delete this fire station? This action cannot be undone.",
+      async () => {
+        try {
+          await supabase.from("fire_stations").delete().eq("id", id);
+          await fetchStations();
+          showSuccessModal("Deleted", "Fire station deleted successfully");
+        } catch (error) {
+          showErrorModal("Error", "Failed to delete fire station");
+        }
+      },
+      "Delete"
+    );
   };
 
   const totalTrucks = stations.reduce((sum, s) => sum + (s.fire_trucks || 0), 0);
@@ -2191,7 +3136,7 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
 }
 
 /* ── Water Utility Tab (Phase 8) ── */
-function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
+function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
   const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -2244,10 +3189,20 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   };
 
   const deleteFacility = async (id) => {
-    if (confirm("Delete this water facility?")) {
-      await supabase.from("water_facilities").delete().eq("id", id);
-      fetchFacilities();
-    }
+    showConfirmModal(
+      "Delete Water Facility",
+      "Are you sure you want to delete this water facility? This action cannot be undone.",
+      async () => {
+        try {
+          await supabase.from("water_facilities").delete().eq("id", id);
+          await fetchFacilities();
+          showSuccessModal("Deleted", "Water facility deleted successfully");
+        } catch (error) {
+          showErrorModal("Error", "Failed to delete water facility");
+        }
+      },
+      "Delete"
+    );
   };
 
   const operationalCount = facilities.filter(f => f.status === "Operational").length;
@@ -2355,7 +3310,7 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
 }
 
 /* ── Power Utility Tab (Phase 9) ── */
-function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
+function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
   const [feeders, setFeeders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -2407,10 +3362,20 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   };
 
   const deleteFeeder = async (id) => {
-    if (confirm("Delete this power feeder?")) {
-      await supabase.from("power_feeders").delete().eq("id", id);
-      fetchFeeders();
-    }
+    showConfirmModal(
+      "Delete Power Feeder",
+      "Are you sure you want to delete this power feeder? This action cannot be undone.",
+      async () => {
+        try {
+          await supabase.from("power_feeders").delete().eq("id", id);
+          await fetchFeeders();
+          showSuccessModal("Deleted", "Power feeder deleted successfully");
+        } catch (error) {
+          showErrorModal("Error", "Failed to delete power feeder");
+        }
+      },
+      "Delete"
+    );
   };
 
   const energizedCount = feeders.filter(f => f.status === "Energized").length;
