@@ -56,7 +56,7 @@ function MyReportsScreen({ onOpenModal, userReports = [] }) {
               fontWeight: 600,
             }}
           >
-            All your submitted incident reports
+            All your submitted climate reports
           </div>
         </div>
 

@@ -5,12 +5,12 @@ const ThemeContext = createContext();
 export function ThemeProvider({ children }) {
   // Default to light mode as requested, but preserve user's manual toggle if stored
   const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem("palasumbong-theme");
+    const saved = localStorage.getItem("clima-theme");
     return saved || "light";
   });
 
   useEffect(() => {
-    localStorage.setItem("palasumbong-theme", theme);
+    localStorage.setItem("clima-theme", theme);
     const root = document.documentElement;
     if (theme === "dark") {
       root.classList.add("dark");

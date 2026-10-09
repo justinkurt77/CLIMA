@@ -4,7 +4,7 @@ import {
   BarChart3, FileText, Users, LogOut, Map as MapIcon, RefreshCw,
   Plus, Trash2, Building, CheckCircle, Clock, TrendingUp, Search, X, Edit2, Check, Download,
   MapPin, Calendar, Phone, AlertCircle, ChevronRight, ChevronDown, Navigation,
-  ShieldAlert
+  ShieldAlert, Activity, Megaphone, HeartPulse, Tent, Truck, Flame, Droplet, Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect from "../components/ui/CustomSelect";
@@ -160,10 +160,17 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
 
   const tabs = [
     { id: "overview", label: "Dashboard", icon: <BarChart3 size={18} /> },
-    { id: "reports", label: "Reports", icon: <FileText size={18} /> },
+    { id: "reports", label: "Citizen Reports", icon: <FileText size={18} /> },
+    { id: "advisories", label: "Official Advisories", icon: <Megaphone size={18} /> },
+    { id: "hospitals", label: "Hospital Monitoring", icon: <HeartPulse size={18} /> },
+    { id: "operations", label: "CDRRMO Operations", icon: <Tent size={18} /> },
+    { id: "bfp", label: "BFP Operations", icon: <Flame size={18} /> },
+    { id: "water", label: "Water Utility", icon: <Droplet size={18} /> },
+    { id: "power", label: "Power Utility", icon: <Zap size={18} /> },
     ...(isSuperadmin ? [
       { id: "users", label: "Users", icon: <Users size={18} /> },
       { id: "settings", label: "Offices & Categories", icon: <Building size={18} /> },
+      { id: "logs", label: "Activity Logs", icon: <Activity size={18} /> },
     ] : []),
   ];
 
@@ -233,8 +240,15 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>
               {activeTab === "overview" && "Dashboard Overview"}
               {activeTab === "reports" && "Citizen Reports"}
+              {activeTab === "advisories" && "Official Advisories"}
+              {activeTab === "hospitals" && "Hospital Capacity & Health Analytics"}
+              {activeTab === "operations" && "CDRRMO Operations & Evacuations"}
+              {activeTab === "bfp" && "BFP Operations & Fire Risk"}
+              {activeTab === "water" && "Water Utility & Interruptions"}
+              {activeTab === "power" && "Power Utility & Outages"}
               {activeTab === "users" && "User Management"}
               {activeTab === "settings" && "Offices & Categories"}
+              {activeTab === "logs" && "System Activity Logs"}
             </h2>
             {!isSuperadmin && adminDepartment?.name && activeTab === "overview" && (
               <p style={{ margin: 0, fontSize: 11, color: S.muted, fontWeight: 700 }}>Showing reports for {adminDepartment.name}</p>
@@ -277,6 +291,60 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             <ReportsTab reports={reports} onUpdate={() => fetchData(true)} S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} onViewReport={setDetailReport} />
           </motion.div>
 
+          <motion.div
+            variants={tabVariants}
+            initial="inactive"
+            animate={activeTab === "advisories" ? "active" : "inactive"}
+            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+          >
+            <AdvisoriesTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} />
+          </motion.div>
+
+          <motion.div
+            variants={tabVariants}
+            initial="inactive"
+            animate={activeTab === "hospitals" ? "active" : "inactive"}
+            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+          >
+            <HospitalsTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} />
+          </motion.div>
+
+          <motion.div
+            variants={tabVariants}
+            initial="inactive"
+            animate={activeTab === "operations" ? "active" : "inactive"}
+            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+          >
+            <OperationsTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} />
+          </motion.div>
+
+          <motion.div
+            variants={tabVariants}
+            initial="inactive"
+            animate={activeTab === "bfp" ? "active" : "inactive"}
+            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+          >
+            <BfpOperationsTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} />
+          </motion.div>
+
+          <motion.div
+            variants={tabVariants}
+            initial="inactive"
+            animate={activeTab === "water" ? "active" : "inactive"}
+            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+          >
+            <WaterUtilityTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} />
+          </motion.div>
+
+          <motion.div
+            variants={tabVariants}
+            initial="inactive"
+            animate={activeTab === "power" ? "active" : "inactive"}
+            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+          >
+            <PowerUtilityTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} />
+          </motion.div>
+
           {isSuperadmin && (
             <>
               <motion.div
@@ -295,6 +363,15 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                 style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
               >
                 <SettingsTab departments={departments} categories={categories} onUpdate={() => fetchData(true)} S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} />
+              </motion.div>
+
+              <motion.div
+                variants={tabVariants}
+                initial="inactive"
+                animate={activeTab === "logs" ? "active" : "inactive"}
+                style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+              >
+                <ActivityLogsTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} />
               </motion.div>
             </>
           )}
@@ -1240,5 +1317,1193 @@ function DashboardReportModal({ report, S, onClose, onStatusChange }) {
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+/* ── Activity Logs Tab ── */
+function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle }) {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [usersMap, setUsersMap] = useState({});
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  const fetchLogs = async () => {
+    setLoading(true);
+    try {
+      // Fetch logs
+      const { data: logsData } = await supabase
+        .from("audit_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      // Fetch users to map actor_id to name
+      const { data: usersData } = await supabase.rpc("get_auth_users");
+      const uMap = {};
+      if (usersData) {
+        usersData.forEach(u => {
+          uMap[u.id] = u.full_name || u.email;
+        });
+      }
+
+      setLogs(logsData || []);
+      setUsersMap(uMap);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <p style={{ textAlign: "center", color: S.muted, padding: 40 }}>Loading logs…</p>;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={cardStyle}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div>
+            <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Audit Logs</h3>
+            <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Tracking system modifications for accountability and compliance.</p>
+          </div>
+          <button onClick={fetchLogs} style={{ padding: "8px 12px", borderRadius: 8, border: `1px solid ${S.border}`, background: "#fff", cursor: "pointer", fontFamily: S.font, fontWeight: 700, fontSize: 13, color: S.text, display: "flex", alignItems: "center", gap: 6 }}>
+            <RefreshCw size={14} /> Refresh
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {logs.map(log => {
+            const actorName = log.actor_id ? (usersMap[log.actor_id] || "Unknown User") : "System / Guest";
+            const actionColor = log.action === "DELETE" ? "#ef4444" : log.action === "INSERT" ? "#10b981" : "#3b82f6";
+            const actionBg = log.action === "DELETE" ? "#fef2f2" : log.action === "INSERT" ? "#ecfdf5" : "#eff6ff";
+            
+            return (
+              <div key={log.id} style={{ padding: "14px 16px", borderRadius: 12, border: `1px solid ${S.border}`, background: "#fafcf9", display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ padding: "4px 10px", borderRadius: 6, background: actionBg, color: actionColor, fontSize: 11, fontWeight: 900 }}>{log.action}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "#18181b" }}>{log.table_name}</span>
+                  </div>
+                  <span style={{ fontSize: 11, color: S.muted, fontWeight: 700 }}>
+                    {new Date(log.created_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}
+                  </span>
+                </div>
+                
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: S.muted, fontWeight: 600 }}>
+                  <Users size={14} /> {actorName} 
+                  <span style={{ color: "#d4d4d8" }}>|</span> 
+                  <span style={{ fontFamily: "monospace", fontSize: 11 }}>ID: {log.record_id.slice(0, 8)}...</span>
+                </div>
+              </div>
+            );
+          })}
+          {logs.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No audit logs recorded yet.</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Advisories Tab (Phase 3) ── */
+function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
+  const [advisories, setAdvisories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [newAdvisory, setNewAdvisory] = useState({ title: "", content: "", category: "General", status: "Draft", scheduled_for: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [usersMap, setUsersMap] = useState({});
+  const [filterStatus, setFilterStatus] = useState("All");
+
+  useEffect(() => {
+    fetchAdvisories();
+  }, [adminDepartment, isSuperadmin]);
+
+  const fetchAdvisories = async () => {
+    setLoading(true);
+    try {
+      let query = supabase.from("advisories").select("*, departments(name)").order("created_at", { ascending: false });
+      
+      const { data } = await query;
+      setAdvisories(data || []);
+
+      const { data: usersData } = await supabase.rpc("get_auth_users");
+      const uMap = {};
+      if (usersData) {
+        usersData.forEach(u => { uMap[u.id] = u.full_name || u.email; });
+      }
+      setUsersMap(uMap);
+    } catch (e) {
+      console.error("Advisories fetch error:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!newAdvisory.title || !newAdvisory.content) return;
+    setSubmitting(true);
+    
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      
+      const insertData = {
+        title: newAdvisory.title,
+        content: newAdvisory.content,
+        category: newAdvisory.category,
+        status: isSuperadmin ? "Published" : "Pending", // Superadmins auto-publish, others pending approval
+        author_id: userData?.user?.id,
+      };
+
+      if (!isSuperadmin && adminDepartment?.id) {
+        insertData.department_id = adminDepartment.id;
+      }
+      if (isSuperadmin) insertData.published_at = new Date().toISOString();
+      if (newAdvisory.scheduled_for) insertData.scheduled_for = new Date(newAdvisory.scheduled_for).toISOString();
+
+      const { data, error } = await supabase.from("advisories").insert(insertData);
+      
+      if (error) {
+        console.error("Insert error:", error);
+        alert(`Failed to submit advisory: ${error.message}`);
+        return;
+      }
+      
+      console.log("Advisory submitted successfully:", data);
+      
+      setNewAdvisory({ title: "", content: "", category: "General", status: "Draft", scheduled_for: "" });
+      setShowForm(false);
+      
+      // Set filter to show pending items if admin submitted for approval
+      if (!isSuperadmin) {
+        setFilterStatus("Pending");
+      }
+      
+      fetchAdvisories();
+      
+      // Show success message
+      alert(isSuperadmin ? "Advisory published successfully!" : "Advisory submitted for approval!");
+    } catch (err) {
+      console.error("Submit error:", err);
+      alert(`Error: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const updateStatus = async (id, status) => {
+    const payload = { status };
+    if (status === "Published") {
+      const { data: userData } = await supabase.auth.getUser();
+      payload.approved_by = userData?.user?.id;
+      payload.published_at = new Date().toISOString();
+    }
+    await supabase.from("advisories").update(payload).eq("id", id);
+    fetchAdvisories();
+  };
+
+  const deleteAdvisory = async (id) => {
+    if (confirm("Are you sure you want to delete this advisory?")) {
+      await supabase.from("advisories").delete().eq("id", id);
+      fetchAdvisories();
+    }
+  };
+
+  const filteredAdvisories = advisories.filter(a => filterStatus === "All" || a.status === filterStatus);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {showForm ? (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Create Advisory</h3>
+            <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
+          </div>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Headline</label>
+              <input value={newAdvisory.title} onChange={e => setNewAdvisory({...newAdvisory, title: e.target.value})} placeholder="E.g. Heavy Rainfall Warning" required style={inputStyle} />
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Category</label>
+                <CustomSelect
+                  value={newAdvisory.category}
+                  onChange={v => setNewAdvisory({...newAdvisory, category: v})}
+                  options={[{value: "Weather", label: "Weather"}, {value: "Water", label: "Water Interruption"}, {value: "Power", label: "Power Outage"}, {value: "Health", label: "Health / Safety"}, {value: "General", label: "General"}]}
+                  accent={S.accent}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Schedule (Optional)</label>
+                <input type="datetime-local" value={newAdvisory.scheduled_for} onChange={e => setNewAdvisory({...newAdvisory, scheduled_for: e.target.value})} style={inputStyle} />
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Content</label>
+              <textarea value={newAdvisory.content} onChange={e => setNewAdvisory({...newAdvisory, content: e.target.value})} placeholder="Advisory details..." required style={{ ...inputStyle, minHeight: 120, resize: "vertical" }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
+              <button type="button" onClick={() => setShowForm(false)} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: "#fff", fontWeight: 800, cursor: "pointer", fontFamily: S.font }}>Cancel</button>
+              <button type="submit" disabled={submitting} style={btnPrimary}>
+                <Check size={16} /> {submitting ? "Submitting..." : (isSuperadmin ? "Publish Now" : "Submit for Approval")}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", ...cardStyle, padding: "16px 24px" }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Official Advisories</h3>
+            <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage public announcements and warnings.</p>
+          </div>
+          <button onClick={() => setShowForm(true)} style={btnPrimary}><Plus size={16} /> New Advisory</button>
+        </div>
+      )}
+
+      {!showForm && (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 900 }}>{filteredAdvisories.length} Advisories</h3>
+            <CustomSelect
+              value={filterStatus}
+              onChange={setFilterStatus}
+              options={[{value: "All", label: "All Statuses"}, {value: "Published", label: "Published"}, {value: "Pending", label: "Pending Approval"}, {value: "Draft", label: "Drafts"}, {value: "Archived", label: "Archived"}]}
+              compact accent={S.accent} style={{ minWidth: 150 }}
+            />
+          </div>
+          
+          {loading ? <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p> : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {filteredAdvisories.map(adv => {
+                const isPublished = adv.status === "Published";
+                const isPending = adv.status === "Pending";
+                const author = usersMap[adv.author_id] || "Unknown User";
+                
+                return (
+                  <div key={adv.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ padding: "2px 8px", borderRadius: 20, background: S.accentBg, color: S.accent, fontSize: 10, fontWeight: 900, textTransform: "uppercase" }}>{adv.category}</span>
+                          {adv.departments?.name && <span style={{ fontSize: 10, color: S.muted, fontWeight: 700 }}>• {adv.departments.name}</span>}
+                          {adv.scheduled_for && <span style={{ fontSize: 10, color: "#d97706", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}><Clock size={10} /> Scheduled: {new Date(adv.scheduled_for).toLocaleString()}</span>}
+                        </div>
+                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#18181b" }}>{adv.title}</h4>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800, 
+                          background: isPublished ? "#ecfdf5" : isPending ? "#fffbeb" : "#f4f4f5", 
+                          color: isPublished ? "#10b981" : isPending ? "#d97706" : "#71717a" }}>
+                          {adv.status}
+                        </span>
+                        
+                        {(isSuperadmin || isPending) && (
+                          <CustomSelect
+                            value={adv.status}
+                            onChange={(s) => updateStatus(adv.id, s)}
+                            options={[{value: "Pending", label: "Pending"}, {value: "Published", label: "Publish"}, {value: "Archived", label: "Archive"}]}
+                            compact accent={S.accent} style={{ minWidth: 110 }}
+                          />
+                        )}
+                        <button onClick={() => deleteAdvisory(adv.id)} style={btnDanger}><Trash2 size={16} /></button>
+                      </div>
+                    </div>
+                    <p style={{ margin: "0 0 12px", fontSize: 13, color: "#3f3f46", lineHeight: 1.5 }}>{adv.content}</p>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: S.muted, fontWeight: 600 }}>
+                      <span>Author: {author}</span>
+                      <span>Created: {new Date(adv.created_at).toLocaleString()}</span>
+                    </div>
+                  </div>
+                );
+              })}
+              {filteredAdvisories.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No advisories found.</p>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Hospitals Tab (Phase 5) ── */
+function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
+  const [hospitals, setHospitals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [formData, setFormData] = useState({ name: "", location: "", total_beds: 0, available_beds: 0, heat_stroke_cases: 0, heat_exhaustion_cases: 0, dehydration_cases: 0 });
+
+  useEffect(() => {
+    fetchHospitals();
+  }, [adminDepartment, isSuperadmin]);
+
+  const fetchHospitals = async () => {
+    setLoading(true);
+    try {
+      let query = supabase.from("hospitals").select("*").order("name");
+      const { data } = await query;
+      setHospitals(data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const payload = {
+      name: formData.name,
+      location: formData.location,
+      total_beds: parseInt(formData.total_beds) || 0,
+      available_beds: parseInt(formData.available_beds) || 0,
+      heat_stroke_cases: parseInt(formData.heat_stroke_cases) || 0,
+      heat_exhaustion_cases: parseInt(formData.heat_exhaustion_cases) || 0,
+      dehydration_cases: parseInt(formData.dehydration_cases) || 0,
+      last_updated: new Date().toISOString()
+    };
+
+    if (editId) {
+      await supabase.from("hospitals").update(payload).eq("id", editId);
+    } else {
+      if (adminDepartment?.id) payload.department_id = adminDepartment.id;
+      await supabase.from("hospitals").insert(payload);
+    }
+    
+    setShowForm(false);
+    setEditId(null);
+    fetchHospitals();
+  };
+
+  const editHospital = (h) => {
+    setFormData({ name: h.name, location: h.location || "", total_beds: h.total_beds, available_beds: h.available_beds, heat_stroke_cases: h.heat_stroke_cases, heat_exhaustion_cases: h.heat_exhaustion_cases, dehydration_cases: h.dehydration_cases });
+    setEditId(h.id);
+    setShowForm(true);
+  };
+
+  const deleteHospital = async (id) => {
+    if (confirm("Delete this hospital record?")) {
+      await supabase.from("hospitals").delete().eq("id", id);
+      fetchHospitals();
+    }
+  };
+
+  const totalHeatStroke = hospitals.reduce((sum, h) => sum + (h.heat_stroke_cases || 0), 0);
+  const totalExhaustion = hospitals.reduce((sum, h) => sum + (h.heat_exhaustion_cases || 0), 0);
+  const totalDehydration = hospitals.reduce((sum, h) => sum + (h.dehydration_cases || 0), 0);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <div style={{ ...cardStyle, background: "#fff1f2", borderColor: "#fecdd3" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#e11d48", textTransform: "uppercase" }}>Heat Stroke</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#9f1239" }}>{totalHeatStroke}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Heat Exhaustion</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#9a3412" }}>{totalExhaustion}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#f0f9ff", borderColor: "#bae6fd" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#0284c7", textTransform: "uppercase" }}>Dehydration</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#075985" }}>{totalDehydration}</p>
+        </div>
+      </div>
+
+      {showForm ? (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>{editId ? "Update Hospital" : "Add Hospital"}</h3>
+            <button onClick={() => { setShowForm(false); setEditId(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
+          </div>
+          <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Hospital Name</label>
+                <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required style={inputStyle} />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Location</label>
+                <input value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Total Beds</label>
+                <input type="number" min="0" value={formData.total_beds} onChange={e => setFormData({...formData, total_beds: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Available Beds</label>
+                <input type="number" min="0" value={formData.available_beds} onChange={e => setFormData({...formData, available_beds: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Heat Stroke Cases</label>
+                <input type="number" min="0" value={formData.heat_stroke_cases} onChange={e => setFormData({...formData, heat_stroke_cases: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Heat Exhaustion Cases</label>
+                <input type="number" min="0" value={formData.heat_exhaustion_cases} onChange={e => setFormData({...formData, heat_exhaustion_cases: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Dehydration Cases</label>
+                <input type="number" min="0" value={formData.dehydration_cases} onChange={e => setFormData({...formData, dehydration_cases: e.target.value})} style={inputStyle} />
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
+              <button type="submit" style={btnPrimary}><Check size={16} /> Save</button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Hospitals & Capacity</h3>
+              <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage hospital availability and track health analytics.</p>
+            </div>
+            <button onClick={() => { setFormData({ name: "", location: "", total_beds: 0, available_beds: 0, heat_stroke_cases: 0, heat_exhaustion_cases: 0, dehydration_cases: 0 }); setShowForm(true); }} style={btnPrimary}>
+              <Plus size={16} /> Add Hospital
+            </button>
+          </div>
+          
+          {loading ? <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p> : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {hospitals.map(h => {
+                const capacityPercent = h.total_beds > 0 ? ((h.total_beds - h.available_beds) / h.total_beds) * 100 : 0;
+                const capacityColor = capacityPercent > 90 ? "#ef4444" : capacityPercent > 70 ? "#d97706" : "#22c55e";
+                return (
+                  <div key={h.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9", display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#18181b", display: "flex", alignItems: "center", gap: 6 }}>
+                          <HeartPulse size={16} color="#ef4444" /> {h.name}
+                        </h4>
+                        <p style={{ margin: "4px 0 0", fontSize: 12, color: S.muted, fontWeight: 600 }}><MapPin size={12} /> {h.location}</p>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => editHospital(h)} style={{ background: "none", border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: "pointer", color: S.text }}><Edit2 size={14} /></button>
+                        <button onClick={() => deleteHospital(h.id)} style={btnDanger}><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
+                      <div style={{ flex: 1, minWidth: 150 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: 11, fontWeight: 800 }}>
+                          <span style={{ color: S.muted }}>Bed Capacity</span>
+                          <span style={{ color: capacityColor }}>{h.available_beds} / {h.total_beds} available</span>
+                        </div>
+                        <div style={{ height: 8, background: "#e4e4e7", borderRadius: 4, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${capacityPercent}%`, background: capacityColor, borderRadius: 4 }} />
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: "flex", gap: 12 }}>
+                        <div style={{ textAlign: "center" }}>
+                          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase" }}>Heat Stroke</p>
+                          <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#e11d48" }}>{h.heat_stroke_cases}</p>
+                        </div>
+                        <div style={{ textAlign: "center" }}>
+                          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase" }}>Exhaustion</p>
+                          <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#ea580c" }}>{h.heat_exhaustion_cases}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {hospitals.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No hospitals found.</p>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Operations Tab (Phase 6) ── */
+function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
+  const [centers, setCenters] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [formData, setFormData] = useState({ name: "", location: "", max_capacity: 0, current_occupants: 0, status: "Standby", manager_name: "", contact_number: "" });
+
+  useEffect(() => {
+    fetchCenters();
+  }, [adminDepartment, isSuperadmin]);
+
+  const fetchCenters = async () => {
+    setLoading(true);
+    try {
+      let query = supabase.from("evacuation_centers").select("*").order("name");
+      const { data } = await query;
+      setCenters(data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const payload = {
+      name: formData.name,
+      location: formData.location,
+      max_capacity: parseInt(formData.max_capacity) || 0,
+      current_occupants: parseInt(formData.current_occupants) || 0,
+      status: formData.status,
+      manager_name: formData.manager_name,
+      contact_number: formData.contact_number,
+      last_updated: new Date().toISOString()
+    };
+
+    if (editId) {
+      await supabase.from("evacuation_centers").update(payload).eq("id", editId);
+    } else {
+      if (adminDepartment?.id) payload.department_id = adminDepartment.id;
+      await supabase.from("evacuation_centers").insert(payload);
+    }
+    
+    setShowForm(false);
+    setEditId(null);
+    fetchCenters();
+  };
+
+  const editCenter = (c) => {
+    setFormData({ name: c.name, location: c.location, max_capacity: c.max_capacity, current_occupants: c.current_occupants, status: c.status, manager_name: c.manager_name || "", contact_number: c.contact_number || "" });
+    setEditId(c.id);
+    setShowForm(true);
+  };
+
+  const deleteCenter = async (id) => {
+    if (confirm("Delete this evacuation center?")) {
+      await supabase.from("evacuation_centers").delete().eq("id", id);
+      fetchCenters();
+    }
+  };
+
+  const totalCapacity = centers.reduce((sum, c) => sum + (c.max_capacity || 0), 0);
+  const totalOccupants = centers.reduce((sum, c) => sum + (c.current_occupants || 0), 0);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Overview Analytics */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <div style={{ ...cardStyle, background: "#fef2f2", borderColor: "#fca5a5" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>Total Evacuees</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#991b1b" }}>{totalOccupants}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#ecfdf5", borderColor: "#6ee7b7" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#059669", textTransform: "uppercase" }}>Total Capacity</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#065f46" }}>{totalCapacity}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#f0f9ff", borderColor: "#bae6fd" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#0284c7", textTransform: "uppercase" }}>Active Centers</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#075985" }}>{centers.filter(c => c.status === "Active").length}</p>
+        </div>
+      </div>
+
+      {showForm ? (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>{editId ? "Update Center" : "Add Evacuation Center"}</h3>
+            <button onClick={() => { setShowForm(false); setEditId(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
+          </div>
+          <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Center Name</label>
+                <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required style={inputStyle} />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Location</label>
+                <input value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Max Capacity (Individuals)</label>
+                <input type="number" min="0" value={formData.max_capacity} onChange={e => setFormData({...formData, max_capacity: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Current Occupants</label>
+                <input type="number" min="0" value={formData.current_occupants} onChange={e => setFormData({...formData, current_occupants: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Manager / Focal Person</label>
+                <input value={formData.manager_name} onChange={e => setFormData({...formData, manager_name: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Contact Number</label>
+                <input value={formData.contact_number} onChange={e => setFormData({...formData, contact_number: e.target.value})} style={inputStyle} />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Status</label>
+                <CustomSelect
+                  value={formData.status}
+                  onChange={v => setFormData({...formData, status: v})}
+                  options={[{value: "Standby", label: "Standby"}, {value: "Active", label: "Active"}, {value: "Full", label: "Full"}, {value: "Closed", label: "Closed"}]}
+                  accent={S.accent}
+                />
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
+              <button type="submit" style={btnPrimary}><Check size={16} /> Save</button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Evacuation Centers</h3>
+              <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage disaster shelters, relief goods, and responder dispatches.</p>
+            </div>
+            <button onClick={() => { setFormData({ name: "", location: "", max_capacity: 0, current_occupants: 0, status: "Standby", manager_name: "", contact_number: "" }); setShowForm(true); }} style={btnPrimary}>
+              <Plus size={16} /> Add Center
+            </button>
+          </div>
+          
+          {loading ? <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p> : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {centers.map(c => {
+                const capacityPercent = c.max_capacity > 0 ? (c.current_occupants / c.max_capacity) * 100 : 0;
+                const capacityColor = capacityPercent > 90 ? "#ef4444" : capacityPercent > 50 ? "#d97706" : "#22c55e";
+                
+                return (
+                  <div key={c.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9", display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#18181b", display: "flex", alignItems: "center", gap: 6 }}>
+                          <Tent size={16} color="#0ea5e9" /> {c.name}
+                        </h4>
+                        <p style={{ margin: "4px 0 0", fontSize: 12, color: S.muted, fontWeight: 600 }}><MapPin size={12} /> {c.location}</p>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800, background: c.status === "Active" ? "#ecfdf5" : c.status === "Full" ? "#fef2f2" : "#f4f4f5", color: c.status === "Active" ? "#10b981" : c.status === "Full" ? "#ef4444" : "#71717a" }}>
+                          {c.status}
+                        </span>
+                        <button onClick={() => editCenter(c)} style={{ background: "none", border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: "pointer", color: S.text }}><Edit2 size={14} /></button>
+                        <button onClick={() => deleteCenter(c.id)} style={btnDanger}><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: 11, fontWeight: 800 }}>
+                          <span style={{ color: S.muted }}>Occupancy</span>
+                          <span style={{ color: capacityColor }}>{c.current_occupants} / {c.max_capacity} individuals</span>
+                        </div>
+                        <div style={{ height: 8, background: "#e4e4e7", borderRadius: 4, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${Math.min(capacityPercent, 100)}%`, background: capacityColor, borderRadius: 4 }} />
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                        {c.manager_name && <span style={{ fontSize: 11, color: S.muted, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}><Users size={12}/> {c.manager_name}</span>}
+                        {c.contact_number && <span style={{ fontSize: 11, color: S.muted, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}><Phone size={12}/> {c.contact_number}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {centers.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No evacuation centers found.</p>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── BFP Operations Tab (Phase 7) ── */
+function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
+  const [stations, setStations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [formData, setFormData] = useState({ name: "", location: "", fire_trucks: 0, active_personnel: 0, contact_number: "" });
+
+  useEffect(() => {
+    fetchStations();
+  }, [adminDepartment, isSuperadmin]);
+
+  const fetchStations = async () => {
+    setLoading(true);
+    try {
+      let query = supabase.from("fire_stations").select("*").order("name");
+      const { data } = await query;
+      setStations(data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const payload = {
+      name: formData.name,
+      location: formData.location,
+      fire_trucks: parseInt(formData.fire_trucks) || 0,
+      active_personnel: parseInt(formData.active_personnel) || 0,
+      contact_number: formData.contact_number,
+      last_updated: new Date().toISOString()
+    };
+
+    if (editId) {
+      await supabase.from("fire_stations").update(payload).eq("id", editId);
+    } else {
+      if (adminDepartment?.id) payload.department_id = adminDepartment.id;
+      await supabase.from("fire_stations").insert(payload);
+    }
+    
+    setShowForm(false);
+    setEditId(null);
+    fetchStations();
+  };
+
+  const editStation = (s) => {
+    setFormData({ name: s.name, location: s.location, fire_trucks: s.fire_trucks, active_personnel: s.active_personnel, contact_number: s.contact_number || "" });
+    setEditId(s.id);
+    setShowForm(true);
+  };
+
+  const deleteStation = async (id) => {
+    if (confirm("Delete this fire station?")) {
+      await supabase.from("fire_stations").delete().eq("id", id);
+      fetchStations();
+    }
+  };
+
+  const totalTrucks = stations.reduce((sum, s) => sum + (s.fire_trucks || 0), 0);
+  const totalPersonnel = stations.reduce((sum, s) => sum + (s.active_personnel || 0), 0);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Overview Analytics */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <div style={{ ...cardStyle, background: "#fef2f2", borderColor: "#fca5a5" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>Total Stations</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#991b1b" }}>{stations.length}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Active Fire Trucks</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#9a3412" }}>{totalTrucks}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#f0fdf4", borderColor: "#86efac" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#16a34a", textTransform: "uppercase" }}>Ready Personnel</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#14532d" }}>{totalPersonnel}</p>
+        </div>
+      </div>
+
+      {showForm ? (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>{editId ? "Update Station" : "Add Fire Station"}</h3>
+            <button onClick={() => { setShowForm(false); setEditId(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
+          </div>
+          <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Station Name</label>
+                <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required style={inputStyle} />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Location</label>
+                <input value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Fire Trucks</label>
+                <input type="number" min="0" value={formData.fire_trucks} onChange={e => setFormData({...formData, fire_trucks: e.target.value})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Active Personnel</label>
+                <input type="number" min="0" value={formData.active_personnel} onChange={e => setFormData({...formData, active_personnel: e.target.value})} style={inputStyle} />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Contact Number</label>
+                <input value={formData.contact_number} onChange={e => setFormData({...formData, contact_number: e.target.value})} style={inputStyle} />
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
+              <button type="submit" style={btnPrimary}><Check size={16} /> Save</button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>BFP Operations</h3>
+              <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage fire stations and track firefighting resources.</p>
+            </div>
+            <button onClick={() => { setFormData({ name: "", location: "", fire_trucks: 0, active_personnel: 0, contact_number: "" }); setShowForm(true); }} style={btnPrimary}>
+              <Plus size={16} /> Add Station
+            </button>
+          </div>
+          
+          {loading ? <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p> : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {stations.map(s => {
+                return (
+                  <div key={s.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9", display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#18181b", display: "flex", alignItems: "center", gap: 6 }}>
+                          <Flame size={16} color="#dc2626" /> {s.name}
+                        </h4>
+                        <p style={{ margin: "4px 0 0", fontSize: 12, color: S.muted, fontWeight: 600 }}><MapPin size={12} /> {s.location}</p>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <button onClick={() => editStation(s)} style={{ background: "none", border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: "pointer", color: S.text }}><Edit2 size={14} /></button>
+                        <button onClick={() => deleteStation(s.id)} style={btnDanger}><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
+                      <div style={{ display: "flex", gap: 12 }}>
+                        <div style={{ textAlign: "center" }}>
+                          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase" }}>Fire Trucks</p>
+                          <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#dc2626" }}>{s.fire_trucks}</p>
+                        </div>
+                        <div style={{ textAlign: "center" }}>
+                          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase" }}>Personnel</p>
+                          <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#16a34a" }}>{s.active_personnel}</p>
+                        </div>
+                      </div>
+                      {s.contact_number && (
+                        <div style={{ marginLeft: "auto" }}>
+                          <span style={{ fontSize: 12, color: S.muted, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}><Phone size={14}/> {s.contact_number}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {stations.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No fire stations found.</p>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Water Utility Tab (Phase 8) ── */
+function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
+  const [facilities, setFacilities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [formData, setFormData] = useState({ name: "", facility_type: "Pumping Station", location: "", status: "Operational" });
+
+  useEffect(() => {
+    fetchFacilities();
+  }, [adminDepartment, isSuperadmin]);
+
+  const fetchFacilities = async () => {
+    setLoading(true);
+    try {
+      let query = supabase.from("water_facilities").select("*").order("name");
+      const { data } = await query;
+      setFacilities(data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const payload = {
+      name: formData.name,
+      facility_type: formData.facility_type,
+      location: formData.location,
+      status: formData.status,
+      last_updated: new Date().toISOString()
+    };
+
+    if (editId) {
+      await supabase.from("water_facilities").update(payload).eq("id", editId);
+    } else {
+      if (adminDepartment?.id) payload.department_id = adminDepartment.id;
+      await supabase.from("water_facilities").insert(payload);
+    }
+    
+    setShowForm(false);
+    setEditId(null);
+    fetchFacilities();
+  };
+
+  const editFacility = (f) => {
+    setFormData({ name: f.name, facility_type: f.facility_type, location: f.location, status: f.status });
+    setEditId(f.id);
+    setShowForm(true);
+  };
+
+  const deleteFacility = async (id) => {
+    if (confirm("Delete this water facility?")) {
+      await supabase.from("water_facilities").delete().eq("id", id);
+      fetchFacilities();
+    }
+  };
+
+  const operationalCount = facilities.filter(f => f.status === "Operational").length;
+  const maintenanceCount = facilities.filter(f => f.status === "Maintenance" || f.status === "Offline").length;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <div style={{ ...cardStyle, background: "#f0f9ff", borderColor: "#bae6fd" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#0284c7", textTransform: "uppercase" }}>Total Facilities</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#075985" }}>{facilities.length}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#ecfdf5", borderColor: "#6ee7b7" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#059669", textTransform: "uppercase" }}>Operational</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#065f46" }}>{operationalCount}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Maintenance / Offline</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#9a3412" }}>{maintenanceCount}</p>
+        </div>
+      </div>
+
+      {showForm ? (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>{editId ? "Update Facility" : "Add Water Facility"}</h3>
+            <button onClick={() => { setShowForm(false); setEditId(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
+          </div>
+          <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Facility Name</label>
+                <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Facility Type</label>
+                <CustomSelect
+                  value={formData.facility_type}
+                  onChange={v => setFormData({...formData, facility_type: v})}
+                  options={[{value: "Pumping Station", label: "Pumping Station"}, {value: "Reservoir", label: "Reservoir"}, {value: "Treatment Plant", label: "Treatment Plant"}]}
+                  accent={S.accent}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Status</label>
+                <CustomSelect
+                  value={formData.status}
+                  onChange={v => setFormData({...formData, status: v})}
+                  options={[{value: "Operational", label: "Operational"}, {value: "Maintenance", label: "Maintenance"}, {value: "Offline", label: "Offline"}]}
+                  accent={S.accent}
+                />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Location</label>
+                <input value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} required style={inputStyle} />
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
+              <button type="submit" style={btnPrimary}><Check size={16} /> Save</button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Water Facilities</h3>
+              <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage pumping stations and track operational status.</p>
+            </div>
+            <button onClick={() => { setFormData({ name: "", facility_type: "Pumping Station", location: "", status: "Operational" }); setShowForm(true); }} style={btnPrimary}>
+              <Plus size={16} /> Add Facility
+            </button>
+          </div>
+          
+          {loading ? <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p> : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {facilities.map(f => {
+                return (
+                  <div key={f.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9", display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#18181b", display: "flex", alignItems: "center", gap: 6 }}>
+                          <Droplet size={16} color="#0284c7" /> {f.name}
+                        </h4>
+                        <p style={{ margin: "4px 0 0", fontSize: 12, color: S.muted, fontWeight: 600 }}><MapPin size={12} /> {f.location}</p>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800, background: f.status === "Operational" ? "#ecfdf5" : "#fff7ed", color: f.status === "Operational" ? "#10b981" : "#ea580c" }}>
+                          {f.status}
+                        </span>
+                        <button onClick={() => editFacility(f)} style={{ background: "none", border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: "pointer", color: S.text }}><Edit2 size={14} /></button>
+                        <button onClick={() => deleteFacility(f.id)} style={btnDanger}><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {facilities.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No water facilities found.</p>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Power Utility Tab (Phase 9) ── */
+function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
+  const [feeders, setFeeders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [formData, setFormData] = useState({ name: "", substation: "", location: "", status: "Energized" });
+
+  useEffect(() => {
+    fetchFeeders();
+  }, [adminDepartment, isSuperadmin]);
+
+  const fetchFeeders = async () => {
+    setLoading(true);
+    try {
+      let query = supabase.from("power_feeders").select("*").order("name");
+      const { data } = await query;
+      setFeeders(data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const payload = {
+      name: formData.name,
+      substation: formData.substation,
+      status: formData.status,
+      last_updated: new Date().toISOString()
+    };
+
+    if (editId) {
+      await supabase.from("power_feeders").update(payload).eq("id", editId);
+    } else {
+      if (adminDepartment?.id) payload.department_id = adminDepartment.id;
+      await supabase.from("power_feeders").insert(payload);
+    }
+    
+    setShowForm(false);
+    setEditId(null);
+    fetchFeeders();
+  };
+
+  const editFeeder = (f) => {
+    setFormData({ name: f.name, substation: f.substation, status: f.status });
+    setEditId(f.id);
+    setShowForm(true);
+  };
+
+  const deleteFeeder = async (id) => {
+    if (confirm("Delete this power feeder?")) {
+      await supabase.from("power_feeders").delete().eq("id", id);
+      fetchFeeders();
+    }
+  };
+
+  const energizedCount = feeders.filter(f => f.status === "Energized").length;
+  const deenergizedCount = feeders.filter(f => f.status === "De-energized" || f.status === "Tripped/Fault").length;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <div style={{ ...cardStyle, background: "#fefce8", borderColor: "#fef08a" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#a16207", textTransform: "uppercase" }}>Total Feeders</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#854d0e" }}>{feeders.length}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#ecfdf5", borderColor: "#6ee7b7" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#059669", textTransform: "uppercase" }}>Energized</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#065f46" }}>{energizedCount}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fef2f2", borderColor: "#fca5a5" }}>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>De-energized / Tripped</p>
+          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#991b1b" }}>{deenergizedCount}</p>
+        </div>
+      </div>
+
+      {showForm ? (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>{editId ? "Update Feeder" : "Add Power Feeder"}</h3>
+            <button onClick={() => { setShowForm(false); setEditId(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
+          </div>
+          <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Feeder Name</label>
+                <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required style={inputStyle} />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Substation</label>
+                <input value={formData.substation} onChange={e => setFormData({...formData, substation: e.target.value})} required style={inputStyle} />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Status</label>
+                <CustomSelect
+                  value={formData.status}
+                  onChange={v => setFormData({...formData, status: v})}
+                  options={[{value: "Energized", label: "Energized"}, {value: "De-energized", label: "De-energized"}, {value: "Tripped/Fault", label: "Tripped/Fault"}]}
+                  accent={S.accent}
+                />
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
+              <button type="submit" style={btnPrimary}><Check size={16} /> Save</button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Power Feeders</h3>
+              <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage power lines and track energization status.</p>
+            </div>
+            <button onClick={() => { setFormData({ name: "", substation: "", status: "Energized" }); setShowForm(true); }} style={btnPrimary}>
+              <Plus size={16} /> Add Feeder
+            </button>
+          </div>
+          
+          {loading ? <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p> : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {feeders.map(f => {
+                return (
+                  <div key={f.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9", display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#18181b", display: "flex", alignItems: "center", gap: 6 }}>
+                          <Zap size={16} color="#eab308" /> {f.name}
+                        </h4>
+                        <p style={{ margin: "4px 0 0", fontSize: 12, color: S.muted, fontWeight: 600 }}>{f.substation}</p>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800, background: f.status === "Energized" ? "#ecfdf5" : "#fef2f2", color: f.status === "Energized" ? "#10b981" : "#ef4444" }}>
+                          {f.status}
+                        </span>
+                        <button onClick={() => editFeeder(f)} style={{ background: "none", border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: "pointer", color: S.text }}><Edit2 size={14} /></button>
+                        <button onClick={() => deleteFeeder(f.id)} style={btnDanger}><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {feeders.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No power feeders found.</p>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
