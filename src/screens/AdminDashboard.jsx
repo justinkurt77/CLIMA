@@ -2232,6 +2232,38 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
     e.preventDefault();
     
     try {
+      // Prevent future dates
+      const selectedDate = new Date(formData.record_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      selectedDate.setHours(0, 0, 0, 0);
+      
+      if (!editId && selectedDate > today) {
+        showErrorModal(
+          "Invalid Date",
+          "Cannot add records for future dates. Please select today or a past date."
+        );
+        return;
+      }
+
+      // Calculate El Niño related cases
+      const elNinoCases = 
+        (parseInt(formData.heat_stroke_cases) || 0) +
+        (parseInt(formData.heat_exhaustion_cases) || 0) +
+        (parseInt(formData.dehydration_cases) || 0) +
+        (parseInt(formData.respiratory_cases) || 0);
+      
+      const totalAdmissions = parseInt(formData.total_admissions) || 0;
+
+      // Validation: Total admissions must be >= El Niño cases
+      if (totalAdmissions < elNinoCases) {
+        showErrorModal(
+          "Invalid Data",
+          `Total admissions (${totalAdmissions}) cannot be less than the sum of El Niño-related cases (${elNinoCases}). Please check your numbers.`
+        );
+        return;
+      }
+
       const payload = {
         hospital_name: "Palayan City Hospital",
         record_date: formData.record_date,
@@ -2239,7 +2271,7 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
         heat_exhaustion_cases: parseInt(formData.heat_exhaustion_cases) || 0,
         dehydration_cases: parseInt(formData.dehydration_cases) || 0,
         respiratory_cases: parseInt(formData.respiratory_cases) || 0,
-        total_admissions: parseInt(formData.total_admissions) || 0,
+        total_admissions: totalAdmissions,
         remarks: formData.remarks || null
       };
 
@@ -2484,13 +2516,23 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
                   <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                       <div style={{ gridColumn: "1 / -1" }}>
-                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Record Date</label>
+                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>
+                          Record Date {editId && <span style={{ color: S.accent, fontSize: 10 }}>(Cannot be changed when editing)</span>}
+                        </label>
                         <input 
                           type="date" 
                           value={formData.record_date} 
                           onChange={e => setFormData({...formData, record_date: e.target.value})} 
+                          max={new Date().toISOString().split('T')[0]}
                           required 
-                          style={inputStyle} 
+                          readOnly={editId !== null}
+                          disabled={editId !== null}
+                          style={{
+                            ...inputStyle,
+                            backgroundColor: editId ? S.cardBg : "#fff",
+                            cursor: editId ? "not-allowed" : "text",
+                            opacity: editId ? 0.7 : 1
+                          }} 
                         />
                       </div>
                       <div>
