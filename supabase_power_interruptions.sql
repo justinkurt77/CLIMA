@@ -21,6 +21,15 @@ CREATE TABLE power_interruptions (
 CREATE INDEX idx_power_int_date ON power_interruptions(interruption_date DESC);
 CREATE INDEX idx_power_int_status ON power_interruptions(restoration_status);
 
+-- Add CHECK constraints for data integrity
+ALTER TABLE power_interruptions 
+ADD CONSTRAINT valid_cause 
+CHECK (cause IN ('line_fault', 'transformer_issue', 'weather', 'maintenance', 'overload', 'other'));
+
+ALTER TABLE power_interruptions 
+ADD CONSTRAINT valid_restoration_status 
+CHECK (restoration_status IN ('ongoing', 'restored', 'partial'));
+
 ALTER TABLE power_interruptions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Admins can manage power interruptions"

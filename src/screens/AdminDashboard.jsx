@@ -4726,11 +4726,19 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   const fetchRecords = async () => {
     setLoading(true);
     try {
+      // Fetch last 365 days of records to optimize query performance
+      // while still providing sufficient history for View tab
+      const oneYearAgo = new Date();
+      oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+      const cutoffDate = oneYearAgo.toISOString().split('T')[0];
+      
       const { data, error } = await supabase
         .from('water_interruptions')
         .select('*')
+        .gte('interruption_date', cutoffDate)
         .order('interruption_date', { ascending: false })
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false});
+        
       if (error) throw error;
       setRecords(data || []);
     } catch (e) {
@@ -4979,7 +4987,7 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
             <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
               {sortedDays.map(day => {
                 const dayRecords = grouped[day];
-                const isOpen = expandedDays[day] !== false; // default open
+                const isOpen = expandedDays[day] === true; // default collapsed
                 const d = new Date(day + 'T00:00:00');
                 const label = d.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 return (
@@ -5057,9 +5065,16 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   const fetchRecords = async () => {
     setLoading(true);
     try {
+      // Fetch last 365 days of records to optimize query performance
+      // while still providing sufficient history for View tab
+      const oneYearAgo = new Date();
+      oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+      const cutoffDate = oneYearAgo.toISOString().split('T')[0];
+      
       const { data, error } = await supabase
         .from('power_interruptions')
         .select('*')
+        .gte('interruption_date', cutoffDate)
         .order('interruption_date', { ascending: false });
       if (error) throw error;
       setRecords(data || []);

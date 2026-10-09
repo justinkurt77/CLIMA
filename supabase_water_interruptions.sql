@@ -22,6 +22,19 @@ CREATE INDEX idx_water_int_date ON water_interruptions(interruption_date DESC);
 CREATE INDEX idx_water_int_provider ON water_interruptions(provider);
 CREATE INDEX idx_water_int_status ON water_interruptions(status);
 
+-- Add CHECK constraints for data integrity
+ALTER TABLE water_interruptions 
+ADD CONSTRAINT valid_provider 
+CHECK (provider IN ('Palayan City Water District', 'Balibago Waterworks'));
+
+ALTER TABLE water_interruptions 
+ADD CONSTRAINT valid_cause 
+CHECK (cause IN ('pipe_burst', 'maintenance', 'shortage', 'pump_failure', 'other'));
+
+ALTER TABLE water_interruptions 
+ADD CONSTRAINT valid_status 
+CHECK (status IN ('ongoing', 'restored'));
+
 ALTER TABLE water_interruptions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Admins can manage water interruptions"
