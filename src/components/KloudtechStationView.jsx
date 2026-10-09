@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { motion } from "framer-motion";
 import {
   Thermometer,
   Flame,
@@ -77,15 +78,27 @@ export default function KloudtechStationView({ isDark = true }) {
   return (
     <section className="kloudtech-section">
       {/* ──── 1. TOP BANNER (Dashboard Header) ──── */}
-      <div className="kloudtech-top-banner">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-20px" }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="kloudtech-top-banner"
+      >
         <h1 className="kloudtech-main-heading">Dashboard</h1>
         <p className="kloudtech-main-subheading">
           Manage all users across the platform. Add, edit, assign roles, and control access to organizations and stations.
         </p>
-      </div>
+      </motion.div>
 
       {/* ──── 2. STATION METADATA HEADER ──── */}
-      <div className="kloudtech-station-header">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-20px" }}
+        transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+        className="kloudtech-station-header"
+      >
         <div className="kloudtech-station-left">
           <div className="kloudtech-station-title-row">
             <h2 className="kloudtech-station-title">Popolon AWS - Palayan City</h2>
@@ -98,19 +111,31 @@ export default function KloudtechStationView({ isDark = true }) {
         <div className="kloudtech-station-right">
           <div className="kloudtech-timestamp">October 9, 2026 11:12</div>
         </div>
-      </div>
+      </motion.div>
 
       {/* ──── 3. LATEST DATA (8 SENSOR CARDS) ──── */}
-      <div className="kloudtech-subheading-row">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-20px" }}
+        transition={{ duration: 0.45, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+        className="kloudtech-subheading-row"
+      >
         <div className="kloudtech-subheading">
           <Sun size={15} className="kloudtech-subheading-icon" />
           <span>Latest Data</span>
         </div>
-      </div>
+      </motion.div>
 
       <div className="kloudtech-metrics-grid">
         {/* 1. Heat Index */}
-        <div className="kloudtech-metric-card highlighted-heat">
+        <motion.div
+          initial={{ opacity: 0, y: 22, scale: 0.98 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.45, delay: 0.02, ease: [0.16, 1, 0.3, 1] }}
+          className="kloudtech-metric-card highlighted-heat"
+        >
           <div className="kloudtech-card-icon-wrap heat-icon">
             <Flame size={19} strokeWidth={2.4} />
           </div>
@@ -120,74 +145,122 @@ export default function KloudtechStationView({ isDark = true }) {
             <span className="danger-dot" />
             Danger
           </div>
-        </div>
+        </motion.div>
 
         {/* 2. Temperature */}
-        <div className="kloudtech-metric-card">
+        <motion.div
+          initial={{ opacity: 0, y: 22, scale: 0.98 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.45, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+          className="kloudtech-metric-card"
+        >
           <div className="kloudtech-card-icon-wrap temp-icon">
             <Thermometer size={19} strokeWidth={2.2} />
           </div>
           <div className="kloudtech-card-val">34.0 °C</div>
           <div className="kloudtech-card-label">Temperature</div>
-        </div>
+        </motion.div>
 
         {/* 3. Humidity */}
-        <div className="kloudtech-metric-card">
+        <motion.div
+          initial={{ opacity: 0, y: 22, scale: 0.98 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.45, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+          className="kloudtech-metric-card"
+        >
           <div className="kloudtech-card-icon-wrap humidity-icon">
             <Droplets size={19} strokeWidth={2.2} />
           </div>
           <div className="kloudtech-card-val">78.5 %</div>
           <div className="kloudtech-card-label">Humidity</div>
-        </div>
+        </motion.div>
 
         {/* 4. Pressure */}
-        <div className="kloudtech-metric-card">
+        <motion.div
+          initial={{ opacity: 0, y: 22, scale: 0.98 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.45, delay: 0.11, ease: [0.16, 1, 0.3, 1] }}
+          className="kloudtech-metric-card"
+        >
           <div className="kloudtech-card-icon-wrap pressure-icon">
             <Gauge size={19} strokeWidth={2.2} />
           </div>
           <div className="kloudtech-card-val">1006.7 hPa</div>
           <div className="kloudtech-card-label">Pressure</div>
-        </div>
+        </motion.div>
 
         {/* 5. Wind */}
-        <div className="kloudtech-metric-card">
+        <motion.div
+          initial={{ opacity: 0, y: 22, scale: 0.98 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.45, delay: 0.14, ease: [0.16, 1, 0.3, 1] }}
+          className="kloudtech-metric-card"
+        >
           <div className="kloudtech-card-icon-wrap wind-icon">
             <Wind size={19} strokeWidth={2.2} />
           </div>
           <div className="kloudtech-card-val">0.7 kph N</div>
           <div className="kloudtech-card-label">Wind</div>
-        </div>
+        </motion.div>
 
         {/* 6. UV Index */}
-        <div className="kloudtech-metric-card">
+        <motion.div
+          initial={{ opacity: 0, y: 22, scale: 0.98 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.45, delay: 0.17, ease: [0.16, 1, 0.3, 1] }}
+          className="kloudtech-metric-card"
+        >
           <div className="kloudtech-card-icon-wrap uv-icon">
             <Sun size={19} strokeWidth={2.2} />
           </div>
           <div className="kloudtech-card-val">--</div>
           <div className="kloudtech-card-label">UV Index</div>
-        </div>
+        </motion.div>
 
         {/* 7. Light Intensity */}
-        <div className="kloudtech-metric-card">
+        <motion.div
+          initial={{ opacity: 0, y: 22, scale: 0.98 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.45, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="kloudtech-metric-card"
+        >
           <div className="kloudtech-card-icon-wrap light-icon">
             <Eye size={19} strokeWidth={2.2} />
           </div>
           <div className="kloudtech-card-val light-val">54612.5 lux</div>
           <div className="kloudtech-card-label">Light Intensity</div>
-        </div>
+        </motion.div>
 
         {/* 8. Precipitation */}
-        <div className="kloudtech-metric-card">
+        <motion.div
+          initial={{ opacity: 0, y: 22, scale: 0.98 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.45, delay: 0.23, ease: [0.16, 1, 0.3, 1] }}
+          className="kloudtech-metric-card"
+        >
           <div className="kloudtech-card-icon-wrap precip-icon">
             <CloudRain size={19} strokeWidth={2.2} />
           </div>
           <div className="kloudtech-card-val">--</div>
           <div className="kloudtech-card-label">Precipitation</div>
-        </div>
+        </motion.div>
       </div>
 
       {/* ──── 4. HISTORICAL DATA CHARTS HEADER ──── */}
-      <div className="kloudtech-charts-header-row">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-20px" }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        className="kloudtech-charts-header-row"
+      >
         <div className="kloudtech-subheading">
           <Zap size={15} className="kloudtech-subheading-icon" />
           <span>Historical Data Charts</span>
@@ -224,12 +297,18 @@ export default function KloudtechStationView({ isDark = true }) {
             Download Data
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* ──── 5. CHARTS 2x3 GRID ──── */}
       <div className="kloudtech-charts-grid">
         {/* CHART 1: Heat Index History */}
-        <div className="kloudtech-chart-card">
+        <motion.div
+          initial={{ opacity: 0, y: 26, scale: 0.985 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.5, delay: 0.03, ease: [0.16, 1, 0.3, 1] }}
+          className="kloudtech-chart-card"
+        >
           <div className="kloudtech-chart-title">Heat Index History</div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
@@ -242,10 +321,16 @@ export default function KloudtechStationView({ isDark = true }) {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
         {/* CHART 2: Temperature History */}
-        <div className="kloudtech-chart-card">
+        <motion.div
+          initial={{ opacity: 0, y: 26, scale: 0.985 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.5, delay: 0.07, ease: [0.16, 1, 0.3, 1] }}
+          className="kloudtech-chart-card"
+        >
           <div className="kloudtech-chart-title">Temperature History</div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
@@ -258,10 +343,16 @@ export default function KloudtechStationView({ isDark = true }) {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
         {/* CHART 3: Humidity History */}
-        <div className="kloudtech-chart-card">
+        <motion.div
+          initial={{ opacity: 0, y: 26, scale: 0.985 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.5, delay: 0.11, ease: [0.16, 1, 0.3, 1] }}
+          className="kloudtech-chart-card"
+        >
           <div className="kloudtech-chart-title">Humidity History</div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
@@ -274,10 +365,16 @@ export default function KloudtechStationView({ isDark = true }) {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
         {/* CHART 4: Pressure History */}
-        <div className="kloudtech-chart-card">
+        <motion.div
+          initial={{ opacity: 0, y: 26, scale: 0.985 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="kloudtech-chart-card"
+        >
           <div className="kloudtech-chart-title">Pressure History</div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
@@ -290,10 +387,16 @@ export default function KloudtechStationView({ isDark = true }) {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
         {/* CHART 5: Wind History */}
-        <div className="kloudtech-chart-card">
+        <motion.div
+          initial={{ opacity: 0, y: 26, scale: 0.985 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.5, delay: 0.19, ease: [0.16, 1, 0.3, 1] }}
+          className="kloudtech-chart-card"
+        >
           <div className="kloudtech-chart-title">Wind History</div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
@@ -306,10 +409,16 @@ export default function KloudtechStationView({ isDark = true }) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
         {/* CHART 6: UV Index History */}
-        <div className="kloudtech-chart-card">
+        <motion.div
+          initial={{ opacity: 0, y: 26, scale: 0.985 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.5, delay: 0.23, ease: [0.16, 1, 0.3, 1] }}
+          className="kloudtech-chart-card"
+        >
           <div className="kloudtech-chart-title">UV Index History</div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
@@ -322,7 +431,7 @@ export default function KloudtechStationView({ isDark = true }) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

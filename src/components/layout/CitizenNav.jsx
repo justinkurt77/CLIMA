@@ -50,8 +50,38 @@ export default function CitizenNav({
     <>
       {/* ── DESKTOP DOCKED SIDEBAR (>= 1024px) ── */}
       <aside className="citizen-desktop-sidebar">
-        {/* Top: Avatar */}
-        <div className="desktop-sidebar-top">
+        {/* Top: Brand Logo & Avatar */}
+        <div className="desktop-sidebar-top" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+          <button
+            onClick={() => setActiveScreen("home")}
+            title="CLIMA Home"
+            style={{
+              width: 46,
+              height: 46,
+              padding: 2,
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "transform 0.2s ease",
+            }}
+          >
+            <img
+              src="/logo.png"
+              alt="CLIMA Logo"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                filter: isDark
+                  ? "drop-shadow(0 0 1px rgba(255, 255, 255, 0.85)) drop-shadow(0 2px 10px rgba(249, 115, 22, 0.4))"
+                  : "drop-shadow(0 2px 8px rgba(249, 115, 22, 0.25))",
+              }}
+            />
+          </button>
+
           <div
             className="desktop-avatar"
             onClick={() => setActiveScreen("profile")}

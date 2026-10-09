@@ -178,12 +178,12 @@ export function KloudtrackMapControls({
       {/* ── 1. Bottom Horizontal Parameter Switcher Pill Bar ── */}
       <AnimatePresence mode="wait">
         {barMinimized ? (
-          /* Minimized Compact Single Pill */
+          /* Minimized Compact Single Pill — Exact matching size with collapsed legend */
           <motion.button
             key="minimized-pill"
-            initial={{ opacity: 0, scale: 0.9, y: 12 }}
+            initial={{ opacity: 0, scale: 0.95, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 12 }}
+            exit={{ opacity: 0, scale: 0.95, y: 12 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
             onClick={() => setBarMinimized(false)}
             style={{
@@ -191,12 +191,14 @@ export function KloudtrackMapControls({
               bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
               left: 16,
               zIndex: 10,
-              height: 42,
-              borderRadius: 24,
+              width: 270,
+              height: 44,
+              boxSizing: "border-box",
+              borderRadius: 22,
               padding: "0 14px",
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              justifyContent: "space-between",
               border: `2px solid ${currentConfig.color}`,
               background: isDark
                 ? "rgba(18, 20, 26, 0.96)"
@@ -210,45 +212,50 @@ export function KloudtrackMapControls({
             }}
             title="Expand IoT Weather Metrics"
           >
-            <div
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: "50%",
-                background: currentConfig.color,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#ffffff",
-              }}
-            >
-              <MetricIcon size={13} strokeWidth={2.4} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <div
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  background: currentConfig.color,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#ffffff",
+                  flexShrink: 0,
+                }}
+              >
+                <MetricIcon size={13} strokeWidth={2.4} />
+              </div>
+
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 800,
+                  color: isDark ? "#ffffff" : "#09090b",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {currentConfig.label}
+              </span>
+
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 800,
+                  color: currentConfig.color,
+                  background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
+                  padding: "1px 7px",
+                  borderRadius: 10,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {currentConfig.value}
+              </span>
             </div>
 
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 800,
-                color: isDark ? "#ffffff" : "#09090b",
-              }}
-            >
-              {currentConfig.label}
-            </span>
-
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 800,
-                color: currentConfig.color,
-                background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
-                padding: "1px 7px",
-                borderRadius: 10,
-              }}
-            >
-              {currentConfig.value}
-            </span>
-
-            <ChevronUp size={15} color={isDark ? "#ffffff" : "#09090b"} style={{ opacity: 0.7 }} />
+            <ChevronUp size={15} color={isDark ? "#ffffff" : "#09090b"} style={{ opacity: 0.7, flexShrink: 0 }} />
           </motion.button>
         ) : (
           /* Expanded Full Horizontal Metrics Strip */
@@ -411,11 +418,13 @@ export function KloudtrackMapControls({
         style={{
           position: "absolute",
           bottom: barMinimized
-            ? "calc(16px + env(safe-area-inset-bottom, 0px) + 48px + 8px)"
+            ? "calc(16px + env(safe-area-inset-bottom, 0px) + 44px + 8px)"
             : "calc(16px + env(safe-area-inset-bottom, 0px) + 58px + 10px)",
           left: 16,
           zIndex: 8,
-          maxWidth: 320,
+          width: 270,
+          height: legendCollapsed ? 44 : "auto",
+          boxSizing: "border-box",
           background: isDark
             ? "rgba(18, 20, 26, 0.94)"
             : "rgba(255, 255, 255, 0.96)",
@@ -424,13 +433,17 @@ export function KloudtrackMapControls({
           border: isDark
             ? "1px solid rgba(255, 255, 255, 0.14)"
             : "1px solid rgba(0, 0, 0, 0.1)",
-          borderRadius: 20,
-          padding: legendCollapsed ? "8px 14px" : "12px 14px",
+          borderRadius: legendCollapsed ? 22 : 20,
+          padding: legendCollapsed ? "0 14px" : "12px 14px",
           boxShadow: isDark
             ? "0 12px 30px rgba(0,0,0,0.5)"
             : "0 12px 30px rgba(0,0,0,0.12)",
           fontFamily: "Nunito, sans-serif",
           pointerEvents: "auto",
+          transition: "bottom 0.25s ease, border-radius 0.2s ease, padding 0.2s ease",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: legendCollapsed ? "center" : "flex-start",
         }}
       >
         {/* Legend Header */}
@@ -441,31 +454,37 @@ export function KloudtrackMapControls({
             alignItems: "center",
             justifyContent: "space-between",
             cursor: "pointer",
-            gap: 12,
+            gap: 10,
+            width: "100%",
+            height: legendCollapsed ? "100%" : "auto",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
             <div
               style={{
-                width: 24,
-                height: 24,
-                borderRadius: 8,
+                width: 22,
+                height: 22,
+                borderRadius: 7,
                 background: currentConfig.color,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 color: "#ffffff",
+                flexShrink: 0,
               }}
             >
-              <MetricIcon size={14} strokeWidth={2.4} />
+              <MetricIcon size={13} strokeWidth={2.4} />
             </div>
-            <div>
+            <div style={{ minWidth: 0 }}>
               <div
                 style={{
                   fontSize: 12,
                   fontWeight: 800,
                   color: isDark ? "#ffffff" : "#09090b",
-                  lineHeight: 1.2,
+                  lineHeight: 1.15,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                 }}
               >
                 {currentConfig.label} Scale
@@ -475,6 +494,10 @@ export function KloudtrackMapControls({
                   fontSize: 10,
                   fontWeight: 700,
                   color: currentConfig.statusColor,
+                  lineHeight: 1.15,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                 }}
               >
                 Popolon AWS: {currentConfig.value} ({currentConfig.status})
@@ -486,14 +509,16 @@ export function KloudtrackMapControls({
             style={{
               background: "transparent",
               border: "none",
-              color: isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.5)",
+              color: isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.6)",
               display: "flex",
               alignItems: "center",
+              justifyContent: "center",
               cursor: "pointer",
               padding: 0,
+              flexShrink: 0,
             }}
           >
-            {legendCollapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {legendCollapsed ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
           </button>
         </div>
 

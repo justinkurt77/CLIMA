@@ -12,6 +12,7 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     localStorage.setItem("clima-theme", theme);
     const root = document.documentElement;
+    root.setAttribute("data-theme", theme);
     if (theme === "dark") {
       root.classList.add("dark");
       root.classList.remove("light");
