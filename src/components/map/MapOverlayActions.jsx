@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { MapPin, ChevronDown } from "lucide-react";
+import { MapPin, ChevronDown, Radio } from "lucide-react";
 import SearchBar from "./SearchBar";
+import { LayerControls } from "./LayerControls";
 import { useTheme } from "../../context/ThemeContext";
 
 export function MapOverlayActions({
@@ -13,8 +15,11 @@ export function MapOverlayActions({
   setSearchPin,
   userLocation,
   mapRef,
+  activeLayers,
+  onToggleLayer,
 }) {
   const { isDark } = useTheme();
+  const [layersOpen, setLayersOpen] = useState(false);
   return (
     <AnimatePresence>
       {isMapFullView && (
@@ -47,12 +52,12 @@ export function MapOverlayActions({
           style={{
             display: "flex",
             gap: 10,
-            alignItems: "stretch",
+            alignItems: "center",
             width: "100%",
           }}
         >
           {/* Left Side: Search Bar */}
-          <div style={{ flex: 2.5 }}>
+          <div style={{ flex: 1, minWidth: 160 }}>
               <SearchBar
                 mapRef={mapRef}
                 onSearchSelect={setSearchPin}
@@ -61,20 +66,22 @@ export function MapOverlayActions({
               />
             </div>
 
-            {/* Right Side: Status Filter */}
-            <div style={{ flex: 1, position: "relative" }}>
+            {/* Right Side: Status Filter Pill */}
+            <div style={{ position: "relative", flexShrink: 0 }}>
               <button
-                onClick={() => setFilterOpen((v) => !v)}
+                onClick={() => {
+                  setFilterOpen((v) => !v);
+                  setLayersOpen(false);
+                }}
                 style={{
-                  width: "100%",
-                  height: "100%",
+                  height: 56,
                   background: isDark
                     ? "rgba(18, 18, 20, 0.94)"
                     : "rgba(255, 255, 255, 0.96)",
                   backdropFilter: "blur(16px)",
                   WebkitBackdropFilter: "blur(16px)",
                   borderRadius: 40,
-                  padding: "0 14px",
+                  padding: "0 18px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -86,9 +93,9 @@ export function MapOverlayActions({
                     ? "0 6px 20px rgba(0,0,0,0.5)"
                     : "0 6px 20px rgba(0,0,0,0.08)",
                   cursor: "pointer",
-                  paddingTop: 14,
-                  paddingBottom: 14,
+                  whiteSpace: "nowrap",
                 }}
+                title="Filter Facilities"
               >
                 <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
                   {activeFilters.includes("water") && (
@@ -258,6 +265,23 @@ export function MapOverlayActions({
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Right Side: Layer Controls Pill */}
+            {activeLayers && onToggleLayer && (
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <LayerControls
+                  activeLayers={activeLayers}
+                  onToggleLayer={onToggleLayer}
+                  isMapFullView={isMapFullView}
+                  isEmbedded={true}
+                  isOpen={layersOpen}
+                  onToggleOpen={(open) => {
+                    setLayersOpen(open);
+                    if (open) setFilterOpen(false);
+                  }}
+                />
+              </div>
+            )}
         </motion.div>
         </motion.div>
     )}

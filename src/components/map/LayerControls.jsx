@@ -5,6 +5,15 @@ import { useTheme } from "../../context/ThemeContext";
 
 const LAYER_CATEGORIES = [
   {
+    id: "kloudtrack",
+    name: "KloudTrack IoT Weather",
+    layers: [
+      { id: "kloudtrackStations", name: "AWS Weather Stations", color: "#F97316" },
+      { id: "stationCoverage", name: "Station Coverage Area", color: "#3B82F6" },
+      { id: "heatIndexCoverage", name: "Heat Index Danger Zone", color: "#EF4444" },
+    ],
+  },
+  {
     id: "boundaries",
     name: "Boundaries",
     layers: [
@@ -47,9 +56,24 @@ const LAYER_CATEGORIES = [
   },
 ];
 
-export function LayerControls({ activeLayers, onToggleLayer, isMapFullView }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState(["boundaries", "incidents"]);
+export function LayerControls({
+  activeLayers,
+  onToggleLayer,
+  isMapFullView,
+  isEmbedded = false,
+  isOpen: externalIsOpen,
+  onToggleOpen,
+}) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+
+  const handleToggle = () => {
+    const nextState = !isOpen;
+    setInternalIsOpen(nextState);
+    if (onToggleOpen) onToggleOpen(nextState);
+  };
+
+  const [expandedCategories, setExpandedCategories] = useState(["kloudtrack", "boundaries", "incidents"]);
   const { isDark } = useTheme();
 
   const toggleCategory = (categoryId) => {
@@ -60,11 +84,14 @@ export function LayerControls({ activeLayers, onToggleLayer, isMapFullView }) {
     );
   };
 
-  const visibleLayersCount = Object.values(activeLayers).filter(Boolean).length;
+  const visibleLayersCount = Object.values(activeLayers || {}).filter(Boolean).length;
 
-  return (
-    <div
-      style={{
+  const wrapperStyle = isEmbedded
+    ? {
+        position: "relative",
+        zIndex: 9,
+      }
+    : {
         position: "absolute",
         top: 20,
         right: 14,
@@ -73,12 +100,15 @@ export function LayerControls({ activeLayers, onToggleLayer, isMapFullView }) {
         pointerEvents: isMapFullView ? "auto" : "none",
         transform: isMapFullView ? "scale(1)" : "scale(0.95) translateY(-10px)",
         transition: "all 0.4s cubic-bezier(0.32, 0.72, 0, 1)",
-      }}
-    >
+      };
+
+  return (
+    <div style={wrapperStyle}>
       {/* Toggle Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         style={{
+          height: 56,
           background: isDark
             ? "rgba(18, 18, 20, 0.94)"
             : "rgba(255, 255, 255, 0.96)",
@@ -87,19 +117,20 @@ export function LayerControls({ activeLayers, onToggleLayer, isMapFullView }) {
           border: isDark
             ? "1px solid rgba(255, 255, 255, 0.12)"
             : "1px solid rgba(0, 0, 0, 0.08)",
-          borderRadius: 24,
-          padding: "10px 16px",
+          borderRadius: 40,
+          padding: "0 18px",
           display: "flex",
           alignItems: "center",
           gap: 8,
           cursor: "pointer",
           boxShadow: isDark
-            ? "0 8px 24px rgba(0,0,0,0.5)"
-            : "0 8px 24px rgba(0,0,0,0.12)",
+            ? "0 6px 20px rgba(0,0,0,0.5)"
+            : "0 6px 20px rgba(0,0,0,0.08)",
           color: isDark ? "#ffffff" : "#09090b",
           fontWeight: 600,
           fontSize: 14,
           fontFamily: "Nunito, sans-serif",
+          whiteSpace: "nowrap",
         }}
       >
         <Layers size={18} />
@@ -116,7 +147,11 @@ export function LayerControls({ activeLayers, onToggleLayer, isMapFullView }) {
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
             style={{
-              marginTop: 8,
+              position: "absolute",
+              top: "calc(100% + 10px)",
+              right: 0,
+              zIndex: 100,
+              marginTop: 0,
               background: isDark
                 ? "rgba(18, 18, 20, 0.96)"
                 : "rgba(255, 255, 255, 0.98)",
@@ -125,7 +160,7 @@ export function LayerControls({ activeLayers, onToggleLayer, isMapFullView }) {
               border: isDark
                 ? "1px solid rgba(255, 255, 255, 0.12)"
                 : "1px solid rgba(0, 0, 0, 0.08)",
-              borderRadius: 16,
+              borderRadius: 18,
               padding: 12,
               boxShadow: isDark
                 ? "0 16px 40px rgba(0,0,0,0.6)"

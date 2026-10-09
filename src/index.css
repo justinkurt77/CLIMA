@@ -1935,7 +1935,6 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
   padding: 28px 30px;
   position: relative;
   overflow: hidden;
-  background: url('/stormy_clouds.jpg') center/cover no-repeat;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -1947,8 +1946,10 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(14, 16, 20, 0.84) 0%, rgba(20, 24, 30, 0.58) 50%, rgba(10, 12, 16, 0.9) 100%);
+  /* Undimmed: light transparent gradient to let the sunny landscape shine through */
+  background: linear-gradient(90deg, rgba(10, 12, 16, 0.25) 0%, rgba(10, 12, 16, 0.05) 40%, transparent 70%);
   z-index: 1;
+  pointer-events: none;
 }
 
 .desktop-hero-info {
@@ -1964,6 +1965,7 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
   line-height: 0.95;
   letter-spacing: -3.5px;
   color: #ffffff;
+  text-shadow: 0 3px 14px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.75);
 }
 
 .desktop-hero-condition {
@@ -1972,13 +1974,15 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
   color: #ffffff;
   margin-top: 12px;
   letter-spacing: -0.3px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .desktop-hero-subcondition {
   font-size: 15px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.75);
+  font-weight: 700;
+  color: #ffffff;
   margin-top: 2px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .desktop-hero-pills {
@@ -1988,15 +1992,17 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
 }
 
 .desktop-pill {
-  background: rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 12px;
   padding: 5px 14px;
   font-size: 13px;
   font-weight: 700;
   color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .desktop-hero-glass-card {
@@ -2004,20 +2010,22 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
   z-index: 2;
   align-self: center;
   max-width: 250px;
-  background: rgba(20, 22, 28, 0.52);
+  background: rgba(12, 14, 18, 0.42);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 20px;
   padding: 20px 22px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
 }
 
 .desktop-hero-glass-card p {
   font-size: 13px;
   line-height: 1.55;
-  color: rgba(255, 255, 255, 0.88);
-  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
   margin: 0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 /* 2. Desktop Hourly Forecast Card */
@@ -2379,4 +2387,327 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
 .desktop-wind-card:hover .desktop-wind-pin-btn {
   transform: scale(1.08);
   background: var(--accent-orange-hover);
-}
+}
+
+/* =========================================================================
+   KLOUDTECH IOT STATION VIEW (POPOLON AWS)
+   ========================================================================= */
+/* =========================================================================
+   KLOUDTECH IOT STATION VIEW (POPOLON AWS)
+   ========================================================================= */
+.kloudtech-section {
+  margin-top: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* 1. Top Banner (Dashboard Heading) */
+.kloudtech-top-banner {
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 16px;
+}
+
+.kloudtech-main-heading {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+  letter-spacing: -0.5px;
+}
+
+.kloudtech-main-subheading {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* 2. Station Header */
+.kloudtech-station-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.kloudtech-station-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kloudtech-station-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kloudtech-station-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.kloudtech-station-sub {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 0;
+  font-weight: 500;
+}
+
+.kloudtech-station-right {
+  display: flex;
+  align-items: center;
+}
+
+.kloudtech-timestamp {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* 3. Section Subheadings */
+.kloudtech-subheading-row,
+.kloudtech-charts-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.kloudtech-subheading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: 0.2px;
+}
+
+.kloudtech-subheading-icon {
+  color: var(--text-muted);
+}
+
+/* 4. 8 Metric Cards Grid */
+.kloudtech-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 1280px) {
+  .kloudtech-metrics-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .kloudtech-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.kloudtech-metric-card {
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 16px 10px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.kloudtech-metric-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-medium);
+}
+
+.kloudtech-metric-card.highlighted-heat {
+  background: rgba(249, 115, 22, 0.06);
+  border: 1.5px solid rgba(249, 115, 22, 0.45);
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.08);
+}
+
+.kloudtech-card-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+}
+
+.heat-icon { background: rgba(249, 115, 22, 0.16); color: #f97316; }
+.temp-icon { background: rgba(239, 68, 68, 0.14); color: #ef4444; }
+.humidity-icon { background: rgba(59, 130, 246, 0.14); color: #3b82f6; }
+.pressure-icon { background: rgba(139, 92, 246, 0.14); color: #8b5cf6; }
+.wind-icon { background: rgba(34, 197, 94, 0.14); color: #22c55e; }
+.uv-icon { background: rgba(168, 85, 247, 0.14); color: #a855f7; }
+.light-icon { background: rgba(234, 179, 8, 0.14); color: #eab308; }
+.precip-icon { background: rgba(14, 165, 233, 0.14); color: #0ea5e9; }
+
+.kloudtech-card-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+
+.heat-val {
+  color: #f97316;
+}
+
+.light-val {
+  font-size: 1.05rem;
+}
+
+.kloudtech-card-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.kloudtech-danger-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.danger-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ef4444;
+}
+
+/* 5. Filter Controls & Download Button */
+.kloudtech-filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.kloudtech-select-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kloudtech-filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.kloudtech-select {
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--bg-card-subtle);
+  color: var(--text-primary);
+  border: 1px solid var(--border-medium);
+  padding: 5px 10px;
+  border-radius: 8px;
+  outline: none;
+  cursor: pointer;
+}
+
+.kloudtech-download-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-medium);
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.kloudtech-download-btn:hover {
+  background: var(--border-medium);
+  transform: translateY(-1px);
+}
+
+/* 6. Charts Grid */
+.kloudtech-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .kloudtech-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kloudtech-chart-card {
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 16px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kloudtech-chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding-left: 6px;
+}
+
+.kloudtech-chart-body {
+  width: 100%;
+}
+
+@keyframes kloudBeaconPulse {
+  0% {
+    transform: translateX(-50%) scale(0.9);
+    opacity: 0.8;
+  }
+  70% {
+    transform: translateX(-50%) scale(2.5);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(-50%) scale(2.5);
+    opacity: 0;
+  }
+}
+
+
