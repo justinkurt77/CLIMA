@@ -3,6 +3,9 @@
 -- Palayan City Agricultural Damages - Super El Niño Impact Tracking
 -- ============================================================================
 
+-- Drop existing table and indexes if they exist
+DROP TABLE IF EXISTS agriculture_damage_reports CASCADE;
+
 -- Agricultural Damage Reports Table
 CREATE TABLE agriculture_damage_reports (
   id BIGSERIAL PRIMARY KEY,
