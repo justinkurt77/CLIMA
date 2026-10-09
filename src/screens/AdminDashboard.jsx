@@ -3486,111 +3486,309 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Overview Analytics */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+      {/* Header */}
+      <div>
+        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>Palayan City BFP Operations</h3>
+        <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>Track daily fire and emergency response operations</p>
+      </div>
+
+      {/* Last 7 Days Analytics */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
         <div style={{ ...cardStyle, background: "#fef2f2", borderColor: "#fca5a5" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>Total Stations</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#991b1b" }}>{stations.length}</p>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>Fire Incidents</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#991b1b" }}>{totalFires}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
         </div>
         <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Active Fire Trucks</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#9a3412" }}>{totalTrucks}</p>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Fire Inspections</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#9a3412" }}>{totalInspections}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#eff6ff", borderColor: "#93c5fd" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#2563eb", textTransform: "uppercase" }}>Rescue Operations</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#1e3a8a" }}>{totalRescues}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
         </div>
         <div style={{ ...cardStyle, background: "#f0fdf4", borderColor: "#86efac" }}>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "#16a34a", textTransform: "uppercase" }}>Ready Personnel</p>
-          <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: "#14532d" }}>{totalPersonnel}</p>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#16a34a", textTransform: "uppercase" }}>Medical Assists</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#14532d" }}>{totalMedical}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#faf5ff", borderColor: "#d8b4fe" }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#9333ea", textTransform: "uppercase" }}>Emergency Responses</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#581c87" }}>{totalResponses}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
         </div>
       </div>
 
-      {showForm ? (
-        <div style={cardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>{editId ? "Update Station" : "Add Fire Station"}</h3>
-            <button onClick={() => { setShowForm(false); setEditId(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: S.muted }}><X size={20} /></button>
-          </div>
-          <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Station Name</label>
-                <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required style={inputStyle} />
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Location</label>
-                <input value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} required style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Fire Trucks</label>
-                <input type="number" min="0" value={formData.fire_trucks} onChange={e => setFormData({...formData, fire_trucks: e.target.value})} style={inputStyle} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Active Personnel</label>
-                <input type="number" min="0" value={formData.active_personnel} onChange={e => setFormData({...formData, active_personnel: e.target.value})} style={inputStyle} />
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Contact Number</label>
-                <input value={formData.contact_number} onChange={e => setFormData({...formData, contact_number: e.target.value})} style={inputStyle} />
-              </div>
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
-              <button type="submit" style={btnPrimary}><Check size={16} /> Save</button>
-            </div>
-          </form>
+      {/* Sub-tabs: Add Record / View Records */}
+      <div style={cardStyle}>
+        <div style={{ display: "flex", gap: 12, borderBottom: `1px solid ${S.border}`, paddingBottom: 12, marginBottom: 16 }}>
+          <button
+            onClick={() => setActiveSubTab("add")}
+            style={{
+              background: activeSubTab === "add" ? S.primary : "transparent",
+              color: activeSubTab === "add" ? "#fff" : S.muted,
+              border: "none",
+              padding: "8px 16px",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer"
+            }}
+          >
+            Add Record
+          </button>
+          <button
+            onClick={() => setActiveSubTab("view")}
+            style={{
+              background: activeSubTab === "view" ? S.primary : "transparent",
+              color: activeSubTab === "view" ? "#fff" : S.muted,
+              border: "none",
+              padding: "8px 16px",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer"
+            }}
+          >
+            View Records
+          </button>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              marginLeft: "auto",
+              background: "none",
+              border: `1px solid ${S.border}`,
+              padding: "8px 12px",
+              borderRadius: 8,
+              cursor: "pointer",
+              color: S.text,
+              display: "flex",
+              alignItems: "center",
+              gap: 6
+            }}
+          >
+            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {isExpanded ? "Collapse" : "Expand"}
+          </button>
         </div>
-      ) : (
-        <div style={cardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>BFP Operations</h3>
-              <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage fire stations and track firefighting resources.</p>
-            </div>
-            <button onClick={() => { setFormData({ name: "", location: "", fire_trucks: 0, active_personnel: 0, contact_number: "" }); setShowForm(true); }} style={btnPrimary}>
-              <Plus size={16} /> Add Station
-            </button>
-          </div>
-          
-          {loading ? <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p> : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {stations.map(s => {
-                return (
-                  <div key={s.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9", display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div>
-                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#18181b", display: "flex", alignItems: "center", gap: 6 }}>
-                          <Flame size={16} color="#dc2626" /> {s.name}
-                        </h4>
-                        <p style={{ margin: "4px 0 0", fontSize: 12, color: S.muted, fontWeight: 600 }}><MapPin size={12} /> {s.location}</p>
-                      </div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <button onClick={() => editStation(s)} style={{ background: "none", border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: "pointer", color: S.text }}><Edit2 size={14} /></button>
-                        <button onClick={() => deleteStation(s.id)} style={btnDanger}><Trash2 size={14} /></button>
-                      </div>
+
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{ overflow: "hidden" }}
+            >
+              {activeSubTab === "add" && (
+                <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Operation Date
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.operation_date}
+                        onChange={e => setFormData({ ...formData, operation_date: e.target.value })}
+                        max={new Date().toISOString().split('T')[0]}
+                        readOnly={!!editId}
+                        disabled={!!editId}
+                        required
+                        style={{
+                          ...inputStyle,
+                          ...(editId ? { background: "#f3f4f6", color: "#9ca3af", opacity: 0.7 } : {})
+                        }}
+                      />
                     </div>
-                    
-                    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
-                      <div style={{ display: "flex", gap: 12 }}>
-                        <div style={{ textAlign: "center" }}>
-                          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase" }}>Fire Trucks</p>
-                          <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#dc2626" }}>{s.fire_trucks}</p>
-                        </div>
-                        <div style={{ textAlign: "center" }}>
-                          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase" }}>Personnel</p>
-                          <p style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#16a34a" }}>{s.active_personnel}</p>
-                        </div>
-                      </div>
-                      {s.contact_number && (
-                        <div style={{ marginLeft: "auto" }}>
-                          <span style={{ fontSize: 12, color: S.muted, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}><Phone size={14}/> {s.contact_number}</span>
-                        </div>
-                      )}
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Fire Incidents
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.fire_incidents}
+                        onChange={e => setFormData({ ...formData, fire_incidents: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Fire Prevention Inspections
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.fire_prevention_inspections}
+                        onChange={e => setFormData({ ...formData, fire_prevention_inspections: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Fire Safety Seminars
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.fire_safety_seminars}
+                        onChange={e => setFormData({ ...formData, fire_safety_seminars: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Rescue Operations
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.rescue_operations}
+                        onChange={e => setFormData({ ...formData, rescue_operations: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Medical Assists
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.medical_assists}
+                        onChange={e => setFormData({ ...formData, medical_assists: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
+                        Emergency Responses
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.emergency_responses}
+                        onChange={e => setFormData({ ...formData, emergency_responses: e.target.value })}
+                        required
+                        style={inputStyle}
+                      />
                     </div>
                   </div>
-                );
-              })}
-              {stations.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No fire stations found.</p>}
-            </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
+                    {editId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditId(null);
+                          setFormData({ operation_date: "", fire_incidents: 0, fire_prevention_inspections: 0, fire_safety_seminars: 0, rescue_operations: 0, medical_assists: 0, emergency_responses: 0 });
+                        }}
+                        style={{
+                          background: "none",
+                          border: `1px solid ${S.border}`,
+                          color: S.text,
+                          padding: "10px 20px",
+                          borderRadius: 8,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor: "pointer"
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button type="submit" style={btnPrimary}>
+                      <Check size={16} /> {editId ? "Update" : "Save"}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {activeSubTab === "view" && (
+                <div>
+                  {loading ? (
+                    <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p>
+                  ) : records.length === 0 ? (
+                    <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No records found.</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      {records.map(r => (
+                        <div
+                          key={r.id}
+                          style={{
+                            border: `1px solid ${S.border}`,
+                            borderRadius: 12,
+                            padding: 16,
+                            background: "#fafcf9",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center"
+                          }}
+                        >
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <Calendar size={16} color={S.primary} />
+                              <span style={{ fontWeight: 900, fontSize: 14 }}>
+                                {new Date(r.operation_date + 'T00:00:00').toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }}>
+                              <span style={{ color: S.muted }}>
+                                <strong style={{ color: "#dc2626" }}>Fire Incidents:</strong> {r.fire_incidents}
+                              </span>
+                              <span style={{ color: S.muted }}>
+                                <strong style={{ color: "#ea580c" }}>Inspections:</strong> {r.fire_prevention_inspections}
+                              </span>
+                              <span style={{ color: S.muted }}>
+                                <strong style={{ color: "#f59e0b" }}>Seminars:</strong> {r.fire_safety_seminars}
+                              </span>
+                              <span style={{ color: S.muted }}>
+                                <strong style={{ color: "#2563eb" }}>Rescues:</strong> {r.rescue_operations}
+                              </span>
+                              <span style={{ color: S.muted }}>
+                                <strong style={{ color: "#16a34a" }}>Medical:</strong> {r.medical_assists}
+                              </span>
+                              <span style={{ color: S.muted }}>
+                                <strong style={{ color: "#9333ea" }}>Emergency:</strong> {r.emergency_responses}
+                              </span>
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button
+                              onClick={() => editRecord(r)}
+                              style={{
+                                background: "none",
+                                border: `1px solid ${S.border}`,
+                                borderRadius: 8,
+                                padding: 8,
+                                cursor: "pointer",
+                                color: S.text
+                              }}
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button onClick={() => deleteRecord(r.id)} style={btnDanger}>
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
           )}
-        </div>
-      )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
