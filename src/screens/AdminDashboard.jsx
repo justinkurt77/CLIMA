@@ -3367,573 +3367,22 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
   );
 }
 
-/* ── CDRRMO Operations Tab (Phase 6) - Palayan City CDRRMO Only ── */
+/* ── CDRRMO Operations Tab (Phase 6) - Per-Operation Records ── */
 function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editId, setEditId] = useState(null);
-  const [activeSubTab, setActiveSubTab] = useState("add"); // 'add' or 'view'
-  const [isExpanded, setIsExpanded] = useState(true); // Control expand/collapse
-  const [formData, setFormData] = useState({ 
-    operation_date: new Date().toISOString().split('T')[0],
-    relief_operations: 0,
-    evacuations_conducted: 0,
-    families_assisted: 0,
-    distribution_points: 0,
-    ambulance_dispatches: 0,
-    emergency_responses: 0,
-    remarks: ""
-  });
-
-  useEffect(() => {
-    fetchRecords();
-  }, []);
-
-  const fetchRecords = async () => {
-    setLoading(true);
-    try {
-      const { data } = await supabase
-        .from("cdrrmo_daily_operations")
-        .select("*")
-        .order("operation_date", { ascending: false })
-        .limit(30); // Last 30 days
-      setRecords(data || []);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    
-    try {
-      // Prevent future dates
-      const selectedDate = new Date(formData.operation_date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      selectedDate.setHours(0, 0, 0, 0);
-      
-      if (!editId && selectedDate > today) {
-        showErrorModal(
-          "Invalid Date",
-          "Cannot add records for future dates. Please select today or a past date."
-        );
-        return;
-      }
-
-      const payload = {
-        office_name: "Palayan City CDRRMO",
-        operation_date: formData.operation_date,
-        relief_operations: parseInt(formData.relief_operations) || 0,
-        evacuations_conducted: parseInt(formData.evacuations_conducted) || 0,
-        families_assisted: parseInt(formData.families_assisted) || 0,
-        distribution_points: parseInt(formData.distribution_points) || 0,
-        ambulance_dispatches: parseInt(formData.ambulance_dispatches) || 0,
-        emergency_responses: parseInt(formData.emergency_responses) || 0,
-        remarks: formData.remarks || null
-      };
-
-      if (editId) {
-        const { error } = await supabase
-          .from("cdrrmo_daily_operations")
-          .update(payload)
-          .eq("id", editId);
-        if (error) throw error;
-        showSuccessModal("Record Updated", "CDRRMO operation record updated successfully");
-      } else {
-        // Check if record already exists for this date
-        const { data: existingRecord } = await supabase
-          .from("cdrrmo_daily_operations")
-          .select("*")
-          .eq("operation_date", formData.operation_date)
-          .single();
-
-        if (existingRecord) {
-          // Record exists - show friendly message with update option
-          showConfirmModal(
-            "Record Already Exists",
-            `A record for ${new Date(formData.operation_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} already exists. Would you like to update it with the new data?`,
-            () => editRecord(existingRecord),
-            "Update Record",
-            "Cancel"
-          );
-          return;
-        }
-
-        const { error } = await supabase
-          .from("cdrrmo_daily_operations")
-          .insert(payload);
-        if (error) throw error;
-        showSuccessModal("Record Added", "Daily operation record added successfully");
-      }
-      
-      setShowForm(false);
-      setEditId(null);
-      setFormData({ 
-        operation_date: new Date().toISOString().split('T')[0],
-        relief_operations: 0,
-        evacuations_conducted: 0,
-        families_assisted: 0,
-        distribution_points: 0,
-        ambulance_dispatches: 0,
-        emergency_responses: 0,
-        remarks: ""
-      });
-      fetchRecords();
-      setActiveSubTab("view"); // Switch to view after adding
-    } catch (error) {
-      showErrorModal("Error", error.message || "Failed to save record");
-    }
-  };
-
-  const editRecord = (record) => {
-    setFormData({ 
-      operation_date: record.operation_date,
-      relief_operations: record.relief_operations,
-      evacuations_conducted: record.evacuations_conducted,
-      families_assisted: record.families_assisted,
-      distribution_points: record.distribution_points,
-      ambulance_dispatches: record.ambulance_dispatches,
-      emergency_responses: record.emergency_responses,
-      remarks: record.remarks || ""
-    });
-    setEditId(record.id);
-    setActiveSubTab("add"); // Switch to form tab
-    setShowForm(true);
-  };
-
-  const deleteRecord = async (id, date) => {
-    showConfirmModal(
-      "Delete Record",
-      `Are you sure you want to delete the operation record for ${new Date(date).toLocaleDateString()}? This action cannot be undone.`,
-      async () => {
-        try {
-          const { error } = await supabase
-            .from("cdrrmo_daily_operations")
-            .delete()
-            .eq("id", id);
-          if (error) throw error;
-          fetchRecords();
-          showSuccessModal("Deleted", "Operation record deleted successfully");
-        } catch (error) {
-          showErrorModal("Error", "Failed to delete record");
-        }
-      },
-      "Delete"
-    );
-  };
-
-  // Calculate totals for last 7 days
-  const last7Days = records.slice(0, 7);
-  const totalReliefOps = last7Days.reduce((sum, r) => sum + (r.relief_operations || 0), 0);
-  const totalEvacuations = last7Days.reduce((sum, r) => sum + (r.evacuations_conducted || 0), 0);
-  const totalFamilies = last7Days.reduce((sum, r) => sum + (r.families_assisted || 0), 0);
-  const totalAmbulance = last7Days.reduce((sum, r) => sum + (r.ambulance_dispatches || 0), 0);
-  const totalResponses = last7Days.reduce((sum, r) => sum + (r.emergency_responses || 0), 0);
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Header */}
-      <div>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: S.text }}>Palayan City CDRRMO Operations</h2>
-        <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>Daily operations tracking for Super El Niño response</p>
-      </div>
-
-      {/* Overview Analytics - Last 7 Days */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
-        <div style={{ ...cardStyle, background: "#fef3c7", borderColor: "#fcd34d" }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#d97706", textTransform: "uppercase" }}>Relief Operations</p>
-          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#92400e" }}>{totalReliefOps}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#b45309" }}>Last 7 days</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#dbeafe", borderColor: "#93c5fd" }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#1d4ed8", textTransform: "uppercase" }}>Evacuations</p>
-          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#1e3a8a" }}>{totalEvacuations}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#1e40af" }}>Last 7 days</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#dcfce7", borderColor: "#86efac" }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#15803d", textTransform: "uppercase" }}>Families Assisted</p>
-          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#14532d" }}>{totalFamilies}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#16a34a" }}>Last 7 days</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#fef08a", borderColor: "#fde047" }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#a16207", textTransform: "uppercase" }}>Ambulance Dispatches</p>
-          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#713f12" }}>{totalAmbulance}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#854d0e" }}>Last 7 days</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#fce7f3", borderColor: "#f9a8d4" }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#be185d", textTransform: "uppercase" }}>Emergency Responses</p>
-          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#831843" }}>{totalResponses}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#9f1239" }}>Last 7 days</p>
-        </div>
-      </div>
-
-      {/* Sub-tabs Navigation */}
-      <div style={cardStyle}>
-        <div style={{ 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "space-between",
-          paddingBottom: 16,
-          borderBottom: `2px solid ${S.border}`
-        }}>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              onClick={() => { setActiveSubTab("add"); setIsExpanded(true); }}
-              style={{
-                padding: "10px 20px",
-                borderRadius: 10,
-                border: "none",
-                background: activeSubTab === "add" ? S.accent : "transparent",
-                color: activeSubTab === "add" ? "#fff" : S.text,
-                fontSize: 14,
-                fontWeight: 800,
-                cursor: "pointer",
-                transition: "all 0.2s",
-                display: "flex",
-                alignItems: "center",
-                gap: 8
-              }}
-            >
-              <Plus size={16} /> Add Record
-            </button>
-            <button
-              onClick={() => { setActiveSubTab("view"); setIsExpanded(true); }}
-              style={{
-                padding: "10px 20px",
-                borderRadius: 10,
-                border: "none",
-                background: activeSubTab === "view" ? S.accent : "transparent",
-                color: activeSubTab === "view" ? "#fff" : S.text,
-                fontSize: 14,
-                fontWeight: 800,
-                cursor: "pointer",
-                transition: "all 0.2s",
-                display: "flex",
-                alignItems: "center",
-                gap: 8
-              }}
-            >
-              <FileText size={16} /> View Records
-            </button>
-          </div>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: S.muted,
-              padding: 8,
-              borderRadius: 8,
-              display: "flex",
-              alignItems: "center"
-            }}
-          >
-            {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-          </button>
-        </div>
-
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              style={{ overflow: "hidden" }}
-            >
-              {/* Add Record Tab */}
-              {activeSubTab === "add" && (
-                <div style={{ padding: "24px 0" }}>
-                  <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                      <div style={{ gridColumn: "1 / -1" }}>
-                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>
-                          Operation Date {editId && <span style={{ color: S.accent, fontSize: 10 }}>(Cannot be changed when editing)</span>}
-                        </label>
-                        <input 
-                          type="date" 
-                          value={formData.operation_date} 
-                          onChange={e => setFormData({...formData, operation_date: e.target.value})} 
-                          max={new Date().toISOString().split('T')[0]}
-                          required 
-                          readOnly={editId !== null}
-                          disabled={editId !== null}
-                          style={{
-                            ...inputStyle,
-                            backgroundColor: editId ? S.cardBg : "#fff",
-                            cursor: editId ? "not-allowed" : "text",
-                            opacity: editId ? 0.7 : 1
-                          }} 
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Relief Operations</label>
-                        <input 
-                          type="number" 
-                          min="0" 
-                          value={formData.relief_operations} 
-                          onChange={e => setFormData({...formData, relief_operations: e.target.value})} 
-                          style={inputStyle}
-                          placeholder="Number of relief operations"
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Evacuations Conducted</label>
-                        <input 
-                          type="number" 
-                          min="0" 
-                          value={formData.evacuations_conducted} 
-                          onChange={e => setFormData({...formData, evacuations_conducted: e.target.value})} 
-                          style={inputStyle}
-                          placeholder="Number of evacuations"
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Families Assisted</label>
-                        <input 
-                          type="number" 
-                          min="0" 
-                          value={formData.families_assisted} 
-                          onChange={e => setFormData({...formData, families_assisted: e.target.value})} 
-                          style={inputStyle}
-                          placeholder="Number of families"
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Distribution Points</label>
-                        <input 
-                          type="number" 
-                          min="0" 
-                          value={formData.distribution_points} 
-                          onChange={e => setFormData({...formData, distribution_points: e.target.value})} 
-                          style={inputStyle}
-                          placeholder="Number of distribution points"
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Ambulance Dispatches</label>
-                        <input 
-                          type="number" 
-                          min="0" 
-                          value={formData.ambulance_dispatches} 
-                          onChange={e => setFormData({...formData, ambulance_dispatches: e.target.value})} 
-                          style={inputStyle}
-                          placeholder="City ambulance calls"
-                        />
-                      </div>
-                      <div style={{ gridColumn: "1 / -1" }}>
-                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Emergency Responses</label>
-                        <input 
-                          type="number" 
-                          min="0" 
-                          value={formData.emergency_responses} 
-                          onChange={e => setFormData({...formData, emergency_responses: e.target.value})} 
-                          style={inputStyle}
-                          placeholder="Total emergency responses for the day"
-                        />
-                      </div>
-                      <div style={{ gridColumn: "1 / -1" }}>
-                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Remarks (Optional)</label>
-                        <textarea 
-                          value={formData.remarks} 
-                          onChange={e => setFormData({...formData, remarks: e.target.value})} 
-                          placeholder="Any notable incidents, challenges, or observations..."
-                          style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} 
-                        />
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, padding: "16px 0", borderTop: `1px solid ${S.border}` }}>
-                      <p style={{ margin: 0, fontSize: 12, color: S.muted }}>
-                        {editId ? "Updating existing operation record" : "Adding new daily operation record"}
-                      </p>
-                      <div style={{ display: "flex", gap: 10 }}>
-                        {editId && (
-                          <button 
-                            type="button"
-                            onClick={() => {
-                              setEditId(null);
-                              setFormData({ 
-                                operation_date: new Date().toISOString().split('T')[0],
-                                relief_operations: 0,
-                                evacuations_conducted: 0,
-                                families_assisted: 0,
-                                distribution_points: 0,
-                                ambulance_dispatches: 0,
-                                emergency_responses: 0,
-                                remarks: ""
-                              });
-                            }}
-                            style={{
-                              padding: "10px 20px",
-                              borderRadius: 10,
-                              border: `1px solid ${S.border}`,
-                              background: "#fff",
-                              color: S.text,
-                              fontSize: 14,
-                              fontWeight: 700,
-                              cursor: "pointer"
-                            }}
-                          >
-                            Cancel Edit
-                          </button>
-                        )}
-                        <button type="submit" style={btnPrimary}>
-                          <Check size={16} /> {editId ? "Update Record" : "Save Record"}
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-              )}
-
-              {/* View Records Tab */}
-              {activeSubTab === "view" && (
-                <div style={{ padding: "24px 0" }}>
-                  {loading ? (
-                    <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading records...</p>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      {records.map(record => {
-                        const totalOperations = 
-                          (record.relief_operations || 0) +
-                          (record.evacuations_conducted || 0) +
-                          (record.emergency_responses || 0);
-
-                        return (
-                          <div 
-                            key={record.id} 
-                            style={{ 
-                              border: `1px solid ${S.border}`, 
-                              borderRadius: 12, 
-                              padding: 16, 
-                              background: "#fff",
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 12
-                            }}
-                          >
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                              <div>
-                                <h4 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: S.text }}>
-                                  {new Date(record.operation_date).toLocaleDateString('en-US', { 
-                                    weekday: 'long',
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                  })}
-                                </h4>
-                                <p style={{ margin: "4px 0 0", fontSize: 12, color: S.muted, fontWeight: 600 }}>
-                                  Total Operations: {totalOperations}
-                                </p>
-                              </div>
-                              <div style={{ display: "flex", gap: 8 }}>
-                                <button 
-                                  onClick={() => editRecord(record)}
-                                  style={{
-                                    padding: "6px 12px",
-                                    borderRadius: 8,
-                                    border: `1px solid ${S.border}`,
-                                    background: "#fff",
-                                    color: S.text,
-                                    fontSize: 12,
-                                    fontWeight: 700,
-                                    cursor: "pointer",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 4
-                                  }}
-                                >
-                                  <Edit2 size={12} /> Edit
-                                </button>
-                                <button 
-                                  onClick={() => deleteRecord(record.id, record.operation_date)}
-                                  style={{ ...btnDanger, fontSize: 12, padding: "6px 12px" }}
-                                >
-                                  <Trash2 size={12} />
-                                </button>
-                              </div>
-                            </div>
-
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
-                              <div style={{ padding: 12, background: "#fef3c7", borderRadius: 8 }}>
-                                <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#92400e", textTransform: "uppercase" }}>Relief Operations</p>
-                                <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#78350f" }}>{record.relief_operations || 0}</p>
-                              </div>
-                              <div style={{ padding: 12, background: "#dbeafe", borderRadius: 8 }}>
-                                <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#1e40af", textTransform: "uppercase" }}>Evacuations</p>
-                                <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#1e3a8a" }}>{record.evacuations_conducted || 0}</p>
-                              </div>
-                              <div style={{ padding: 12, background: "#dcfce7", borderRadius: 8 }}>
-                                <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#166534", textTransform: "uppercase" }}>Families Assisted</p>
-                                <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#14532d" }}>{record.families_assisted || 0}</p>
-                              </div>
-                              <div style={{ padding: 12, background: "#f3e8ff", borderRadius: 8 }}>
-                                <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#6b21a8", textTransform: "uppercase" }}>Distribution Points</p>
-                                <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#581c87" }}>{record.distribution_points || 0}</p>
-                              </div>
-                              <div style={{ padding: 12, background: "#fef08a", borderRadius: 8 }}>
-                                <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#854d0e", textTransform: "uppercase" }}>Ambulance Dispatches</p>
-                                <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#713f12" }}>{record.ambulance_dispatches || 0}</p>
-                              </div>
-                              <div style={{ padding: 12, background: "#fce7f3", borderRadius: 8 }}>
-                                <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#9f1239", textTransform: "uppercase" }}>Emergency Responses</p>
-                                <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#831843" }}>{record.emergency_responses || 0}</p>
-                              </div>
-                            </div>
-
-                            {record.remarks && (
-                              <div style={{ 
-                                padding: 12, 
-                                background: "#f9fafb", 
-                                borderRadius: 8,
-                                borderLeft: `3px solid ${S.accent}`
-                              }}>
-                                <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: S.muted, textTransform: "uppercase", marginBottom: 4 }}>Remarks</p>
-                                <p style={{ margin: 0, fontSize: 13, color: S.text, lineHeight: 1.5 }}>{record.remarks}</p>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {records.length === 0 && (
-                        <p style={{ textAlign: "center", color: S.muted, padding: 40 }}>
-                          No operation records found. Add your first daily record above.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
-
-/* ── BFP Operations Tab (Phase 7) - Palayan City BFP Only ── */
-function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
-  const [records, setRecords] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editId, setEditId] = useState(null);
-  const [activeSubTab, setActiveSubTab] = useState("add");
+  const [activeSubTab, setActiveSubTab] = useState("view");
   const [isExpanded, setIsExpanded] = useState(true);
-  const [formData, setFormData] = useState({ 
+  const [editId, setEditId] = useState(null);
+  const [expandedDays, setExpandedDays] = useState({});
+  const [formData, setFormData] = useState({
     operation_date: new Date().toISOString().split('T')[0],
-    fire_incidents: 0,
-    fire_prevention_inspections: 0,
-    fire_safety_seminars: 0,
-    rescue_operations: 0,
-    medical_assists: 0,
-    emergency_responses: 0,
-    remarks: ""
+    operation_time: "",
+    operation_type: "evacuation",
+    description: "",
+    location: "",
+    personnel_deployed: 0,
+    beneficiaries: 0
   });
 
   useEffect(() => {
@@ -3944,11 +3393,17 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
     setLoading(true);
     try {
       const { data } = await supabase
-        .from("bfp_daily_operations")
+        .from("cdrrmo_operations")
         .select("*")
         .order("operation_date", { ascending: false })
-        .limit(30);
+        .order("operation_time", { ascending: false });
       setRecords(data || []);
+      
+      // Auto-expand first day only
+      if (data && data.length > 0) {
+        const firstDate = data[0].operation_date;
+        setExpandedDays({ [firstDate]: true });
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -3965,47 +3420,41 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
       today.setHours(0, 0, 0, 0);
       selectedDate.setHours(0, 0, 0, 0);
       
-      if (!editId && selectedDate > today) {
+      if (selectedDate > today) {
         showErrorModal("Invalid Date", "Cannot add records for future dates. Please select today or a past date.");
         return;
       }
 
       const payload = {
-        office_name: "Palayan City BFP",
         operation_date: formData.operation_date,
-        fire_incidents: parseInt(formData.fire_incidents) || 0,
-        fire_prevention_inspections: parseInt(formData.fire_prevention_inspections) || 0,
-        fire_safety_seminars: parseInt(formData.fire_safety_seminars) || 0,
-        rescue_operations: parseInt(formData.rescue_operations) || 0,
-        medical_assists: parseInt(formData.medical_assists) || 0,
-        emergency_responses: parseInt(formData.emergency_responses) || 0,
-        remarks: formData.remarks || null
+        operation_time: formData.operation_time,
+        operation_type: formData.operation_type,
+        description: formData.description || null,
+        location: formData.location,
+        personnel_deployed: parseInt(formData.personnel_deployed) || 0,
+        beneficiaries: parseInt(formData.beneficiaries) || 0
       };
 
       if (editId) {
-        const { error } = await supabase.from("bfp_daily_operations").update(payload).eq("id", editId);
+        const { error } = await supabase.from("cdrrmo_operations").update(payload).eq("id", editId);
         if (error) throw error;
-        showSuccessModal("Record Updated", "BFP operation record updated successfully");
+        showSuccessModal("Record Updated", "Operation record updated successfully");
       } else {
-        const { data: existingRecord } = await supabase.from("bfp_daily_operations").select("*").eq("operation_date", formData.operation_date).single();
-        if (existingRecord) {
-          showConfirmModal(
-            "Record Already Exists",
-            `A record for ${new Date(formData.operation_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} already exists. Would you like to update it with the new data?`,
-            () => editRecord(existingRecord),
-            "Update Record",
-            "Cancel"
-          );
-          return;
-        }
-        const { error } = await supabase.from("bfp_daily_operations").insert(payload);
+        const { error } = await supabase.from("cdrrmo_operations").insert(payload);
         if (error) throw error;
-        showSuccessModal("Record Added", "Daily operation record added successfully");
+        showSuccessModal("Record Added", "Operation record added successfully");
       }
       
-      setShowForm(false);
       setEditId(null);
-      setFormData({ operation_date: new Date().toISOString().split('T')[0], fire_incidents: 0, fire_prevention_inspections: 0, fire_safety_seminars: 0, rescue_operations: 0, medical_assists: 0, emergency_responses: 0, remarks: "" });
+      setFormData({
+        operation_date: new Date().toISOString().split('T')[0],
+        operation_time: "",
+        operation_type: "evacuation",
+        description: "",
+        location: "",
+        personnel_deployed: 0,
+        beneficiaries: 0
+      });
       fetchRecords();
       setActiveSubTab("view");
     } catch (error) {
@@ -4014,19 +3463,26 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
   };
 
   const editRecord = (record) => {
-    setFormData({ operation_date: record.operation_date, fire_incidents: record.fire_incidents, fire_prevention_inspections: record.fire_prevention_inspections, fire_safety_seminars: record.fire_safety_seminars, rescue_operations: record.rescue_operations, medical_assists: record.medical_assists, emergency_responses: record.emergency_responses, remarks: record.remarks || "" });
+    setFormData({
+      operation_date: record.operation_date,
+      operation_time: record.operation_time,
+      operation_type: record.operation_type,
+      description: record.description || "",
+      location: record.location,
+      personnel_deployed: record.personnel_deployed,
+      beneficiaries: record.beneficiaries
+    });
     setEditId(record.id);
     setActiveSubTab("add");
-    setShowForm(true);
   };
 
-  const deleteRecord = async (id, date) => {
+  const deleteRecord = async (id) => {
     showConfirmModal(
-      "Delete Record",
-      `Are you sure you want to delete the operation record for ${new Date(date).toLocaleDateString()}? This action cannot be undone.`,
+      "Delete Operation",
+      "Are you sure you want to delete this operation record? This action cannot be undone.",
       async () => {
         try {
-          const { error } = await supabase.from("bfp_daily_operations").delete().eq("id", id);
+          const { error } = await supabase.from("cdrrmo_operations").delete().eq("id", id);
           if (error) throw error;
           fetchRecords();
           showSuccessModal("Deleted", "Operation record deleted successfully");
@@ -4038,231 +3494,155 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
     );
   };
 
-  const last7Days = records.slice(0, 7);
-  const totalFires = last7Days.reduce((sum, r) => sum + (r.fire_incidents || 0), 0);
-  const totalInspections = last7Days.reduce((sum, r) => sum + (r.fire_prevention_inspections || 0), 0);
-  const totalRescues = last7Days.reduce((sum, r) => sum + (r.rescue_operations || 0), 0);
-  const totalMedical = last7Days.reduce((sum, r) => sum + (r.medical_assists || 0), 0);
-  const totalResponses = last7Days.reduce((sum, r) => sum + (r.emergency_responses || 0), 0);
+  // Analytics - last 7 days
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const last7DaysRecords = records.filter(r => new Date(r.operation_date) >= sevenDaysAgo);
+  
+  const evacuations = last7DaysRecords.filter(r => r.operation_type === "evacuation").length;
+  const rescues = last7DaysRecords.filter(r => r.operation_type === "rescue").length;
+  const reliefDist = last7DaysRecords.filter(r => r.operation_type === "relief_distribution").length;
+  const damageAssess = last7DaysRecords.filter(r => r.operation_type === "damage_assessment").length;
+  const ambulances = last7DaysRecords.filter(r => r.operation_type === "ambulance_dispatch").length;
+  const emergencies = last7DaysRecords.filter(r => r.operation_type === "emergency_response").length;
+
+  // Group records by date
+  const groupedByDate = records.reduce((acc, record) => {
+    if (!acc[record.operation_date]) {
+      acc[record.operation_date] = [];
+    }
+    acc[record.operation_date].push(record);
+    return acc;
+  }, {});
+
+  const operationTypeLabels = {
+    evacuation: "Evacuation",
+    rescue: "Rescue",
+    relief_distribution: "Relief Distribution",
+    damage_assessment: "Damage Assessment",
+    ambulance_dispatch: "Ambulance Dispatch",
+    emergency_response: "Emergency Response"
+  };
+
+  const operationTypeBadge = (type) => {
+    const colors = {
+      evacuation: { bg: "#dbeafe", color: "#1e40af" },
+      rescue: { bg: "#fef3c7", color: "#92400e" },
+      relief_distribution: { bg: "#dcfce7", color: "#166534" },
+      damage_assessment: { bg: "#f3e8ff", color: "#6b21a8" },
+      ambulance_dispatch: { bg: "#fef08a", color: "#854d0e" },
+      emergency_response: { bg: "#fce7f3", color: "#9f1239" }
+    };
+    const style = colors[type] || { bg: "#f3f4f6", color: "#6b7280" };
+    return (
+      <span style={{
+        padding: "4px 10px",
+        borderRadius: 6,
+        fontSize: 11,
+        fontWeight: 800,
+        background: style.bg,
+        color: style.color,
+        textTransform: "uppercase"
+      }}>
+        {operationTypeLabels[type]}
+      </span>
+    );
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Header */}
       <div>
-        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>Palayan City BFP Operations</h3>
-        <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>Track daily fire and emergency response operations</p>
+        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>Palayan City CDRRMO Operations</h3>
+        <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>Track individual operations for Super El Niño response</p>
       </div>
 
-      {/* Last 7 Days Analytics */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
-        <div style={{ ...cardStyle, background: "#fef2f2", borderColor: "#fca5a5" }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#dc2626", textTransform: "uppercase" }}>Fire Incidents</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#991b1b" }}>{totalFires}</p>
-          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
+      {/* Analytics Cards - Last 7 Days */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+        <div style={{ ...cardStyle, background: "#dbeafe", borderColor: "#93c5fd", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#1e40af", textTransform: "uppercase" }}>Evacuations</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#1e3a8a" }}>{evacuations}</p>
         </div>
-        <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa" }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Fire Inspections</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#9a3412" }}>{totalInspections}</p>
-          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
+        <div style={{ ...cardStyle, background: "#fef3c7", borderColor: "#fcd34d", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#92400e", textTransform: "uppercase" }}>Rescues</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#78350f" }}>{rescues}</p>
         </div>
-        <div style={{ ...cardStyle, background: "#eff6ff", borderColor: "#93c5fd" }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#2563eb", textTransform: "uppercase" }}>Rescue Operations</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#1e3a8a" }}>{totalRescues}</p>
-          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
+        <div style={{ ...cardStyle, background: "#dcfce7", borderColor: "#86efac", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#166534", textTransform: "uppercase" }}>Relief Dist.</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#14532d" }}>{reliefDist}</p>
         </div>
-        <div style={{ ...cardStyle, background: "#f0fdf4", borderColor: "#86efac" }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#16a34a", textTransform: "uppercase" }}>Medical Assists</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#14532d" }}>{totalMedical}</p>
-          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
+        <div style={{ ...cardStyle, background: "#f3e8ff", borderColor: "#d8b4fe", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#6b21a8", textTransform: "uppercase" }}>Assessments</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#581c87" }}>{damageAssess}</p>
         </div>
-        <div style={{ ...cardStyle, background: "#faf5ff", borderColor: "#d8b4fe" }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#9333ea", textTransform: "uppercase" }}>Emergency Responses</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#581c87" }}>{totalResponses}</p>
-          <p style={{ margin: "2px 0 0", fontSize: 10, color: S.muted }}>Last 7 days</p>
+        <div style={{ ...cardStyle, background: "#fef08a", borderColor: "#fde047", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#854d0e", textTransform: "uppercase" }}>Ambulances</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#713f12" }}>{ambulances}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fce7f3", borderColor: "#f9a8d4", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#9f1239", textTransform: "uppercase" }}>Emergencies</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#831843" }}>{emergencies}</p>
         </div>
       </div>
 
-      {/* Sub-tabs: Add Record / View Records */}
+      {/* Sub-tabs */}
       <div style={cardStyle}>
-        <div style={{ display: "flex", gap: 12, borderBottom: `1px solid ${S.border}`, paddingBottom: 12, marginBottom: 16 }}>
-          <button
-            onClick={() => setActiveSubTab("add")}
-            style={{
-              background: activeSubTab === "add" ? S.primary : "transparent",
-              color: activeSubTab === "add" ? "#fff" : S.muted,
-              border: "none",
-              padding: "8px 16px",
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer"
-            }}
-          >
-            Add Record
+        <div style={{ display: "flex", gap: 12, paddingBottom: 12, marginBottom: 16, borderBottom: `1px solid ${S.border}` }}>
+          <button onClick={() => { setActiveSubTab("add"); setIsExpanded(true); }} style={{ ...btnPrimary, background: activeSubTab === "add" ? S.accent : "transparent", color: activeSubTab === "add" ? "#fff" : S.text, boxShadow: "none", padding: "8px 16px", fontSize: 13 }}>
+            <Plus size={14} /> Add Record
           </button>
-          <button
-            onClick={() => setActiveSubTab("view")}
-            style={{
-              background: activeSubTab === "view" ? S.primary : "transparent",
-              color: activeSubTab === "view" ? "#fff" : S.muted,
-              border: "none",
-              padding: "8px 16px",
-              borderRadius: 8,
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer"
-            }}
-          >
-            View Records
+          <button onClick={() => { setActiveSubTab("view"); setIsExpanded(true); }} style={{ ...btnPrimary, background: activeSubTab === "view" ? S.accent : "transparent", color: activeSubTab === "view" ? "#fff" : S.text, boxShadow: "none", padding: "8px 16px", fontSize: 13 }}>
+            <FileText size={14} /> View Records
           </button>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            style={{
-              marginLeft: "auto",
-              background: "none",
-              border: `1px solid ${S.border}`,
-              padding: "8px 12px",
-              borderRadius: 8,
-              cursor: "pointer",
-              color: S.text,
-              display: "flex",
-              alignItems: "center",
-              gap: 6
-            }}
-          >
-            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            {isExpanded ? "Collapse" : "Expand"}
+          <button onClick={() => setIsExpanded(!isExpanded)} style={{ marginLeft: "auto", background: "none", border: `1px solid ${S.border}`, padding: "8px", borderRadius: 8, cursor: "pointer", color: S.text, display: "flex", alignItems: "center" }}>
+            <ChevronDown size={16} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
           </button>
         </div>
 
         <AnimatePresence>
           {isExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              style={{ overflow: "hidden" }}
-            >
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} style={{ overflow: "hidden" }}>
               {activeSubTab === "add" && (
                 <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <div>
-                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
-                        Operation Date
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.operation_date}
-                        onChange={e => setFormData({ ...formData, operation_date: e.target.value })}
-                        max={new Date().toISOString().split('T')[0]}
-                        readOnly={!!editId}
-                        disabled={!!editId}
-                        required
-                        style={{
-                          ...inputStyle,
-                          ...(editId ? { background: "#f3f4f6", color: "#9ca3af", opacity: 0.7 } : {})
-                        }}
-                      />
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Operation Date</label>
+                      <input type="date" value={formData.operation_date} onChange={e => setFormData({ ...formData, operation_date: e.target.value })} max={new Date().toISOString().split('T')[0]} required style={inputStyle} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
-                        Fire Incidents
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.fire_incidents}
-                        onChange={e => setFormData({ ...formData, fire_incidents: e.target.value })}
-                        required
-                        style={inputStyle}
-                      />
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Operation Time</label>
+                      <input type="time" value={formData.operation_time} onChange={e => setFormData({ ...formData, operation_time: e.target.value })} required style={inputStyle} />
+                    </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Operation Type</label>
+                      <select value={formData.operation_type} onChange={e => setFormData({ ...formData, operation_type: e.target.value })} required style={selectStyle}>
+                        <option value="evacuation">Evacuation</option>
+                        <option value="rescue">Rescue</option>
+                        <option value="relief_distribution">Relief Distribution</option>
+                        <option value="damage_assessment">Damage Assessment</option>
+                        <option value="ambulance_dispatch">Ambulance Dispatch</option>
+                        <option value="emergency_response">Emergency Response</option>
+                      </select>
+                    </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Location</label>
+                      <input type="text" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} required placeholder="e.g., Brgy. Singalat" style={inputStyle} />
+                    </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Description</label>
+                      <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Brief description of the operation..." style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
-                        Fire Prevention Inspections
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.fire_prevention_inspections}
-                        onChange={e => setFormData({ ...formData, fire_prevention_inspections: e.target.value })}
-                        required
-                        style={inputStyle}
-                      />
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Personnel Deployed</label>
+                      <input type="number" min="0" value={formData.personnel_deployed} onChange={e => setFormData({ ...formData, personnel_deployed: e.target.value })} required style={inputStyle} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
-                        Fire Safety Seminars
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.fire_safety_seminars}
-                        onChange={e => setFormData({ ...formData, fire_safety_seminars: e.target.value })}
-                        required
-                        style={inputStyle}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
-                        Rescue Operations
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.rescue_operations}
-                        onChange={e => setFormData({ ...formData, rescue_operations: e.target.value })}
-                        required
-                        style={inputStyle}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
-                        Medical Assists
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.medical_assists}
-                        onChange={e => setFormData({ ...formData, medical_assists: e.target.value })}
-                        required
-                        style={inputStyle}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>
-                        Emergency Responses
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.emergency_responses}
-                        onChange={e => setFormData({ ...formData, emergency_responses: e.target.value })}
-                        required
-                        style={inputStyle}
-                      />
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Beneficiaries</label>
+                      <input type="number" min="0" value={formData.beneficiaries} onChange={e => setFormData({ ...formData, beneficiaries: e.target.value })} required style={inputStyle} />
                     </div>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
+                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 12, borderTop: `1px solid ${S.border}` }}>
                     {editId && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditId(null);
-                          setFormData({ operation_date: "", fire_incidents: 0, fire_prevention_inspections: 0, fire_safety_seminars: 0, rescue_operations: 0, medical_assists: 0, emergency_responses: 0 });
-                        }}
-                        style={{
-                          background: "none",
-                          border: `1px solid ${S.border}`,
-                          color: S.text,
-                          padding: "10px 20px",
-                          borderRadius: 8,
-                          fontSize: 13,
-                          fontWeight: 700,
-                          cursor: "pointer"
-                        }}
-                      >
+                      <button type="button" onClick={() => { setEditId(null); setFormData({ operation_date: new Date().toISOString().split('T')[0], operation_time: "", operation_type: "evacuation", description: "", location: "", personnel_deployed: 0, beneficiaries: 0 }); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: "#fff", color: S.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                         Cancel
                       </button>
                     )}
@@ -4274,75 +3654,436 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
               )}
 
               {activeSubTab === "view" && (
-                <div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {loading ? (
-                    <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading...</p>
-                  ) : records.length === 0 ? (
-                    <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No records found.</p>
+                    <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading records...</p>
+                  ) : Object.keys(groupedByDate).length === 0 ? (
+                    <p style={{ textAlign: "center", color: S.muted, padding: 40 }}>No operation records found. Add your first operation above.</p>
                   ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                      {records.map(r => (
-                        <div
-                          key={r.id}
-                          style={{
-                            border: `1px solid ${S.border}`,
-                            borderRadius: 12,
-                            padding: 16,
-                            background: "#fafcf9",
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center"
-                          }}
-                        >
-                          <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <Calendar size={16} color={S.primary} />
-                              <span style={{ fontWeight: 900, fontSize: 14 }}>
-                                {new Date(r.operation_date + 'T00:00:00').toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                              </span>
-                            </div>
-                            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }}>
-                              <span style={{ color: S.muted }}>
-                                <strong style={{ color: "#dc2626" }}>Fire Incidents:</strong> {r.fire_incidents}
-                              </span>
-                              <span style={{ color: S.muted }}>
-                                <strong style={{ color: "#ea580c" }}>Inspections:</strong> {r.fire_prevention_inspections}
-                              </span>
-                              <span style={{ color: S.muted }}>
-                                <strong style={{ color: "#f59e0b" }}>Seminars:</strong> {r.fire_safety_seminars}
-                              </span>
-                              <span style={{ color: S.muted }}>
-                                <strong style={{ color: "#2563eb" }}>Rescues:</strong> {r.rescue_operations}
-                              </span>
-                              <span style={{ color: S.muted }}>
-                                <strong style={{ color: "#16a34a" }}>Medical:</strong> {r.medical_assists}
-                              </span>
-                              <span style={{ color: S.muted }}>
-                                <strong style={{ color: "#9333ea" }}>Emergency:</strong> {r.emergency_responses}
-                              </span>
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <button
-                              onClick={() => editRecord(r)}
-                              style={{
-                                background: "none",
-                                border: `1px solid ${S.border}`,
-                                borderRadius: 8,
-                                padding: 8,
-                                cursor: "pointer",
-                                color: S.text
-                              }}
-                            >
-                              <Edit2 size={14} />
-                            </button>
-                            <button onClick={() => deleteRecord(r.id)} style={btnDanger}>
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
+                    Object.keys(groupedByDate).map(date => {
+                      const dayRecords = groupedByDate[date];
+                      const isExpanded = expandedDays[date];
+                      return (
+                        <div key={date} style={{ border: `1px solid ${S.border}`, borderRadius: 12, overflow: "hidden" }}>
+                          <button onClick={() => setExpandedDays(prev => ({ ...prev, [date]: !prev[date] }))} style={{ width: "100%", padding: 16, border: "none", background: S.accentBg, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, fontWeight: 800, color: S.text }}>
+                            <span>📅 {new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · {dayRecords.length} operation{dayRecords.length > 1 ? 's' : ''}</span>
+                            <ChevronDown size={18} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
+                          </button>
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} transition={{ duration: 0.2 }} style={{ overflow: "hidden", background: "#fff" }}>
+                                <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                                  {dayRecords.map(record => (
+                                    <div key={record.id} style={{ padding: 12, border: `1px solid ${S.border}`, borderRadius: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                        <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
+                                          <span style={{ fontSize: 13, fontWeight: 800, color: S.text }}>{record.operation_time || "N/A"}</span>
+                                          {operationTypeBadge(record.operation_type)}
+                                          <span style={{ fontSize: 12, color: S.muted }}>📍 {record.location}</span>
+                                        </div>
+                                        <div style={{ display: "flex", gap: 6 }}>
+                                          <button onClick={() => editRecord(record)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${S.border}`, background: "#fff", color: S.text, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                                            <Edit2 size={12} /> Edit
+                                          </button>
+                                          <button onClick={() => deleteRecord(record.id)} style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}>
+                                            <Trash2 size={12} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                      {record.description && (
+                                        <p style={{ margin: 0, fontSize: 12, color: S.text, lineHeight: 1.5 }}>{record.description}</p>
+                                      )}
+                                      <div style={{ display: "flex", gap: 16, fontSize: 11, color: S.muted }}>
+                                        <span>👷 {record.personnel_deployed} personnel</span>
+                                        <span>👥 {record.beneficiaries} beneficiaries</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
-                      ))}
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+/* ── BFP Operations Tab (Phase 7) - Per-Operation Records ── */
+function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeSubTab, setActiveSubTab] = useState("view");
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [editId, setEditId] = useState(null);
+  const [expandedDays, setExpandedDays] = useState({});
+  const [formData, setFormData] = useState({
+    operation_date: new Date().toISOString().split('T')[0],
+    operation_time: "",
+    operation_type: "fire_incident",
+    description: "",
+    location: "",
+    personnel_deployed: 0,
+    fire_trucks_dispatched: 0,
+    casualties: 0,
+    property_damage_estimate: 0
+  });
+
+  useEffect(() => {
+    fetchRecords();
+  }, []);
+
+  const fetchRecords = async () => {
+    setLoading(true);
+    try {
+      const { data } = await supabase
+        .from("bfp_operations")
+        .select("*")
+        .order("operation_date", { ascending: false })
+        .order("operation_time", { ascending: false });
+      setRecords(data || []);
+      
+      // Auto-expand first day only
+      if (data && data.length > 0) {
+        const firstDate = data[0].operation_date;
+        setExpandedDays({ [firstDate]: true });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const selectedDate = new Date(formData.operation_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      selectedDate.setHours(0, 0, 0, 0);
+      
+      if (selectedDate > today) {
+        showErrorModal("Invalid Date", "Cannot add records for future dates. Please select today or a past date.");
+        return;
+      }
+
+      const payload = {
+        operation_date: formData.operation_date,
+        operation_time: formData.operation_time,
+        operation_type: formData.operation_type,
+        description: formData.description || null,
+        location: formData.location,
+        personnel_deployed: parseInt(formData.personnel_deployed) || 0,
+        fire_trucks_dispatched: parseInt(formData.fire_trucks_dispatched) || 0,
+        casualties: parseInt(formData.casualties) || 0,
+        property_damage_estimate: parseFloat(formData.property_damage_estimate) || 0
+      };
+
+      if (editId) {
+        const { error } = await supabase.from("bfp_operations").update(payload).eq("id", editId);
+        if (error) throw error;
+        showSuccessModal("Record Updated", "Operation record updated successfully");
+      } else {
+        const { error } = await supabase.from("bfp_operations").insert(payload);
+        if (error) throw error;
+        showSuccessModal("Record Added", "Operation record added successfully");
+      }
+      
+      setEditId(null);
+      setFormData({
+        operation_date: new Date().toISOString().split('T')[0],
+        operation_time: "",
+        operation_type: "fire_incident",
+        description: "",
+        location: "",
+        personnel_deployed: 0,
+        fire_trucks_dispatched: 0,
+        casualties: 0,
+        property_damage_estimate: 0
+      });
+      fetchRecords();
+      setActiveSubTab("view");
+    } catch (error) {
+      showErrorModal("Error", error.message || "Failed to save record");
+    }
+  };
+
+  const editRecord = (record) => {
+    setFormData({
+      operation_date: record.operation_date,
+      operation_time: record.operation_time,
+      operation_type: record.operation_type,
+      description: record.description || "",
+      location: record.location,
+      personnel_deployed: record.personnel_deployed,
+      fire_trucks_dispatched: record.fire_trucks_dispatched,
+      casualties: record.casualties,
+      property_damage_estimate: record.property_damage_estimate
+    });
+    setEditId(record.id);
+    setActiveSubTab("add");
+  };
+
+  const deleteRecord = async (id) => {
+    showConfirmModal(
+      "Delete Operation",
+      "Are you sure you want to delete this operation record? This action cannot be undone.",
+      async () => {
+        try {
+          const { error } = await supabase.from("bfp_operations").delete().eq("id", id);
+          if (error) throw error;
+          fetchRecords();
+          showSuccessModal("Deleted", "Operation record deleted successfully");
+        } catch (error) {
+          showErrorModal("Error", "Failed to delete record");
+        }
+      },
+      "Delete"
+    );
+  };
+
+  // Analytics - last 7 days
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const last7DaysRecords = records.filter(r => new Date(r.operation_date) >= sevenDaysAgo);
+  
+  const fireIncidents = last7DaysRecords.filter(r => r.operation_type === "fire_incident").length;
+  const inspections = last7DaysRecords.filter(r => r.operation_type === "fire_prevention_inspection").length;
+  const seminars = last7DaysRecords.filter(r => r.operation_type === "fire_safety_seminar").length;
+  const rescues = last7DaysRecords.filter(r => r.operation_type === "rescue_operation").length;
+  const medicalAssists = last7DaysRecords.filter(r => r.operation_type === "medical_assist").length;
+  const emergencies = last7DaysRecords.filter(r => r.operation_type === "emergency_response").length;
+  const totalCasualties = last7DaysRecords.reduce((sum, r) => sum + (r.casualties || 0), 0);
+  const totalTrucks = last7DaysRecords.reduce((sum, r) => sum + (r.fire_trucks_dispatched || 0), 0);
+
+  // Group records by date
+  const groupedByDate = records.reduce((acc, record) => {
+    if (!acc[record.operation_date]) {
+      acc[record.operation_date] = [];
+    }
+    acc[record.operation_date].push(record);
+    return acc;
+  }, {});
+
+  const operationTypeLabels = {
+    fire_incident: "Fire Incident",
+    fire_prevention_inspection: "Fire Prevention Inspection",
+    fire_safety_seminar: "Fire Safety Seminar",
+    rescue_operation: "Rescue Operation",
+    medical_assist: "Medical Assist",
+    emergency_response: "Emergency Response"
+  };
+
+  const operationTypeBadge = (type) => {
+    const colors = {
+      fire_incident: { bg: "#fef2f2", color: "#991b1b" },
+      fire_prevention_inspection: { bg: "#fff7ed", color: "#9a3412" },
+      fire_safety_seminar: { bg: "#fef3c7", color: "#92400e" },
+      rescue_operation: { bg: "#eff6ff", color: "#1e3a8a" },
+      medical_assist: { bg: "#f0fdf4", color: "#14532d" },
+      emergency_response: { bg: "#faf5ff", color: "#581c87" }
+    };
+    const style = colors[type] || { bg: "#f3f4f6", color: "#6b7280" };
+    return (
+      <span style={{
+        padding: "4px 10px",
+        borderRadius: 6,
+        fontSize: 11,
+        fontWeight: 800,
+        background: style.bg,
+        color: style.color,
+        textTransform: "uppercase"
+      }}>
+        {operationTypeLabels[type]}
+      </span>
+    );
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div>
+        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>Palayan City BFP Operations</h3>
+        <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>Track individual fire and emergency response operations</p>
+      </div>
+
+      {/* Analytics Cards - Last 7 Days */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
+        <div style={{ ...cardStyle, background: "#fef2f2", borderColor: "#fca5a5", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#991b1b", textTransform: "uppercase" }}>Fire Incidents</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#7f1d1d" }}>{fireIncidents}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#9a3412", textTransform: "uppercase" }}>Inspections</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#7c2d12" }}>{inspections}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fef3c7", borderColor: "#fcd34d", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#92400e", textTransform: "uppercase" }}>Seminars</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#78350f" }}>{seminars}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#eff6ff", borderColor: "#93c5fd", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#1e3a8a", textTransform: "uppercase" }}>Rescues</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#1e40af" }}>{rescues}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#f0fdf4", borderColor: "#86efac", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#14532d", textTransform: "uppercase" }}>Medical</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#166534" }}>{medicalAssists}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#faf5ff", borderColor: "#d8b4fe", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#581c87", textTransform: "uppercase" }}>Emergencies</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#6b21a8" }}>{emergencies}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#fce7f3", borderColor: "#f9a8d4", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#9f1239", textTransform: "uppercase" }}>Casualties</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#881337" }}>{totalCasualties}</p>
+        </div>
+        <div style={{ ...cardStyle, background: "#e0f2fe", borderColor: "#7dd3fc", padding: 16 }}>
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#0c4a6e", textTransform: "uppercase" }}>Trucks Dispatched</p>
+          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#075985" }}>{totalTrucks}</p>
+        </div>
+      </div>
+
+      {/* Sub-tabs */}
+      <div style={cardStyle}>
+        <div style={{ display: "flex", gap: 12, paddingBottom: 12, marginBottom: 16, borderBottom: `1px solid ${S.border}` }}>
+          <button onClick={() => { setActiveSubTab("add"); setIsExpanded(true); }} style={{ ...btnPrimary, background: activeSubTab === "add" ? S.accent : "transparent", color: activeSubTab === "add" ? "#fff" : S.text, boxShadow: "none", padding: "8px 16px", fontSize: 13 }}>
+            <Plus size={14} /> Add Record
+          </button>
+          <button onClick={() => { setActiveSubTab("view"); setIsExpanded(true); }} style={{ ...btnPrimary, background: activeSubTab === "view" ? S.accent : "transparent", color: activeSubTab === "view" ? "#fff" : S.text, boxShadow: "none", padding: "8px 16px", fontSize: 13 }}>
+            <FileText size={14} /> View Records
+          </button>
+          <button onClick={() => setIsExpanded(!isExpanded)} style={{ marginLeft: "auto", background: "none", border: `1px solid ${S.border}`, padding: "8px", borderRadius: 8, cursor: "pointer", color: S.text, display: "flex", alignItems: "center" }}>
+            <ChevronDown size={16} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
+          </button>
+        </div>
+
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} style={{ overflow: "hidden" }}>
+              {activeSubTab === "add" && (
+                <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Operation Date</label>
+                      <input type="date" value={formData.operation_date} onChange={e => setFormData({ ...formData, operation_date: e.target.value })} max={new Date().toISOString().split('T')[0]} required style={inputStyle} />
                     </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Operation Time</label>
+                      <input type="time" value={formData.operation_time} onChange={e => setFormData({ ...formData, operation_time: e.target.value })} required style={inputStyle} />
+                    </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Operation Type</label>
+                      <select value={formData.operation_type} onChange={e => setFormData({ ...formData, operation_type: e.target.value })} required style={selectStyle}>
+                        <option value="fire_incident">Fire Incident</option>
+                        <option value="fire_prevention_inspection">Fire Prevention Inspection</option>
+                        <option value="fire_safety_seminar">Fire Safety Seminar</option>
+                        <option value="rescue_operation">Rescue Operation</option>
+                        <option value="medical_assist">Medical Assist</option>
+                        <option value="emergency_response">Emergency Response</option>
+                      </select>
+                    </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Location</label>
+                      <input type="text" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} required placeholder="e.g., Brgy. Atate" style={inputStyle} />
+                    </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Description</label>
+                      <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Brief description of the operation..." style={{ ...inputStyle, minHeight: 80, resize: "vertical" }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Personnel Deployed</label>
+                      <input type="number" min="0" value={formData.personnel_deployed} onChange={e => setFormData({ ...formData, personnel_deployed: e.target.value })} required style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Fire Trucks Dispatched</label>
+                      <input type="number" min="0" value={formData.fire_trucks_dispatched} onChange={e => setFormData({ ...formData, fire_trucks_dispatched: e.target.value })} required style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Casualties</label>
+                      <input type="number" min="0" value={formData.casualties} onChange={e => setFormData({ ...formData, casualties: e.target.value })} required style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>₱ Property Damage Estimate</label>
+                      <input type="number" min="0" step="0.01" value={formData.property_damage_estimate} onChange={e => setFormData({ ...formData, property_damage_estimate: e.target.value })} required style={inputStyle} />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 12, borderTop: `1px solid ${S.border}` }}>
+                    {editId && (
+                      <button type="button" onClick={() => { setEditId(null); setFormData({ operation_date: new Date().toISOString().split('T')[0], operation_time: "", operation_type: "fire_incident", description: "", location: "", personnel_deployed: 0, fire_trucks_dispatched: 0, casualties: 0, property_damage_estimate: 0 }); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: "#fff", color: S.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                        Cancel
+                      </button>
+                    )}
+                    <button type="submit" style={btnPrimary}>
+                      <Check size={16} /> {editId ? "Update" : "Save"}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {activeSubTab === "view" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {loading ? (
+                    <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading records...</p>
+                  ) : Object.keys(groupedByDate).length === 0 ? (
+                    <p style={{ textAlign: "center", color: S.muted, padding: 40 }}>No operation records found. Add your first operation above.</p>
+                  ) : (
+                    Object.keys(groupedByDate).map(date => {
+                      const dayRecords = groupedByDate[date];
+                      const isExpanded = expandedDays[date];
+                      return (
+                        <div key={date} style={{ border: `1px solid ${S.border}`, borderRadius: 12, overflow: "hidden" }}>
+                          <button onClick={() => setExpandedDays(prev => ({ ...prev, [date]: !prev[date] }))} style={{ width: "100%", padding: 16, border: "none", background: S.accentBg, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, fontWeight: 800, color: S.text }}>
+                            <span>📅 {new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · {dayRecords.length} operation{dayRecords.length > 1 ? 's' : ''}</span>
+                            <ChevronDown size={18} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
+                          </button>
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} transition={{ duration: 0.2 }} style={{ overflow: "hidden", background: "#fff" }}>
+                                <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                                  {dayRecords.map(record => (
+                                    <div key={record.id} style={{ padding: 12, border: `1px solid ${S.border}`, borderRadius: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                        <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
+                                          <span style={{ fontSize: 13, fontWeight: 800, color: S.text }}>{record.operation_time || "N/A"}</span>
+                                          {operationTypeBadge(record.operation_type)}
+                                          <span style={{ fontSize: 12, color: S.muted }}>📍 {record.location}</span>
+                                        </div>
+                                        <div style={{ display: "flex", gap: 6 }}>
+                                          <button onClick={() => editRecord(record)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${S.border}`, background: "#fff", color: S.text, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                                            <Edit2 size={12} /> Edit
+                                          </button>
+                                          <button onClick={() => deleteRecord(record.id)} style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}>
+                                            <Trash2 size={12} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                      {record.description && (
+                                        <p style={{ margin: 0, fontSize: 12, color: S.text, lineHeight: 1.5 }}>{record.description}</p>
+                                      )}
+                                      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 11, color: S.muted }}>
+                                        <span>👷 {record.personnel_deployed} personnel</span>
+                                        <span>🚒 {record.fire_trucks_dispatched} trucks</span>
+                                        {record.casualties > 0 && <span style={{ color: "#dc2626", fontWeight: 700 }}>⚠️ {record.casualties} casualties</span>}
+                                        {record.property_damage_estimate > 0 && <span>💰 ₱{record.property_damage_estimate.toLocaleString()}</span>}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               )}
