@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
@@ -143,9 +143,22 @@ export default function HomeScreen({
   setActiveScreen,
 }) {
   const { isDark, toggleTheme } = useTheme();
+  const rootRef = useRef(null);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [currentTemp, setCurrentTemp] = useState(34);
   const [selectedBarangay, setSelectedBarangay] = useState("Popolon Pagas");
   const [activeCoords, setActiveCoords] = useState({ lat: 15.5413, lng: 121.0471 });
+
+  // Scroll listener for sticky header transformation & scroll-to-top button
+  useEffect(() => {
+    const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      setIsScrolled(el.scrollTop > 20);
+    };
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
   const [weatherInfo, setWeatherInfo] = useState({
     msg: "Bright Sunshine",
     sub: "KloudTech IoT • Popolon AWS - Palayan City",
@@ -585,13 +598,13 @@ export default function HomeScreen({
   };
 
   return (
-    <div className="home-screen-root hide-scroll">
+    <div ref={rootRef} className="home-screen-root hide-scroll">
       {/* =========================================================================
           DESKTOP DASHBOARD (>= 1024px) - PIXEL PERFECT MATCH TO REFERENCE IMAGE
           ========================================================================= */}
       <div className="desktop-view-container">
         {/* TOP HEADER BAR */}
-        <header className="desktop-top-header">
+        <header className={`desktop-top-header ${isScrolled ? "scrolled-header" : ""}`}>
           {/* Left: Location & Date */}
           <div className="desktop-header-location">
             <div className="desktop-loc-row">
@@ -671,7 +684,11 @@ export default function HomeScreen({
           {/* ──── LEFT COLUMN (~62%) ──── */}
           <div className="desktop-left-column">
             {/* 1. HERO WEATHER CARD */}
-            <div 
+            <motion.div 
+              initial={{ opacity: 0, y: 28, scale: 0.985 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
               className="desktop-hero-card"
               style={{
                 background: `${getHeroBackground()} center/cover no-repeat`
@@ -695,10 +712,16 @@ export default function HomeScreen({
                   With real time data and advanced technology, we provide reliable forecasts for any location around the world.
                 </p>
               </div>
-            </div>
+            </motion.div>
 
             {/* 2. HOURLY FORECAST ROW */}
-            <div className="desktop-hourly-card">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+              className="desktop-hourly-card"
+            >
               <div className="desktop-hourly-grid">
                 {hourlyForecast.map((slot, idx) => {
                   const SlotIcon = WEATHER_ICONS[slot.icon] || Cloud;
@@ -719,10 +742,16 @@ export default function HomeScreen({
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
 
             {/* 3. 7-DAY FORECAST GRID */}
-            <div className="desktop-weekly-card">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.5, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+              className="desktop-weekly-card"
+            >
               <div className="desktop-weekly-grid">
                 {weeklyForecast.map((slot, idx) => {
                   const SlotIcon = WEATHER_ICONS[slot.icon] || Sun;
@@ -745,13 +774,19 @@ export default function HomeScreen({
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* ──── RIGHT COLUMN (~38%) ──── */}
           <div className="desktop-right-column">
             {/* 1. LIVE CONDITIONS CARD */}
-            <div className="desktop-card desktop-live-conditions-card">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+              className="desktop-card desktop-live-conditions-card"
+            >
               <div className="desktop-card-header">
                 <div className="desktop-card-title-row">
                   <span className="desktop-card-title">Live Conditions</span>
@@ -851,10 +886,16 @@ export default function HomeScreen({
                   <div className="desktop-stat-sub">Pressure</div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* 2. PALAYAN BARANGAYS CARD */}
-            <div className="desktop-card desktop-recent-card">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.5, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+              className="desktop-card desktop-recent-card"
+            >
               <div className="desktop-card-header">
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span className="desktop-card-title">Palayan Barangays</span>
@@ -933,7 +974,7 @@ export default function HomeScreen({
                                   background: "rgba(249, 115, 22, 0.15)",
                                   padding: "1px 6px",
                                   borderRadius: 6,
-                                }}
+                                  }}
                               >
                                 Active
                               </span>
@@ -953,10 +994,14 @@ export default function HomeScreen({
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
 
             {/* 3. WIND MAP / RADAR CARD */}
-            <div
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.5, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
               className="desktop-card desktop-wind-card"
               onClick={() => setActiveScreen("maps")}
               title="Click to open interactive map"
@@ -973,12 +1018,33 @@ export default function HomeScreen({
                   <MapPin size={20} strokeWidth={2.4} />
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </main>
 
         {/* ──── KLOUDTECH IOT WEATHER STATION TELEMETRY & HISTORICAL CHARTS ──── */}
         <KloudtechStationView isDark={isDark} />
+
+        {/* Floating Scroll-to-Top Command Button */}
+        <AnimatePresence>
+          {isScrolled && (
+            <motion.button
+              initial={{ opacity: 0, y: 16, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.9 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              onClick={() => {
+                const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+                el?.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="desktop-scroll-top-btn"
+              title="Scroll back to top"
+            >
+              <ArrowUp size={15} strokeWidth={2.4} />
+              <span>Top</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* =========================================================================

@@ -1,5 +1,6 @@
 :root,
 html.light {
+  color-scheme: light;
   --red: #f97316;
   --red-dark: #ea580c;
   --yellow: #f4f4f5;
@@ -43,7 +44,9 @@ html.light {
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.1);
 }
 
-html.dark {
+html.dark,
+[data-theme="dark"] {
+  color-scheme: dark;
   --red: #f97316;
   --red-dark: #ea580c;
   --yellow: #f4f4f5;
@@ -83,6 +86,61 @@ html.dark {
   --nav-active-text: #f97316;
   --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.75);
+}
+
+/* ==========================================================================
+   GLOBAL SCROLLBAR THEMING (LIGHT & DARK MODE)
+   ========================================================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.35);
+  background-clip: padding-box;
+}
+
+/* Dark mode scrollbars */
+html.dark ::-webkit-scrollbar-track,
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html.dark ::-webkit-scrollbar-thumb,
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-orange);
+  background-clip: padding-box;
+}
+
+/* Firefox standard scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+}
+
+html.dark *,
+[data-theme="dark"] * {
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
 }
 
 * {
@@ -1571,6 +1629,48 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
     right: 0 !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    scroll-behavior: smooth !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+  }
+
+  html.dark .citizen-screen-view,
+  [data-theme="dark"] .citizen-screen-view {
+    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+  }
+
+  .citizen-screen-view::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .citizen-screen-view::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .citizen-screen-view::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .citizen-screen-view::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-orange);
+    background-clip: padding-box;
+  }
+
+  html.dark .citizen-screen-view::-webkit-scrollbar-thumb,
+  [data-theme="dark"] .citizen-screen-view::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  html.dark .citizen-screen-view::-webkit-scrollbar-thumb:hover,
+  [data-theme="dark"] .citizen-screen-view::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-orange);
+    background-clip: padding-box;
   }
 }
 
@@ -1781,7 +1881,7 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
 @media (min-width: 1024px) {
   .desktop-view-container {
     display: block;
-    padding: 24px 28px 28px;
+    padding: 16px 28px 28px;
     height: 100%;
     box-sizing: border-box;
   }
@@ -1802,12 +1902,41 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
   }
 }
 
-/* ── Desktop Header ── */
+/* ── Desktop Floating Header (Clean Floating Pill like SearchBar) ── */
 .desktop-top-header {
+  position: sticky;
+  top: 16px;
+  z-index: 50;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
+  padding: 10px 18px;
+  border-radius: 24px;
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-medium);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.dark .desktop-top-header,
+[data-theme="dark"] .desktop-top-header {
+  background: rgba(18, 18, 20, 0.92);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+}
+
+.desktop-top-header.scrolled-header {
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.12);
+}
+
+html.dark .desktop-top-header.scrolled-header,
+[data-theme="dark"] .desktop-top-header.scrolled-header {
+  background: rgba(18, 18, 20, 0.95);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.7);
 }
 
 .desktop-header-location {
@@ -2709,5 +2838,59 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
     opacity: 0;
   }
 }
+
+/* ── Floating Scroll-to-Top Command Button ── */
+.desktop-scroll-top-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 28px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
+  font-family: "Nunito", sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.desktop-scroll-top-btn:hover {
+  transform: translateY(-2px);
+  background: var(--accent-orange);
+  color: #ffffff;
+  border-color: var(--accent-orange);
+  box-shadow: 0 10px 25px var(--accent-glow);
+}
+
+/* ── Card Smooth Micro-Interactions ── */
+.desktop-card,
+.desktop-hero-card,
+.desktop-hourly-card,
+.desktop-weekly-card,
+.kloudtech-metric-card,
+.kloudtech-chart-card {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+
+.desktop-card:hover,
+.desktop-hourly-card:hover,
+.desktop-weekly-card:hover,
+.kloudtech-metric-card:hover,
+.kloudtech-chart-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-medium);
+}
+
+
 
 
