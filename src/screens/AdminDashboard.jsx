@@ -1902,7 +1902,6 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
   };
 
   const MODULES = [
-    { name: "dashboard", label: "Dashboard Overview", icon: "📊" },
     { name: "reports", label: "Citizen Reports", icon: "📝" },
     { name: "advisories", label: "Advisory Broadcast", icon: "📢" },
     { name: "hospital", label: "Hospital El Niño Data", icon: "🏥" },
@@ -1917,13 +1916,13 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
   ];
 
   const ROLE_TEMPLATES = {
-    "Agriculture Admin": ["dashboard", "agriculture"],
-    "CDRRMO Admin": ["dashboard", "cdrrmo"],
-    "BFP Admin": ["dashboard", "bfp"],
-    "Hospital Admin": ["dashboard", "hospital"],
-    "Water Admin": ["dashboard", "water"],
-    "Power Admin": ["dashboard", "power"],
-    "Reports Manager": ["dashboard", "reports", "advisories"],
+    "Agriculture Admin": ["agriculture"],
+    "CDRRMO Admin": ["cdrrmo"],
+    "BFP Admin": ["bfp"],
+    "Hospital Admin": ["hospital"],
+    "Water Admin": ["water"],
+    "Power Admin": ["power"],
+    "Reports Manager": ["reports", "advisories"],
     "Full Module Access": MODULES.map(m => m.name)
   };
 
