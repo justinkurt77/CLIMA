@@ -123,6 +123,10 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
   const [loading, setLoading] = useState(true);
   const [detailReport, setDetailReport] = useState(null);
   const [selectedDeptId, setSelectedDeptId] = useState("all");
+  
+  // Permission enforcement state
+  const [myPermissions, setMyPermissions] = useState({});
+  const [permissionsLoaded, setPermissionsLoaded] = useState(false);
 
   // Global modal state for all tabs
   const [showModal, setShowModal] = useState(false);
@@ -161,6 +165,73 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
       mainRef.current.scrollTop = 0;
     }
   }, [activeTab]);
+  
+  // Load user's module permissions on mount
+  useEffect(() => {
+    loadMyPermissions();
+  }, []);
+
+  const loadMyPermissions = async () => {
+    if (isSuperadmin) {
+      // Superadmins have all permissions
+      setMyPermissions({});
+      setPermissionsLoaded(true);
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: perms, error } = await supabase
+        .from('admin_module_permissions')
+        .select('module_name, can_view, can_create, can_edit, can_delete')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error loading permissions:', error);
+        return;
+      }
+
+      // Convert array to object for easy lookup
+      const permMap = {};
+      perms?.forEach(p => {
+        permMap[p.module_name] = {
+          can_view: p.can_view,
+          can_create: p.can_create,
+          can_edit: p.can_edit,
+          can_delete: p.can_delete
+        };
+      });
+
+      setMyPermissions(permMap);
+      setPermissionsLoaded(true);
+    } catch (err) {
+      console.error('Failed to load permissions:', err);
+      setPermissionsLoaded(true);
+    }
+  };
+
+  // Permission checker helper functions
+  const hasPermission = (module, permType = 'view') => {
+    if (isSuperadmin) return true;
+    
+    const perm = myPermissions[module];
+    if (!perm) return false;
+
+    switch (permType) {
+      case 'view': return perm.can_view;
+      case 'create': return perm.can_create;
+      case 'edit': return perm.can_edit;
+      case 'delete': return perm.can_delete;
+      default: return false;
+    }
+  };
+
+  const canViewModule = (module) => hasPermission(module, 'view');
+  const canCreate = (module) => hasPermission(module, 'create');
+  const canEdit = (module) => hasPermission(module, 'edit');
+  const canDelete = (module) => hasPermission(module, 'delete');
 
   useEffect(() => { 
     const isFirstLoad = departments.length === 0;
@@ -193,21 +264,28 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
   };
 
   const tabs = [
-    { id: "overview", label: "Dashboard", icon: <BarChart3 size={18} /> },
-    { id: "reports", label: "Citizen Reports", icon: <FileText size={18} /> },
-    { id: "advisories", label: "Official Advisories", icon: <Megaphone size={18} /> },
-    { id: "hospitals", label: "Hospital Monitoring", icon: <HeartPulse size={18} /> },
-    { id: "operations", label: "CDRRMO Operations", icon: <Tent size={18} /> },
-    { id: "bfp", label: "BFP Operations", icon: <Flame size={18} /> },
-    { id: "agriculture", label: "Agricultural Damages", icon: <Sprout size={18} /> },
-    { id: "water", label: "Water Utility", icon: <Droplet size={18} /> },
-    { id: "power", label: "Power Utility", icon: <Zap size={18} /> },
+    { id: "overview", label: "Dashboard", icon: <BarChart3 size={18} />, module: "dashboard" },
+    { id: "reports", label: "Citizen Reports", icon: <FileText size={18} />, module: "reports" },
+    { id: "advisories", label: "Official Advisories", icon: <Megaphone size={18} />, module: "advisories" },
+    { id: "hospitals", label: "Hospital Monitoring", icon: <HeartPulse size={18} />, module: "hospital" },
+    { id: "operations", label: "CDRRMO Operations", icon: <Tent size={18} />, module: "cdrrmo" },
+    { id: "bfp", label: "BFP Operations", icon: <Flame size={18} />, module: "bfp" },
+    { id: "agriculture", label: "Agricultural Damages", icon: <Sprout size={18} />, module: "agriculture" },
+    { id: "water", label: "Water Utility", icon: <Droplet size={18} />, module: "water" },
+    { id: "power", label: "Power Utility", icon: <Zap size={18} />, module: "power" },
     ...(isSuperadmin ? [
-      { id: "users", label: "Users", icon: <Users size={18} /> },
-      { id: "settings", label: "Offices & Categories", icon: <Building size={18} /> },
-      { id: "logs", label: "Activity Logs", icon: <Activity size={18} /> },
+      { id: "users", label: "Users", icon: <Users size={18} />, module: "users" },
+      { id: "settings", label: "Offices & Categories", icon: <Building size={18} />, module: "settings" },
+      { id: "logs", label: "Activity Logs", icon: <Activity size={18} />, module: "logs" },
     ] : []),
   ];
+
+  // Filter tabs based on permissions
+  const visibleTabs = tabs.filter(tab => {
+    if (isSuperadmin) return true;
+    if (!permissionsLoaded) return false; // Don't show tabs until permissions are loaded
+    return canViewModule(tab.module);
+  });
 
   if (loading) return (
     <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: S.bg, flexDirection: "column", gap: 12 }}>
@@ -232,7 +310,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
-          {tabs.map(tab => {
+          {visibleTabs.map(tab => {
             const active = activeTab === tab.id;
             return (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
@@ -1400,7 +1478,6 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
   // Create new admin
   const [newEmail, setNewEmail] = useState("");
   const [newName, setNewName] = useState("");
-  const [newPassword, setNewPassword] = useState("");
   const [newDept, setNewDept] = useState("All Departments");
   const [creating, setCreating] = useState(false);
   // Assign existing
@@ -1451,37 +1528,46 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
 
   const handleCreateAdmin = async (e) => {
     e.preventDefault();
-    if (!newEmail || !newName || !newPassword) return;
-    if (newPassword.length < 6) { setMsg({ type: "error", text: "Password must be at least 6 characters." }); return; }
+    if (!newEmail || !newName) return;
+    
     setCreating(true);
     setMsg(null);
+    
     try {
-      // 1. Sign up the new user (won't affect current session since we use a separate call)
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: newEmail,
-        password: newPassword,
-        options: {
-          data: { full_name: newName, role: "admin", force_password_reset: true },
-          emailRedirectTo: undefined  // Don't send confirmation email
-        }
+      // Call our backend API instead of Supabase directly
+      const response = await fetch('http://localhost:3001/api/admin/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: newEmail,
+          full_name: newName,
+          assigned_categories: newDept === "All Departments" ? ["All Categories"] : getCatsForDept(newDept),
+          assigned_department: newDept === "All Departments" ? null : getDeptLabel(newDept)
+        })
       });
-      if (signUpError) throw signUpError;
-      const newUserId = signUpData?.user?.id;
-      if (!newUserId) throw new Error("Failed to create user.");
 
-      // 2. Auto-confirm email
-      await supabase.rpc("confirm_user_email", { target_user_id: newUserId });
+      const data = await response.json();
 
-      // 3. Set admin role and assigned categories + department
-      const cats = getCatsForDept(newDept);
-      const deptLabel = getDeptLabel(newDept);
-      await supabase.rpc("set_user_role", { target_user_id: newUserId, new_role: "admin", assigned_categories: cats, assigned_department: deptLabel });
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Failed to create admin');
+      }
 
-      setMsg({ type: "success", text: `Admin "${newName}" created! They can log in with the password you set.` });
-      setNewEmail(""); setNewName(""); setNewPassword(""); setNewDept("All Departments");
+      showSuccessModal(
+        "Admin Created!", 
+        `Admin account created for "${newName}". A welcome email with login credentials has been sent to ${newEmail}.`
+      );
+      
+      setNewEmail("");
+      setNewName("");
+      setNewDept("All Departments");
       fetchUsers();
     } catch (err) {
-      setMsg({ type: "error", text: err.message || "Failed to create admin." });
+      showErrorModal(
+        "Creation Failed",
+        err.message || "Failed to create admin. Make sure the backend server is running."
+      );
     } finally {
       setCreating(false);
     }
@@ -1572,10 +1658,6 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Temporary Password</label>
-              <input value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min 6 characters" required type="password" style={inputStyle} />
-            </div>
-            <div style={{ flex: 1 }}>
               <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Assign to Office</label>
               <CustomSelect
                 value={newDept}
@@ -1588,6 +1670,9 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
               <Plus size={16} /> {creating ? "Creating…" : "Create Admin"}
             </button>
           </div>
+          <p style={{ margin: "8px 0 0", fontSize: 11, color: S.muted, fontStyle: "italic" }}>
+            📧 A welcome email with a temporary password will be sent to the admin.
+          </p>
         </form>
       </div>
 
@@ -3022,7 +3107,9 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Official Advisories</h3>
             <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage public announcements and warnings.</p>
           </div>
-          <button onClick={() => setShowForm(true)} style={btnPrimary}><Plus size={16} /> New Advisory</button>
+          {canCreate('advisories') && (
+            <button onClick={() => setShowForm(true)} style={btnPrimary}><Plus size={16} /> New Advisory</button>
+          )}
         </div>
       )}
 
@@ -3069,7 +3156,7 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                       <span>Author: {author} • Created: {new Date(adv.created_at).toLocaleDateString()}</span>
                       <div style={{ display: "flex", gap: 8 }}>
                         {/* Edit button for drafts and pending */}
-                        {(isDraft || isPending) && (
+                        {(isDraft || isPending) && canEdit('advisories') && (
                           <button
                             onClick={() => handleEdit(adv)}
                             style={{

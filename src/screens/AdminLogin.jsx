@@ -49,32 +49,52 @@ export default function AdminLogin({ onLogin }) {
     let assignedCategories = user?.user_metadata?.assigned_categories || ["All Categories"];
 
     if (!isSuper && !isAdmin) {
-      const { data: authUsers } = await supabase.rpc('get_auth_users').eq('email', user?.email);
-      if (authUsers && authUsers.length > 0) {
-        const role = authUsers[0].role;
-        if (role === 'admin' || role === 'superadmin') {
-          isAdmin = role === 'admin';
-          isSuper = role === 'superadmin';
-          assignedCategories = authUsers[0].assigned_categories || ["All Categories"];
+      // Check profiles table for role
+      try {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role, assigned_categories')
+          .eq('id', user?.id)
+          .single();
+        
+        if (profileError) {
+          console.error("Profile lookup error:", profileError);
+          throw new Error("Database error: Unable to verify admin role");
         }
+        
+        if (profile) {
+          const role = profile.role;
+          if (role === 'admin' || role === 'superadmin') {
+            isAdmin = role === 'admin';
+            isSuper = role === 'superadmin';
+            assignedCategories = profile.assigned_categories || ["All Categories"];
+          }
+        }
+      } catch (e) {
+        console.error("Error checking admin auth:", e);
+        throw e; // Re-throw to be caught by outer try-catch
       }
     }
 
     if (isSuper || isAdmin) {
-      // Resolve the admin's department from their assigned categories
+      // Resolve the admin's department from their assigned categories (optional, non-blocking)
       let adminDepartment = null;
       if (!isSuper && assignedCategories && !assignedCategories.includes("All Categories")) {
         try {
-          const { data: cats } = await supabase
+          const { data: cats, error: catError } = await supabase
             .from("categories")
             .select("department_id, departments(id, name, accent_color)")
             .in("name", assignedCategories)
             .limit(1);
-          if (cats && cats.length > 0 && cats[0].departments) {
+          
+          if (!catError && cats && cats.length > 0 && cats[0].departments) {
             adminDepartment = cats[0].departments;
           }
-        } catch (e) { console.error("Dept lookup failed", e); }
+        } catch (e) { 
+          console.warn("Department lookup failed (non-critical):", e); 
+        }
       }
+      // Login succeeds even if department lookup fails
       onLogin({ isSuperadmin: isSuper, adminCategories: assignedCategories, adminDepartment });
     } else {
       await supabase.auth.signOut();
