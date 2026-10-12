@@ -1,6 +1,16 @@
 -- ==========================================
 -- Fix get_auth_users() to Return Actual assigned_department
+-- Step 1: Add assigned_department column to profiles if it doesn't exist
+-- Step 2: Update get_auth_users() function
 -- ==========================================
+
+-- Add assigned_department column to profiles table
+ALTER TABLE profiles 
+ADD COLUMN IF NOT EXISTS assigned_department TEXT;
+
+-- Create index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_profiles_assigned_department 
+ON profiles(assigned_department);
 
 DROP FUNCTION IF EXISTS get_auth_users() CASCADE;
 

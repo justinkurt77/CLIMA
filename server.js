@@ -85,6 +85,7 @@ app.post('/api/admin/create', async (req, res) => {
         full_name,
         role: 'admin',
         assigned_categories: assigned_categories || ['All Categories'],
+        assigned_department: assigned_department || 'Not Assigned',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });
