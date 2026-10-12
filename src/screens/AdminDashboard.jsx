@@ -411,7 +411,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "advisories" ? "active" : "inactive"}
             style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
           >
-            <AdvisoriesTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} />
+            <AdvisoriesTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} />
           </motion.div>
 
           <motion.div
@@ -2720,7 +2720,7 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle }) {
 }
 
 /* ── Advisories Tab (Phase 3) - REDESIGNED WITH BETTER WORKFLOW ── */
-function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment }) {
+function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, canCreate, canEdit, canDelete }) {
   const [advisories, setAdvisories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
