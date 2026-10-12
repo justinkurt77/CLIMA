@@ -86,6 +86,7 @@ app.post('/api/admin/create', async (req, res) => {
         role: 'admin',
         assigned_categories: assigned_categories || ['All Categories'],
         assigned_department: assigned_department || 'Not Assigned',
+        must_change_password: true,  // Force password change on first login
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });
@@ -122,7 +123,7 @@ app.post('/api/admin/create', async (req, res) => {
             </div>
             <div class="content">
               <h2>Welcome, ${full_name}!</h2>
-              <p>Your admin account for the <strong>CLIMA System</strong> (Palayan City Disaster Response Platform) has been created.</p>
+              <p>Your admin account for the <strong>CLIMA System</strong> (Climate Information Monitoring and Awareness) has been created.</p>
               
               <div class="credentials">
                 <p><strong>📧 Email:</strong> ${email}</p>
@@ -167,6 +168,221 @@ app.post('/api/admin/create', async (req, res) => {
 
   } catch (error) {
     console.error('Create admin error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error', 
+      details: error.message 
+    });
+  }
+});
+
+// Send OTP for forgot password
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Check if user exists and is an admin
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, email, full_name, role')
+      .eq('email', email)
+      .single();
+
+    if (profileError || !profile) {
+      return res.status(404).json({ error: 'No admin account found with this email' });
+    }
+
+    if (profile.role !== 'admin' && profile.role !== 'superadmin') {
+      return res.status(403).json({ error: 'This feature is only available for admin accounts' });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Store OTP in database
+    const { error: otpError } = await supabaseAdmin
+      .from('password_reset_otps')
+      .insert({
+        user_id: profile.id,
+        email: email,
+        otp_code: otp,
+        expires_at: expiresAt.toISOString()
+      });
+
+    if (otpError) {
+      console.error('OTP storage error:', otpError);
+      return res.status(500).json({ error: 'Failed to generate OTP' });
+    }
+
+    // Send OTP email
+    const mailOptions = {
+      from: `"CLIMA Admin System" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Password Reset OTP - CLIMA Admin',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #373D20; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-radius: 0 0 8px 8px; }
+            .otp-box { background: white; padding: 20px; border-left: 4px solid #373D20; margin: 20px 0; text-align: center; }
+            .otp-code { font-size: 32px; font-weight: 900; color: #373D20; letter-spacing: 8px; font-family: 'Courier New', monospace; }
+            .footer { text-align: center; color: #666; font-size: 12px; margin-top: 30px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin: 0;">🔐 Password Reset Request</h1>
+            </div>
+            <div class="content">
+              <h2>Hi ${profile.full_name || 'Admin'},</h2>
+              <p>You requested to reset your password for your CLIMA Admin account.</p>
+              
+              <div class="otp-box">
+                <p style="margin: 0 0 10px; font-size: 14px; color: #666;">Your OTP Code:</p>
+                <div class="otp-code">${otp}</div>
+                <p style="margin: 10px 0 0; font-size: 12px; color: #666;">Valid for 10 minutes</p>
+              </div>
+
+              <p><strong>⚠️ Security Notice:</strong></p>
+              <ul>
+                <li>This OTP is valid for <strong>10 minutes</strong></li>
+                <li>Never share this code with anyone</li>
+                <li>If you didn't request this, please ignore this email</li>
+                <li>Your password has not been changed yet</li>
+              </ul>
+
+              <div class="footer">
+                <p>This is an automated message from CLIMA Admin System</p>
+                <p>&copy; ${new Date().getFullYear()} Palayan City ICT Office</p>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({
+      success: true,
+      message: 'OTP sent to your email',
+      expiresAt: expiresAt.toISOString()
+    });
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error', 
+      details: error.message 
+    });
+  }
+});
+
+// Verify OTP and reset password
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ error: 'Email, OTP, and new password are required' });
+    }
+
+    // Verify OTP using database function
+    const { data: verification, error: verifyError } = await supabaseAdmin
+      .rpc('verify_password_reset_otp', {
+        p_email: email,
+        p_otp_code: otp
+      });
+
+    if (verifyError || !verification || verification.length === 0) {
+      return res.status(400).json({ error: 'Failed to verify OTP' });
+    }
+
+    const result = verification[0];
+    if (!result.valid) {
+      return res.status(400).json({ error: result.message || 'Invalid or expired OTP' });
+    }
+
+    // Update password using admin API
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      result.user_id,
+      { password: newPassword }
+    );
+
+    if (updateError) {
+      console.error('Password update error:', updateError);
+      return res.status(500).json({ error: 'Failed to update password' });
+    }
+
+    // Update profiles table to mark password as changed
+    await supabaseAdmin
+      .from('profiles')
+      .update({
+        must_change_password: false,
+        last_password_change: new Date().toISOString()
+      })
+      .eq('id', result.user_id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully'
+    });
+
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error', 
+      details: error.message 
+    });
+  }
+});
+
+// Change password (for first-time login or regular password change)
+app.post('/api/auth/change-password', async (req, res) => {
+  try {
+    const { userId, newPassword } = req.body;
+
+    if (!userId || !newPassword) {
+      return res.status(400).json({ error: 'User ID and new password are required' });
+    }
+
+    // Update password
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      userId,
+      { password: newPassword }
+    );
+
+    if (updateError) {
+      console.error('Password change error:', updateError);
+      return res.status(500).json({ error: 'Failed to change password' });
+    }
+
+    // Update profiles table
+    await supabaseAdmin
+      .from('profiles')
+      .update({
+        must_change_password: false,
+        last_password_change: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+
+  } catch (error) {
+    console.error('Change password error:', error);
     res.status(500).json({ 
       error: 'Internal server error', 
       details: error.message 
