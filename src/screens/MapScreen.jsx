@@ -296,7 +296,7 @@ import { PhotoLightbox } from "../components/map/PhotoLightbox";
 import { DescriptionModal } from "../components/map/DescriptionModal";
 import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
-import { PALAYAN_KLOUDTECH_STATIONS } from "../services/kloudtechService";
+import { PALAYAN_KLOUDTECH_STATIONS, fetchKloudtechDashboard } from "../services/kloudtechService";
 import { KloudtrackStationMarker } from "../components/map/KloudtrackStationMarker";
 import { KloudtrackStationPopup } from "../components/map/KloudtrackStationPopup";
 import { KloudtrackMapControls, IOT_METRIC_CONFIG } from "../components/map/KloudtrackMapControls";
@@ -357,6 +357,9 @@ function MapScreen({
   const [barangayMarkers, setBarangayMarkers] = useState([]);
   const [selectedKloudtrackStation, setSelectedKloudtrackStation] = useState(null);
   const [activeMetric, setActiveMetric] = useState("heatIndex");
+  const [weatherStations, setWeatherStations] = useState(PALAYAN_KLOUDTECH_STATIONS);
+  const [isLoadingWeather, setIsLoadingWeather] = useState(false);
+  const [lastWeatherUpdate, setLastWeatherUpdate] = useState(null);
   const popupContentRef = useRef(null);
   const mapRef = useRef(null);
   const hasJumped = useRef(false);
@@ -409,6 +412,36 @@ function MapScreen({
   const toggleLayer = (layerId) => {
     setActiveLayers((prev) => ({ ...prev, [layerId]: !prev[layerId] }));
   };
+
+  // Fetch live weather data from KloudTech API
+  const refreshWeatherData = useCallback(async () => {
+    setIsLoadingWeather(true);
+    try {
+      const result = await fetchKloudtechDashboard();
+      if (result.success && result.data) {
+        setWeatherStations(result.data);
+        setLastWeatherUpdate(new Date());
+        console.log(`✅ Weather data ${result.isLive ? 'LIVE' : 'FALLBACK'} updated:`, result.data);
+      }
+    } catch (error) {
+      console.error('Failed to refresh weather data:', error);
+    } finally {
+      setIsLoadingWeather(false);
+    }
+  }, []);
+
+  // Auto-refresh weather data every 5 minutes
+  useEffect(() => {
+    // Initial fetch
+    refreshWeatherData();
+
+    // Set up auto-refresh interval (5 minutes = 300000ms)
+    const refreshInterval = setInterval(() => {
+      refreshWeatherData();
+    }, 300000); // 5 minutes
+
+    return () => clearInterval(refreshInterval);
+  }, [refreshWeatherData]);
 
   // Load Hospitals from Supabase
   useEffect(() => {
@@ -1128,7 +1161,7 @@ function MapScreen({
           )}
 
           {/* KloudTrack IoT Weather Stations */}
-          {activeLayers.kloudtrackStations && PALAYAN_KLOUDTECH_STATIONS.map((station) => (
+          {activeLayers.kloudtrackStations && weatherStations.map((station) => (
             <Marker
               key={station.station.id}
               longitude={station.station.location[1]}
@@ -1374,6 +1407,9 @@ function MapScreen({
           activeMetric={activeMetric}
           onSelectMetric={setActiveMetric}
           isMapFullView={isMapFullView}
+          onRefresh={refreshWeatherData}
+          isRefreshing={isLoadingWeather}
+          lastUpdate={lastWeatherUpdate}
         />
       )}
     </div>

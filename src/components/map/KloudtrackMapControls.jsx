@@ -12,6 +12,7 @@ import {
   ChevronUp,
   Radio,
   Info,
+  RefreshCw,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -163,10 +164,22 @@ export function KloudtrackMapControls({
   activeMetric,
   onSelectMetric,
   isMapFullView,
+  onRefresh,
+  isRefreshing = false,
+  lastUpdate = null,
 }) {
   const { isDark } = useTheme();
   const [legendCollapsed, setLegendCollapsed] = useState(false);
   const [barMinimized, setBarMinimized] = useState(false);
+
+  const formatLastUpdate = (date) => {
+    if (!date) return 'Never';
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000); // seconds
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return `${Math.floor(diff / 3600)}h ago`;
+  };
 
   if (!isMapFullView) return null;
 
@@ -315,6 +328,49 @@ export function KloudtrackMapControls({
             >
               <ChevronDown size={15} />
               <span>Hide</span>
+            </button>
+
+            {/* Refresh Weather Data Button */}
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              style={{
+                height: 42,
+                borderRadius: 24,
+                padding: "0 12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                border: isDark
+                  ? "1px solid rgba(16, 185, 129, 0.3)"
+                  : "1px solid rgba(16, 185, 129, 0.2)",
+                background: isDark
+                  ? "rgba(18, 20, 26, 0.88)"
+                  : "rgba(255, 255, 255, 0.92)",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+                boxShadow: isDark
+                  ? "0 4px 14px rgba(0,0,0,0.35)"
+                  : "0 4px 14px rgba(0,0,0,0.08)",
+                cursor: isRefreshing ? "wait" : "pointer",
+                color: "#10b981",
+                fontSize: 11,
+                fontWeight: 700,
+                fontFamily: "Nunito, sans-serif",
+                flexShrink: 0,
+                transition: "transform 0.15s ease",
+                opacity: isRefreshing ? 0.6 : 1,
+              }}
+              title={`Last update: ${formatLastUpdate(lastUpdate)}`}
+            >
+              <RefreshCw 
+                size={14} 
+                style={{ 
+                  animation: isRefreshing ? 'spin 1s linear infinite' : 'none' 
+                }} 
+              />
+              <span>{isRefreshing ? 'Updating...' : formatLastUpdate(lastUpdate)}</span>
             </button>
 
             {Object.values(IOT_METRIC_CONFIG).map((metric) => {
