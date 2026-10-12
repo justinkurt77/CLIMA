@@ -1461,7 +1461,8 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
         email: newEmail,
         password: newPassword,
         options: {
-          data: { full_name: newName, role: "admin", force_password_reset: true }
+          data: { full_name: newName, role: "admin", force_password_reset: true },
+          emailRedirectTo: undefined  // Don't send confirmation email
         }
       });
       if (signUpError) throw signUpError;
@@ -1515,7 +1516,7 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
       "Revoke"
     );
   };
-  const admins = users.filter(u => u.role === "admin" || u.role === "superadmin");
+  const admins = users.filter(u => u.role === "admin");  // Only show regular admins, not superadmins
 
   const confirmReset = async () => {
     if (!selectedUser) return;
