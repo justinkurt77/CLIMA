@@ -478,41 +478,42 @@ function MapScreen({
 
     // Update theme-color to match the map's land background so the Android
     // status bar blends seamlessly with the map.
-    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const statusBarColor = isDark ? "#1a1f2e" : "#f5f3f0";
+    const statusBarColor = isDark ? "#121214" : "#f5f3f0";
     const themeColorMeta = document.querySelector(
       'meta[name="theme-color"]:not([media])',
     );
     if (themeColorMeta) themeColorMeta.content = statusBarColor;
 
-    // ... rest of the existing code
-    const roadColor = "#c8d4e0";
-    const roadCasing = "#dce6ef";
-    [
-      "road-local",
-      "road-minor",
-      "road-street",
-      "road-secondary-tertiary",
-      "road-primary",
-      "road-motorway-trunk",
-    ].forEach((id) => {
-      if (map.getLayer(id)) map.setPaintProperty(id, "line-color", roadColor);
-    });
-    [
-      "road-local-case",
-      "road-minor-case",
-      "road-street-case",
-      "road-secondary-tertiary-case",
-      "road-primary-case",
-      "road-motorway-trunk-case",
-    ].forEach((id) => {
-      if (map.getLayer(id)) map.setPaintProperty(id, "line-color", roadCasing);
-    });
-    if (map.getLayer("building")) {
-      map.setPaintProperty("building", "fill-color", "#f5f3f0");
-      map.setPaintProperty("building", "fill-outline-color", "#e8e4e0");
+    // Only apply custom pastel road & building colors on the light streets-v12 style
+    if (mapStyleId === "streets-v12") {
+      const roadColor = "#c8d4e0";
+      const roadCasing = "#dce6ef";
+      [
+        "road-local",
+        "road-minor",
+        "road-street",
+        "road-secondary-tertiary",
+        "road-primary",
+        "road-motorway-trunk",
+      ].forEach((id) => {
+        if (map.getLayer(id)) map.setPaintProperty(id, "line-color", roadColor);
+      });
+      [
+        "road-local-case",
+        "road-minor-case",
+        "road-street-case",
+        "road-secondary-tertiary-case",
+        "road-primary-case",
+        "road-motorway-trunk-case",
+      ].forEach((id) => {
+        if (map.getLayer(id)) map.setPaintProperty(id, "line-color", roadCasing);
+      });
+      if (map.getLayer("building")) {
+        map.setPaintProperty("building", "fill-color", "#f5f3f0");
+        map.setPaintProperty("building", "fill-outline-color", "#e8e4e0");
+      }
     }
-  }, []);
+  }, [isDark, mapStyleId]);
 
   useEffect(() => {
     if (userLocation && mapRef.current && !hasJumped.current && !isAdmin) {

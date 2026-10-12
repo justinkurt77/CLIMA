@@ -210,31 +210,33 @@ export default function AdminMapScreen({
 
   const onMapLoad = useCallback((e) => {
     const m = e.target;
-    [
-      "road-local",
-      "road-minor",
-      "road-street",
-      "road-secondary-tertiary",
-      "road-primary",
-      "road-motorway-trunk",
-    ].forEach((id) => {
-      if (m.getLayer(id)) m.setPaintProperty(id, "line-color", "#c8d4e0");
-    });
-    [
-      "road-local-case",
-      "road-minor-case",
-      "road-street-case",
-      "road-secondary-tertiary-case",
-      "road-primary-case",
-      "road-motorway-trunk-case",
-    ].forEach((id) => {
-      if (m.getLayer(id)) m.setPaintProperty(id, "line-color", "#dce6ef");
-    });
-    if (m.getLayer("building")) {
-      m.setPaintProperty("building", "fill-color", "#f5f3f0");
-      m.setPaintProperty("building", "fill-outline-color", "#e8e4e0");
+    if (mapStyleId === "streets-v12") {
+      [
+        "road-local",
+        "road-minor",
+        "road-street",
+        "road-secondary-tertiary",
+        "road-primary",
+        "road-motorway-trunk",
+      ].forEach((id) => {
+        if (m.getLayer(id)) m.setPaintProperty(id, "line-color", "#c8d4e0");
+      });
+      [
+        "road-local-case",
+        "road-minor-case",
+        "road-street-case",
+        "road-secondary-tertiary-case",
+        "road-primary-case",
+        "road-motorway-trunk-case",
+      ].forEach((id) => {
+        if (m.getLayer(id)) m.setPaintProperty(id, "line-color", "#dce6ef");
+      });
+      if (m.getLayer("building")) {
+        m.setPaintProperty("building", "fill-color", "#f5f3f0");
+        m.setPaintProperty("building", "fill-outline-color", "#e8e4e0");
+      }
     }
-  }, []);
+  }, [mapStyleId]);
 
   const fitAllPins = useCallback(() => {
     if (!mapRef.current) return;
