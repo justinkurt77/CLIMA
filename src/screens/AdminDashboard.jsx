@@ -1577,12 +1577,31 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
         '980f32df69a604ee31a4ca3a18cfea910de69ef3c496124dc8e19f76c4fa5686',
         'd9d660ee4195a6ac7e0b6a4a4aecbbbf9132683fa17e54383899a07b8671e484'
       ];
+      
+      // Load module permissions for all admins
+      const { data: permissions } = await supabase
+        .from('admin_module_permissions')
+        .select('user_id, module_name, can_view')
+        .eq('can_view', true);
+      
+      // Group permissions by user_id
+      const permissionsByUser = {};
+      permissions?.forEach(perm => {
+        if (!permissionsByUser[perm.user_id]) {
+          permissionsByUser[perm.user_id] = [];
+        }
+        permissionsByUser[perm.user_id].push(perm.module_name);
+      });
+      
       const mapped = await Promise.all(data.map(async (u) => {
         const hash = await sha256(u.email || "");
         if (superadminsHashes.includes(hash)) {
-          return { ...u, role: "superadmin" };
+          return { ...u, role: "superadmin", modulePermissions: [] };
         }
-        return u;
+        return { 
+          ...u, 
+          modulePermissions: permissionsByUser[u.id] || []
+        };
       }));
       setUsers(mapped);
     } else {
@@ -1781,7 +1800,14 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
         <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>{admins.length} admin{admins.length !== 1 ? "s" : ""} configured</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {admins.map(u => {
-            const deptLabel = u.assigned_department || "All Departments";
+            // Show module permissions instead of department
+            const moduleCount = u.modulePermissions?.length || 0;
+            const moduleLabel = u.role === 'superadmin' 
+              ? 'All Modules' 
+              : moduleCount === 0 
+                ? 'No Access' 
+                : `${moduleCount} Module${moduleCount > 1 ? 's' : ''}`;
+            
             return (
               <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, border: `1px solid ${S.border}`, background: "#fafcf9" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1794,7 +1820,17 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ padding: "3px 10px", borderRadius: 20, background: "#f0fdf4", color: "#16a34a", fontSize: 10, fontWeight: 800, border: "1px solid #bbf7d0" }}>{deptLabel}</span>
+                  <span style={{ 
+                    padding: "3px 10px", 
+                    borderRadius: 20, 
+                    background: moduleCount === 0 ? "#fef2f2" : "#f0fdf4", 
+                    color: moduleCount === 0 ? "#dc2626" : "#16a34a", 
+                    fontSize: 10, 
+                    fontWeight: 800, 
+                    border: `1px solid ${moduleCount === 0 ? "#fecaca" : "#bbf7d0"}` 
+                  }}>
+                    {moduleLabel}
+                  </span>
                   <span style={{ padding: "3px 10px", borderRadius: 20, background: S.accentBg, color: S.accent, fontSize: 10, fontWeight: 800 }}>{u.role}</span>
                   {u.role !== "superadmin" && (
                     <>
