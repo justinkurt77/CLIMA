@@ -51,6 +51,9 @@ app.post('/api/admin/create', async (req, res) => {
 
     // Generate a temporary password
     const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+    
+    // Log password for testing (REMOVE IN PRODUCTION!)
+    console.log(`🔑 Generated password for ${email}: ${tempPassword}`);
 
     // Create the user in Supabase Auth with service role
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
