@@ -9,7 +9,7 @@ CREATE OR REPLACE FUNCTION set_user_role(
   target_user_id uuid, 
   new_role text, 
   assigned_categories jsonb DEFAULT NULL, 
-  p_assigned_department text DEFAULT NULL  -- Renamed to avoid ambiguity
+  assigned_department text DEFAULT NULL  -- Keep original name for API compatibility
 )
 RETURNS void
 SECURITY DEFINER
@@ -18,7 +18,11 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
   current_user_role text;
+  dept_value text;  -- Local variable to avoid ambiguity
 BEGIN
+  -- Store parameter in local variable
+  dept_value := assigned_department;
+  
   -- Get current user's role from profiles
   SELECT role INTO current_user_role
   FROM profiles 
@@ -37,24 +41,24 @@ BEGIN
         jsonb_build_object(
           'role', new_role, 
           'assigned_categories', assigned_categories, 
-          'assigned_department', p_assigned_department
+          'assigned_department', dept_value
         )
       ELSE 
         raw_user_meta_data || jsonb_build_object(
           'role', new_role, 
           'assigned_categories', assigned_categories, 
-          'assigned_department', p_assigned_department
+          'assigned_department', dept_value
         )
     END
   WHERE id = target_user_id;
 
-  -- Update profiles table (THIS IS THE CRITICAL PART)
-  UPDATE profiles
+  -- Update profiles table using local variable
+  UPDATE profiles p
   SET 
     role = new_role,
-    assigned_department = p_assigned_department,  -- Use parameter prefix
+    assigned_department = dept_value,  -- Use local variable
     updated_at = NOW()
-  WHERE id = target_user_id;
+  WHERE p.id = target_user_id;
   
   -- If no rows were updated, the profile doesn't exist - create it
   IF NOT FOUND THEN
@@ -64,7 +68,7 @@ BEGIN
       au.email,
       COALESCE(au.raw_user_meta_data->>'full_name', au.email),
       new_role,
-      p_assigned_department,  -- Use parameter prefix
+      dept_value,  -- Use local variable
       NOW(),
       NOW()
     FROM auth.users au
@@ -72,7 +76,7 @@ BEGIN
   END IF;
   
   -- Log for debugging
-  RAISE NOTICE 'Updated user % with role % and department %', target_user_id, new_role, p_assigned_department;
+  RAISE NOTICE 'Updated user % with role % and department %', target_user_id, new_role, dept_value;
 END;
 $$;
 
