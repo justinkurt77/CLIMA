@@ -145,6 +145,9 @@ CREATE POLICY "Admins can manage BFP operations"
 -- 5. CREATE GET_AUTH_USERS FUNCTION
 -- ==========================================
 
+-- Drop existing function first (might have different signature)
+DROP FUNCTION IF EXISTS get_auth_users();
+
 CREATE OR REPLACE FUNCTION get_auth_users()
 RETURNS TABLE (
   id UUID,
