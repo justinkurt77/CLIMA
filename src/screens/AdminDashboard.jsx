@@ -504,6 +504,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                   showSuccessModal={showSuccessModal}
                   showErrorModal={showErrorModal}
                   showConfirmModal={showConfirmModal}
+                  isSuperadmin={isSuperadmin}
                 />
               </motion.div>
 
@@ -1744,13 +1745,19 @@ function DeptRow({ d, onColorChange, onNameChange, onDelete, S, btnDanger }) {
 }
 
 /* ── Settings Tab ── */
-function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, showSuccessModal, showErrorModal, showConfirmModal }) {
+function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, showSuccessModal, showErrorModal, showConfirmModal, isSuperadmin }) {
   const [deptName, setDeptName] = useState("");
   const [catName, setCatName] = useState("");
   const [catGroup, setCatGroup] = useState("");
   const [catDept, setCatDept] = useState("");
   const [deptColor, setDeptColor] = useState("#373D20");
   const [newGroupName, setNewGroupName] = useState("");
+  
+  // Module permissions state
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState("");
+  const [userPermissions, setUserPermissions] = useState({});
+  const [loadingPermissions, setLoadingPermissions] = useState(false);
 
   // Simple debounce helper
   const debounce = (func, delay) => {
@@ -1759,6 +1766,184 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
       clearTimeout(timer);
       timer = setTimeout(() => func(...args), delay);
     };
+  };
+
+  // Load admin users with their permissions (superadmin only)
+  useEffect(() => {
+    if (isSuperadmin) {
+      loadAdminUsers();
+    }
+  }, [isSuperadmin]);
+
+  const loadAdminUsers = async () => {
+    try {
+      // Fetch all admin users (exclude superadmins)
+      const { data: users, error: usersError } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .eq("role", "admin")
+        .order("full_name");
+
+      if (usersError) throw usersError;
+      setAdminUsers(users || []);
+
+      // Fetch all permissions
+      const { data: perms, error: permsError } = await supabase
+        .from("admin_module_permissions")
+        .select("*");
+
+      if (permsError) throw permsError;
+
+      // Group permissions by user_id
+      const permsByUser = {};
+      (perms || []).forEach(p => {
+        if (!permsByUser[p.user_id]) permsByUser[p.user_id] = {};
+        permsByUser[p.user_id][p.module_name] = {
+          can_view: p.can_view,
+          can_create: p.can_create,
+          can_edit: p.can_edit,
+          can_delete: p.can_delete
+        };
+      });
+      setUserPermissions(permsByUser);
+    } catch (err) {
+      console.error("Error loading admin users:", err);
+      showErrorModal("Error", "Failed to load admin users");
+    }
+  };
+
+  const MODULES = [
+    { name: "dashboard", label: "Dashboard Overview", icon: "📊" },
+    { name: "reports", label: "Citizen Reports", icon: "📝" },
+    { name: "advisories", label: "Advisory Broadcast", icon: "📢" },
+    { name: "hospital", label: "Hospital El Niño Data", icon: "🏥" },
+    { name: "cdrrmo", label: "CDRRMO Operations", icon: "🚨" },
+    { name: "bfp", label: "BFP Operations", icon: "🚒" },
+    { name: "agriculture", label: "Agriculture Damages", icon: "🌾" },
+    { name: "water", label: "Water Interruptions", icon: "💧" },
+    { name: "power", label: "Power Interruptions", icon: "⚡" },
+    { name: "users", label: "User Management", icon: "👥" },
+    { name: "settings", label: "Settings & Categories", icon: "⚙️" },
+    { name: "logs", label: "Activity Logs", icon: "📋" }
+  ];
+
+  const ROLE_TEMPLATES = {
+    "Agriculture Admin": ["dashboard", "agriculture"],
+    "CDRRMO Admin": ["dashboard", "cdrrmo"],
+    "BFP Admin": ["dashboard", "bfp"],
+    "Hospital Admin": ["dashboard", "hospital"],
+    "Water Admin": ["dashboard", "water"],
+    "Power Admin": ["dashboard", "power"],
+    "Reports Manager": ["dashboard", "reports", "advisories"],
+    "Full Module Access": MODULES.map(m => m.name)
+  };
+
+  const applyTemplate = async (userId, templateName) => {
+    if (!userId) return;
+    const modules = ROLE_TEMPLATES[templateName];
+    if (!modules) return;
+
+    setLoadingPermissions(true);
+    try {
+      // Clear existing permissions for this user
+      await supabase
+        .from("admin_module_permissions")
+        .delete()
+        .eq("user_id", userId);
+
+      // Insert new permissions (all with full CRUD access)
+      const newPerms = modules.map(module => ({
+        user_id: userId,
+        module_name: module,
+        can_view: true,
+        can_create: true,
+        can_edit: true,
+        can_delete: true
+      }));
+
+      const { error } = await supabase
+        .from("admin_module_permissions")
+        .insert(newPerms);
+
+      if (error) throw error;
+
+      await loadAdminUsers();
+      showSuccessModal("Applied", `${templateName} template applied successfully`);
+    } catch (err) {
+      console.error("Error applying template:", err);
+      showErrorModal("Error", "Failed to apply template");
+    } finally {
+      setLoadingPermissions(false);
+    }
+  };
+
+  const toggleModulePermission = async (userId, moduleName, permType) => {
+    setLoadingPermissions(true);
+    try {
+      const currentPerms = userPermissions[userId]?.[moduleName] || {};
+      const newValue = !currentPerms[permType];
+
+      // Check if permission record exists
+      const { data: existing } = await supabase
+        .from("admin_module_permissions")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("module_name", moduleName)
+        .single();
+
+      if (existing) {
+        // Update existing
+        await supabase
+          .from("admin_module_permissions")
+          .update({ [permType]: newValue })
+          .eq("user_id", userId)
+          .eq("module_name", moduleName);
+      } else {
+        // Insert new (default all to false except the one being toggled)
+        await supabase
+          .from("admin_module_permissions")
+          .insert({
+            user_id: userId,
+            module_name: moduleName,
+            can_view: permType === "can_view" ? newValue : false,
+            can_create: permType === "can_create" ? newValue : false,
+            can_edit: permType === "can_edit" ? newValue : false,
+            can_delete: permType === "can_delete" ? newValue : false
+          });
+      }
+
+      await loadAdminUsers();
+    } catch (err) {
+      console.error("Error toggling permission:", err);
+      showErrorModal("Error", "Failed to update permission");
+    } finally {
+      setLoadingPermissions(false);
+    }
+  };
+
+  const revokeAllPermissions = async (userId) => {
+    showConfirmModal(
+      "Revoke All Access",
+      "Remove all module permissions for this admin? They will no longer be able to access any modules.",
+      async () => {
+        setLoadingPermissions(true);
+        try {
+          await supabase
+            .from("admin_module_permissions")
+            .delete()
+            .eq("user_id", userId);
+          
+          await loadAdminUsers();
+          showSuccessModal("Revoked", "All permissions removed successfully");
+        } catch (err) {
+          console.error("Error revoking permissions:", err);
+          showErrorModal("Error", "Failed to revoke permissions");
+        } finally {
+          setLoadingPermissions(false);
+        }
+      },
+      "Revoke All"
+    );
   };
 
   const debouncedUpdateColor = useRef(
@@ -1835,6 +2020,91 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Module Permissions Section (Superadmin Only) */}
+      {isSuperadmin && (
+        <div style={cardStyle}>
+          <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Module Permissions</h3>
+          <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>
+            Assign module access to admin users. Each admin can be granted view, create, edit, and delete permissions for specific modules.
+          </p>
+
+          {/* Quick Templates */}
+          <div style={{ marginBottom: 20, padding: 16, background: "#fefce8", borderRadius: 12, border: "1px solid #fef08a" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 16 }}>⚡</span>
+              <span style={{ fontSize: 12, fontWeight: 900, color: "#854d0e", textTransform: "uppercase", letterSpacing: 0.5 }}>Quick Role Templates</span>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <CustomSelect
+                value={selectedUser}
+                onChange={setSelectedUser}
+                options={[
+                  { value: "", label: "Select admin user first..." },
+                  ...adminUsers.map(u => ({ value: u.id, label: `${u.full_name} (${u.email})` }))
+                ]}
+                accent="#854d0e"
+              />
+            </div>
+            {selectedUser && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {Object.keys(ROLE_TEMPLATES).map(template => (
+                  <button
+                    key={template}
+                    type="button"
+                    onClick={() => applyTemplate(selectedUser, template)}
+                    disabled={loadingPermissions}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: 8,
+                      border: "1px solid #fbbf24",
+                      background: "#fffbeb",
+                      cursor: loadingPermissions ? "not-allowed" : "pointer",
+                      fontFamily: S.font,
+                      fontWeight: 700,
+                      fontSize: 12,
+                      color: "#92400e",
+                      transition: "all 0.15s",
+                      opacity: loadingPermissions ? 0.5 : 1
+                    }}
+                    onMouseEnter={e => !loadingPermissions && (e.currentTarget.style.background = "#fef3c7")}
+                    onMouseLeave={e => e.currentTarget.style.background = "#fffbeb"}
+                  >
+                    {template}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Admin Users List with Permissions */}
+          {adminUsers.length === 0 ? (
+            <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No admin users found.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {adminUsers.map(user => {
+                const perms = userPermissions[user.id] || {};
+                const moduleCount = Object.keys(perms).filter(m => perms[m].can_view).length;
+                
+                return (
+                  <ModulePermissionRow
+                    key={user.id}
+                    user={user}
+                    permissions={perms}
+                    modules={MODULES}
+                    moduleCount={moduleCount}
+                    onToggle={toggleModulePermission}
+                    onRevokeAll={revokeAllPermissions}
+                    S={S}
+                    btnDanger={btnDanger}
+                    loadingPermissions={loadingPermissions}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Offices Section */}
       <div style={cardStyle}>
         <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Offices</h3>
@@ -1985,6 +2255,141 @@ function CategoryGroupList({ categories, S, btnDanger, delCat }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/* ── Module Permission Row (Collapsible per User) ── */
+function ModulePermissionRow({ user, permissions, modules, moduleCount, onToggle, onRevokeAll, S, btnDanger, loadingPermissions }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const permLabels = [
+    { key: "can_view", label: "View", color: "#3b82f6" },
+    { key: "can_create", label: "Create", color: "#10b981" },
+    { key: "can_edit", label: "Edit", color: "#f59e0b" },
+    { key: "can_delete", label: "Delete", color: "#ef4444" }
+  ];
+
+  return (
+    <div style={{ borderRadius: 14, border: `1px solid ${S.border}`, overflow: "hidden", background: "#fff" }}>
+      {/* User Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#fafafa", borderBottom: isExpanded ? `1px solid ${S.border}` : "none" }}>
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          style={{ display: "flex", alignItems: "center", gap: 12, border: "none", background: "transparent", cursor: "pointer", fontFamily: "'Nunito', sans-serif", flex: 1, textAlign: "left" }}
+        >
+          <motion.span animate={{ rotate: isExpanded ? 0 : -90 }} transition={{ duration: 0.2 }} style={{ display: "flex", alignItems: "center", color: S.accent }}>
+            <ChevronDown size={16} strokeWidth={2.5} />
+          </motion.span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 900, color: S.text }}>{user.full_name}</div>
+            <div style={{ fontSize: 11, color: S.muted, marginTop: 2 }}>{user.email}</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {moduleCount > 0 ? (
+              <span style={{ fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 20, background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0" }}>
+                {moduleCount} {moduleCount === 1 ? "Module" : "Modules"}
+              </span>
+            ) : (
+              <span style={{ fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 20, background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" }}>
+                No Access
+              </span>
+            )}
+          </div>
+        </button>
+        {moduleCount > 0 && (
+          <button
+            type="button"
+            onClick={() => onRevokeAll(user.id)}
+            disabled={loadingPermissions}
+            style={{ ...btnDanger, marginLeft: 8, opacity: loadingPermissions ? 0.5 : 1, cursor: loadingPermissions ? "not-allowed" : "pointer" }}
+            title="Revoke all permissions"
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
+      </div>
+
+      {/* Expanded Module Permissions */}
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+            style={{ overflow: "hidden" }}
+          >
+            <div style={{ padding: "8px 12px" }}>
+              {modules.map(module => {
+                const perms = permissions[module.name] || {};
+                const hasAnyPerm = perms.can_view || perms.can_create || perms.can_edit || perms.can_delete;
+
+                return (
+                  <div
+                    key={module.name}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      marginBottom: 4,
+                      background: hasAnyPerm ? "#f0fdf4" : "transparent",
+                      border: hasAnyPerm ? "1px solid #bbf7d0" : "1px solid transparent",
+                      transition: "all 0.15s"
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 220 }}>
+                      <span style={{ fontSize: 16 }}>{module.icon}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: S.text }}>{module.label}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {permLabels.map(({ key, label, color }) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => onToggle(user.id, module.name, key)}
+                          disabled={loadingPermissions}
+                          style={{
+                            padding: "4px 10px",
+                            borderRadius: 6,
+                            border: perms[key] ? `1.5px solid ${color}` : "1.5px solid #e5e7eb",
+                            background: perms[key] ? color : "#fff",
+                            color: perms[key] ? "#fff" : "#9ca3af",
+                            cursor: loadingPermissions ? "not-allowed" : "pointer",
+                            fontFamily: "'Nunito', sans-serif",
+                            fontWeight: 700,
+                            fontSize: 11,
+                            transition: "all 0.15s",
+                            opacity: loadingPermissions ? 0.5 : 1,
+                            minWidth: 60
+                          }}
+                          onMouseEnter={e => {
+                            if (!loadingPermissions && !perms[key]) {
+                              e.currentTarget.style.background = "#f9fafb";
+                              e.currentTarget.style.borderColor = color;
+                            }
+                          }}
+                          onMouseLeave={e => {
+                            if (!perms[key]) {
+                              e.currentTarget.style.background = "#fff";
+                              e.currentTarget.style.borderColor = "#e5e7eb";
+                            }
+                          }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
