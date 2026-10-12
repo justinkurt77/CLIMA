@@ -11,7 +11,7 @@
 DO $$
 DECLARE
   new_user_id UUID;
-  user_email TEXT := 'admin@palayan.gov.ph';  -- CHANGE THIS
+  user_email TEXT := 'admin@test.com';  -- CHANGE THIS
   user_password TEXT := 'admin123';  -- CHANGE THIS (min 6 chars)
   user_full_name TEXT := 'Admin User';  -- CHANGE THIS
 BEGIN
@@ -29,8 +29,7 @@ BEGIN
         'role', 'admin',
         'full_name', user_full_name
       ),
-      email_confirmed_at = now(),
-      confirmed_at = now()
+      email_confirmed_at = now()
     WHERE email = user_email;
     
   ELSE
@@ -43,7 +42,6 @@ BEGIN
       email,
       encrypted_password,
       email_confirmed_at,
-      confirmed_at,
       raw_user_meta_data,
       created_at,
       updated_at
@@ -55,7 +53,6 @@ BEGIN
       user_email,
       crypt(user_password, gen_salt('bf')),  -- Encrypt password
       now(),  -- Auto-confirm email
-      now(),
       jsonb_build_object(
         'role', 'admin',
         'full_name', user_full_name
@@ -101,7 +98,7 @@ SELECT
   raw_user_meta_data->>'full_name' as full_name,
   created_at
 FROM auth.users
-WHERE email = 'admin@palayan.gov.ph';  -- CHANGE THIS to match above
+WHERE email = 'admin@test.com';  -- CHANGE THIS to match above
 
 -- Check the profile
 SELECT 
@@ -111,7 +108,7 @@ SELECT
   role,
   created_at
 FROM profiles
-WHERE email = 'admin@palayan.gov.ph';  -- CHANGE THIS to match above
+WHERE email = 'admin@test.com';  -- CHANGE THIS to match above
 
 -- ==========================================
 -- INSTRUCTIONS
