@@ -1674,10 +1674,19 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
     if (!assignEmail) return;
     const existing = users.find(u => u.email === assignEmail);
     if (!existing) { setMsg({ type: "error", text: "User must register in the app first." }); return; }
+    
+    // Check if already an admin
+    const isAlreadyAdmin = existing.role === 'admin' || existing.role === 'superadmin';
+    
     const cats = getCatsForDept(assignDept);
     const deptLabel = getDeptLabel(assignDept);
     await supabase.rpc("set_user_role", { target_user_id: existing.id, new_role: "admin", assigned_categories: cats, assigned_department: deptLabel });
-    setMsg({ type: "success", text: `"${existing.full_name || assignEmail}" promoted to admin.` });
+    
+    // Different message based on whether they were already an admin
+    const action = isAlreadyAdmin ? 'updated' : 'promoted to admin';
+    const officeText = deptLabel === 'All Departments' ? '' : ` and assigned to ${deptLabel}`;
+    setMsg({ type: "success", text: `"${existing.full_name || assignEmail}" ${action}${officeText}.` });
+    
     setAssignEmail(""); setAssignDept("All Departments");
     fetchUsers();
   };
@@ -1774,8 +1783,8 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
 
       {/* Assign Existing User */}
       <div style={cardStyle}>
-        <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Promote Existing User</h3>
-        <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>Promote a citizen who already registered in the app to admin.</p>
+        <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Promote/Update User</h3>
+        <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>Promote a citizen to admin, or update an existing admin's office assignment.</p>
         <form onSubmit={handleAssignExisting} style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 200 }}>
             <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Email</label>
