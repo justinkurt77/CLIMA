@@ -92,6 +92,41 @@ function getWeatherInfo(code, temp, high, low, isDay = true) {
   return { msg: "Partly cloudy", sub: "with pleasant breeze", icon: isDay ? "CloudSun" : "Moon", high: h, low: l };
 }
 
+/**
+ * Standard NOAA / Rothfusz heat index calculation from temperature (°C) and relative humidity (%)
+ */
+export function calculateHeatIndex(tempC, humidity) {
+  if (tempC == null || humidity == null) return tempC || 0;
+  const tF = (tempC * 9) / 5 + 32;
+  const rh = humidity;
+
+  if (tF < 80) {
+    const simpleHI = 0.5 * (tF + 61.0 + ((tF - 68.0) * 1.2) + (rh * 0.094));
+    const finalC = ((simpleHI - 32) * 5) / 9;
+    return Math.round(finalC * 10) / 10;
+  }
+
+  let hiF =
+    -42.379 +
+    2.04901523 * tF +
+    10.14333127 * rh -
+    0.22475541 * tF * rh -
+    0.00683783 * tF * tF -
+    0.05481717 * rh * rh +
+    0.00122874 * tF * tF * rh +
+    0.00085282 * tF * rh * rh -
+    0.00000199 * tF * tF * rh * rh;
+
+  if (rh < 13 && tF >= 80 && tF <= 112) {
+    hiF -= ((13 - rh) / 4) * Math.sqrt((17 - Math.abs(tF - 95)) / 17);
+  } else if (rh > 85 && tF >= 80 && tF <= 87) {
+    hiF += ((rh - 85) / 10) * ((87 - tF) / 5);
+  }
+
+  const hiC = ((hiF - 32) * 5) / 9;
+  return Math.round(hiC * 10) / 10;
+}
+
 export const PALAYAN_BARANGAYS = [
   { name: "Singalat", lat: 15.5717, lng: 121.0949, desc: "Agri-residential corridor" },
   { name: "Atate", lat: 15.5581, lng: 121.1121, desc: "Commercial & residential center" },
@@ -141,37 +176,45 @@ export default function HomeScreen({
   session,
   userLocation,
   setActiveScreen,
+  refreshTrigger = 0,
 }) {
   const { isDark, toggleTheme } = useTheme();
   const rootRef = useRef(null);
+  const headerRef = useRef(null);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [currentTemp, setCurrentTemp] = useState(34);
+  const [currentTemp, setCurrentTemp] = useState(26);
   const [selectedBarangay, setSelectedBarangay] = useState("Popolon Pagas");
   const [activeCoords, setActiveCoords] = useState({ lat: 15.5413, lng: 121.0471 });
 
-  // Scroll listener for sticky header transformation & scroll-to-top button
+  // Smooth scroll listener for sticky header blur & scroll-to-top button
   useEffect(() => {
     const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
     if (!el) return;
+
     const handleScroll = () => {
-      setIsScrolled(el.scrollTop > 20);
+      setIsScrolled(el.scrollTop > 15);
     };
+
+    handleScroll();
     el.addEventListener("scroll", handleScroll, { passive: true });
     return () => el.removeEventListener("scroll", handleScroll);
   }, []);
   const [weatherInfo, setWeatherInfo] = useState({
-    msg: "Bright Sunshine",
-    sub: "KloudTech IoT • Popolon AWS - Palayan City",
-    icon: "Sun",
-    high: 36,
-    low: 30,
+    msg: "Clear sky",
+    sub: "Live Meteorological Sensor • Palayan City",
+    icon: "Moon",
+    high: 31,
+    low: 24,
   });
-  const [humidity, setHumidity] = useState(78.5);
-  const [windSpeed, setWindSpeed] = useState(0.7);
+  const [humidity, setHumidity] = useState(85);
+  const [windSpeed, setWindSpeed] = useState(1.2);
   const [windDirection, setWindDirection] = useState("North");
   const [rainChance, setRainChance] = useState(0);
-  const [currentHeatIndex, setCurrentHeatIndex] = useState(51.3);
-  const [pressure, setPressure] = useState("1006.7 hPa");
+  const [currentHeatIndex, setCurrentHeatIndex] = useState(27.8);
+  const [pressure, setPressure] = useState("1007 hPa");
+  const [uvIndex, setUvIndex] = useState(0);
+  const [isDayTime, setIsDayTime] = useState(false);
+  const [liveHistory, setLiveHistory] = useState([]);
   const [hourlyForecast, setHourlyForecast] = useState(DEFAULT_HOURLY);
   const [weeklyForecast, setWeeklyForecast] = useState(DEFAULT_WEEKLY);
   const [showReports, setShowReports] = useState(false);
@@ -187,10 +230,10 @@ export default function HomeScreen({
     const fetchAllBarangaysWeather = async () => {
       const results = {};
 
-      // 1. First, attempt to query KloudTech SEA IoT telemetry
+      // 1. First, attempt to query KloudTech SEA IoT telemetry (ONLY if live and authenticated)
       try {
         const ktRes = await fetchKloudtechDashboard();
-        if (ktRes.success && Array.isArray(ktRes.data) && ktRes.data.length > 0) {
+        if (ktRes.success && !ktRes.isLocalFallback && ktRes.isLive && Array.isArray(ktRes.data) && ktRes.data.length > 0) {
           ktRes.data.forEach((item) => {
             const stName = item.station?.stationName || item.station?.city || "";
             const tel = item.telemetry;
@@ -261,7 +304,7 @@ export default function HomeScreen({
     
     fetchAllBarangaysWeather();
     return () => { isMounted = false; };
-  }, []);
+  }, [refreshTrigger]);
 
   const getHeroBackground = () => {
     const icon = weatherInfo.icon;
@@ -365,7 +408,7 @@ export default function HomeScreen({
 
     // Atmospheric & forecast data fetch
     const fetchOpenMeteo = (isKloudtechLive = false, liveTemp = null, liveIcon = null) => {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,winddirection,weather_code,is_day&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code,is_day,uv_index&hourly=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,uv_index,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max&past_days=1&timezone=Asia%2FManila`;
 
       fetch(url)
         .then((r) => r.json())
@@ -377,18 +420,25 @@ export default function HomeScreen({
             const t = Math.round(cur.temperature_2m);
             const code = cur.weather_code;
             const isDay = cur.is_day !== 0;
+            setIsDayTime(isDay);
 
             setCurrentTemp(t);
-            setWindSpeed(Math.round(cur.wind_speed_10m) || 12);
-            if (cur.winddirection !== undefined) {
-              setWindDirection(getWindDirectionText(cur.winddirection));
+            setWindSpeed(Math.round(cur.wind_speed_10m * 10) / 10 || 0.5);
+            if (cur.wind_direction_10m !== undefined) {
+              setWindDirection(getWindDirectionText(cur.wind_direction_10m));
             }
             if (cur.relative_humidity_2m !== undefined) {
               setHumidity(Math.round(cur.relative_humidity_2m));
             }
             if (cur.surface_pressure !== undefined) {
-              setPressure(`${Math.round(cur.surface_pressure)} hPa`);
+              setPressure(`${Math.round(cur.surface_pressure * 10) / 10} hPa`);
             }
+            if (cur.uv_index !== undefined) {
+              setUvIndex(cur.uv_index);
+            }
+
+            const hi = calculateHeatIndex(cur.temperature_2m, cur.relative_humidity_2m);
+            setCurrentHeatIndex(hi);
 
             const todayHigh = data.daily?.temperature_2m_max?.[0] !== undefined
               ? Math.round(data.daily.temperature_2m_max[0])
@@ -409,7 +459,7 @@ export default function HomeScreen({
             const currentHourPrefix = currentTimeISO.slice(0, 13);
             let startIdx = data.hourly.time.findIndex((timeStr) => timeStr.startsWith(currentHourPrefix));
             if (startIdx === -1) {
-              startIdx = new Date().getHours();
+              startIdx = data.hourly.time.length > 24 ? 24 : 0;
             }
 
             const slots = [];
@@ -433,6 +483,37 @@ export default function HomeScreen({
               });
             }
             if (slots.length > 0) setHourlyForecast(slots);
+
+            // Construct 24-hour history slice for telemetry charts
+            const historySlice = [];
+            const historyStart = Math.max(0, startIdx - 23);
+            for (let i = historyStart; i <= startIdx; i++) {
+              const tStr = data.hourly.time[i];
+              const dObj = new Date(tStr);
+              const hourNum = dObj.getHours();
+              const dayNum = dObj.getDate();
+              const monthShort = dObj.toLocaleString("en-US", { month: "short" });
+              const timeLabel = `${dayNum} ${monthShort} ${String(hourNum).padStart(2, "0")}:00`;
+              const hourTemp = Math.round(data.hourly.temperature_2m[i] * 10) / 10;
+              const hourRh = Math.round(data.hourly.relative_humidity_2m?.[i] || 75);
+              const hourHI = calculateHeatIndex(hourTemp, hourRh);
+              const hourPres = Math.round((data.hourly.surface_pressure?.[i] || 1010) * 10) / 10;
+              const hourWind = Math.round((data.hourly.wind_speed_10m?.[i] || 5) * 10) / 10;
+              const hourUv = data.hourly.uv_index?.[i] !== undefined ? data.hourly.uv_index[i] : 0;
+
+              historySlice.push({
+                time: timeLabel,
+                temp: hourTemp,
+                heatIndex: hourHI,
+                humidity: hourRh,
+                pressure: hourPres,
+                wind: hourWind,
+                uv: hourUv,
+              });
+            }
+            if (historySlice.length > 0) {
+              setLiveHistory(historySlice);
+            }
           }
 
           if (data.daily?.time && data.daily?.weather_code) {
@@ -469,7 +550,7 @@ export default function HomeScreen({
       let isKloudtechLive = false;
       try {
         const ktRes = await fetchKloudtechDashboard();
-        if (ktRes.success && Array.isArray(ktRes.data) && ktRes.data.length > 0) {
+        if (ktRes.success && !ktRes.isLocalFallback && ktRes.isLive && Array.isArray(ktRes.data) && ktRes.data.length > 0) {
           const match = ktRes.data.find((item) => {
             const stName = (item.station?.stationName || item.station?.city || "").toLowerCase();
             const stAddress = (item.station?.address || "").toLowerCase();
@@ -510,11 +591,11 @@ export default function HomeScreen({
         console.warn("KloudTech telemetry error:", err);
       }
 
-      fetchOpenMeteo(isKloudtechLive);
+      fetchOpenMeteo(false);
     };
 
     fetchWeather();
-  }, [userLocation, activeCoords, selectedBarangay]);
+  }, [userLocation, activeCoords, selectedBarangay, refreshTrigger]);
 
   // Fetch published advisories
   useEffect(() => {
@@ -597,6 +678,51 @@ export default function HomeScreen({
     }
   };
 
+  const formattedRecordedAt = useMemo(() => {
+    const now = new Date();
+    return (
+      now.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }) +
+      " " +
+      now.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+    );
+  }, [currentTemp, humidity, pressure]);
+
+  const liveStationData = useMemo(() => {
+    return {
+      recordedAt: formattedRecordedAt,
+      heatIndex: currentHeatIndex,
+      temp: currentTemp,
+      humidity: humidity,
+      pressure: String(pressure).includes("hPa") ? pressure : `${pressure} hPa`,
+      wind: `${windSpeed} kph ${windDirection?.charAt(0) || "N"}`,
+      uv: uvIndex,
+      light: isDayTime ? "52400.0 lux" : "0.0 lux",
+      precip: `${rainChance > 0 ? (rainChance * 0.1).toFixed(1) : "0.0"} mm`,
+      history: liveHistory,
+      isLive: true,
+    };
+  }, [
+    formattedRecordedAt,
+    currentHeatIndex,
+    currentTemp,
+    humidity,
+    pressure,
+    windSpeed,
+    windDirection,
+    uvIndex,
+    isDayTime,
+    rainChance,
+    liveHistory,
+  ]);
+
   return (
     <div ref={rootRef} className="home-screen-root hide-scroll">
       {/* =========================================================================
@@ -604,7 +730,13 @@ export default function HomeScreen({
           ========================================================================= */}
       <div className="desktop-view-container">
         {/* TOP HEADER BAR */}
-        <header className={`desktop-top-header ${isScrolled ? "scrolled-header" : ""}`}>
+        <header
+          ref={headerRef}
+          className={`desktop-top-header ${isScrolled ? "scrolled-header" : ""}`}
+        >
+          {/* Frosted glass backdrop (smoothly activates on scroll) */}
+          <div className="desktop-header-backdrop" aria-hidden="true" />
+
           {/* Left: Location & Date */}
           <div className="desktop-header-location">
             <div className="desktop-loc-row">
@@ -1023,7 +1155,7 @@ export default function HomeScreen({
         </main>
 
         {/* ──── KLOUDTECH IOT WEATHER STATION TELEMETRY & HISTORICAL CHARTS ──── */}
-        <KloudtechStationView isDark={isDark} />
+        <KloudtechStationView isDark={isDark} liveData={liveStationData} />
 
         {/* Floating Scroll-to-Top Command Button */}
         <AnimatePresence>
@@ -1880,7 +2012,7 @@ export default function HomeScreen({
 
           {/* ──── KLOUDTECH IOT WEATHER STATION TELEMETRY & HISTORICAL CHARTS ──── */}
           <div style={{ marginTop: 20 }}>
-            <KloudtechStationView isDark={isDark} />
+            <KloudtechStationView isDark={isDark} liveData={liveStationData} />
           </div>
         </div>
       </div>

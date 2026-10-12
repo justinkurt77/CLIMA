@@ -134,7 +134,7 @@ export async function fetchKloudtechDashboard() {
       const json = await res.json();
       const stations = Array.isArray(json) ? json : json.data || [];
       if (stations.length > 0) {
-        return { success: true, data: stations };
+        return { success: true, data: stations, isLive: true };
       }
     }
   } catch (error) {
@@ -146,6 +146,7 @@ export async function fetchKloudtechDashboard() {
     success: true,
     data: PALAYAN_KLOUDTECH_STATIONS,
     isLocalFallback: true,
+    isLive: false,
   };
 }
 

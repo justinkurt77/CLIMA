@@ -35,15 +35,43 @@ const TIME_TICKS = [
   "9 Oct 11:00",
 ];
 
-export default function KloudtechStationView({ isDark = true }) {
+export default function KloudtechStationView({ isDark = true, liveData = null }) {
   const [dateRange, setDateRange] = useState("1 Day");
   const [interval, setInterval] = useState("1 hour");
+
+  const displayTimestamp =
+    liveData?.recordedAt || "October 9, 2026 11:12";
+  const displayHeatIndex = liveData?.heatIndex !== undefined ? liveData.heatIndex : 51.3;
+  const displayTemp = liveData?.temp !== undefined ? liveData.temp : 34.0;
+  const displayHumidity = liveData?.humidity !== undefined ? liveData.humidity : 78.5;
+  const displayPressure = liveData?.pressure || "1006.7 hPa";
+  const displayWind = liveData?.wind || "0.7 kph N";
+  const displayUv = liveData?.uv !== undefined ? liveData.uv : "--";
+  const displayLight = liveData?.light || "54612.5 lux";
+  const displayPrecip = liveData?.precip || "0.0 mm";
+  const chartData = (liveData?.history && liveData.history.length > 0) ? liveData.history : POPOLON_AWS_HISTORY;
+
+  const chartTicks = (chartData && chartData.length > 0)
+    ? chartData.filter((_, idx) => idx % 3 === 0 || idx === chartData.length - 1).map((d) => d.time)
+    : TIME_TICKS;
+
+  const getHeatIndexBadge = (hi) => {
+    const val = typeof hi === "number" ? hi : parseFloat(hi);
+    if (isNaN(val)) return { label: "Normal", pillClass: "kloudtech-normal-pill", dotClass: "normal-dot" };
+    if (val >= 52) return { label: "Extreme Danger", pillClass: "kloudtech-danger-pill", dotClass: "danger-dot" };
+    if (val >= 42) return { label: "Danger", pillClass: "kloudtech-danger-pill", dotClass: "danger-dot" };
+    if (val >= 33) return { label: "Extreme Caution", pillClass: "kloudtech-caution-pill", dotClass: "caution-dot" };
+    if (val >= 27) return { label: "Caution", pillClass: "kloudtech-caution-pill", dotClass: "caution-dot" };
+    return { label: "Normal", pillClass: "kloudtech-normal-pill", dotClass: "normal-dot" };
+  };
+
+  const heatBadge = getHeatIndexBadge(displayHeatIndex);
 
   // Export CSV function for "Download Data" button
   const handleDownloadData = () => {
     const headers =
       "Timestamp,Heat Index (°C),Temperature (°C),Humidity (%),Pressure (hPa),Wind Speed (kph),UV Index\n";
-    const rows = POPOLON_AWS_HISTORY.map(
+    const rows = chartData.map(
       (d) =>
         `${d.time},${d.heatIndex},${d.temp},${d.humidity},${d.pressure},${d.wind},${d.uv}`
     ).join("\n");
@@ -104,12 +132,14 @@ export default function KloudtechStationView({ isDark = true }) {
             <h2 className="kloudtech-station-title">Popolon AWS - Palayan City</h2>
           </div>
           <p className="kloudtech-station-sub">
-            A weatherstation station located at Manacnac, Palayan City, Nueva Ecija, Philippines
+            {liveData?.isLive
+              ? "Live meteorological & microclimate station telemetry for Palayan City"
+              : "A weatherstation station located at Manacnac, Palayan City, Nueva Ecija, Philippines"}
           </p>
         </div>
 
         <div className="kloudtech-station-right">
-          <div className="kloudtech-timestamp">October 9, 2026 11:12</div>
+          <div className="kloudtech-timestamp">{displayTimestamp}</div>
         </div>
       </motion.div>
 
@@ -139,11 +169,11 @@ export default function KloudtechStationView({ isDark = true }) {
           <div className="kloudtech-card-icon-wrap heat-icon">
             <Flame size={19} strokeWidth={2.4} />
           </div>
-          <div className="kloudtech-card-val heat-val">51.3 °C</div>
+          <div className="kloudtech-card-val heat-val">{displayHeatIndex} °C</div>
           <div className="kloudtech-card-label">Heat Index</div>
-          <div className="kloudtech-danger-pill">
-            <span className="danger-dot" />
-            Danger
+          <div className={heatBadge.pillClass}>
+            <span className={heatBadge.dotClass} />
+            {heatBadge.label}
           </div>
         </motion.div>
 
@@ -158,7 +188,7 @@ export default function KloudtechStationView({ isDark = true }) {
           <div className="kloudtech-card-icon-wrap temp-icon">
             <Thermometer size={19} strokeWidth={2.2} />
           </div>
-          <div className="kloudtech-card-val">34.0 °C</div>
+          <div className="kloudtech-card-val">{displayTemp} °C</div>
           <div className="kloudtech-card-label">Temperature</div>
         </motion.div>
 
@@ -173,7 +203,7 @@ export default function KloudtechStationView({ isDark = true }) {
           <div className="kloudtech-card-icon-wrap humidity-icon">
             <Droplets size={19} strokeWidth={2.2} />
           </div>
-          <div className="kloudtech-card-val">78.5 %</div>
+          <div className="kloudtech-card-val">{displayHumidity} %</div>
           <div className="kloudtech-card-label">Humidity</div>
         </motion.div>
 
@@ -188,7 +218,7 @@ export default function KloudtechStationView({ isDark = true }) {
           <div className="kloudtech-card-icon-wrap pressure-icon">
             <Gauge size={19} strokeWidth={2.2} />
           </div>
-          <div className="kloudtech-card-val">1006.7 hPa</div>
+          <div className="kloudtech-card-val">{displayPressure}</div>
           <div className="kloudtech-card-label">Pressure</div>
         </motion.div>
 
@@ -203,7 +233,7 @@ export default function KloudtechStationView({ isDark = true }) {
           <div className="kloudtech-card-icon-wrap wind-icon">
             <Wind size={19} strokeWidth={2.2} />
           </div>
-          <div className="kloudtech-card-val">0.7 kph N</div>
+          <div className="kloudtech-card-val">{displayWind}</div>
           <div className="kloudtech-card-label">Wind</div>
         </motion.div>
 
@@ -218,7 +248,7 @@ export default function KloudtechStationView({ isDark = true }) {
           <div className="kloudtech-card-icon-wrap uv-icon">
             <Sun size={19} strokeWidth={2.2} />
           </div>
-          <div className="kloudtech-card-val">--</div>
+          <div className="kloudtech-card-val">{displayUv}</div>
           <div className="kloudtech-card-label">UV Index</div>
         </motion.div>
 
@@ -233,7 +263,7 @@ export default function KloudtechStationView({ isDark = true }) {
           <div className="kloudtech-card-icon-wrap light-icon">
             <Eye size={19} strokeWidth={2.2} />
           </div>
-          <div className="kloudtech-card-val light-val">54612.5 lux</div>
+          <div className="kloudtech-card-val light-val">{displayLight}</div>
           <div className="kloudtech-card-label">Light Intensity</div>
         </motion.div>
 
@@ -248,7 +278,7 @@ export default function KloudtechStationView({ isDark = true }) {
           <div className="kloudtech-card-icon-wrap precip-icon">
             <CloudRain size={19} strokeWidth={2.2} />
           </div>
-          <div className="kloudtech-card-val">--</div>
+          <div className="kloudtech-card-val">{displayPrecip}</div>
           <div className="kloudtech-card-label">Precipitation</div>
         </motion.div>
       </div>
@@ -312,10 +342,10 @@ export default function KloudtechStationView({ isDark = true }) {
           <div className="kloudtech-chart-title">Heat Index History</div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
-              <AreaChart data={POPOLON_AWS_HISTORY} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis dataKey="time" ticks={TIME_TICKS} tick={axisTickStyle} />
-                <YAxis domain={[0, 60]} ticks={[0, 15, 30, 45, 60]} tick={axisTickStyle} />
+                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} />
+                <YAxis domain={["auto", "auto"]} tick={axisTickStyle} />
                 <Tooltip contentStyle={chartTooltipStyle} formatter={(val) => [`${val} °C`, "Heat Index"]} />
                 <Area type="monotone" dataKey="heatIndex" stroke="#ea580c" strokeWidth={2.4} fill="none" />
               </AreaChart>
@@ -334,10 +364,10 @@ export default function KloudtechStationView({ isDark = true }) {
           <div className="kloudtech-chart-title">Temperature History</div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
-              <AreaChart data={POPOLON_AWS_HISTORY} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis dataKey="time" ticks={TIME_TICKS} tick={axisTickStyle} />
-                <YAxis domain={[0, 38]} ticks={[0, 9, 18, 27, 38]} tick={axisTickStyle} />
+                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} />
+                <YAxis domain={["auto", "auto"]} tick={axisTickStyle} />
                 <Tooltip contentStyle={chartTooltipStyle} formatter={(val) => [`${val} °C`, "Temperature"]} />
                 <Area type="monotone" dataKey="temp" stroke="#ef4444" strokeWidth={2.4} fill="none" />
               </AreaChart>
@@ -356,9 +386,9 @@ export default function KloudtechStationView({ isDark = true }) {
           <div className="kloudtech-chart-title">Humidity History</div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
-              <AreaChart data={POPOLON_AWS_HISTORY} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis dataKey="time" ticks={TIME_TICKS} tick={axisTickStyle} />
+                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} />
                 <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={axisTickStyle} />
                 <Tooltip contentStyle={chartTooltipStyle} formatter={(val) => [`${val} %`, "Humidity"]} />
                 <Area type="monotone" dataKey="humidity" stroke="#3b82f6" strokeWidth={2} fill="#1d4ed8" fillOpacity={0.4} />
@@ -378,10 +408,10 @@ export default function KloudtechStationView({ isDark = true }) {
           <div className="kloudtech-chart-title">Pressure History</div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
-              <AreaChart data={POPOLON_AWS_HISTORY} margin={{ top: 12, right: 12, left: -6, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 12, right: 12, left: -6, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis dataKey="time" ticks={TIME_TICKS} tick={axisTickStyle} />
-                <YAxis domain={[984, 1029]} ticks={[984, 999, 1014, 1029]} tick={axisTickStyle} />
+                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} />
+                <YAxis domain={["auto", "auto"]} tick={axisTickStyle} />
                 <Tooltip contentStyle={chartTooltipStyle} formatter={(val) => [`${val} hPa`, "Pressure"]} />
                 <Area type="monotone" dataKey="pressure" stroke="#7c3aed" strokeWidth={2} fill="#6d28d9" fillOpacity={0.4} />
               </AreaChart>
@@ -400,10 +430,10 @@ export default function KloudtechStationView({ isDark = true }) {
           <div className="kloudtech-chart-title">Wind History</div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
-              <BarChart data={POPOLON_AWS_HISTORY} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
+              <BarChart data={chartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis dataKey="time" ticks={TIME_TICKS} tick={axisTickStyle} />
-                <YAxis domain={[0, 3]} ticks={[0, 0.75, 1.5, 2.25, 3]} tick={axisTickStyle} />
+                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} />
+                <YAxis domain={[0, "auto"]} tick={axisTickStyle} />
                 <Tooltip contentStyle={chartTooltipStyle} formatter={(val) => [`${val} kph`, "Wind Speed"]} />
                 <Bar dataKey="wind" fill="#22c55e" maxBarSize={14} radius={[2, 2, 0, 0]} />
               </BarChart>
@@ -422,10 +452,10 @@ export default function KloudtechStationView({ isDark = true }) {
           <div className="kloudtech-chart-title">UV Index History</div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
-              <BarChart data={POPOLON_AWS_HISTORY} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
+              <BarChart data={chartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis dataKey="time" ticks={TIME_TICKS} tick={axisTickStyle} />
-                <YAxis domain={[0, 12]} ticks={[0, 3, 6, 9, 12]} tick={axisTickStyle} />
+                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} />
+                <YAxis domain={[0, "auto"]} tick={axisTickStyle} />
                 <Tooltip contentStyle={chartTooltipStyle} formatter={(val) => [`${val}`, "UV Index"]} />
                 <Bar dataKey="uv" fill="#a855f7" maxBarSize={14} radius={[2, 2, 0, 0]} />
               </BarChart>

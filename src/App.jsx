@@ -43,6 +43,7 @@ function App() {
   const [session, setSession] = useState(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [adminUser, setAdminUser] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Capturing original pushState outside of effect to avoid double overrides
   useEffect(() => {
@@ -248,7 +249,7 @@ function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="citizen-screen-view"
+            className="citizen-screen-view home-screen-view hide-scroll"
             style={{
               zIndex: 10,
             }}
@@ -259,6 +260,7 @@ function App() {
               session={session}
               userLocation={userLocation}
               setActiveScreen={setActiveScreen}
+              refreshTrigger={refreshTrigger}
             />
           </motion.div>
         )}
@@ -634,6 +636,7 @@ function App() {
           setActiveScreen={setActiveScreen}
           session={session}
           onOpenModal={openModal}
+          onRefresh={() => setRefreshTrigger((prev) => prev + 1)}
         />
       )}
 

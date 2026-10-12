@@ -31,12 +31,20 @@ export default function CitizenNav({
   setActiveScreen,
   session,
   onOpenModal,
+  onRefresh,
 }) {
   const { isDark } = useTheme();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
+    if (onRefresh) {
+      try {
+        await onRefresh();
+      } catch (err) {
+        console.warn("Refresh error:", err);
+      }
+    }
     setTimeout(() => {
       setIsRefreshing(false);
     }, 800);
