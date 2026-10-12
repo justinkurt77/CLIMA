@@ -1800,7 +1800,7 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
         <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>{admins.length} admin{admins.length !== 1 ? "s" : ""} configured</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {admins.map(u => {
-            // Show module permissions instead of department
+            // Show module permissions count
             const moduleCount = u.modulePermissions?.length || 0;
             const moduleLabel = u.role === 'superadmin' 
               ? 'All Modules' 
@@ -1808,26 +1808,8 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
                 ? 'No Access' 
                 : `${moduleCount} Module${moduleCount > 1 ? 's' : ''}`;
             
-            // Map module names to readable department labels
-            const MODULE_LABELS = {
-              'reports': 'Citizen Reports',
-              'advisories': 'Official Advisories',
-              'hospital': 'Hospital Monitoring',
-              'cdrrmo': 'CDRRMO Operations',
-              'bfp': 'BFP Operations',
-              'agriculture': 'Agriculture Damages',
-              'water': 'Water Utility',
-              'power': 'Power Utility',
-              'users': 'User Management',
-              'settings': 'Settings',
-              'logs': 'Activity Logs'
-            };
-            
-            const departmentAccess = u.role === 'superadmin' 
-              ? 'All Departments' 
-              : moduleCount === 0 
-                ? 'No departments assigned'
-                : u.modulePermissions.map(m => MODULE_LABELS[m] || m).join(', ');
+            // Show assigned office/department
+            const assignedOffice = u.assigned_department || 'Not Assigned';
             
             return (
               <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, border: `1px solid ${S.border}`, background: "#fafcf9" }}>
@@ -1838,8 +1820,8 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <p style={{ margin: 0, fontWeight: 800, fontSize: 14 }}>{u.full_name || "Admin"}</p>
                     <p style={{ margin: "2px 0 0", fontSize: 12, color: S.muted }}>{u.email}</p>
-                    <p style={{ margin: "4px 0 0", fontSize: 11, color: "#16a34a", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={departmentAccess}>
-                      {departmentAccess}
+                    <p style={{ margin: "4px 0 0", fontSize: 11, color: "#16a34a", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={assignedOffice}>
+                      📍 {assignedOffice}
                     </p>
                   </div>
                 </div>
