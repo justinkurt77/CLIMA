@@ -48,7 +48,7 @@ export const PALAYAN_KLOUDTECH_STATIONS = [
       id: "popolon-aws-palayan",
       stationName: "Popolon AWS - Palayan City",
       stationType: "WEATHERSTATION",
-      location: [15.5413, 121.0471],
+      location: [121.0471, 15.5413], // [longitude, latitude] format to match API
       address: "Manacnac, Palayan City, Nueva Ecija, Philippines",
       city: "Palayan City",
       barangays: ["Popolon Pagas", "Manacnac", "Singalat", "Caimito"],

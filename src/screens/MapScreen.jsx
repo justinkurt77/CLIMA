@@ -1165,8 +1165,8 @@ function MapScreen({
           {activeLayers.kloudtrackStations && weatherStations.map((station) => (
             <Marker
               key={station.station.id}
-              longitude={station.station.location[1]}
-              latitude={station.station.location[0]}
+              longitude={station.station.location[0]}
+              latitude={station.station.location[1]}
               anchor="bottom"
               onClick={(e) => {
                 e.originalEvent.stopPropagation();
@@ -1190,8 +1190,8 @@ function MapScreen({
           {/* KloudTrack Station Telemetry Popup */}
           {selectedKloudtrackStation && (
             <Popup
-              longitude={selectedKloudtrackStation.station.location[1]}
-              latitude={selectedKloudtrackStation.station.location[0]}
+              longitude={selectedKloudtrackStation.station.location[0]}
+              latitude={selectedKloudtrackStation.station.location[1]}
               anchor="top"
               offset={16}
               closeButton={false}
@@ -1207,8 +1207,8 @@ function MapScreen({
                   if (mapRef.current) {
                     mapRef.current.flyTo({
                       center: [
-                        selectedKloudtrackStation.station.location[1],
                         selectedKloudtrackStation.station.location[0],
+                        selectedKloudtrackStation.station.location[1],
                       ],
                       zoom: 17.5,
                       pitch: 55,
