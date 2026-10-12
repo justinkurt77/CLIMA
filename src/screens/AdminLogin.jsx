@@ -40,15 +40,23 @@ export default function AdminLogin({ onLogin }) {
         .join("");
     };
     const userEmailHash = await sha256(user?.email || "");
-    const isSuper = superadminsHashes.includes(userEmailHash);
-    let isAdmin = user?.user_metadata?.role === 'admin';
+    const isHashSuper = superadminsHashes.includes(userEmailHash);
+    
+    // Check for superadmin or admin role in user_metadata
+    const userRole = user?.user_metadata?.role;
+    let isSuper = isHashSuper || userRole === 'superadmin';
+    let isAdmin = userRole === 'admin';
     let assignedCategories = user?.user_metadata?.assigned_categories || ["All Categories"];
 
     if (!isSuper && !isAdmin) {
       const { data: authUsers } = await supabase.rpc('get_auth_users').eq('email', user?.email);
-      if (authUsers && authUsers.length > 0 && authUsers[0].role === 'admin') {
-        isAdmin = true;
-        assignedCategories = authUsers[0].assigned_categories || ["All Categories"];
+      if (authUsers && authUsers.length > 0) {
+        const role = authUsers[0].role;
+        if (role === 'admin' || role === 'superadmin') {
+          isAdmin = role === 'admin';
+          isSuper = role === 'superadmin';
+          assignedCategories = authUsers[0].assigned_categories || ["All Categories"];
+        }
       }
     }
 
