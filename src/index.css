@@ -2143,6 +2143,17 @@ html.dark .desktop-header-backdrop,
   background: linear-gradient(90deg, rgba(10, 12, 16, 0.25) 0%, rgba(10, 12, 16, 0.05) 40%, transparent 70%);
   z-index: 1;
   pointer-events: none;
+  transition: background 0.4s ease;
+}
+
+html.dark .desktop-hero-card::before,
+[data-theme="dark"] .desktop-hero-card::before {
+  background: linear-gradient(
+    90deg,
+    rgba(10, 12, 16, 0.55) 0%,
+    rgba(10, 12, 16, 0.2) 40%,
+    rgba(10, 12, 16, 0.45) 100%
+  );
 }
 
 .desktop-hero-info {
@@ -2196,6 +2207,13 @@ html.dark .desktop-header-backdrop,
   color: #ffffff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+html.dark .desktop-pill,
+[data-theme="dark"] .desktop-pill {
+  background: rgba(16, 18, 24, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.16);
 }
 
 .desktop-hero-glass-card {
@@ -2210,6 +2228,13 @@ html.dark .desktop-header-backdrop,
   border-radius: 20px;
   padding: 20px 22px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  transition: all 0.3s ease;
+}
+
+html.dark .desktop-hero-glass-card,
+[data-theme="dark"] .desktop-hero-glass-card {
+  background: rgba(14, 16, 22, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .desktop-hero-glass-card p {
@@ -2525,8 +2550,16 @@ html.dark .desktop-header-backdrop,
   overflow: hidden;
   position: relative;
   cursor: pointer;
-  background: url('/wind_radar.jpg') center/cover no-repeat;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background-color: #f8fafc;
+  border: 1px solid var(--border-medium);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.3s ease;
+}
+
+html.dark .desktop-wind-card,
+[data-theme="dark"] .desktop-wind-card {
+  background-color: #0c0e12;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .desktop-wind-card:hover {
@@ -2537,31 +2570,56 @@ html.dark .desktop-header-backdrop,
 .desktop-wind-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(12, 14, 18, 0.78) 0%, rgba(20, 24, 30, 0.42) 100%);
+  z-index: 1;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.82) 0%, rgba(248, 250, 252, 0.42) 100%);
   padding: 22px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: background 0.4s ease;
+}
+
+html.dark .desktop-wind-overlay,
+[data-theme="dark"] .desktop-wind-overlay {
+  background: linear-gradient(135deg, rgba(12, 14, 18, 0.78) 0%, rgba(20, 24, 30, 0.42) 100%);
 }
 
 .desktop-wind-title {
   font-size: 13px;
   font-weight: 700;
+  color: #475569;
+  transition: color 0.3s ease;
+}
+
+html.dark .desktop-wind-title,
+[data-theme="dark"] .desktop-wind-title {
   color: rgba(255, 255, 255, 0.85);
 }
 
 .desktop-wind-speed {
   font-size: 20px;
   font-weight: 900;
-  color: #ffffff;
+  color: #09090b;
   margin-top: 4px;
+  transition: color 0.3s ease;
+}
+
+html.dark .desktop-wind-speed,
+[data-theme="dark"] .desktop-wind-speed {
+  color: #ffffff;
 }
 
 .desktop-wind-direction {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  color: #64748b;
   margin-top: 2px;
+  transition: color 0.3s ease;
+}
+
+html.dark .desktop-wind-direction,
+[data-theme="dark"] .desktop-wind-direction {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .desktop-wind-pin-btn {

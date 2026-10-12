@@ -306,19 +306,39 @@ export default function HomeScreen({
     return () => { isMounted = false; };
   }, [refreshTrigger]);
 
-  const getHeroBackground = () => {
+  const heroBgUrl = useMemo(() => {
     const icon = weatherInfo.icon;
     if (icon === "Sun" || icon === "CloudSun") {
-      return "url('/sunny.jpg')";
+      return isDark ? "/sunny_dark.jpg" : "/sunny.jpg";
     }
     if (icon === "CloudRain" || icon === "CloudLightning") {
-      return "url('/rainy.jpg')";
+      return isDark ? "/rainy_dark.jpg" : "/rainy.jpg";
     }
     if (icon === "Moon") {
-      return "url('/night.jpg')";
+      return "/night.jpg";
     }
-    return "url('/stormy_clouds.jpg')";
-  };
+    return isDark ? "/stormy_dark.jpg" : "/stormy_clouds.jpg";
+  }, [weatherInfo.icon, isDark]);
+
+  const getHeroBackground = () => `url('${heroBgUrl}')`;
+
+  // Preload weather background images for immediate smooth cross-fading in both themes
+  useEffect(() => {
+    [
+      "/sunny.jpg",
+      "/rainy.jpg",
+      "/night.jpg",
+      "/stormy_clouds.jpg",
+      "/sunny_dark.jpg",
+      "/rainy_dark.jpg",
+      "/stormy_dark.jpg",
+      "/wind_radar.jpg",
+      "/wind_radar_light.jpg",
+    ].forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
 
   const firstName = session?.user?.user_metadata?.first_name;
   const displayName = firstName || "Palayano";
@@ -823,9 +843,37 @@ export default function HomeScreen({
               transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
               className="desktop-hero-card"
               style={{
-                background: `${getHeroBackground()} center/cover no-repeat`
+                backgroundColor: "#161922",
               }}
             >
+              {/* Dynamic Animated Background Transition */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  overflow: "hidden",
+                  zIndex: 0,
+                  pointerEvents: "none",
+                }}
+              >
+                <AnimatePresence initial={false}>
+                  <motion.div
+                    key={heroBgUrl}
+                    initial={{ opacity: 0, scale: 1.04 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      backgroundImage: `url('${heroBgUrl}')`,
+                      backgroundPosition: "center",
+                      backgroundSize: "cover",
+                      backgroundRepeat: "no-repeat",
+                    }}
+                  />
+                </AnimatePresence>
+              </div>
               {/* Left Side: Large Temperature & Conditions */}
               <div className="desktop-hero-info">
                 <div className="desktop-hero-temp">{currentTemp}°</div>
@@ -1138,6 +1186,35 @@ export default function HomeScreen({
               onClick={() => setActiveScreen("maps")}
               title="Click to open interactive map"
             >
+              {/* Dynamic Animated Background Transition for Wind Radar */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  overflow: "hidden",
+                  zIndex: 0,
+                  pointerEvents: "none",
+                }}
+              >
+                <AnimatePresence initial={false}>
+                  <motion.div
+                    key={isDark ? "wind-dark" : "wind-light"}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.6, ease: "easeInOut" }}
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      backgroundImage: isDark ? "url('/wind_radar.jpg')" : "url('/wind_radar_light.jpg')",
+                      backgroundPosition: "center",
+                      backgroundSize: "cover",
+                      backgroundRepeat: "no-repeat",
+                    }}
+                  />
+                </AnimatePresence>
+              </div>
+
               <div className="desktop-wind-overlay">
                 <div className="desktop-wind-content">
                   <div className="desktop-wind-title">Wind & Atmosphere</div>
@@ -1522,18 +1599,57 @@ export default function HomeScreen({
             style={{
               borderRadius: 28,
               padding: "26px 24px 22px",
-              background: `${getHeroBackground()} center/cover no-repeat`,
+              backgroundColor: "#161922",
               border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.08)",
               boxShadow: "var(--shadow-card)",
               position: "relative",
               overflow: "hidden",
-              transition: "all 0.25s ease",
             }}
           >
-            {/* Undimmed soft gradient for text legibility without dimming image */}
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(10, 12, 16, 0.28) 0%, rgba(10, 12, 16, 0.05) 45%, rgba(10, 12, 16, 0.35) 100%)", zIndex: 0, pointerEvents: "none" }} />
+            {/* Dynamic Animated Background Transition */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                overflow: "hidden",
+                zIndex: 0,
+                pointerEvents: "none",
+              }}
+            >
+              <AnimatePresence initial={false}>
+                <motion.div
+                  key={heroBgUrl}
+                  initial={{ opacity: 0, scale: 1.04 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    backgroundImage: `url('${heroBgUrl}')`,
+                    backgroundPosition: "center",
+                    backgroundSize: "cover",
+                    backgroundRepeat: "no-repeat",
+                  }}
+                />
+              </AnimatePresence>
+            </div>
+
+            {/* Soft gradient for text legibility */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: isDark
+                  ? "linear-gradient(180deg, rgba(10, 12, 16, 0.48) 0%, rgba(10, 12, 16, 0.15) 45%, rgba(10, 12, 16, 0.55) 100%)"
+                  : "linear-gradient(180deg, rgba(10, 12, 16, 0.28) 0%, rgba(10, 12, 16, 0.05) 45%, rgba(10, 12, 16, 0.35) 100%)",
+                zIndex: 1,
+                pointerEvents: "none",
+                transition: "background 0.5s ease",
+              }}
+            />
             
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative", zIndex: 1 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative", zIndex: 2 }}>
               <div>
                 <div
                   style={{
