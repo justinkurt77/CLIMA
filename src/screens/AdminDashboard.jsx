@@ -1680,15 +1680,25 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
     
     const cats = getCatsForDept(assignDept);
     const deptLabel = getDeptLabel(assignDept);
-    await supabase.rpc("set_user_role", { target_user_id: existing.id, new_role: "admin", assigned_categories: cats, assigned_department: deptLabel });
     
-    // Different message based on whether they were already an admin
-    const action = isAlreadyAdmin ? 'updated' : 'promoted to admin';
-    const officeText = deptLabel === 'All Departments' ? '' : ` and assigned to ${deptLabel}`;
-    setMsg({ type: "success", text: `"${existing.full_name || assignEmail}" ${action}${officeText}.` });
-    
-    setAssignEmail(""); setAssignDept("All Departments");
-    fetchUsers();
+    try {
+      await supabase.rpc("set_user_role", { target_user_id: existing.id, new_role: "admin", assigned_categories: cats, assigned_department: deptLabel });
+      
+      // Wait a moment for database to update, then refresh
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await fetchUsers();
+      
+      // Different message based on whether they were already an admin
+      const action = isAlreadyAdmin ? 'updated' : 'promoted to admin';
+      const officeText = deptLabel === 'All Departments' ? '' : ` and assigned to ${deptLabel}`;
+      setMsg({ type: "success", text: `"${existing.full_name || assignEmail}" ${action}${officeText}.` });
+      
+      setAssignEmail(""); 
+      setAssignDept("All Departments");
+    } catch (error) {
+      console.error('Error updating user:', error);
+      setMsg({ type: "error", text: `Failed to update user: ${error.message}` });
+    }
   };
 
   const revoke = async (id) => { 
