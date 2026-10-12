@@ -312,6 +312,7 @@ function App() {
                   isNavMinimized={false}
                   isAdmin={false}
                   activeScreen={activeScreen}
+                  refreshTrigger={refreshTrigger}
                 />
               </Suspense>
             </ErrorBoundary>
@@ -598,6 +599,7 @@ function App() {
                     isNavMinimized={isNavMinimized}
                     isAdmin={isAdminView}
                     activeScreen={activeScreen}
+                    refreshTrigger={refreshTrigger}
                   />
                 </motion.div>
               )}

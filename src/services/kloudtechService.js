@@ -75,18 +75,16 @@ export const PALAYAN_KLOUDTECH_STATIONS = [
  * Returns authorization headers if token or cookies are configured
  */
 export function getKloudtechHeaders() {
-  const token =
-    import.meta.env.VITE_KLOUDTECH_TOKEN ||
-    (typeof window !== "undefined" ? localStorage.getItem("kloudtech_token") : null);
+  // Check localStorage for JWT token from login
+  const token = typeof window !== "undefined" ? localStorage.getItem("kloudtech_token") : null;
 
   const headers = {
     "Content-Type": "application/json",
   };
 
   if (token) {
+    // KloudTech API expects JWT token in Authorization Bearer header
     headers["Authorization"] = `Bearer ${token}`;
-    headers["x-api-key"] = token;
-    headers["X-API-Key"] = token;
   }
 
   return headers;
@@ -96,21 +94,27 @@ export function getKloudtechHeaders() {
  * Ensures authenticated session if login credentials are provided in .env
  */
 export async function ensureKloudtechAuth() {
-  const existingToken =
-    import.meta.env.VITE_KLOUDTECH_TOKEN ||
-    (typeof window !== "undefined" ? localStorage.getItem("kloudtech_token") : null);
-
-  if (existingToken && !existingToken.startsWith("kloud_live_")) {
+  // Check if we already have a valid token in localStorage
+  const existingToken = typeof window !== "undefined" ? localStorage.getItem("kloudtech_token") : null;
+  
+  if (existingToken && existingToken.startsWith('eyJ')) {
+    // We have a JWT token, use it
     return existingToken;
   }
 
+  // Need to login with email/password to get JWT token
   const email = import.meta.env.VITE_KLOUDTECH_EMAIL;
   const password = import.meta.env.VITE_KLOUDTECH_PASSWORD;
 
   if (email && password) {
+    console.log("🔐 Logging in to KloudTech API...");
     const res = await loginKloudtech(email, password);
     if (res.success) {
-      return res.data?.token || res.data?.accessToken;
+      const token = res.data?.token || res.data?.accessToken;
+      console.log("✅ KloudTech login successful, token:", token?.substring(0, 30) + "...");
+      return token;
+    } else {
+      console.error("❌ KloudTech login failed:", res.message);
     }
   }
 
@@ -123,25 +127,37 @@ export async function ensureKloudtechAuth() {
 export async function fetchKloudtechDashboard() {
   try {
     await ensureKloudtechAuth();
+    
+    const headers = getKloudtechHeaders();
+    console.log("🔑 KloudTech API Request Headers:", headers);
+    console.log("🌐 Request URL:", `${KLOUDTECH_BASE_URL}/telemetry/dashboard`);
 
     const res = await fetch(`${KLOUDTECH_BASE_URL}/telemetry/dashboard`, {
       method: "GET",
-      headers: getKloudtechHeaders(),
+      headers,
       credentials: "include",
     });
 
+    console.log("📡 KloudTech API Response Status:", res.status, res.statusText);
+
     if (res.ok) {
       const json = await res.json();
+      console.log("✅ KloudTech API Response Data:", json);
       const stations = Array.isArray(json) ? json : json.data || [];
       if (stations.length > 0) {
         return { success: true, data: stations, isLive: true };
       }
+    } else {
+      // Log error response body
+      const errorText = await res.text();
+      console.error("❌ KloudTech API Error Response:", errorText);
     }
   } catch (error) {
     console.warn("KloudTech live fetch notice:", error.message);
   }
 
   // Fallback to verified physical Popolon AWS station telemetry
+  console.log("⚠️ Using fallback station data");
   return {
     success: true,
     data: PALAYAN_KLOUDTECH_STATIONS,

@@ -338,6 +338,7 @@ function MapScreen({
   isAdmin = false,
   activeScreen,
   isNavMinimized,
+  refreshTrigger = 0,
 }) {
   const { theme, isDark } = useTheme();
   const [selectedReport, setSelectedReport] = useState(null);
@@ -430,9 +431,9 @@ function MapScreen({
     }
   }, []);
 
-  // Auto-refresh weather data every 5 minutes
+  // Auto-refresh weather data every 5 minutes AND on manual refresh trigger
   useEffect(() => {
-    // Initial fetch
+    // Initial fetch or manual refresh triggered
     refreshWeatherData();
 
     // Set up auto-refresh interval (5 minutes = 300000ms)
@@ -441,7 +442,7 @@ function MapScreen({
     }, 300000); // 5 minutes
 
     return () => clearInterval(refreshInterval);
-  }, [refreshWeatherData]);
+  }, [refreshWeatherData, refreshTrigger]);
 
   // Load Hospitals from Supabase
   useEffect(() => {
@@ -1407,9 +1408,6 @@ function MapScreen({
           activeMetric={activeMetric}
           onSelectMetric={setActiveMetric}
           isMapFullView={isMapFullView}
-          onRefresh={refreshWeatherData}
-          isRefreshing={isLoadingWeather}
-          lastUpdate={lastWeatherUpdate}
         />
       )}
     </div>
