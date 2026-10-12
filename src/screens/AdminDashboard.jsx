@@ -282,6 +282,9 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
 
   // Filter tabs based on permissions
   const visibleTabs = tabs.filter(tab => {
+    // Dashboard is always visible to all admins
+    if (tab.id === 'overview') return true;
+    
     if (isSuperadmin) return true;
     if (!permissionsLoaded) return false; // Don't show tabs until permissions are loaded
     return canViewModule(tab.module);
