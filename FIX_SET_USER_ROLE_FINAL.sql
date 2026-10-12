@@ -9,7 +9,7 @@ CREATE OR REPLACE FUNCTION set_user_role(
   target_user_id uuid, 
   new_role text, 
   assigned_categories jsonb DEFAULT NULL, 
-  assigned_department text DEFAULT NULL
+  p_assigned_department text DEFAULT NULL  -- Renamed to avoid ambiguity
 )
 RETURNS void
 SECURITY DEFINER
@@ -37,13 +37,13 @@ BEGIN
         jsonb_build_object(
           'role', new_role, 
           'assigned_categories', assigned_categories, 
-          'assigned_department', assigned_department
+          'assigned_department', p_assigned_department
         )
       ELSE 
         raw_user_meta_data || jsonb_build_object(
           'role', new_role, 
           'assigned_categories', assigned_categories, 
-          'assigned_department', assigned_department
+          'assigned_department', p_assigned_department
         )
     END
   WHERE id = target_user_id;
@@ -52,7 +52,7 @@ BEGIN
   UPDATE profiles
   SET 
     role = new_role,
-    assigned_department = assigned_department,
+    assigned_department = p_assigned_department,  -- Use parameter prefix
     updated_at = NOW()
   WHERE id = target_user_id;
   
@@ -64,7 +64,7 @@ BEGIN
       au.email,
       COALESCE(au.raw_user_meta_data->>'full_name', au.email),
       new_role,
-      assigned_department,
+      p_assigned_department,  -- Use parameter prefix
       NOW(),
       NOW()
     FROM auth.users au
@@ -72,7 +72,7 @@ BEGIN
   END IF;
   
   -- Log for debugging
-  RAISE NOTICE 'Updated user % with role % and department %', target_user_id, new_role, assigned_department;
+  RAISE NOTICE 'Updated user % with role % and department %', target_user_id, new_role, p_assigned_department;
 END;
 $$;
 
