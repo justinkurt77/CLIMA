@@ -367,21 +367,8 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
               {activeTab === "settings" && "Offices & Categories"}
               {activeTab === "logs" && "System Activity Logs"}
             </h2>
-            {!isSuperadmin && adminDepartment?.name && activeTab === "overview" && (
-              <p style={{ margin: 0, fontSize: 11, color: S.muted, fontWeight: 700 }}>Showing reports for {adminDepartment.name}</p>
-            )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {isSuperadmin && activeTab === "overview" && (
-              <CustomSelect
-                value={selectedDeptId}
-                onChange={setSelectedDeptId}
-                options={[{ value: "all", label: "All Departments" }, ...departments.map(d => ({ value: d.id, label: d.name }))]}
-                compact
-                accent={S.accent}
-                style={{ minWidth: 180 }}
-              />
-            )}
             <button onClick={() => fetchData()} style={{ ...btnPrimary, padding: 10 }}>
               <RefreshCw size={16} />
             </button>
