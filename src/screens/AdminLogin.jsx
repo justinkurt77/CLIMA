@@ -2,16 +2,19 @@ import { useState, useEffect } from "react";
 import { Shield, Lock, Mail, ArrowRight, BarChart3, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
+import ChangePasswordScreen from "./ChangePasswordScreen";
+import ForgotPasswordScreen from "./ForgotPasswordScreen";
 
 export default function AdminLogin({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [step, setStep] = useState("login"); // login, forgot, reset, force_reset
+  const [step, setStep] = useState("login"); // login, forgot, reset, force_reset, change_password
   const [error, setError] = useState("");
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionUser, setSessionUser] = useState(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const superadminsHashes = [
     '980f32df69a604ee31a4ca3a18cfea910de69ef3c496124dc8e19f76c4fa5686',
@@ -116,6 +119,19 @@ export default function AdminLogin({ onLogin }) {
 
       if (loginError) throw loginError;
 
+      // Check if user must change password (first-time login)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('must_change_password')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profile?.must_change_password) {
+        setSessionUser(data.user);
+        setStep("change_password");
+        return;
+      }
+
       // Check if they are forced to reset password (new registered admin)
       if (data.user?.user_metadata?.force_password_reset) {
         setSessionUser(data.user);
@@ -177,6 +193,35 @@ export default function AdminLogin({ onLogin }) {
       setLoading(false);
     }
   };
+
+  // Show ChangePasswordScreen if user must change password
+  if (step === "change_password" && sessionUser) {
+    return (
+      <ChangePasswordScreen
+        user={sessionUser}
+        onPasswordChanged={async () => {
+          // After password change, proceed with login
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await checkAdminAuth(user);
+          }
+        }}
+      />
+    );
+  }
+
+  // Show ForgotPasswordScreen if requested
+  if (showForgotPassword) {
+    return (
+      <ForgotPasswordScreen
+        onBack={() => {
+          setShowForgotPassword(false);
+          setError("");
+          setMsg("");
+        }}
+      />
+    );
+  }
 
   return (
     <div style={{
@@ -372,7 +417,7 @@ export default function AdminLogin({ onLogin }) {
           {step === 'login' && (
             <button
               type="button"
-              onClick={() => { setStep('forgot'); setError(""); setMsg(""); }}
+              onClick={() => { setShowForgotPassword(true); setError(""); setMsg(""); }}
               style={{ background: "none", border: "none", color: "rgba(55, 61, 32, 0.6)", fontSize: 13, fontWeight: 700, cursor: "pointer", marginTop: -10 }}
             >
               Forgot Password?
