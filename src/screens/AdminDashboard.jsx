@@ -920,16 +920,25 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
           <h4 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 900, color: S.text }}>
             Citizen Reports Trend
           </h4>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={reportsTimelineData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
-              <XAxis dataKey="date" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
-              <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
-              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
-              <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
-              <Line type="monotone" dataKey="reports" stroke={S.accent} strokeWidth={2} dot={{ fill: S.accent, r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          {reportsTimelineData.every(d => d.reports === 0) ? (
+            <EmptyChartState 
+              icon="📊" 
+              message="No reports yet" 
+              subtitle="Report trends will appear here once citizens start submitting reports"
+              S={S}
+            />
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={reportsTimelineData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
+                <XAxis dataKey="date" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
+                <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
+                <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
+                <Line type="monotone" dataKey="reports" stroke={S.accent} strokeWidth={2} dot={{ fill: S.accent, r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Reports by Category */}
@@ -937,15 +946,24 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
           <h4 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 900, color: S.text }}>
             Top Report Categories
           </h4>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={reportsByCategoryData} layout="horizontal">
-              <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
-              <XAxis type="number" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
-              <YAxis type="category" dataKey="category" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} width={120} />
-              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
-              <Bar dataKey="count" fill={S.accent} radius={[0, 8, 8, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {reportsByCategoryData.length === 0 ? (
+            <EmptyChartState 
+              icon="📁" 
+              message="No categories yet" 
+              subtitle="Report categories will be shown here once data is available"
+              S={S}
+            />
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={reportsByCategoryData} layout="horizontal">
+                <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
+                <XAxis type="number" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
+                <YAxis type="category" dataKey="category" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} width={120} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
+                <Bar dataKey="count" fill={S.accent} radius={[0, 8, 8, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Health Operations Trend */}
@@ -953,17 +971,26 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
           <h4 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 900, color: S.text }}>
             Health Operations (14 Days)
           </h4>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={healthOpsData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
-              <XAxis dataKey="date" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
-              <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
-              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
-              <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
-              <Line type="monotone" dataKey="admissions" stroke="#d97706" strokeWidth={2} name="Total Admissions" />
-              <Line type="monotone" dataKey="elNinoCases" stroke="#ef4444" strokeWidth={2} name="El Niño Cases" />
-            </LineChart>
-          </ResponsiveContainer>
+          {healthOpsData.every(d => d.admissions === 0 && d.elNinoCases === 0) ? (
+            <EmptyChartState 
+              icon="🏥" 
+              message="No health data yet" 
+              subtitle="Hospital admission and El Niño case trends will appear here"
+              S={S}
+            />
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={healthOpsData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
+                <XAxis dataKey="date" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
+                <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
+                <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
+                <Line type="monotone" dataKey="admissions" stroke="#d97706" strokeWidth={2} name="Total Admissions" />
+                <Line type="monotone" dataKey="elNinoCases" stroke="#ef4444" strokeWidth={2} name="El Niño Cases" />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Emergency Operations */}
@@ -971,18 +998,27 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
           <h4 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 900, color: S.text }}>
             Emergency Operations (14 Days)
           </h4>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={emergencyOpsData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
-              <XAxis dataKey="date" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
-              <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
-              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
-              <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
-              <Line type="monotone" dataKey="cdrrmo" stroke="#10b981" strokeWidth={2} name="CDRRMO" />
-              <Line type="monotone" dataKey="bfp" stroke="#ef4444" strokeWidth={2} name="BFP" />
-              <Line type="monotone" dataKey="ambulance" stroke="#8b5cf6" strokeWidth={2} name="Ambulance" />
-            </LineChart>
-          </ResponsiveContainer>
+          {emergencyOpsData.every(d => d.cdrrmo === 0 && d.bfp === 0 && d.ambulance === 0) ? (
+            <EmptyChartState 
+              icon="🚨" 
+              message="No emergency operations yet" 
+              subtitle="CDRRMO, BFP, and ambulance operation data will appear here"
+              S={S}
+            />
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={emergencyOpsData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
+                <XAxis dataKey="date" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
+                <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
+                <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
+                <Line type="monotone" dataKey="cdrrmo" stroke="#10b981" strokeWidth={2} name="CDRRMO" />
+                <Line type="monotone" dataKey="bfp" stroke="#ef4444" strokeWidth={2} name="BFP" />
+                <Line type="monotone" dataKey="ambulance" stroke="#8b5cf6" strokeWidth={2} name="Ambulance" />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
@@ -991,8 +1027,17 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
         <h4 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 900, color: S.text }}>
           Report Status Distribution
         </h4>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <ResponsiveContainer width="100%" height={300}>
+        {statusDistributionData.every(d => d.value === 0) ? (
+          <EmptyChartState 
+            icon="📈" 
+            message="No status data yet" 
+            subtitle="Report status breakdown will be visualized here"
+            S={S}
+            height={300}
+          />
+        ) : (
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
                 data={statusDistributionData}
@@ -1012,8 +1057,50 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
               <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
             </PieChart>
           </ResponsiveContainer>
-        </div>
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+/* ── Empty Chart State Component ── */
+function EmptyChartState({ icon, message, subtitle, S, height = 250 }) {
+  return (
+    <div style={{
+      height,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "40px 20px"
+    }}>
+      <div style={{
+        fontSize: 48,
+        marginBottom: 16,
+        opacity: 0.5
+      }}>
+        {icon}
+      </div>
+      <p style={{
+        margin: 0,
+        fontSize: 14,
+        fontWeight: 800,
+        color: S.text,
+        marginBottom: 4
+      }}>
+        {message}
+      </p>
+      <p style={{
+        margin: 0,
+        fontSize: 12,
+        fontWeight: 600,
+        color: S.muted,
+        textAlign: "center",
+        maxWidth: 300
+      }}>
+        {subtitle}
+      </p>
     </div>
   );
 }
