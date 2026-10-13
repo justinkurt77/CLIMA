@@ -205,3 +205,85 @@ All 12 phases have been implemented and integrated. The CLIMA/PalaSumbong platfo
 - Security utilities fully documented
 
 **Project successfully completed!** 🚀
+
+
+---
+
+## 🔥 LATEST UPDATE (October 8, 2026)
+
+### El Niño Monitoring System Integrated ✅
+
+**Completed:**
+1. ✅ **Data Flow Bugs Fixed** (Admin → Client visibility)
+   - Fixed wrong table names in AdminDashboard queries
+   - Created `FIX_PUBLIC_RLS_POLICIES.sql` migration (7 tables)
+   - Fixed: `bfp_daily_operations` → `bfp_operations`
+   - Fixed: `prepareEmergencyOpsTimeline()` aggregation logic
+
+2. ✅ **KloudTech Weather Integration** (Admin Dashboard)
+   - Added live weather sensor card to Admin OverviewTab
+   - Fixed authentication: `Authorization: Bearer` token
+   - Fixed coordinate ordering bug: `[lng, lat]` format
+   - Real-time temperature, humidity, rainfall display
+
+3. ✅ **El Niño Monitoring Dashboard** (Citizen View)
+   - **Component:** `ElNinoMonitoringDashboard.jsx` (1,177 lines)
+   - **Route:** Added to `App.jsx` with "elnino" screen
+   - **Navigation:** Added to CitizenNav with Activity icon
+   - **6 Monitoring Sections:**
+     - Official Advisories (El Niño related)
+     - Hospital Heat Cases (heat stroke, exhaustion, dehydration)
+     - Wildfire Response (BFP operations)
+     - CDRRMO El Niño Operations (evacuations, relief)
+     - Agricultural Damages (crop losses, livestock impact)
+     - Utility Interruptions (power/water outages per barangay)
+
+4. ✅ **Admin Interruption Scheduling** (Already Built)
+   - Water Utility Tab: Full CRUD for `water_interruptions`
+   - Power Utility Tab: Full CRUD for `power_interruptions`
+   - Features: barangay selection, date/time pickers, status tracking
+   - Analytics: 30-day summaries, provider breakdowns
+
+**Database Tables Verified:**
+- `advisories` ✅
+- `hospital_daily_records` ✅
+- `bfp_operations` ✅
+- `cdrrmo_operations` ✅
+- `agriculture_damage_reports` ✅
+- `water_interruptions` ✅
+- `power_interruptions` ✅
+
+**Build Status:** ✅ Passing (0 errors)
+
+**Critical Next Step:**
+⚠️ **Run `FIX_PUBLIC_RLS_POLICIES.sql` in Supabase SQL Editor**
+   - Without this migration, citizens cannot see admin-encoded data
+   - File location: `c:\Users\User\CLIMA\FIX_PUBLIC_RLS_POLICIES.sql`
+   - Adds anon role SELECT policies to 7 tables
+   - Estimated time: 5 minutes
+
+**Files Modified:**
+- `src/App.jsx` - Added ElNinoMonitoringDashboard import and routing
+- `src/components/layout/CitizenNav.jsx` - Added "El Niño" navigation item
+- `src/screens/AdminDashboard.jsx` - Fixed table queries and added KloudTech
+- `src/services/kloudtechService.js` - Fixed authentication
+- `src/screens/MapScreen.jsx` - Fixed coordinate swap bug
+
+**Files Created:**
+- `src/components/dashboard/ElNinoMonitoringDashboard.jsx` - Complete dashboard
+- `FIX_PUBLIC_RLS_POLICIES.sql` - RLS policy migration
+- `.agents/tasks/data-flow-analysis.md` - Technical analysis
+
+**Commits:**
+- `feat: integrate El Niño monitoring dashboard into citizen navigation` (dc1bab8)
+- Previous fixes for data flow and KloudTech integration
+
+**Testing Checklist:**
+- [ ] Run RLS migration in Supabase
+- [ ] Admin encodes data in each module
+- [ ] Verify data appears on client El Niño dashboard
+- [ ] Test interruption scheduling (water/power)
+- [ ] Verify KloudTech live weather updates
+- [ ] Test all 6 dashboard sections with real data
+- [ ] Mobile responsive testing
+- [ ] Build and deploy to production
