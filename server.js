@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
+import rateLimit from 'express-rate-limit';
 import nodemailer from 'nodemailer';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
@@ -10,9 +11,34 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Global rate limiter: 100 requests per 15 minutes per IP
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Strict rate limiter for authentication endpoints: 5 requests per 15 minutes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 requests per windowMs
+  message: 'Too many authentication attempts, please try again later.',
+  skipSuccessfulRequests: true, // Only count failed requests
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.VITE_APP_URL || 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(bodyParser.json());
+app.use('/api/', globalLimiter); // Apply global rate limiting to all API routes
 
 // Supabase client (service role for admin operations)
 const supabaseAdmin = createClient(
@@ -36,8 +62,8 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'CLIMA Admin API is running' });
 });
 
-// Create admin user endpoint
-app.post('/api/admin/create', async (req, res) => {
+// Create admin user endpoint (with strict rate limiting)
+app.post('/api/admin/create', authLimiter, async (req, res) => {
   try {
     const { email, full_name, assigned_categories, assigned_department } = req.body;
 
@@ -52,8 +78,10 @@ app.post('/api/admin/create', async (req, res) => {
     // Generate a temporary password
     const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
     
-    // Log password for testing (REMOVE IN PRODUCTION!)
-    console.log(`🔑 Generated password for ${email}: ${tempPassword}`);
+    // Password logged only in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🔑 Generated password for ${email}: ${tempPassword}`);
+    }
 
     // Create the user in Supabase Auth with service role
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -175,8 +203,8 @@ app.post('/api/admin/create', async (req, res) => {
   }
 });
 
-// Send OTP for forgot password
-app.post('/api/auth/forgot-password', async (req, res) => {
+// Send OTP for forgot password (with strict rate limiting)
+app.post('/api/auth/forgot-password', authLimiter, async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -288,8 +316,8 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   }
 });
 
-// Verify OTP and reset password
-app.post('/api/auth/reset-password', async (req, res) => {
+// Verify OTP and reset password (with strict rate limiting)
+app.post('/api/auth/reset-password', authLimiter, async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
 
@@ -347,8 +375,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
   }
 });
 
-// Change password (for first-time login or regular password change)
-app.post('/api/auth/change-password', async (req, res) => {
+// Change password (for first-time login or regular password change) (with strict rate limiting)
+app.post('/api/auth/change-password', authLimiter, async (req, res) => {
   try {
     const { userId, newPassword } = req.body;
 
