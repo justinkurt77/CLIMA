@@ -1,0 +1,28 @@
+{
+  "project_type": "React 19 + Vite SPA with Supabase backend, mobile-first disaster response platform",
+  "language": "JavaScript (JSX), no TypeScript",
+  "build_system": "Vite 7.3.2, npm scripts. Build command: npm run build. Dev: npm run dev",
+  "test_framework": "None detected. Verification is manual testing + build pass.",
+  "build_command": "npm run build",
+  "test_command": "Manual testing in dev mode (npm run dev). No automated tests.",
+  "verification_instructions": "1. Run npm run build and confirm 0 errors. 2. Run npm run dev, open localhost in browser (unauthenticated for client tests, authenticated admin for admin tests). 3. Verify data displays, real-time updates work, no console errors. 4. Test mobile responsive layout by resizing browser. 5. Toggle dark mode and confirm colors adapt.",
+  "snapshot_or_generated_files": null,
+  "environment_constraints": "RLS policies on Supabase tables currently block anonymous SELECT. Must apply FIX_PUBLIC_RLS_POLICIES.sql in Supabase SQL Editor before client-side data will be visible. Build passing with warnings about large chunks (acceptable per current config).",
+  "contribution_requirements": "Autonomous execution per AGENTS.md. Run builds immediately without asking. Use existing patterns (inline styles, Framer Motion, Recharts, Lucide icons). Follow dark mode support via ThemeContext. Real-time Supabase subscriptions mandatory for live data.",
+  "key_patterns": "1. Inline styles with theme object (S) containing accent, bg, border, text, muted colors. 2. Card-based layouts with cardStyle. 3. Motion animations via Framer Motion (motion.div, AnimatePresence). 4. Real-time: supabase.channel().on('postgres_changes', ...).subscribe() pattern. 5. Charts: ResponsiveContainer + LineChart/BarChart from Recharts. 6. Loading: pulse animation skeletons. 7. Empty states: icon + message. 8. Date helpers: getDateDaysAgo(days), formatDateShort(dateStr). 9. Icons: Lucide React, 20px default size. 10. Mobile: grid with repeat(auto-fit, minmax(...)).",
+  "relevant_files": [
+    "src/screens/HomeScreen.jsx - Client dashboard, 720+ lines, weather-focused, add El Niño section here",
+    "src/screens/AdminDashboard.jsx - Admin dashboard, 5800+ lines, multi-tab, enhance Water/Power tabs",
+    "src/components/ui/ReportCard.jsx - Example card component pattern",
+    "src/context/ThemeContext.jsx - Dark mode context, useTheme() hook",
+    "src/lib/supabase.js - Supabase client initialization",
+    "FIX_PUBLIC_RLS_POLICIES.sql - RLS fix for anonymous SELECT access (execute in Supabase)",
+    "FIX_DATABASE_SCHEMA.sql - Table schemas for water_interruptions, power_interruptions",
+    "supabase_hospital_redesign.sql - hospital_daily_records table schema",
+    "supabase_cdrrmo_operations.sql - cdrrmo_daily_operations table schema",
+    "supabase_bfp_operations_v2.sql - bfp_operations table schema",
+    "supabase_agriculture_damages.sql - agriculture_damage_reports table schema",
+    "supabase_phase3.sql - advisories table schema"
+  ],
+  "directory_structure": "src/ contains screens/, components/ui/, context/, lib/, services/. Root contains SQL migration files. .agents/tasks/ for planning artifacts. package.json at root."
+}

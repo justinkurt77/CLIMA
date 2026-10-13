@@ -1,0 +1,7 @@
+{
+  "task_id": "task-elnino-dashboard",
+  "task_description": "Update CLIMA dashboards with El Niño monitoring and utility interruption scheduling. Fix RLS policies to enable client-side data visibility.",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}

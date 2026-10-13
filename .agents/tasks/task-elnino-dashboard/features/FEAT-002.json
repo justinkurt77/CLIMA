@@ -1,0 +1,44 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Enhance Admin Dashboard Water Utility and Power Utility tabs with prominent utility interruption scheduling UI. Add 'Upcoming Interruptions' sections, 'Schedule New' forms with date/time pickers, past interruptions collapsible views, and color-coded status badges. Also add prominent 'KT' (KloudTech) branding to the live sensor widget on Admin Overview tab. This feature is independent of FEAT-003 and improves admin workflow for managing utility outages that citizens will see on their dashboard.",
+  "status": "pending",
+  "steps": [
+    "Open src/screens/AdminDashboard.jsx in editor and locate WaterUtilityTab function (line 5485)",
+    "Add 'Upcoming Interruptions' section at top of WaterUtilityTab with Droplet icon (Lucide), query water_interruptions table filtered by status='ongoing', display in table with columns: Date, Time, Provider, Affected Barangays, Duration (hours), Households Affected, Status badge (blue theme)",
+    "Add 'Schedule New Interruption' button with blue accent, opens form modal with fields: interruption_date (date input), interruption_time (time input), provider (dropdown: 'Palayan City Water District' or 'Balibago Waterworks'), affected_barangays (text input), cause (dropdown: pipe_burst, maintenance, shortage, pump_failure, other), duration_hours (number input), households_affected (number input), description (textarea)",
+    "Add 'Past Interruptions' collapsible section at bottom of WaterUtilityTab filtered by status='restored', same table format as upcoming",
+    "Locate PowerUtilityTab function (line 5825) and add 'Upcoming Outages' section with Zap icon (Lucide), query power_interruptions table filtered by interruption_date >= today, display in table with columns: Date, Feeders Affected, Households, Total Duration (minutes), Peak Outage Time, Cause, Status badge (yellow theme)",
+    "Add 'Schedule New Outage' button with yellow accent, opens form modal with fields: interruption_date (date input), total_outages (number input), total_affected_households (number input), feeders_affected (text input), total_duration_minutes (number input), peak_outage_time (time input), cause (dropdown: line_fault, transformer_issue, weather, maintenance, overload, other), restoration_status (dropdown: ongoing, restored, partial), description (textarea)",
+    "Add 'Past Outages' collapsible section at bottom of PowerUtilityTab for historical records",
+    "Locate OverviewTab function (line 721) and find KloudTech sensor widget (lines 796-918), add large 'KT' badge in top-left corner with brand styling (white text on accent background, bold font)",
+    "Add status badge color coding: ongoing (orange #f97316), restored (green #10b981), partial (yellow #eab308)",
+    "Use global modal system (showSuccessModal, showErrorModal, showConfirmModal) for all CRUD feedback",
+    "Test in dev mode: npm run dev, login as admin, navigate to Water Utility tab, create new interruption with date 2025-01-05 10:00, confirm it appears in Upcoming list",
+    "Repeat test for Power Utility tab, verify form validation (required fields), verify status badge colors",
+    "Run npm run build and confirm 0 errors"
+  ],
+  "acceptance_criteria": [
+    "WaterUtilityTab has 'Upcoming Interruptions' section with table view displaying ongoing water interruptions (blue Droplet icon theme)",
+    "PowerUtilityTab has 'Upcoming Outages' section with table view displaying upcoming power outages (yellow Zap icon theme)",
+    "Both tabs have 'Schedule New' buttons that open form modals with all required fields (date, time, affected areas, duration, cause, description)",
+    "Forms validate required fields before submission and show error messages for missing data",
+    "Interruptions display in chronological order (soonest first) in Upcoming sections",
+    "Status badges are color-coded: ongoing (orange), restored (green), partial (yellow)",
+    "Past interruptions sections are collapsible to reduce clutter and default to collapsed state",
+    "KloudTech sensor widget on Admin Overview tab has prominent 'KT' badge in top-left corner with white text on accent background",
+    "All CRUD operations (create, update, delete) use global modal system (showSuccessModal on success, showErrorModal on failure, showConfirmModal for deletes)",
+    "Build passes with 0 errors: npm run build completes successfully"
+  ],
+  "verification": [
+    "npm run build (must complete with 0 errors)",
+    "npm run dev, login as admin user, navigate to Water Utility tab in AdminDashboard",
+    "Click 'Schedule New Interruption', fill form with date=2025-01-05, time=10:00, provider='Palayan City Water District', affected_barangays='Singalat, Atate', cause='maintenance', duration_hours=4, households_affected=150, description='Scheduled pipe replacement', submit and confirm success modal appears",
+    "Verify new interruption appears in 'Upcoming Interruptions' table with blue status badge showing 'ongoing'",
+    "Navigate to Power Utility tab, repeat test with power outage form, verify yellow theme and correct fields",
+    "Navigate to Overview tab, verify KloudTech sensor widget has 'KT' badge visible in top-left corner",
+    "No console errors in browser DevTools during testing"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

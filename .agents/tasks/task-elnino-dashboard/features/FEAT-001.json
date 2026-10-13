@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Apply RLS policy fixes to enable anonymous client access to operational data tables. Currently, records created by admins are not visible on client side due to RLS policies restricting SELECT to authenticated users only. The fix is documented in FIX_PUBLIC_RLS_POLICIES.sql and adds public SELECT policies with 'TO anon, authenticated USING (true)' for 7 data tables: hospital_daily_records, cdrrmo_daily_operations, bfp_operations, agriculture_damage_reports, water_interruptions, power_interruptions, and advisories (filtered to status='Published'). This is a database-only change executed in Supabase SQL Editor, no code changes required.",
+  "status": "pending",
+  "steps": [
+    "Open Supabase Dashboard (https://dkuztdffceayepajhnvz.supabase.co) and navigate to SQL Editor",
+    "Open c:\\Users\\User\\CLIMA\\FIX_PUBLIC_RLS_POLICIES.sql in text editor and copy entire contents (lines 1-68)",
+    "Paste SQL into Supabase SQL Editor and execute (Run button)",
+    "Confirm execution completes without errors (should see success message or policy creation confirmations)",
+    "Run verification query at bottom of SQL file to confirm all 7 tables have new SELECT policies visible in pg_policies system table",
+    "Test anonymous access: Open browser DevTools console on unauthenticated CLIMA page, execute: await supabase.from('hospital_daily_records').select('*').limit(1) and confirm data returns (not 403 auth error)",
+    "Open CLIMA client in incognito window (npm run dev, navigate to HomeScreen without logging in), confirm existing advisories display and no RLS errors in console"
+  ],
+  "acceptance_criteria": [
+    "All 7 data tables (hospital_daily_records, cdrrmo_daily_operations, bfp_operations, agriculture_damage_reports, water_interruptions, power_interruptions, advisories) have public SELECT policies with 'TO anon, authenticated'",
+    "Anonymous Supabase client can query these tables and receive data without authentication errors",
+    "Published advisories (status='Published') visible to anonymous users on HomeScreen",
+    "Admin write permissions (INSERT/UPDATE/DELETE) remain restricted to authenticated admin role users",
+    "No console errors related to RLS policy violations when viewing HomeScreen as unauthenticated user"
+  ],
+  "verification": [
+    "Manual SQL execution in Supabase Dashboard SQL Editor",
+    "Query pg_policies system table to confirm 7 new policies exist",
+    "Browser DevTools console test: anonymous supabase.from().select() returns data",
+    "Incognito window test: HomeScreen displays advisories without auth"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

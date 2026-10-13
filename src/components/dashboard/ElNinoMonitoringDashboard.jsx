@@ -148,7 +148,7 @@ function ElNinoMonitoringDashboard() {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
       const { data: operations } = await supabase
-        .from('cdrrmo_operations')
+        .from('cdrrmo_daily_operations')
         .select('*')
         .gte('operation_date', thirtyDaysAgo.toISOString().split('T')[0])
         .order('operation_date', { ascending: false });
