@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { reverseGeocode } from "./report/reportConstants";
 import Step1CategoryPicker from "./report/Step1CategoryPicker";
@@ -34,6 +34,15 @@ function ReportModal({ isOpen, onClose, onSubmit, session }) {
   const [photoPreviews, setPhotoPreviews] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Secondary auth check: if modal is open but user is not authenticated,
+  // close the modal (App.jsx should have redirected to profile already)
+  useEffect(() => {
+    if (isOpen && (!session || !session.user?.user_metadata?.first_name)) {
+      console.warn('ReportModal opened without valid session - closing');
+      handleClose();
+    }
+  }, [isOpen, session]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
   const reset = () => {

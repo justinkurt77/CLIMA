@@ -4,8 +4,6 @@ import {
   MapPin,
   AlertTriangle,
   User,
-  BarChart2,
-  Settings,
   RotateCw,
   Activity,
 } from "lucide-react";
@@ -24,8 +22,7 @@ const DESKTOP_NAV_ITEMS = [
   { id: "maps", label: "Map", icon: MapPin },
   { id: "elnino", label: "El Niño", icon: Activity },
   { id: "emergency", label: "Alerts", icon: AlertTriangle },
-  { id: "reports", label: "Reports", icon: BarChart2 },
-  { id: "profile", label: "Settings", icon: Settings },
+  { id: "profile", label: "Profile", icon: User },
 ];
 
 export default function CitizenNav({

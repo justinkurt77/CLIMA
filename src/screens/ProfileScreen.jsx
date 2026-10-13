@@ -77,9 +77,8 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
 
   const handleLoginSuccess = () => {
     setShowAuth(false);
-    if (setActiveScreen) {
-      setActiveScreen("home");
-    }
+    // Stay on profile screen to show the user their profile menu
+    // Don't auto-navigate away after successful login
   };
 
   const handleAvatarChange = (e) => {

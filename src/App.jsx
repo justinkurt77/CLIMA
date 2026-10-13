@@ -1,7 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import CitizenNav from "./components/layout/CitizenNav";
 import HomeScreen from "./screens/HomeScreen";
-import MyReportsScreen from "./screens/MyReportsScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import EmergencyScreen from "./screens/EmergencyScreen";
 import ReportModal from "./components/ui/ReportModal";
@@ -221,7 +220,15 @@ function App() {
     }
   }, [activeScreen, mapVisited]);
 
-  const openModal = () => setModalOpen(true);
+  const openModal = () => {
+    // Check if user is authenticated before opening modal
+    if (!session || !session.user?.user_metadata?.first_name) {
+      // User not logged in or profile incomplete → redirect to profile/auth
+      setActiveScreen('profile');
+      return;
+    }
+    setModalOpen(true);
+  };
   const closeModal = () => setModalOpen(false);
 
   const handleSubmit = (newReport) => {
@@ -339,27 +346,6 @@ function App() {
               userReports={userReports}
               session={session}
               setActiveScreen={setActiveScreen}
-            />
-          </motion.div>
-        )}
-
-        {activeScreen === "reports" && (
-          <motion.div
-            key="reports"
-            variants={screenVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={screenVariants.transition}
-            className="screen active citizen-screen-view"
-            style={{
-              zIndex: 10,
-              background: "transparent",
-            }}
-          >
-            <MyReportsScreen
-              onOpenModal={openModal}
-              userReports={userReports}
             />
           </motion.div>
         )}
