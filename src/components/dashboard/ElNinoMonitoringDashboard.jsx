@@ -220,19 +220,37 @@ function ElNinoMonitoringDashboard() {
 
   if (loading) {
     return (
-      <div style={{ padding: '20px 16px', maxWidth: isMobile ? '100%' : 1400, margin: '0 auto' }}>
-        {[1, 2, 3, 4, 5, 6].map(i => (
-          <div
-            key={i}
-            className="desktop-card"
-            style={{
-              height: 150,
-              marginBottom: 16,
-              animation: 'pulse 1.5s ease-in-out infinite',
-              background: isDark ? '#27272a' : '#f4f4f5',
-            }}
-          />
-        ))}
+      <div className="desktop-view-container">
+        <div className="desktop-main-grid">
+          <div className="desktop-left-column">
+            {[1, 2, 3, 4].map(i => (
+              <div
+                key={i}
+                className="desktop-card"
+                style={{
+                  height: 200,
+                  marginBottom: 20,
+                  animation: 'pulse 1.5s ease-in-out infinite',
+                  background: isDark ? '#27272a' : '#f4f4f5',
+                }}
+              />
+            ))}
+          </div>
+          <div className="desktop-right-column">
+            {[1, 2].map(i => (
+              <div
+                key={i}
+                className="desktop-card"
+                style={{
+                  height: 150,
+                  marginBottom: 20,
+                  animation: 'pulse 1.5s ease-in-out infinite',
+                  background: isDark ? '#27272a' : '#f4f4f5',
+                }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -256,12 +274,7 @@ function ElNinoMonitoringDashboard() {
   return (
     <>
       {/* Desktop View (>= 1024px) */}
-      <div className="desktop-view-container" style={{ 
-        display: isMobile ? 'none' : 'block',
-        padding: '20px 24px',
-        maxWidth: 1400,
-        margin: '0 auto',
-      }}>
+      <div className="desktop-view-container">
         {/* Hero Card */}
         <motion.div
           initial={{ opacity: 0, y: 28, scale: 0.985 }}

@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Home,
   MapPin,
-  AlertTriangle,
+  Phone,
   User,
   RotateCw,
   Activity,
@@ -13,7 +13,8 @@ import { useTheme } from "../../context/ThemeContext";
 const MOBILE_NAV_ITEMS = [
   { id: "home", label: "Home", icon: Home },
   { id: "maps", label: "Map", icon: MapPin },
-  { id: "emergency", label: "Alerts", icon: AlertTriangle },
+  { id: "elnino", label: "El Niño", icon: Activity },
+  { id: "emergency", label: "Hotlines", icon: Phone },
   { id: "profile", label: "Profile", icon: User },
 ];
 
@@ -21,7 +22,7 @@ const DESKTOP_NAV_ITEMS = [
   { id: "home", label: "Home", icon: Home },
   { id: "maps", label: "Map", icon: MapPin },
   { id: "elnino", label: "El Niño", icon: Activity },
-  { id: "emergency", label: "Alerts", icon: AlertTriangle },
+  { id: "emergency", label: "Hotlines", icon: Phone },
   { id: "profile", label: "Profile", icon: User },
 ];
 
