@@ -50,6 +50,9 @@ export function PhotoCard({ fileRef, photoPreviews = [], onRemove, onChange }) {
               <img
                 src={preview}
                 alt="preview"
+                loading="lazy"
+                width="120"
+                height="120"
                 style={{
                   width: "100%",
                   height: "100%",

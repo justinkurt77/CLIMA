@@ -1408,7 +1408,7 @@ function ReportRow({ report, showActions, onUpdateStatus, S, inputStyle, selectS
       onMouseLeave={e => { if (onClick) e.currentTarget.style.background = "#fafcf9"; }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
         <div style={{ width: 44, height: 44, borderRadius: 10, background: st.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-          {report.photo_url ? <img src={report.photo_url.split(",")[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <FileText size={18} color="#fff" />}
+          {report.photo_url ? <img src={report.photo_url.split(",")[0]} alt="" loading="lazy" width="44" height="44" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <FileText size={18} color="#fff" />}
         </div>
         <div style={{ minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: 14, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{report.title}</p>
@@ -2824,7 +2824,7 @@ function DashboardReportModal({ report, S, onClose, onStatusChange }) {
           <div style={{ padding: "24px 28px 20px", borderBottom: "1px solid #f4f4f5", display: "flex", alignItems: "flex-start", gap: 14 }}>
             <div style={{ width: 48, height: 48, borderRadius: 14, background: st.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {report.photo_url
-                ? <img src={report.photo_url.split(",")[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 14 }} />
+                ? <img src={report.photo_url.split(",")[0]} alt="" loading="lazy" width="48" height="48" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 14 }} />
                 : <FileText size={24} color={st.color} />}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -2894,6 +2894,7 @@ function DashboardReportModal({ report, S, onClose, onStatusChange }) {
                     <div key={i} onClick={() => setLightboxImg(url)}
                       style={{ position: "relative", borderRadius: 14, overflow: "hidden", cursor: "pointer", border: "1px solid #e4e4e7", aspectRatio: photos.length === 1 ? "16/10" : "1/1" }}>
                       <img src={url.trim()} alt={`Evidence ${i + 1}`}
+                        loading="lazy"
                         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.3s" }}
                         onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
                         onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"} />

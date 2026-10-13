@@ -28,6 +28,15 @@ export default defineConfig({
       },
     }),
   ],
+  resolve: {
+    alias: {
+      buffer: 'buffer',
+      stream: 'stream-browserify',
+    },
+  },
+  define: {
+    'global': 'globalThis',
+  },
   build: {
     sourcemap: false,
     minify: "terser",
@@ -41,7 +50,12 @@ export default defineConfig({
   },
   optimizeDeps: {
     // Pre-bundle mapbox-gl so Vite doesn't reprocess it on every cold start
-    include: ["mapbox-gl"],
+    include: ["mapbox-gl", "buffer"],
     exclude: ["react-map-gl"],
+    esbuildOptions: {
+      define: {
+        global: 'globalThis'
+      },
+    },
   },
 });

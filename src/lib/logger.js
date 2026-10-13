@@ -1,20 +1,64 @@
-const isProd = import.meta.env.MODE === 'production';
+/**
+ * Environment-aware logging utility for CLIMA
+ * 
+ * In development: logs normally
+ * In production: suppresses all console output
+ * 
+ * Usage: import { logger } from './lib/logger';
+ *        logger.log('message'), logger.warn('warning'), logger.error('error')
+ */
+
+const isDevelopment = import.meta.env.MODE === 'development';
 
 export const logger = {
-  info: (msg, data) => {
-    if (!isProd) console.log(msg, data);
-  },
-  warn: (msg, data) => {
-    if (!isProd) console.warn(msg, data);
-  },
-  error: (msg, err) => {
-    if (isProd) {
-      console.error(msg, err?.message || 'Unknown error');
-    } else {
-      console.error(msg, err);
+  log: (...args) => {
+    if (isDevelopment) {
+      console.log(...args);
     }
   },
-  debug: (msg, data) => {
-    if (!isProd) console.debug(msg, data);
+  
+  warn: (...args) => {
+    if (isDevelopment) {
+      console.warn(...args);
+    }
+  },
+  
+  error: (...args) => {
+    if (isDevelopment) {
+      console.error(...args);
+    }
+  },
+  
+  debug: (...args) => {
+    if (isDevelopment) {
+      console.debug(...args);
+    }
+  },
+  
+  info: (...args) => {
+    if (isDevelopment) {
+      console.info(...args);
+    }
+  },
+  
+  table: (...args) => {
+    if (isDevelopment) {
+      console.table(...args);
+    }
+  },
+  
+  group: (...args) => {
+    if (isDevelopment) {
+      console.group(...args);
+    }
+  },
+  
+  groupEnd: () => {
+    if (isDevelopment) {
+      console.groupEnd();
+    }
   }
 };
+
+// For compatibility with existing code patterns
+export default logger;
