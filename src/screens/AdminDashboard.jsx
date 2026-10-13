@@ -4,7 +4,7 @@ import {
   BarChart3, FileText, Users, LogOut, Map as MapIcon, RefreshCw,
   Plus, Trash2, Building, CheckCircle, CheckCircle2, Clock, TrendingUp, Search, X, Edit2, Check, Download,
   MapPin, Calendar, Phone, AlertCircle, AlertTriangle, ChevronRight, ChevronDown, ChevronUp, Navigation,
-  ShieldAlert, Activity, Megaphone, HeartPulse, Tent, Truck, Flame, Droplet, Zap, Sprout
+  ShieldAlert, Activity, Megaphone, HeartPulse, Tent, Truck, Flame, Droplet, Zap, Sprout, Wifi
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect from "../components/ui/CustomSelect";
@@ -14,6 +14,7 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
+import { fetchKloudtechDashboard, adaptKloudtechTelemetry } from "../services/kloudtechService";
 
 /* ── Dynamic Theme from Accent Color ── */
 function hexToRgb(hex) {
@@ -726,9 +727,11 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
   });
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState(30);
+  const [ktData, setKtData] = useState(null);
 
   useEffect(() => {
     fetchAnalyticsData();
+    fetchKloudtechData();
   }, [dateRange]);
 
   const fetchAnalyticsData = async () => {
@@ -748,7 +751,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
           .gte("operation_date", startDate)
           .order("operation_date", { ascending: true }),
         supabase
-          .from("bfp_daily_operations")
+          .from("bfp_operations")
           .select("*")
           .gte("operation_date", startDate)
           .order("operation_date", { ascending: true }),
@@ -768,6 +771,23 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
       console.error("Analytics fetch error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchKloudtechData = async () => {
+    try {
+      const result = await fetchKloudtechDashboard();
+      if (result.success && result.data && result.data.length > 0) {
+        const station = result.data[0];
+        const adapted = adaptKloudtechTelemetry(station.telemetry || {}, true);
+        setKtData({
+          stationName: station.station?.stationName || "KloudTech Station",
+          ...adapted,
+          isLive: result.isLive || false
+        });
+      }
+    } catch (error) {
+      console.error("KloudTech fetch error:", error);
     }
   };
 
@@ -798,8 +818,8 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
     .reduce((sum, r) => sum + (r.relief_operations || 0) + (r.evacuations_conducted || 0), 0);
 
   const bfpIncidentsLast7 = analyticsData.bfpRecords
-    .filter(r => r.operation_date >= last7Days)
-    .reduce((sum, r) => sum + (r.fire_incidents || 0), 0);
+    .filter(r => r.operation_date >= last7Days && r.operation_type === 'fire_incident')
+    .length;
 
   const ambulanceDispatchesLast7 = analyticsData.cdrrmoRecords
     .filter(r => r.operation_date >= last7Days)
@@ -899,6 +919,131 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
           S={S}
         />
       </div>
+
+      {/* KloudTech Live Sensor Card */}
+      {ktData && (
+        <div style={{
+          ...cardStyle,
+          background: `linear-gradient(135deg, ${S.accent}15 0%, ${S.accent}05 100%)`,
+          borderLeft: `4px solid ${S.accent}`,
+          padding: 20
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: S.accent,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+              }}>
+                <Wifi size={18} color="#fff" />
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 900, color: S.text }}>
+                  {ktData.stationName}
+                </h4>
+                <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 600, color: S.muted }}>
+                  KloudTech IoT Weather Station
+                </p>
+              </div>
+            </div>
+            {ktData.isLive && (
+              <div style={{
+                padding: "4px 12px",
+                borderRadius: 20,
+                background: "#10b981",
+                color: "#fff",
+                fontSize: 10,
+                fontWeight: 800,
+                display: "flex",
+                alignItems: "center",
+                gap: 4
+              }}>
+                <div style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: "#fff",
+                  animation: "pulse 2s ease-in-out infinite"
+                }} />
+                LIVE
+              </div>
+            )}
+          </div>
+          
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+            {ktData.temp !== null && (
+              <div style={{ padding: "12px 14px", background: "#fff", borderRadius: 10, border: `1px solid ${S.border}` }}>
+                <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Temperature
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 900, color: S.text }}>
+                  {ktData.temp}°C
+                </p>
+              </div>
+            )}
+            {ktData.humidity !== null && (
+              <div style={{ padding: "12px 14px", background: "#fff", borderRadius: 10, border: `1px solid ${S.border}` }}>
+                <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Humidity
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 900, color: S.text }}>
+                  {ktData.humidity.toFixed(1)}%
+                </p>
+              </div>
+            )}
+            {ktData.heatIndex !== null && (
+              <div style={{ padding: "12px 14px", background: "#fff", borderRadius: 10, border: `1px solid ${S.border}` }}>
+                <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Heat Index
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 900, color: "#ef4444" }}>
+                  {ktData.heatIndex.toFixed(1)}°C
+                </p>
+              </div>
+            )}
+            {ktData.windSpeed !== undefined && (
+              <div style={{ padding: "12px 14px", background: "#fff", borderRadius: 10, border: `1px solid ${S.border}` }}>
+                <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Wind Speed
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 900, color: S.text }}>
+                  {ktData.windSpeed.toFixed(1)} m/s
+                </p>
+              </div>
+            )}
+            {ktData.rawPressure && (
+              <div style={{ padding: "12px 14px", background: "#fff", borderRadius: 10, border: `1px solid ${S.border}` }}>
+                <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Pressure
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 900, color: S.text }}>
+                  {ktData.rawPressure.toFixed(1)} hPa
+                </p>
+              </div>
+            )}
+            {ktData.uvIndex !== null && (
+              <div style={{ padding: "12px 14px", background: "#fff", borderRadius: 10, border: `1px solid ${S.border}` }}>
+                <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  UV Index
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 900, color: S.text }}>
+                  {ktData.uvIndex.toFixed(1)}
+                </p>
+              </div>
+            )}
+          </div>
+          
+          {ktData.recordedAt && (
+            <p style={{ margin: "12px 0 0", fontSize: 11, fontWeight: 600, color: S.muted, textAlign: "right" }}>
+              Last updated: {ktData.recordedAt}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Charts Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
@@ -1198,12 +1343,17 @@ function prepareEmergencyOpsTimeline(cdrrmoRecords, bfpRecords) {
     const dateStr = date.toISOString().split('T')[0];
     
     const cdrrmoRecord = cdrrmoRecords.find(r => r.operation_date === dateStr);
-    const bfpRecord = bfpRecords.find(r => r.operation_date === dateStr);
+    
+    // BFP operations are per-operation records, not daily aggregates
+    // Count fire incidents and rescue operations for this date
+    const bfpOpsForDate = bfpRecords.filter(r => r.operation_date === dateStr);
+    const fireIncidents = bfpOpsForDate.filter(r => r.operation_type === 'fire_incident').length;
+    const rescueOps = bfpOpsForDate.filter(r => r.operation_type === 'rescue_operation').length;
     
     data.push({
       date: formatDateShort(dateStr),
       cdrrmo: (cdrrmoRecord?.relief_operations || 0) + (cdrrmoRecord?.evacuations_conducted || 0) + (cdrrmoRecord?.emergency_responses || 0),
-      bfp: (bfpRecord?.fire_incidents || 0) + (bfpRecord?.rescue_operations || 0),
+      bfp: fireIncidents + rescueOps,
       ambulance: cdrrmoRecord?.ambulance_dispatches || 0
     });
   }
