@@ -270,7 +270,7 @@ function ElNinoMonitoringDashboard() {
           transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
           className="desktop-hero-card"
           style={{
-            backgroundImage: 'url(/el_nino_bg.jpg)',
+            backgroundImage: 'url(/sunny.jpg)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
@@ -459,10 +459,11 @@ function ElNinoMonitoringDashboard() {
           animate={{ opacity: 1, y: 0 }}
           className="desktop-hero-card"
           style={{
-            backgroundImage: 'url(/el_nino_bg.jpg)',
+            backgroundImage: 'url(/sunny.jpg)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             minHeight: 220,
+            display: 'flex',
             flexDirection: 'column',
             marginBottom: 16,
           }}
