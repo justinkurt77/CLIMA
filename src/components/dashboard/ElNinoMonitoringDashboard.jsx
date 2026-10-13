@@ -57,6 +57,17 @@ function ElNinoMonitoringDashboard() {
     agriculture: true,
     interruptions: true,
   });
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Responsive breakpoint detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     fetchAllData();
@@ -207,32 +218,16 @@ function ElNinoMonitoringDashboard() {
     }));
   };
 
-  const cardStyle = {
-    background: isDark ? 'rgba(24, 24, 27, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-    border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-  };
-
-  const sectionHeaderStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    cursor: 'pointer',
-    userSelect: 'none',
-  };
-
   if (loading) {
     return (
-      <div style={{ padding: '20px 16px' }}>
+      <div style={{ padding: '20px 16px', maxWidth: isMobile ? '100%' : 1400, margin: '0 auto' }}>
         {[1, 2, 3, 4, 5, 6].map(i => (
           <div
             key={i}
+            className="desktop-card"
             style={{
-              ...cardStyle,
               height: 150,
+              marginBottom: 16,
               animation: 'pulse 1.5s ease-in-out infinite',
               background: isDark ? '#27272a' : '#f4f4f5',
             }}
@@ -242,103 +237,301 @@ function ElNinoMonitoringDashboard() {
     );
   }
 
+  // Calculate summary stats
+  const last7Days = data.hospitalRecords.slice(-7);
+  const totalHospitalCases = last7Days.reduce((sum, r) => 
+    sum + (r.heat_stroke_cases || 0) + (r.heat_exhaustion_cases || 0) + 
+    (r.dehydration_cases || 0) + (r.respiratory_cases || 0), 0
+  );
+  const activeWildfires = data.bfpOperations.filter(op => 
+    op.status !== 'resolved' && op.status !== 'completed'
+  ).length;
+  const totalHectares = data.agricultureDamages.reduce((sum, d) => 
+    sum + (parseFloat(d.area_affected_hectares) || 0), 0
+  );
+  const totalLoss = data.agricultureDamages.reduce((sum, d) => 
+    sum + (parseFloat(d.estimated_loss_value) || 0), 0
+  );
+
   return (
-    <div style={{ padding: '20px 16px', maxWidth: 1200, margin: '0 auto' }}>
-      {/* Dashboard Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={{
-          textAlign: 'center',
-          marginBottom: 32,
-        }}
-      >
-        <h1 style={{
-          fontSize: 28,
-          fontWeight: 900,
-          color: isDark ? '#fff' : '#09090b',
-          marginBottom: 8,
-          fontFamily: 'Nunito, sans-serif',
-        }}>
-          🌡️ El Niño Impact Dashboard
-        </h1>
-        <p style={{
-          fontSize: 14,
-          color: isDark ? '#a1a1aa' : '#71717a',
-          fontWeight: 600,
-        }}>
-          Real-time monitoring of Super El Niño effects in Palayan City
-        </p>
-      </motion.div>
+    <>
+      {/* Desktop View (>= 1024px) */}
+      <div className="desktop-view-container" style={{ 
+        display: isMobile ? 'none' : 'block',
+        padding: '20px 24px',
+        maxWidth: 1400,
+        margin: '0 auto',
+      }}>
+        {/* Hero Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 28, scale: 0.985 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, margin: "-30px" }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          className="desktop-hero-card"
+          style={{
+            backgroundImage: 'url(/el_nino_bg.jpg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            marginBottom: 18,
+          }}
+        >
+          {/* Hero Content Left */}
+          <div className="desktop-hero-info">
+            <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 12 }}>🌡️</div>
+            <h1 className="desktop-hero-temp" style={{ fontSize: 48, letterSpacing: -1.5 }}>
+              El Niño Impact Dashboard
+            </h1>
+            <p className="desktop-hero-condition" style={{ fontSize: 18 }}>
+              Real-time monitoring of Super El Niño effects
+            </p>
+          </div>
 
-      {/* Official Advisories */}
-      <AdvisoriesSection
-        advisories={data.advisories}
-        expanded={expandedSections.advisories}
-        onToggle={() => toggleSection('advisories')}
-        cardStyle={cardStyle}
-        sectionHeaderStyle={sectionHeaderStyle}
-        isDark={isDark}
-      />
+          {/* Hero Glass Card Right */}
+          <div className="desktop-hero-glass-card">
+            <p>
+              Real-time monitoring of Super El Niño effects across Palayan City with live sensor data and coordinated agency response tracking.
+            </p>
+          </div>
+        </motion.div>
 
-      {/* Hospital Monitoring */}
-      <HospitalMonitoringSection
-        records={data.hospitalRecords}
-        expanded={expandedSections.hospital}
-        onToggle={() => toggleSection('hospital')}
-        cardStyle={cardStyle}
-        sectionHeaderStyle={sectionHeaderStyle}
-        isDark={isDark}
-      />
+        {/* Two-column grid */}
+        <main className="desktop-main-grid">
+          {/* Left Column */}
+          <div className="desktop-left-column">
+            {/* Official Advisories */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <AdvisoriesSection
+                advisories={data.advisories}
+                expanded={expandedSections.advisories}
+                onToggle={() => toggleSection('advisories')}
+                isDark={isDark}
+              />
+            </motion.div>
 
-      {/* BFP Wildfire Operations */}
-      <BFPOperationsSection
-        operations={data.bfpOperations}
-        expanded={expandedSections.bfp}
-        onToggle={() => toggleSection('bfp')}
-        cardStyle={cardStyle}
-        sectionHeaderStyle={sectionHeaderStyle}
-        isDark={isDark}
-      />
+            {/* Hospital Monitoring */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.5, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <HospitalMonitoringSection
+                records={data.hospitalRecords}
+                expanded={expandedSections.hospital}
+                onToggle={() => toggleSection('hospital')}
+                isDark={isDark}
+              />
+            </motion.div>
 
-      {/* CDRRMO Operations */}
-      <CDRRMOOperationsSection
-        operations={data.cdrrmoOperations}
-        expanded={expandedSections.cdrrmo}
-        onToggle={() => toggleSection('cdrrmo')}
-        cardStyle={cardStyle}
-        sectionHeaderStyle={sectionHeaderStyle}
-        isDark={isDark}
-      />
+            {/* BFP Wildfire Operations */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.5, delay: 0.24, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <BFPOperationsSection
+                operations={data.bfpOperations}
+                expanded={expandedSections.bfp}
+                onToggle={() => toggleSection('bfp')}
+                isDark={isDark}
+              />
+            </motion.div>
 
-      {/* Agricultural Damages */}
-      <AgricultureDamagesSection
-        damages={data.agricultureDamages}
-        expanded={expandedSections.agriculture}
-        onToggle={() => toggleSection('agriculture')}
-        cardStyle={cardStyle}
-        sectionHeaderStyle={sectionHeaderStyle}
-        isDark={isDark}
-      />
+            {/* Agricultural Damages */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.5, delay: 0.32, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <AgricultureDamagesSection
+                damages={data.agricultureDamages}
+                expanded={expandedSections.agriculture}
+                onToggle={() => toggleSection('agriculture')}
+                isDark={isDark}
+              />
+            </motion.div>
+          </div>
 
-      {/* Power & Water Interruptions */}
-      <InterruptionsSection
-        waterInterruptions={data.waterInterruptions}
-        powerInterruptions={data.powerInterruptions}
-        expanded={expandedSections.interruptions}
-        onToggle={() => toggleSection('interruptions')}
-        cardStyle={cardStyle}
-        sectionHeaderStyle={sectionHeaderStyle}
-        isDark={isDark}
-      />
-    </div>
+          {/* Right Column */}
+          <div className="desktop-right-column">
+            {/* CDRRMO Operations */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <CDRRMOOperationsSection
+                operations={data.cdrrmoOperations}
+                expanded={expandedSections.cdrrmo}
+                onToggle={() => toggleSection('cdrrmo')}
+                isDark={isDark}
+              />
+            </motion.div>
+
+            {/* Power & Water Interruptions */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.5, delay: 0.13, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <InterruptionsSection
+                waterInterruptions={data.waterInterruptions}
+                powerInterruptions={data.powerInterruptions}
+                expanded={expandedSections.interruptions}
+                onToggle={() => toggleSection('interruptions')}
+                isDark={isDark}
+              />
+            </motion.div>
+
+            {/* Summary Stats Panel */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.5, delay: 0.21, ease: [0.16, 1, 0.3, 1] }}
+              className="desktop-card"
+              style={{ padding: '20px 22px' }}
+            >
+              <h3 style={{
+                fontSize: 15,
+                fontWeight: 800,
+                color: 'var(--text-primary)',
+                marginBottom: 16,
+              }}>
+                Quick Summary
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <SummaryBadge
+                  label="Active Advisories"
+                  value={data.advisories.length}
+                  color="#3b82f6"
+                  isDark={isDark}
+                />
+                <SummaryBadge
+                  label="Heat Cases (7d)"
+                  value={totalHospitalCases}
+                  color="#ef4444"
+                  isDark={isDark}
+                />
+                <SummaryBadge
+                  label="Active Wildfires"
+                  value={activeWildfires}
+                  color="#dc2626"
+                  isDark={isDark}
+                />
+                <SummaryBadge
+                  label="Damaged Hectares"
+                  value={totalHectares.toFixed(1)}
+                  color="#10b981"
+                  isDark={isDark}
+                />
+                <SummaryBadge
+                  label="Est. Agricultural Loss"
+                  value={`₱${(totalLoss / 1000000).toFixed(1)}M`}
+                  color="#10b981"
+                  isDark={isDark}
+                />
+              </div>
+            </motion.div>
+          </div>
+        </main>
+      </div>
+
+      {/* Mobile View (<1024px) */}
+      <div className="mobile-view-container" style={{ 
+        display: isMobile ? 'block' : 'none',
+        padding: '20px 16px',
+      }}>
+        {/* Mobile Hero */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="desktop-hero-card"
+          style={{
+            backgroundImage: 'url(/el_nino_bg.jpg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            minHeight: 220,
+            flexDirection: 'column',
+            marginBottom: 16,
+          }}
+        >
+          <div style={{ fontSize: 48, marginBottom: 8 }}>🌡️</div>
+          <h1 className="desktop-hero-temp" style={{ fontSize: 32, letterSpacing: -1 }}>
+            El Niño Impact
+          </h1>
+          <p className="desktop-hero-condition" style={{ fontSize: 14, marginTop: 8 }}>
+            Real-time monitoring in Palayan City
+          </p>
+        </motion.div>
+
+        {/* Stacked sections */}
+        <AdvisoriesSection
+          advisories={data.advisories}
+          expanded={expandedSections.advisories}
+          onToggle={() => toggleSection('advisories')}
+          isDark={isDark}
+        />
+        <HospitalMonitoringSection
+          records={data.hospitalRecords}
+          expanded={expandedSections.hospital}
+          onToggle={() => toggleSection('hospital')}
+          isDark={isDark}
+        />
+        <BFPOperationsSection
+          operations={data.bfpOperations}
+          expanded={expandedSections.bfp}
+          onToggle={() => toggleSection('bfp')}
+          isDark={isDark}
+        />
+        <CDRRMOOperationsSection
+          operations={data.cdrrmoOperations}
+          expanded={expandedSections.cdrrmo}
+          onToggle={() => toggleSection('cdrrmo')}
+          isDark={isDark}
+        />
+        <AgricultureDamagesSection
+          damages={data.agricultureDamages}
+          expanded={expandedSections.agriculture}
+          onToggle={() => toggleSection('agriculture')}
+          isDark={isDark}
+        />
+        <InterruptionsSection
+          waterInterruptions={data.waterInterruptions}
+          powerInterruptions={data.powerInterruptions}
+          expanded={expandedSections.interruptions}
+          onToggle={() => toggleSection('interruptions')}
+          isDark={isDark}
+        />
+      </div>
+    </>
   );
 }
 
 // Section Components
-function AdvisoriesSection({ advisories, expanded, onToggle, cardStyle, sectionHeaderStyle, isDark }) {
+function AdvisoriesSection({ advisories, expanded, onToggle, isDark }) {
+  const sectionHeaderStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    cursor: 'pointer',
+    userSelect: 'none',
+  };
+
   return (
-    <motion.div style={cardStyle} layout>
+    <div className="desktop-card" style={{ padding: '20px 22px', marginBottom: 16 }}>
       <div style={sectionHeaderStyle} onClick={onToggle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
@@ -356,21 +549,21 @@ function AdvisoriesSection({ advisories, expanded, onToggle, cardStyle, sectionH
             <h2 style={{
               fontSize: 18,
               fontWeight: 800,
-              color: isDark ? '#fff' : '#09090b',
+              color: 'var(--text-primary)',
               marginBottom: 2,
             }}>
               Official Advisories
             </h2>
             <p style={{
               fontSize: 12,
-              color: isDark ? '#a1a1aa' : '#71717a',
+              color: 'var(--text-secondary)',
               fontWeight: 600,
             }}>
               {advisories.length} active advisory{advisories.length !== 1 ? 'ies' : ''}
             </p>
           </div>
         </div>
-        {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        {expanded ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
       </div>
 
       <AnimatePresence>
@@ -379,12 +572,13 @@ function AdvisoriesSection({ advisories, expanded, onToggle, cardStyle, sectionH
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
             {advisories.length === 0 ? (
               <div style={{
                 textAlign: 'center',
                 padding: '40px 20px',
-                color: isDark ? '#71717a' : '#a1a1aa',
+                color: 'var(--text-muted)',
               }}>
                 <Megaphone size={48} style={{ opacity: 0.3, marginBottom: 12 }} />
                 <p style={{ fontSize: 14, fontWeight: 600 }}>No active advisories</p>
@@ -399,7 +593,7 @@ function AdvisoriesSection({ advisories, expanded, onToggle, cardStyle, sectionH
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
@@ -417,7 +611,7 @@ function AdvisoryCard({ advisory, isDark }) {
   return (
     <div style={{
       background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-      border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'}`,
+      border: `1px solid var(--border-subtle)`,
       borderLeft: `4px solid ${urgencyColor}`,
       borderRadius: 12,
       padding: 16,
@@ -438,7 +632,7 @@ function AdvisoryCard({ advisory, isDark }) {
             </span>
             <span style={{
               fontSize: 11,
-              color: isDark ? '#a1a1aa' : '#71717a',
+              color: 'var(--text-muted)',
               fontWeight: 600,
             }}>
               <Calendar size={12} style={{ display: 'inline', marginRight: 4 }} />
@@ -448,14 +642,14 @@ function AdvisoryCard({ advisory, isDark }) {
           <h3 style={{
             fontSize: 15,
             fontWeight: 800,
-            color: isDark ? '#fff' : '#09090b',
+            color: 'var(--text-primary)',
             marginBottom: 8,
           }}>
             {advisory.title}
           </h3>
           <p style={{
             fontSize: 13,
-            color: isDark ? '#d4d4d8' : '#52525b',
+            color: 'var(--text-secondary)',
             lineHeight: 1.5,
             maxHeight: expanded ? 'none' : 60,
             overflow: 'hidden',
@@ -485,7 +679,7 @@ function AdvisoryCard({ advisory, isDark }) {
   );
 }
 
-function HospitalMonitoringSection({ records, expanded, onToggle, cardStyle, sectionHeaderStyle, isDark }) {
+function HospitalMonitoringSection({ records, expanded, onToggle, isDark }) {
   // Calculate stats
   const last7Days = records.slice(-7);
   const totalHeatStroke = last7Days.reduce((sum, r) => sum + (r.heat_stroke_cases || 0), 0);
@@ -502,8 +696,17 @@ function HospitalMonitoringSection({ records, expanded, onToggle, cardStyle, sec
     respiratory: r.respiratory_cases || 0,
   }));
 
+  const sectionHeaderStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    cursor: 'pointer',
+    userSelect: 'none',
+  };
+
   return (
-    <motion.div style={cardStyle} layout>
+    <div className="desktop-card" style={{ padding: '20px 22px', marginBottom: 16 }}>
       <div style={sectionHeaderStyle} onClick={onToggle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
@@ -521,21 +724,21 @@ function HospitalMonitoringSection({ records, expanded, onToggle, cardStyle, sec
             <h2 style={{
               fontSize: 18,
               fontWeight: 800,
-              color: isDark ? '#fff' : '#09090b',
+              color: 'var(--text-primary)',
               marginBottom: 2,
             }}>
               Hospital Monitoring
             </h2>
             <p style={{
               fontSize: 12,
-              color: isDark ? '#a1a1aa' : '#71717a',
+              color: 'var(--text-secondary)',
               fontWeight: 600,
             }}>
               Heat-related cases (Last 7 days)
             </p>
           </div>
         </div>
-        {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        {expanded ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
       </div>
 
       <AnimatePresence>
@@ -544,12 +747,13 @@ function HospitalMonitoringSection({ records, expanded, onToggle, cardStyle, sec
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
             {records.length === 0 ? (
               <div style={{
                 textAlign: 'center',
                 padding: '40px 20px',
-                color: isDark ? '#71717a' : '#a1a1aa',
+                color: 'var(--text-muted)',
               }}>
                 <Activity size={48} style={{ opacity: 0.3, marginBottom: 12 }} />
                 <p style={{ fontSize: 14, fontWeight: 600 }}>No hospital data available</p>
@@ -594,7 +798,7 @@ function HospitalMonitoringSection({ records, expanded, onToggle, cardStyle, sec
                   <h3 style={{
                     fontSize: 14,
                     fontWeight: 800,
-                    color: isDark ? '#fff' : '#09090b',
+                    color: 'var(--text-primary)',
                     marginBottom: 12,
                   }}>
                     7-Day Trend
@@ -624,7 +828,7 @@ function HospitalMonitoringSection({ records, expanded, onToggle, cardStyle, sec
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
@@ -632,7 +836,7 @@ function StatCard({ label, value, color, isDark }) {
   return (
     <div style={{
       background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-      border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'}`,
+      border: `1px solid var(--border-subtle)`,
       borderLeft: `3px solid ${color}`,
       borderRadius: 10,
       padding: 12,
@@ -648,7 +852,7 @@ function StatCard({ label, value, color, isDark }) {
       <div style={{
         fontSize: 11,
         fontWeight: 700,
-        color: isDark ? '#a1a1aa' : '#71717a',
+        color: 'var(--text-muted)',
         textTransform: 'uppercase',
       }}>
         {label}
@@ -657,14 +861,20 @@ function StatCard({ label, value, color, isDark }) {
   );
 }
 
-// BFP, CDRRMO, Agriculture, and Interruptions sections follow similar patterns
-// (Implementing full versions to keep response concise - these follow same structure)
-
-function BFPOperationsSection({ operations, expanded, onToggle, cardStyle, sectionHeaderStyle, isDark }) {
+function BFPOperationsSection({ operations, expanded, onToggle, isDark }) {
   const activeWildfires = operations.filter(op => op.status !== 'resolved' && op.status !== 'completed');
   
+  const sectionHeaderStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    cursor: 'pointer',
+    userSelect: 'none',
+  };
+
   return (
-    <motion.div style={cardStyle} layout>
+    <div className="desktop-card" style={{ padding: '20px 22px', marginBottom: 16 }}>
       <div style={sectionHeaderStyle} onClick={onToggle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
@@ -682,21 +892,21 @@ function BFPOperationsSection({ operations, expanded, onToggle, cardStyle, secti
             <h2 style={{
               fontSize: 18,
               fontWeight: 800,
-              color: isDark ? '#fff' : '#09090b',
+              color: 'var(--text-primary)',
               marginBottom: 2,
             }}>
               Wildfire Response
             </h2>
             <p style={{
               fontSize: 12,
-              color: isDark ? '#a1a1aa' : '#71717a',
+              color: 'var(--text-secondary)',
               fontWeight: 600,
             }}>
               {activeWildfires.length} active wildfire{activeWildfires.length !== 1 ? 's' : ''}
             </p>
           </div>
         </div>
-        {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        {expanded ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
       </div>
 
       <AnimatePresence>
@@ -705,12 +915,13 @@ function BFPOperationsSection({ operations, expanded, onToggle, cardStyle, secti
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
             {operations.length === 0 ? (
               <div style={{
                 textAlign: 'center',
                 padding: '40px 20px',
-                color: isDark ? '#71717a' : '#a1a1aa',
+                color: 'var(--text-muted)',
               }}>
                 <Flame size={48} style={{ opacity: 0.3, marginBottom: 12 }} />
                 <p style={{ fontSize: 14, fontWeight: 600 }}>No wildfire incidents reported</p>
@@ -725,15 +936,24 @@ function BFPOperationsSection({ operations, expanded, onToggle, cardStyle, secti
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
-function CDRRMOOperationsSection({ operations, expanded, onToggle, cardStyle, sectionHeaderStyle, isDark }) {
+function CDRRMOOperationsSection({ operations, expanded, onToggle, isDark }) {
   const activeOps = operations.filter(op => op.status === 'active' || op.status === 'ongoing');
   
+  const sectionHeaderStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    cursor: 'pointer',
+    userSelect: 'none',
+  };
+
   return (
-    <motion.div style={cardStyle} layout>
+    <div className="desktop-card" style={{ padding: '20px 22px', marginBottom: 16 }}>
       <div style={sectionHeaderStyle} onClick={onToggle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
@@ -751,21 +971,21 @@ function CDRRMOOperationsSection({ operations, expanded, onToggle, cardStyle, se
             <h2 style={{
               fontSize: 18,
               fontWeight: 800,
-              color: isDark ? '#fff' : '#09090b',
+              color: 'var(--text-primary)',
               marginBottom: 2,
             }}>
               CDRRMO Operations
             </h2>
             <p style={{
               fontSize: 12,
-              color: isDark ? '#a1a1aa' : '#71717a',
+              color: 'var(--text-secondary)',
               fontWeight: 600,
             }}>
               {activeOps.length} active operation{activeOps.length !== 1 ? 's' : ''}
             </p>
           </div>
         </div>
-        {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        {expanded ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
       </div>
 
       <AnimatePresence>
@@ -774,12 +994,13 @@ function CDRRMOOperationsSection({ operations, expanded, onToggle, cardStyle, se
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
             {operations.length === 0 ? (
               <div style={{
                 textAlign: 'center',
                 padding: '40px 20px',
-                color: isDark ? '#71717a' : '#a1a1aa',
+                color: 'var(--text-muted)',
               }}>
                 <Siren size={48} style={{ opacity: 0.3, marginBottom: 12 }} />
                 <p style={{ fontSize: 14, fontWeight: 600 }}>No operations reported</p>
@@ -794,17 +1015,26 @@ function CDRRMOOperationsSection({ operations, expanded, onToggle, cardStyle, se
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
-function AgricultureDamagesSection({ damages, expanded, onToggle, cardStyle, sectionHeaderStyle, isDark }) {
+function AgricultureDamagesSection({ damages, expanded, onToggle, isDark }) {
   const totalHectares = damages.reduce((sum, d) => sum + (parseFloat(d.area_affected_hectares) || 0), 0);
   const totalLoss = damages.reduce((sum, d) => sum + (parseFloat(d.estimated_loss_value) || 0), 0);
   const farmerCount = damages.length;
   
+  const sectionHeaderStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    cursor: 'pointer',
+    userSelect: 'none',
+  };
+
   return (
-    <motion.div style={cardStyle} layout>
+    <div className="desktop-card" style={{ padding: '20px 22px', marginBottom: 16 }}>
       <div style={sectionHeaderStyle} onClick={onToggle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
@@ -822,21 +1052,21 @@ function AgricultureDamagesSection({ damages, expanded, onToggle, cardStyle, sec
             <h2 style={{
               fontSize: 18,
               fontWeight: 800,
-              color: isDark ? '#fff' : '#09090b',
+              color: 'var(--text-primary)',
               marginBottom: 2,
             }}>
               Agricultural Damages
             </h2>
             <p style={{
               fontSize: 12,
-              color: isDark ? '#a1a1aa' : '#71717a',
+              color: 'var(--text-secondary)',
               fontWeight: 600,
             }}>
               {farmerCount} report{farmerCount !== 1 ? 's' : ''} • {totalHectares.toFixed(1)} hectares affected
             </p>
           </div>
         </div>
-        {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        {expanded ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
       </div>
 
       <AnimatePresence>
@@ -845,12 +1075,13 @@ function AgricultureDamagesSection({ damages, expanded, onToggle, cardStyle, sec
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
             {damages.length === 0 ? (
               <div style={{
                 textAlign: 'center',
                 padding: '40px 20px',
-                color: isDark ? '#71717a' : '#a1a1aa',
+                color: 'var(--text-muted)',
               }}>
                 <Wheat size={48} style={{ opacity: 0.3, marginBottom: 12 }} />
                 <p style={{ fontSize: 14, fontWeight: 600 }}>No damage reports</p>
@@ -895,17 +1126,26 @@ function AgricultureDamagesSection({ damages, expanded, onToggle, cardStyle, sec
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
-function InterruptionsSection({ waterInterruptions, powerInterruptions, expanded, onToggle, cardStyle, sectionHeaderStyle, isDark }) {
+function InterruptionsSection({ waterInterruptions, powerInterruptions, expanded, onToggle, isDark }) {
   const today = new Date().toISOString().split('T')[0];
   const todayWater = waterInterruptions.filter(i => i.interruption_date === today);
   const todayPower = powerInterruptions.filter(i => i.interruption_date === today);
   
+  const sectionHeaderStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    cursor: 'pointer',
+    userSelect: 'none',
+  };
+
   return (
-    <motion.div style={cardStyle} layout>
+    <div className="desktop-card" style={{ padding: '20px 22px', marginBottom: 16 }}>
       <div style={sectionHeaderStyle} onClick={onToggle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
@@ -923,21 +1163,21 @@ function InterruptionsSection({ waterInterruptions, powerInterruptions, expanded
             <h2 style={{
               fontSize: 18,
               fontWeight: 800,
-              color: isDark ? '#fff' : '#09090b',
+              color: 'var(--text-primary)',
               marginBottom: 2,
             }}>
               Scheduled Interruptions
             </h2>
             <p style={{
               fontSize: 12,
-              color: isDark ? '#a1a1aa' : '#71717a',
+              color: 'var(--text-secondary)',
               fontWeight: 600,
             }}>
               {todayWater.length + todayPower.length} interruption{todayWater.length + todayPower.length !== 1 ? 's' : ''} today
             </p>
           </div>
         </div>
-        {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        {expanded ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
       </div>
 
       <AnimatePresence>
@@ -946,12 +1186,13 @@ function InterruptionsSection({ waterInterruptions, powerInterruptions, expanded
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
             {(waterInterruptions.length === 0 && powerInterruptions.length === 0) ? (
               <div style={{
                 textAlign: 'center',
                 padding: '40px 20px',
-                color: isDark ? '#71717a' : '#a1a1aa',
+                color: 'var(--text-muted)',
               }}>
                 <AlertTriangle size={48} style={{ opacity: 0.3, marginBottom: 12 }} />
                 <p style={{ fontSize: 14, fontWeight: 600 }}>No scheduled interruptions</p>
@@ -1006,18 +1247,18 @@ function InterruptionsSection({ waterInterruptions, powerInterruptions, expanded
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
 // Helper Components
 function OperationCard({ operation, isDark, type }) {
   const getStatusColor = (status) => {
-    if (!status) return '#71717a';
+    if (!status) return 'var(--text-muted)';
     const s = status.toLowerCase();
     if (s.includes('active') || s.includes('ongoing')) return '#f59e0b';
     if (s.includes('resolved') || s.includes('completed')) return '#10b981';
-    return '#71717a';
+    return 'var(--text-muted)';
   };
 
   const statusColor = getStatusColor(operation.status);
@@ -1025,7 +1266,7 @@ function OperationCard({ operation, isDark, type }) {
   return (
     <div style={{
       background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-      border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'}`,
+      border: `1px solid var(--border-subtle)`,
       borderRadius: 10,
       padding: 12,
       display: 'flex',
@@ -1043,14 +1284,14 @@ function OperationCard({ operation, isDark, type }) {
         <div style={{
           fontSize: 13,
           fontWeight: 700,
-          color: isDark ? '#fff' : '#09090b',
+          color: 'var(--text-primary)',
           marginBottom: 4,
         }}>
           {operation.location || 'Location not specified'}
         </div>
         <div style={{
           fontSize: 11,
-          color: isDark ? '#a1a1aa' : '#71717a',
+          color: 'var(--text-secondary)',
           fontWeight: 600,
         }}>
           <Calendar size={11} style={{ display: 'inline', marginRight: 4 }} />
@@ -1069,7 +1310,7 @@ function DamageCard({ damage, isDark }) {
   return (
     <div style={{
       background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-      border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'}`,
+      border: `1px solid var(--border-subtle)`,
       borderRadius: 10,
       padding: 12,
     }}>
@@ -1083,14 +1324,14 @@ function DamageCard({ damage, isDark }) {
           <div style={{
             fontSize: 13,
             fontWeight: 700,
-            color: isDark ? '#fff' : '#09090b',
+            color: 'var(--text-primary)',
             marginBottom: 4,
           }}>
             {damage.barangay || 'Location not specified'}
           </div>
           <div style={{
             fontSize: 11,
-            color: isDark ? '#a1a1aa' : '#71717a',
+            color: 'var(--text-secondary)',
             fontWeight: 600,
           }}>
             {damage.crop_type || 'Crop type not specified'} • {parseFloat(damage.area_affected_hectares || 0).toFixed(1)} ha • {damage.damage_percentage || 0}% damage
@@ -1117,7 +1358,7 @@ function InterruptionCard({ interruption, type, isDark }) {
   return (
     <div style={{
       background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-      border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'}`,
+      border: `1px solid var(--border-subtle)`,
       borderLeft: `3px solid ${color}`,
       borderRadius: 10,
       padding: 12,
@@ -1140,7 +1381,7 @@ function InterruptionCard({ interruption, type, isDark }) {
       <div style={{
         fontSize: 13,
         fontWeight: 700,
-        color: isDark ? '#fff' : '#09090b',
+        color: 'var(--text-primary)',
         marginBottom: 6,
       }}>
         {new Date(interruption.interruption_date).toLocaleDateString('en-US', { 
@@ -1151,7 +1392,7 @@ function InterruptionCard({ interruption, type, isDark }) {
       </div>
       <div style={{
         fontSize: 11,
-        color: isDark ? '#a1a1aa' : '#71717a',
+        color: 'var(--text-secondary)',
         fontWeight: 600,
         lineHeight: 1.5,
       }}>
@@ -1170,6 +1411,35 @@ function InterruptionCard({ interruption, type, isDark }) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function SummaryBadge({ label, value, color, isDark }) {
+  return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '10px 14px',
+      background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+      border: `1px solid var(--border-subtle)`,
+      borderRadius: 12,
+    }}>
+      <span style={{
+        fontSize: 12,
+        fontWeight: 700,
+        color: 'var(--text-secondary)',
+      }}>
+        {label}
+      </span>
+      <span style={{
+        fontSize: 16,
+        fontWeight: 900,
+        color: color,
+      }}>
+        {value}
+      </span>
     </div>
   );
 }
