@@ -7,6 +7,7 @@ import {
   BarChart2,
   Settings,
   RotateCw,
+  Activity,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
@@ -21,6 +22,7 @@ const MOBILE_NAV_ITEMS = [
 const DESKTOP_NAV_ITEMS = [
   { id: "home", label: "Home", icon: Home },
   { id: "maps", label: "Map", icon: MapPin },
+  { id: "elnino", label: "El Niño", icon: Activity },
   { id: "emergency", label: "Alerts", icon: AlertTriangle },
   { id: "reports", label: "Reports", icon: BarChart2 },
   { id: "profile", label: "Settings", icon: Settings },

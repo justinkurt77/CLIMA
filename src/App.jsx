@@ -6,6 +6,7 @@ import ProfileScreen from "./screens/ProfileScreen";
 import EmergencyScreen from "./screens/EmergencyScreen";
 import ReportModal from "./components/ui/ReportModal";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
+import ElNinoMonitoringDashboard from "./components/dashboard/ElNinoMonitoringDashboard";
 
 // Lazy-load the map — only initialises Mapbox GL when user first taps "Maps"
 const MapScreen = lazy(() => import("./screens/MapScreen"));
@@ -360,6 +361,24 @@ function App() {
               onOpenModal={openModal}
               userReports={userReports}
             />
+          </motion.div>
+        )}
+
+        {activeScreen === "elnino" && (
+          <motion.div
+            key="elnino"
+            variants={screenVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={screenVariants.transition}
+            className="screen active citizen-screen-view"
+            style={{
+              zIndex: 10,
+              background: "transparent",
+            }}
+          >
+            <ElNinoMonitoringDashboard />
           </motion.div>
         )}
 
