@@ -1,0 +1,43 @@
+{
+  "id": "FEAT-004",
+  "type": "perf",
+  "description": "Create comprehensive database indexes for all date-based queries, status filters, foreign key lookups, and composite indexes to speed up Supabase PostgreSQL queries by 10-100x. This involves creating a single SQL file with 40+ CREATE INDEX statements covering all 8 major tables (hospital_daily_records, cdrrmo_daily_operations, bfp_operations, agriculture_damage_reports, water_interruptions, power_interruptions, advisories, reports) plus activity_logs and notifications if they exist.",
+  "status": "pending",
+  "steps": [
+    "1. Create PERFORMANCE_DATABASE_INDEXES.sql in project root with documentation header explaining purpose, execution instructions, and warnings about write performance tradeoffs",
+    "2. Add indexes for hospital_daily_records: record_date DESC, hospital_name, composite (record_date DESC, hospital_name)",
+    "3. Add indexes for cdrrmo_daily_operations: operation_date DESC, status, operation_type, composite (operation_date DESC, status)",
+    "4. Add indexes for bfp_operations: operation_date DESC, status, operation_type, incident_type, composite (operation_date DESC, status)",
+    "5. Add indexes for agriculture_damage_reports: report_date DESC, barangay, crop_type, status, category",
+    "6. Add indexes for water_interruptions: interruption_date DESC, status, provider, composite (interruption_date DESC, status), GIN index on affected_barangays text field",
+    "7. Add indexes for power_interruptions: interruption_date DESC, status, provider, composite (interruption_date DESC, status), GIN index on affected_barangays text field",
+    "8. Add indexes for advisories: status, published_at DESC, composite (status, published_at DESC), department_id",
+    "9. Add indexes for reports: department_id, status, category, created_at DESC, composite (department_id, status, created_at DESC), user_id",
+    "10. Add indexes for activity_logs if table exists: user_id, created_at DESC, composite (user_id, created_at DESC)",
+    "11. Add indexes for notifications if table exists: user_id, is_read, created_at DESC, composite (user_id, is_read, created_at DESC)",
+    "12. Add monitoring query at end of file to verify index usage via pg_stat_user_indexes",
+    "13. Document index rationale in comments: which queries each index optimizes",
+    "14. Add EXPLAIN ANALYZE examples showing before/after query plans",
+    "15. Create execution instructions: run in Supabase SQL Editor during low-traffic period"
+  ],
+  "acceptance_criteria": [
+    "PERFORMANCE_DATABASE_INDEXES.sql exists in project root with 40+ CREATE INDEX IF NOT EXISTS statements",
+    "File has comprehensive documentation header with execution instructions and rationale",
+    "All indexes use IF NOT EXISTS to be safely re-runnable",
+    "GIN indexes created for text search on affected_barangays fields",
+    "Composite indexes cover common filter combinations (date + status, department + status + date)",
+    "Monitoring query included at end to verify index creation and usage",
+    "File includes warnings about write performance tradeoffs and recommendations for monitoring",
+    "Comments explain which queries each index optimizes (e.g., 'idx_reports_composite optimizes admin dashboard reports filtered by department and status, sorted by date')"
+  ],
+  "verification": [
+    "Verify PERFORMANCE_DATABASE_INDEXES.sql exists and has 40+ index statements",
+    "Read file to confirm all 8 tables covered plus activity_logs and notifications",
+    "Execute file in Supabase SQL Editor (note: cannot automate this step, provide instructions)",
+    "Run monitoring query from end of file in Supabase SQL Editor to confirm indexes exist",
+    "After using admin dashboard, re-run monitoring query to verify times_used > 0 for key indexes",
+    "Run EXPLAIN ANALYZE on a slow query before and after: verify 'Index Scan' in query plan and 10-100x speedup"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

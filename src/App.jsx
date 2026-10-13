@@ -6,6 +6,7 @@ import EmergencyScreen from "./screens/EmergencyScreen";
 import ReportModal from "./components/ui/ReportModal";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import ElNinoMonitoringDashboard from "./components/dashboard/ElNinoMonitoringDashboard";
+import { logger } from "./lib/logger";
 
 // Lazy-load the map — only initialises Mapbox GL when user first taps "Maps"
 const MapScreen = lazy(() => import("./screens/MapScreen"));
@@ -121,13 +122,13 @@ function App() {
             if (cats?.length > 0 && cats[0].departments) {
               adminDepartment = cats[0].departments;
             }
-          } catch (e) { console.error("Dept lookup failed", e); }
+          } catch (e) { logger.error("Dept lookup failed", e); }
         }
 
         setIsAdminAuthenticated(true);
         setAdminUser({ isSuperadmin: isSuper, adminCategories: assignedCategories, adminDepartment });
       } catch (e) {
-        console.error("Admin session restore failed", e);
+        logger.error("Admin session restore failed", e);
       }
     };
 
@@ -176,7 +177,7 @@ function App() {
         });
         setUserReports(formatted);
       } catch (err) {
-        console.error("Error fetching reports:", err);
+        logger.error("Error fetching reports:", err);
       } finally {
         setIsLoadingReports(false);
       }
@@ -195,7 +196,7 @@ function App() {
           });
         },
         (err) => {
-          console.log("Location error:", err);
+          logger.info("Location error:", err);
           setUserLocation({ lat: 15.5398, lng: 121.0827 }); // Fallback to Palayan City
         },
         { enableHighAccuracy: false, timeout: 8000, maximumAge: 10000 },

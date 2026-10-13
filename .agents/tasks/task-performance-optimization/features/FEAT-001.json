@@ -1,0 +1,41 @@
+{
+  "id": "FEAT-001",
+  "type": "perf",
+  "description": "Install React Query and implement pagination with infinite scroll for the 5 main data-heavy admin dashboard tabs (Reports, Advisories, Hospital, CDRRMO, BFP). Replace full-table queries with cursor-based pagination using Supabase .range() to load 20-50 records at a time instead of 1000+. This eliminates memory bloat and drastically reduces initial load times.",
+  "status": "pending",
+  "steps": [
+    "1. Install @tanstack/react-query@5.62.19 and react-intersection-observer@9.13.3 via npm install",
+    "2. Create src/hooks/ directory (does not exist yet)",
+    "3. Wrap App in QueryClientProvider in src/main.jsx with staleTime: 5 minutes",
+    "4. Create src/hooks/usePaginatedReports.js using useInfiniteQuery with PAGE_SIZE=50, filters for status/category/department_id, Supabase .range(pageParam * 50, (pageParam + 1) * 50 - 1), join categories and departments in single query: .select('*, categories(id, name, icon, department_id, departments(id, name, accent_color))')",
+    "5. Create src/hooks/usePaginatedAdvisories.js with PAGE_SIZE=20, filters for status/department_id, join departments and profiles",
+    "6. Create src/hooks/usePaginatedHospitalRecords.js with PAGE_SIZE=30, filters for date range/hospital_name",
+    "7. Create src/hooks/usePaginatedCDRRMOOps.js with PAGE_SIZE=30, filters for date range/status/operation_type",
+    "8. Create src/hooks/usePaginatedBFPOps.js with PAGE_SIZE=30, filters for date range/status/operation_type",
+    "9. Update ReportsTab in src/screens/AdminDashboard.jsx to use usePaginatedReports hook, replace state with data.pages.flatMap(page => page), add infinite scroll trigger with useInView at bottom calling fetchNextPage",
+    "10. Update AdvisoriesTab in src/screens/AdminDashboard.jsx to use usePaginatedAdvisories hook with infinite scroll",
+    "11. Update HospitalsTab in src/screens/AdminDashboard.jsx to use usePaginatedHospitalRecords hook with infinite scroll",
+    "12. Update OperationsTab (CDRRMO) in src/screens/AdminDashboard.jsx to use usePaginatedCDRRMOOps hook with infinite scroll",
+    "13. Update BfpOperationsTab in src/screens/AdminDashboard.jsx to use usePaginatedBFPOps hook with infinite scroll"
+  ],
+  "acceptance_criteria": [
+    "npm list shows @tanstack/react-query and react-intersection-observer installed",
+    "npm run build completes with 0 errors",
+    "src/hooks/ directory exists with 5 pagination hooks",
+    "npm run dev starts successfully, admin dashboard loads without console errors",
+    "Network tab shows initial Reports query loads ~50 records, not 1000+",
+    "Scrolling to bottom of Reports tab triggers fetchNextPage and loads next 50 records",
+    "All 5 tabs (Reports, Advisories, Hospital, CDRRMO, BFP) have working infinite scroll",
+    "Network tab shows paginated queries with .range() parameters like .range(0,49), .range(50,99)",
+    "No N+1 queries visible in Network tab for these 5 tabs (each page load is single query with joins)"
+  ],
+  "verification": [
+    "npm run build (must succeed with 0 errors)",
+    "npm run dev, navigate to admin dashboard, open DevTools Network tab",
+    "Test each of 5 tabs: verify initial load shows single query with .range(0,N-1) params",
+    "Scroll to bottom of each tab: verify next query fires with .range(N,M-1) and appends data without replacing existing",
+    "React DevTools: verify QueryClientProvider wraps App, queries visible in React Query DevTools extension if installed"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

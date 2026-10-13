@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Shield, Lock, Mail, ArrowRight, BarChart3, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/logger";
 import ChangePasswordScreen from "./ChangePasswordScreen";
 import ForgotPasswordScreen from "./ForgotPasswordScreen";
 
@@ -61,7 +62,7 @@ export default function AdminLogin({ onLogin }) {
           .single();
         
         if (profileError) {
-          console.error("Profile lookup error:", profileError);
+          logger.error("Profile lookup error:", profileError);
           throw new Error("Database error: Unable to verify admin role");
         }
         
@@ -74,7 +75,7 @@ export default function AdminLogin({ onLogin }) {
           }
         }
       } catch (e) {
-        console.error("Error checking admin auth:", e);
+        logger.error("Error checking admin auth:", e);
         throw e; // Re-throw to be caught by outer try-catch
       }
     }
@@ -94,7 +95,7 @@ export default function AdminLogin({ onLogin }) {
             adminDepartment = cats[0].departments;
           }
         } catch (e) { 
-          console.warn("Department lookup failed (non-critical):", e); 
+          logger.warn("Department lookup failed (non-critical):", e); 
         }
       }
       // Login succeeds even if department lookup fails

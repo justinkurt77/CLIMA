@@ -28,14 +28,16 @@ export default defineConfig({
       },
     }),
   ],
-  esbuild: {
-    pure: ["console.log", "console.info", "console.debug", "console.trace"],
-    drop: ["debugger"],
-  },
   build: {
     sourcemap: false,
-    minify: "esbuild",
+    minify: "terser",
     cssMinify: true,
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
   },
   optimizeDeps: {
     // Pre-bundle mapbox-gl so Vite doesn't reprocess it on every cold start

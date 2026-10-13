@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useInView } from "react-intersection-observer";
 import { supabase } from "../lib/supabase";
 import {
   BarChart3, FileText, Users, LogOut, Map as MapIcon, RefreshCw,
@@ -15,6 +16,12 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
 import { fetchKloudtechDashboard, adaptKloudtechTelemetry } from "../services/kloudtechService";
+import { logger } from "../lib/logger";
+import { usePaginatedReports } from "../hooks/usePaginatedReports";
+import { usePaginatedAdvisories } from "../hooks/usePaginatedAdvisories";
+import { usePaginatedHospitalRecords } from "../hooks/usePaginatedHospitalRecords";
+import { usePaginatedCDRRMOOps } from "../hooks/usePaginatedCDRRMOOps";
+import { usePaginatedBFPOps } from "../hooks/usePaginatedBFPOps";
 
 /* ── Dynamic Theme from Accent Color ── */
 function hexToRgb(hex) {
@@ -190,7 +197,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
         .eq('user_id', user.id);
 
       if (error) {
-        console.error('Error loading permissions:', error);
+        logger.error('Error loading permissions:', error);
         return;
       }
 
@@ -208,7 +215,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
       setMyPermissions(permMap);
       setPermissionsLoaded(true);
     } catch (err) {
-      console.error('Failed to load permissions:', err);
+      logger.error('Failed to load permissions:', err);
       setPermissionsLoaded(true);
     }
   };
@@ -260,7 +267,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
       }
       const { data: repData } = await query;
       setReports(repData || []);
-    } catch (err) { console.error(err); }
+    } catch (err) { logger.error(err); }
     finally { if (!silent) setLoading(false); }
   };
 
@@ -768,7 +775,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
         advisories: advisoriesRes.data || []
       });
     } catch (error) {
-      console.error("Analytics fetch error:", error);
+      logger.error("Analytics fetch error:", error);
     } finally {
       setLoading(false);
     }
@@ -787,7 +794,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
         });
       }
     } catch (error) {
-      console.error("KloudTech fetch error:", error);
+      logger.error("KloudTech fetch error:", error);
     }
   };
 
@@ -1431,46 +1438,45 @@ function ReportRow({ report, showActions, onUpdateStatus, S, inputStyle, selectS
   );
 }
 
-/* ── Reports Tab ── */
+/* ── Reports Tab - WITH PAGINATION ── */
 function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, onViewReport }) {
-  const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-
-  const uniqueCategories = [...new Set(reports.map(r => r.category).filter(Boolean))];
-
-  const filtered = reports.filter(r => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || r.title?.toLowerCase().includes(q) || r.description?.toLowerCase().includes(q);
-    const matchStatus = filter === "all" || r.status === filter;
-    const matchCategory = categoryFilter === "all" || r.category === categoryFilter;
-    
-    let matchDate = true;
-    if (startDate || endDate) {
-      const rDate = new Date(r.created_at);
-      if (startDate) {
-        const s = new Date(startDate);
-        s.setHours(0,0,0,0);
-        if (rDate < s) matchDate = false;
-      }
-      if (endDate) {
-        const e = new Date(endDate);
-        e.setHours(23,59,59,999);
-        if (rDate > e) matchDate = false;
-      }
-    }
-    
-    return matchSearch && matchStatus && matchCategory && matchDate;
+  
+  // Use pagination hook
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    refetch
+  } = usePaginatedReports({
+    status: filter !== "all" ? filter : undefined,
+    category: categoryFilter !== "all" ? categoryFilter : undefined
   });
+  
+  // Infinite scroll trigger
+  const { ref: loadMoreRef, inView } = useInView();
+  
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  
+  // Flatten paginated data
+  const allReports = data?.pages.flatMap(page => page.data) || [];
+  
+  // Get unique categories for filter
+  const uniqueCategories = [...new Set(allReports.map(r => r.category).filter(Boolean))];
 
   const exportToPDF = () => {
     const doc = new jsPDF();
     const tableColumn = ["Date", "Category", "Title", "Location", "Status"];
     const tableRows = [];
 
-    filtered.forEach(r => {
+    allReports.forEach(r => {
       const rowData = [
         new Date(r.created_at).toLocaleDateString(),
         r.category || "Uncategorized",
@@ -1488,7 +1494,7 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
     doc.setFontSize(11);
     doc.setTextColor(100);
     doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
-    doc.text(`Total Reports: ${filtered.length}`, 14, 36);
+    doc.text(`Total Reports: ${allReports.length}`, 14, 36);
 
     autoTable(doc, {
       head: [tableColumn],
@@ -1511,8 +1517,17 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
 
   const updateStatus = async (id, status) => {
     await supabase.from("reports").update({ status, status_label: status }).eq("id", id);
-    onUpdate();
+    refetch();
   };
+
+  if (isLoading) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60 }}>
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          style={{ width: 40, height: 40, border: `4px solid ${S.border}`, borderTopColor: S.accent, borderRadius: "50%" }} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -1530,7 +1545,7 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
               Total Reports
             </p>
             <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: S.accent, lineHeight: 1 }}>
-              {filtered.length}
+              {allReports.length}
             </p>
           </div>
           <div style={{ 
@@ -1559,7 +1574,7 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
               Pending
             </p>
             <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: S.red, lineHeight: 1 }}>
-              {filtered.filter(r => r.status === "pending").length}
+              {allReports.filter(r => r.status === "pending").length}
             </p>
           </div>
           <div style={{ 
@@ -1588,7 +1603,7 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
               In Progress
             </p>
             <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: S.blue, lineHeight: 1 }}>
-              {filtered.filter(r => r.status === "inprogress").length}
+              {allReports.filter(r => r.status === "inprogress").length}
             </p>
           </div>
           <div style={{ 
@@ -1617,7 +1632,7 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
               Resolved
             </p>
             <p style={{ margin: "4px 0 0", fontSize: 32, fontWeight: 900, color: S.green, lineHeight: 1 }}>
-              {filtered.filter(r => r.status === "resolved").length}
+              {allReports.filter(r => r.status === "resolved").length}
             </p>
           </div>
           <div style={{ 
@@ -1635,61 +1650,58 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
         </div>
       </div>
 
-      {/* Existing Reports List Card */}
+      {/* Reports List Card */}
       <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 16 }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Citizen Reports</h3>
-            <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted, fontWeight: 700 }}>{filtered.length} results found</p>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted, fontWeight: 700 }}>{allReports.length} loaded (scroll for more)</p>
           </div>
           <button onClick={exportToPDF} style={{ padding: "8px 16px", borderRadius: 10, border: `1.5px solid ${S.border}`, background: "#fff", color: S.text, fontWeight: 800, fontSize: 13, cursor: "pointer", fontFamily: S.font, display: "flex", alignItems: "center", gap: 8, transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "#fafafa"} onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
             <Download size={16} color={S.accent} /> Export PDF
           </button>
         </div>
       
-      <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20, flexWrap: "wrap", background: "#f8fafc", padding: 12, borderRadius: 12, border: `1px solid ${S.border}` }}>
-        <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
-          <Search size={14} color={S.muted} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title or description…"
-            style={{ ...inputStyle, paddingLeft: 34, height: 38 }} />
-        </div>
-        
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: S.muted, textTransform: "uppercase" }}>From</span>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ ...inputStyle, width: 130, height: 38 }} />
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: S.muted, textTransform: "uppercase" }}>To</span>
-          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ ...inputStyle, width: 130, height: 38 }} />
+        <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20, flexWrap: "wrap", background: "#f8fafc", padding: 12, borderRadius: 12, border: `1px solid ${S.border}` }}>
+          <CustomSelect
+            value={categoryFilter}
+            onChange={setCategoryFilter}
+            options={[{ value: "all", label: "All Categories" }, ...uniqueCategories.map(c => ({ value: c, label: c }))]}
+            compact
+            accent={S.accent}
+            style={{ minWidth: 160, height: 38 }}
+          />
+          <CustomSelect
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: "all", label: "All Statuses" },
+              { value: "pending", label: "Pending", color: "#ef4444" },
+              { value: "inprogress", label: "In Progress", color: "#3b82f6" },
+              { value: "resolved", label: "Resolved", color: "#22c55e" },
+            ]}
+            compact
+            accent={S.accent}
+            style={{ minWidth: 140, height: 38 }}
+          />
         </div>
 
-        <CustomSelect
-          value={categoryFilter}
-          onChange={setCategoryFilter}
-          options={[{ value: "all", label: "All Categories" }, ...uniqueCategories.map(c => ({ value: c, label: c }))]}
-          compact
-          accent={S.accent}
-          style={{ minWidth: 160, height: 38 }}
-        />
-        <CustomSelect
-          value={filter}
-          onChange={setFilter}
-          options={[
-            { value: "all", label: "All Statuses" },
-            { value: "pending", label: "Pending", color: "#ef4444" },
-            { value: "inprogress", label: "In Progress", color: "#3b82f6" },
-            { value: "resolved", label: "Resolved", color: "#22c55e" },
-          ]}
-          compact
-          accent={S.accent}
-          style={{ minWidth: 140, height: 38 }}
-        />
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {filtered.map(r => <ReportRow key={r.id} report={r} showActions onUpdateStatus={s => updateStatus(r.id, s)} S={S} inputStyle={inputStyle} selectStyle={selectStyle} onClick={() => onViewReport(r)} />)}
-        {filtered.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 40 }}>No results.</p>}
-      </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {allReports.map(r => <ReportRow key={r.id} report={r} showActions onUpdateStatus={s => updateStatus(r.id, s)} S={S} inputStyle={inputStyle} selectStyle={selectStyle} onClick={() => onViewReport(r)} />)}
+          {allReports.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 40 }}>No results.</p>}
+          
+          {/* Infinite scroll trigger */}
+          {hasNextPage && (
+            <div ref={loadMoreRef} style={{ padding: 20, textAlign: "center" }}>
+              {isFetchingNextPage ? (
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  style={{ width: 30, height: 30, border: `3px solid ${S.border}`, borderTopColor: S.accent, borderRadius: "50%", margin: "0 auto" }} />
+              ) : (
+                <p style={{ color: S.muted, fontSize: 12, fontWeight: 700 }}>Scroll for more...</p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1846,7 +1858,7 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
       setAssignEmail(""); 
       setAssignDept("All Departments");
     } catch (error) {
-      console.error('Error updating user:', error);
+      logger.error('Error updating user:', error);
       setMsg({ type: "error", text: `Failed to update user: ${error.message}` });
     }
   };
@@ -2181,7 +2193,7 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
       });
       setUserPermissions(permsByUser);
     } catch (err) {
-      console.error("Error loading admin users:", err);
+      logger.error("Error loading admin users:", err);
       showErrorModal("Error", "Failed to load admin users");
     }
   };
@@ -2243,7 +2255,7 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
       await loadAdminUsers();
       showSuccessModal("Applied", `${templateName} template applied successfully`);
     } catch (err) {
-      console.error("Error applying template:", err);
+      logger.error("Error applying template:", err);
       showErrorModal("Error", "Failed to apply template");
     } finally {
       setLoadingPermissions(false);
@@ -2287,7 +2299,7 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
 
       await loadAdminUsers();
     } catch (err) {
-      console.error("Error toggling permission:", err);
+      logger.error("Error toggling permission:", err);
       showErrorModal("Error", "Failed to update permission");
     } finally {
       setLoadingPermissions(false);
@@ -2309,7 +2321,7 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
           await loadAdminUsers();
           showSuccessModal("Revoked", "All permissions removed successfully");
         } catch (err) {
-          console.error("Error revoking permissions:", err);
+          logger.error("Error revoking permissions:", err);
           showErrorModal("Error", "Failed to revoke permissions");
         } finally {
           setLoadingPermissions(false);
@@ -2780,7 +2792,7 @@ function DashboardReportModal({ report, S, onClose, onStatusChange }) {
       await supabase.from("reports").update({ status: newStatus, status_label: newStatus }).eq("id", report.id);
       setStatus(newStatus);
       if (onStatusChange) onStatusChange(newStatus);
-    } catch (e) { console.error(e); }
+    } catch (e) { logger.error(e); }
     finally { setUpdating(false); }
   };
 
@@ -2952,7 +2964,7 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle }) {
       setLogs(logsData || []);
       setUsersMap(uMap);
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     } finally {
       setLoading(false);
     }
@@ -3038,7 +3050,7 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
       }
       setUsersMap(uMap);
     } catch (e) {
-      console.error("Advisories fetch error:", e);
+      logger.error("Advisories fetch error:", e);
     } finally {
       setLoading(false);
     }
@@ -3134,7 +3146,7 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
       setShowForm(false);
       fetchAdvisories();
     } catch (err) {
-      console.error("Submit error:", err);
+      logger.error("Submit error:", err);
       showErrorModal(`Failed to save advisory: ${err.message}`);
     } finally {
       setSubmitting(false);
@@ -3586,7 +3598,7 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
         .limit(30); // Last 30 days
       setRecords(data || []);
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     } finally {
       setLoading(false);
     }
@@ -4208,7 +4220,7 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
         setExpandedDays({ [firstDate]: true });
       }
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     } finally {
       setLoading(false);
     }
@@ -4560,7 +4572,7 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
         setExpandedDays({ [firstDate]: true });
       }
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     } finally {
       setLoading(false);
     }
@@ -4943,7 +4955,7 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
         setExpandedDays({ [firstDate]: true });
       }
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     } finally {
       setLoading(false);
     }
@@ -5522,7 +5534,7 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
       if (error) throw error;
       setRecords(data || []);
     } catch (e) {
-      console.error('fetchRecords error:', e);
+      logger.error('fetchRecords error:', e);
     } finally {
       setLoading(false);
     }
@@ -5859,7 +5871,7 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
       if (error) throw error;
       setRecords(data || []);
     } catch (e) {
-      console.error('fetchRecords error:', e);
+      logger.error('fetchRecords error:', e);
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,41 @@
+{
+  "id": "FEAT-003",
+  "type": "perf",
+  "description": "Apply standard React performance optimizations: add lazy loading to all images, wrap expensive components in React.memo to prevent unnecessary re-renders, add preconnect/dns-prefetch hints to index.html for Mapbox and Supabase domains, and wrap expensive computations in useMemo. These quick wins improve perceived performance and reduce CPU usage.",
+  "status": "pending",
+  "steps": [
+    "1. Add loading='lazy' attribute to <img> tag in src/components/ui/ReportCard.jsx line 86 (report.photoPreview image), plus explicit width={44} height={44} attributes",
+    "2. Search for all other <img> tags: grep -r '<img' src/ to find images in PhotoCard.jsx, PhotoLightbox.jsx, ReportModal.jsx, or other components",
+    "3. Add loading='lazy' and explicit dimensions to all found images",
+    "4. Read .env to get VITE_SUPABASE_URL value for preconnect hints",
+    "5. Add preconnect and dns-prefetch links to index.html before existing stylesheet links: preconnect for https://api.mapbox.com, https://events.mapbox.com, and Supabase project URL from .env",
+    "6. Wrap ReportCard component export in React.memo: export default React.memo(ReportCard) in src/components/ui/ReportCard.jsx",
+    "7. Wrap PinMarker component in React.memo in src/components/map/MapPins.jsx: export const PinMarker = React.memo(function PinMarker({ color, icon }) { ... })",
+    "8. Break down ElNinoMonitoringDashboard.jsx into smaller memo'd components: extract AdvisoriesSection, HospitalSection, BFPSection, CDRRMOSection, AgricultureSection, InterruptionsSection as separate components wrapped in React.memo with props dependencies",
+    "9. Wrap expensive analytics calculations in OverviewTab (AdminDashboard.jsx) with useMemo, dependencies on data arrays",
+    "10. Test all changes with React DevTools Profiler to confirm memo'd components don't re-render when unrelated state changes"
+  ],
+  "acceptance_criteria": [
+    "All <img> tags have loading='lazy' and explicit width/height attributes",
+    "index.html has preconnect links for Mapbox domains and Supabase URL",
+    "ReportCard component wrapped in React.memo",
+    "PinMarker component wrapped in React.memo",
+    "ElNinoMonitoringDashboard sections extracted and memo'd",
+    "OverviewTab analytics wrapped in useMemo",
+    "npm run build completes with 0 errors",
+    "React DevTools Profiler shows reduced re-render count for memo'd components",
+    "Browser Network tab shows earlier DNS lookups for Mapbox and Supabase due to preconnect"
+  ],
+  "verification": [
+    "npm run build (must succeed)",
+    "npm run dev, open admin dashboard",
+    "Inspect element on report card images: confirm loading='lazy' width='44' height='44' present",
+    "View page source on localhost:5173: confirm preconnect links in <head>",
+    "Open React DevTools Profiler, record a session",
+    "Navigate between dashboard tabs multiple times",
+    "Stop profiler, review: ReportCard, PinMarker, dashboard sections should show '(memo)' and not render when props unchanged",
+    "Network tab: verify mapbox and supabase connections start earlier in waterfall"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

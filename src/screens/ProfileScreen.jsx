@@ -18,6 +18,8 @@ import { supabase } from "../lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import imageCompression from "browser-image-compression";
 import { useTheme } from "../context/ThemeContext";
+import { logger } from "../lib/logger";
+import { validateImageFile } from "../lib/fileValidator";
 
 const menuItems = [
   { id: "reports", Icon: ClipboardList, label: "My Reports" },
@@ -81,11 +83,20 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
     // Don't auto-navigate away after successful login
   };
 
-  const handleAvatarChange = (e) => {
+  const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Validate the file before setting it
+    const validation = await validateImageFile(file);
+    if (!validation.valid) {
+      setError(validation.error);
+      return;
+    }
+
     setAvatarPreview(URL.createObjectURL(file));
     setAvatarFile(file);
+    setError(null); // Clear any previous errors
   };
 
   const handleSaveProfile = async (e) => {
@@ -158,7 +169,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
         setSuccess(false);
       }, 1500);
     } catch (err) {
-      console.error("Failed to update profile:", err);
+      logger.error("Failed to update profile:", err);
       setError(err.message || "An error occurred while saving your profile.");
     } finally {
       setSaving(false);

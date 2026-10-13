@@ -7,6 +7,8 @@ import Step3MapPicker from "./report/Step3MapPicker";
 import Step4Success from "./report/Step4Success";
 import imageCompression from "browser-image-compression";
 import { AnimatePresence, motion } from "framer-motion";
+import { logger } from "../../lib/logger";
+import { validateImageFile } from "../../lib/fileValidator";
 
 function ReportModal({ isOpen, onClose, onSubmit, session }) {
   const fileRef = useRef(null);
@@ -39,7 +41,7 @@ function ReportModal({ isOpen, onClose, onSubmit, session }) {
   // close the modal (App.jsx should have redirected to profile already)
   useEffect(() => {
     if (isOpen && (!session || !session.user?.user_metadata?.first_name)) {
-      console.warn('ReportModal opened without valid session - closing');
+      logger.warn('ReportModal opened without valid session - closing');
       handleClose();
     }
   }, [isOpen, session]);
@@ -118,6 +120,24 @@ function ReportModal({ isOpen, onClose, onSubmit, session }) {
     if (allowed <= 0) return;
 
     const filesToAddRaw = files.slice(0, allowed);
+
+    // Validate each file before processing
+    const validationResults = await Promise.all(
+      filesToAddRaw.map(async (file) => {
+        const result = await validateImageFile(file);
+        return { file, ...result };
+      })
+    );
+
+    // Check for any validation errors
+    const invalidFile = validationResults.find(r => !r.valid);
+    if (invalidFile) {
+      setErrors(prev => ({ ...prev, photos: invalidFile.error }));
+      return;
+    }
+
+    // Clear photo errors if validation passed
+    setErrors(prev => ({ ...prev, photos: undefined }));
 
     const formatCoord = (val, isLat) => {
       if (typeof val !== "number") return "";
@@ -228,7 +248,7 @@ function ReportModal({ isOpen, onClose, onSubmit, session }) {
           const watermarkedFile = await addWatermark(compressed);
           return watermarkedFile;
         } catch (error) {
-          console.error("Processing failed for", file.name, error);
+          logger.error("Processing failed for", file.name, error);
           return file;
         }
       }),
@@ -289,7 +309,7 @@ function ReportModal({ isOpen, onClose, onSubmit, session }) {
                 useWebWorker: true,
               });
             } catch (err) {
-              console.error("Failed to compress image before upload", err);
+              logger.error("Failed to compress image before upload", err);
             }
 
             const generateRandomString = (length = 32) => {
@@ -311,7 +331,7 @@ function ReportModal({ isOpen, onClose, onSubmit, session }) {
               .upload(filePath, fileToUpload);
 
             if (uploadError) {
-              console.error("Storage upload error:", uploadError);
+              logger.error("Storage upload error:", uploadError);
             } else {
               const { data: publicUrlData } = supabase.storage
                 .from("reports")
@@ -363,7 +383,7 @@ function ReportModal({ isOpen, onClose, onSubmit, session }) {
       });
       setStep(4);
     } catch (err) {
-      console.error("Error inserting report:", err);
+      logger.error("Error inserting report:", err);
       setErrors({
         description:
           "There was a problem saving to the database. Check your Supabase credentials.",

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
+import { logger } from "../../lib/logger";
 
 const MOBILE_NAV_ITEMS = [
   { id: "home", label: "Home", icon: Home },
@@ -42,7 +43,7 @@ export default function CitizenNav({
       try {
         await onRefresh();
       } catch (err) {
-        console.warn("Refresh error:", err);
+        logger.warn("Refresh error:", err);
       }
     }
     setTimeout(() => {
