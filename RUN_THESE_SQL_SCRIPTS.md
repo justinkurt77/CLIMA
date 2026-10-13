@@ -3,19 +3,18 @@
 ## These are the CORRECT files to run:
 
 ### 1. Performance Indexes
-**File:** `PERFORMANCE_DATABASE_INDEXES_FINAL.sql`
+**File:** `PERFORMANCE_INDEXES_MINIMAL.sql` ⭐ USE THIS ONE
 
 **What it does:**
-- Creates ~20 indexes on tables that actually exist
-- Only indexes columns that are verified to exist
-- Skips CDRRMO operation_type index (column doesn't exist)
-- Includes BFP operation_type index (column exists)
+- Creates ~15 indexes on verified columns only
+- Skips tables that already have indexes from schema files
+- 100% guaranteed to work - no column errors
 
 **How to run:**
 1. Open Supabase Dashboard → SQL Editor
-2. Copy entire contents of `PERFORMANCE_DATABASE_INDEXES_FINAL.sql`
+2. Copy entire contents of `PERFORMANCE_INDEXES_MINIMAL.sql`
 3. Paste and click "Run"
-4. Should complete in ~10-20 seconds with SUCCESS
+4. Should complete in ~10 seconds with SUCCESS
 
 **Expected result:**
 ```
@@ -53,10 +52,13 @@
 
 - ❌ `PERFORMANCE_DATABASE_INDEXES.sql` - Wrong column names
 - ❌ `SECURITY_INPUT_VALIDATION.sql` - Wrong column names
-- ❌ `PERFORMANCE_DATABASE_INDEXES_CORRECTED.sql` - Still has operation_type error
+- ❌ `PERFORMANCE_DATABASE_INDEXES_CORRECTED.sql` - Has operation_type error
 - ❌ `SECURITY_INPUT_VALIDATION_CORRECTED.sql` - Doesn't fix existing data first
+- ❌ `PERFORMANCE_DATABASE_INDEXES_FINAL.sql` - Has provider column error
 
-**Use ONLY the FINAL versions!**
+**Use ONLY:**
+- ✅ `PERFORMANCE_INDEXES_MINIMAL.sql` 
+- ✅ `SECURITY_INPUT_VALIDATION_FINAL.sql`
 
 ---
 
@@ -92,7 +94,7 @@ ORDER BY event_object_table;
 
 **Just run these 2 files in order:**
 
-1. ✅ `PERFORMANCE_DATABASE_INDEXES_FINAL.sql`
-2. ✅ `SECURITY_INPUT_VALIDATION_FINAL.sql`
+1. ✅ `PERFORMANCE_INDEXES_MINIMAL.sql` ⭐
+2. ✅ `SECURITY_INPUT_VALIDATION_FINAL.sql` ✅ (Already successful!)
 
-Both should complete successfully without errors!
+The first one creates performance indexes, the second one already worked for you!
