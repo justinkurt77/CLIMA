@@ -186,9 +186,10 @@ resolve: {
 ### Before Deployment:
 
 1. **Execute database scripts:**
-   - [ ] Run `PERFORMANCE_DATABASE_INDEXES.sql` in Supabase SQL Editor
-   - [ ] Run `SECURITY_INPUT_VALIDATION.sql` in Supabase SQL Editor
+   - [ ] Run `PERFORMANCE_DATABASE_INDEXES_CORRECTED.sql` in Supabase SQL Editor ✨ CORRECTED VERSION
+   - [ ] Run `SECURITY_INPUT_VALIDATION_CORRECTED.sql` in Supabase SQL Editor ✨ CORRECTED VERSION
    - [ ] Verify indexes exist: Check index usage with monitoring query at end of SQL file
+   - ⚠️ **Note:** Original SQL scripts had incorrect column names. Use CORRECTED versions only!
 
 2. **Security hardening:**
    - [ ] Replace remaining console.* calls with logger.* calls
@@ -271,6 +272,14 @@ resolve: {
 4. **Database indexes are low-hanging fruit:** Massive performance gains with minimal implementation effort - just SQL scripts.
 
 5. **DOMPurify already integrated:** XSS protection was already in place for user-generated content display.
+
+6. **⚠️ CRITICAL: Always verify actual database schema:** The original SQL scripts used assumed column names that didn't match the actual database. Key differences discovered:
+   - `reports` table uses `lat`/`lng` (not `latitude`/`longitude`)
+   - `bfp_operations` and `cdrrmo_daily_operations` don't have `status` column
+   - `agriculture_damage_reports` uses `area_affected_hectares` (not `damage_area`)
+   - `water_interruptions` and `power_interruptions` don't have `status` column
+   
+   **Lesson:** Read existing schema files (`supabase_*.sql`) or query `information_schema` before writing constraints/indexes.
 
 ---
 
