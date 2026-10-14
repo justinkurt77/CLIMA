@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
-import { Shield, Lock, Mail, ArrowRight, BarChart3, AlertCircle } from "lucide-react";
+import { Shield, Lock, Mail, ArrowRight, BarChart3, AlertCircle, Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { logger } from "../lib/logger";
+import { useTheme } from "../context/ThemeContext";
 import ChangePasswordScreen from "./ChangePasswordScreen";
 import ForgotPasswordScreen from "./ForgotPasswordScreen";
 
 export default function AdminLogin({ onLogin }) {
+  const { theme, isDark, toggleTheme } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -231,78 +233,114 @@ export default function AdminLogin({ onLogin }) {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      background: "#f8faf7",
-      fontFamily: "'Nunito', sans-serif",
+      background: isDark ? "#090a0f" : "#f8f9fa",
+      fontFamily: "var(--font-sans, -apple-system, BlinkMacSystemFont, 'Inter', 'Outfit', sans-serif)",
       position: "fixed",
       inset: 0,
-      zIndex: 9999
+      zIndex: 9999,
+      transition: "background 0.25s ease",
     }}>
       {/* Background patterns */}
       <div style={{
         position: "absolute",
         inset: 0,
-        opacity: 0.5,
+        opacity: isDark ? 0.35 : 0.6,
         pointerEvents: "none",
-        backgroundImage: "radial-gradient(circle at 1px 1px, #373D20 1px, transparent 0)",
-        backgroundSize: "40px 40px"
+        backgroundImage: `radial-gradient(circle at 1px 1px, ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)"} 1px, transparent 0)`,
+        backgroundSize: "32px 32px"
       }} />
 
+      {/* Floating Theme Switcher */}
+      <div style={{ position: "absolute", top: 24, right: 28, zIndex: 10 }}>
+        <button
+          onClick={toggleTheme}
+          title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 14,
+            border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.1)",
+            background: isDark ? "rgba(18, 20, 26, 0.85)" : "rgba(255, 255, 255, 0.9)",
+            backdropFilter: "blur(12px)",
+            color: isDark ? "#ffffff" : "#09090b",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            boxShadow: isDark ? "0 4px 16px rgba(0,0,0,0.5)" : "0 4px 14px rgba(0,0,0,0.06)",
+            transition: "all 0.2s ease",
+          }}
+        >
+          {isDark ? <Sun size={19} color="#f59e0b" /> : <Moon size={19} color="#64748b" />}
+        </button>
+      </div>
+
       <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        initial={{ opacity: 0, y: 20, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         style={{
           width: "100%",
           maxWidth: 420,
-          background: "white",
-          border: "1px solid rgba(55, 61, 32, 0.1)",
-          borderRadius: 32,
-          padding: "48px 40px",
-          boxShadow: "0 25px 60px -12px rgba(55, 61, 32, 0.12)",
+          background: isDark ? "rgba(18, 20, 26, 0.96)" : "#ffffff",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.08)",
+          borderRadius: 28,
+          padding: "44px 36px",
+          boxShadow: isDark ? "0 25px 60px -12px rgba(0, 0, 0, 0.85)" : "0 25px 60px -12px rgba(0, 0, 0, 0.1)",
           position: "relative",
           zIndex: 1
         }}
       >
         {/* Logo and Header */}
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
           <div style={{
-            width: 64,
-            height: 64,
-            background: "#373D20",
-            borderRadius: 20,
+            width: 60,
+            height: 60,
+            margin: "0 auto 16px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            margin: "0 auto 20px",
-            boxShadow: "0 10px 25px rgba(55, 61, 32, 0.2)"
           }}>
-            <BarChart3 size={32} color="white" />
+            <img
+              src="/logo.png"
+              alt="CLIMA Logo"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                filter: isDark
+                  ? "drop-shadow(0 0 1px rgba(255, 255, 255, 0.85)) drop-shadow(0 2px 12px rgba(249, 115, 22, 0.45))"
+                  : "drop-shadow(0 2px 10px rgba(249, 115, 22, 0.25))",
+              }}
+            />
           </div>
           <h1 style={{
-            color: "#373D20",
+            color: isDark ? "#ffffff" : "#09090b",
             margin: 0,
-            fontSize: 28,
+            fontSize: 24,
             fontWeight: 900,
-            fontFamily: "'Baloo 2', cursive"
+            letterSpacing: "-0.02em",
           }}>
-            {step === 'forgot' ? "Reset Password" : step === 'reset' || step === 'force_reset' ? "Set New Password" : "Admin Access"}
+            {step === 'forgot' ? "Reset Password" : step === 'reset' || step === 'force_reset' ? "Set New Password" : "Admin Console"}
           </h1>
           <p style={{
-            color: "rgba(55, 61, 32, 0.5)",
-            margin: "8px 0 0",
-            fontSize: 14,
+            color: isDark ? "#a1a1aa" : "#71717a",
+            margin: "6px 0 0",
+            fontSize: 12,
             fontWeight: 700,
-            letterSpacing: 1,
+            letterSpacing: "0.06em",
             textTransform: "uppercase"
           }}>
-            {step === 'force_reset' ? "Required for new accounts" : "CLIMA System"}
+            {step === 'force_reset' ? "Required for new accounts" : "CLIMA Central Management"}
           </p>
         </div>
 
-        <form onSubmit={step === 'login' ? handleLogin : step === 'forgot' ? handleForgotPassword : handleUpdatePassword} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <form onSubmit={step === 'login' ? handleLogin : step === 'forgot' ? handleForgotPassword : handleUpdatePassword} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           {(step === 'login' || step === 'forgot') && (
             <div style={{ position: "relative" }}>
-              <div style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", color: "rgba(55, 61, 32, 0.4)" }}>
+              <div style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", color: isDark ? "#71717a" : "#a1a1aa" }}>
                 <Mail size={18} />
               </div>
               <input
@@ -312,19 +350,22 @@ export default function AdminLogin({ onLogin }) {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 style={{
-                  width: "100%", boxSizing: "border-box", padding: "16px 16px 16px 48px",
-                  background: "#f8faf7", border: "1px solid rgba(55, 61, 32, 0.12)", borderRadius: 16,
-                  color: "#373D20", fontSize: 15, fontWeight: 600, outline: "none", transition: "all 0.2s"
+                  width: "100%", boxSizing: "border-box", padding: "14px 16px 14px 46px",
+                  background: isDark ? "#161922" : "#f4f4f6",
+                  border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.1)",
+                  borderRadius: 14,
+                  color: isDark ? "#ffffff" : "#09090b",
+                  fontSize: 14, fontWeight: 600, outline: "none", transition: "all 0.2s"
                 }}
-                onFocus={(e) => { e.target.style.background = "white"; e.target.style.borderColor = "#373D20"; }}
-                onBlur={(e) => { e.target.style.background = "#f8faf7"; e.target.style.borderColor = "rgba(55, 61, 32, 0.12)"; }}
+                onFocus={(e) => { e.target.style.borderColor = "#f97316"; }}
+                onBlur={(e) => { e.target.style.borderColor = isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.1)"; }}
               />
             </div>
           )}
 
           {step === 'login' && (
             <div style={{ position: "relative" }}>
-              <div style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", color: "rgba(55, 61, 32, 0.4)" }}>
+              <div style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", color: isDark ? "#71717a" : "#a1a1aa" }}>
                 <Lock size={18} />
               </div>
               <input
@@ -334,19 +375,22 @@ export default function AdminLogin({ onLogin }) {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 style={{
-                  width: "100%", boxSizing: "border-box", padding: "16px 16px 16px 48px",
-                  background: "#f8faf7", border: "1px solid rgba(55, 61, 32, 0.12)", borderRadius: 16,
-                  color: "#373D20", fontSize: 15, fontWeight: 600, outline: "none", transition: "all 0.2s", letterSpacing: 2
+                  width: "100%", boxSizing: "border-box", padding: "14px 16px 14px 46px",
+                  background: isDark ? "#161922" : "#f4f4f6",
+                  border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.1)",
+                  borderRadius: 14,
+                  color: isDark ? "#ffffff" : "#09090b",
+                  fontSize: 14, fontWeight: 600, outline: "none", transition: "all 0.2s"
                 }}
-                onFocus={(e) => { e.target.style.background = "white"; e.target.style.borderColor = "#373D20"; }}
-                onBlur={(e) => { e.target.style.background = "#f8faf7"; e.target.style.borderColor = "rgba(55, 61, 32, 0.12)"; }}
+                onFocus={(e) => { e.target.style.borderColor = "#f97316"; }}
+                onBlur={(e) => { e.target.style.borderColor = isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.1)"; }}
               />
             </div>
           )}
 
           {(step === 'reset' || step === 'force_reset') && (
             <div style={{ position: "relative" }}>
-              <div style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", color: "rgba(55, 61, 32, 0.4)" }}>
+              <div style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", color: isDark ? "#71717a" : "#a1a1aa" }}>
                 <Lock size={18} />
               </div>
               <input
@@ -356,12 +400,15 @@ export default function AdminLogin({ onLogin }) {
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
                 style={{
-                  width: "100%", boxSizing: "border-box", padding: "16px 16px 16px 48px",
-                  background: "#f8faf7", border: "1px solid rgba(55, 61, 32, 0.12)", borderRadius: 16,
-                  color: "#373D20", fontSize: 15, fontWeight: 600, outline: "none", transition: "all 0.2s", letterSpacing: 2
+                  width: "100%", boxSizing: "border-box", padding: "14px 16px 14px 46px",
+                  background: isDark ? "#161922" : "#f4f4f6",
+                  border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.1)",
+                  borderRadius: 14,
+                  color: isDark ? "#ffffff" : "#09090b",
+                  fontSize: 14, fontWeight: 600, outline: "none", transition: "all 0.2s"
                 }}
-                onFocus={(e) => { e.target.style.background = "white"; e.target.style.borderColor = "#373D20"; }}
-                onBlur={(e) => { e.target.style.background = "#f8faf7"; e.target.style.borderColor = "rgba(55, 61, 32, 0.12)"; }}
+                onFocus={(e) => { e.target.style.borderColor = "#f97316"; }}
+                onBlur={(e) => { e.target.style.borderColor = isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.1)"; }}
               />
             </div>
           )}
@@ -373,7 +420,7 @@ export default function AdminLogin({ onLogin }) {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                style={{ display: "flex", alignItems: "center", gap: 8, color: "#047857", background: "#D1FAE5", padding: 14, borderRadius: 16, fontSize: 13, fontWeight: 600, overflow: "hidden" }}
+                style={{ display: "flex", alignItems: "center", gap: 8, color: "#22c55e", background: "rgba(34, 197, 94, 0.15)", border: "1px solid rgba(34, 197, 94, 0.3)", padding: 12, borderRadius: 14, fontSize: 13, fontWeight: 600, overflow: "hidden" }}
               >
                 {msg}
               </motion.div>
@@ -387,7 +434,7 @@ export default function AdminLogin({ onLogin }) {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                style={{ display: "flex", alignItems: "center", gap: 8, color: "#E74C3C", fontSize: 13, fontWeight: 700, overflow: "hidden" }}
+                style={{ display: "flex", alignItems: "center", gap: 8, color: "#ef4444", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", padding: 12, borderRadius: 14, fontSize: 13, fontWeight: 700, overflow: "hidden" }}
               >
                 <AlertCircle size={14} />
                 {error}
@@ -399,17 +446,30 @@ export default function AdminLogin({ onLogin }) {
             type="submit"
             disabled={loading}
             style={{
-              padding: "16px", borderRadius: 16, border: "none", background: "#373D20", color: "white", fontSize: 16, fontWeight: 900,
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 10, transition: "all 0.2s", boxShadow: "0 10px 20px rgba(55, 61, 32, 0.15)"
+              padding: "14px",
+              borderRadius: 14,
+              border: "none",
+              background: "#f97316",
+              color: "white",
+              fontSize: 15,
+              fontWeight: 800,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              marginTop: 6,
+              transition: "all 0.2s",
+              boxShadow: "0 8px 24px rgba(249, 115, 22, 0.38)",
             }}
-            onMouseEnter={(e) => e.target.style.transform = "translateY(-2px)"}
-            onMouseLeave={(e) => e.target.style.transform = "translateY(0)"}
+            onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-1px)"}
+            onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
           >
             {loading ? (
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} style={{ width: 24, height: 24, border: "3px solid rgba(255,255,255,0.2)", borderTopColor: "white", borderRadius: "50%" }} />
+              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} style={{ width: 22, height: 22, border: "2.5px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%" }} />
             ) : (
               <>
-                {step === 'forgot' ? "Send Reset Email" : step === 'reset' || step === 'force_reset' ? "Save Password" : "Login"}
+                {step === 'forgot' ? "Send Reset Email" : step === 'reset' || step === 'force_reset' ? "Save Password" : "Sign In to Console"}
                 <ArrowRight size={18} />
               </>
             )}
@@ -419,7 +479,7 @@ export default function AdminLogin({ onLogin }) {
             <button
               type="button"
               onClick={() => { setShowForgotPassword(true); setError(""); setMsg(""); }}
-              style={{ background: "none", border: "none", color: "rgba(55, 61, 32, 0.6)", fontSize: 13, fontWeight: 700, cursor: "pointer", marginTop: -10 }}
+              style={{ background: "none", border: "none", color: isDark ? "#a1a1aa" : "#71717a", fontSize: 13, fontWeight: 700, cursor: "pointer", marginTop: -6 }}
             >
               Forgot Password?
             </button>
@@ -434,14 +494,14 @@ export default function AdminLogin({ onLogin }) {
                 setMsg(""); 
                 if (step === 'force_reset') await supabase.auth.signOut(); 
               }}
-              style={{ background: "none", border: "none", color: "rgba(55, 61, 32, 0.6)", fontSize: 13, fontWeight: 700, cursor: "pointer", marginTop: -10 }}
+              style={{ background: "none", border: "none", color: isDark ? "#a1a1aa" : "#71717a", fontSize: 13, fontWeight: 700, cursor: "pointer", marginTop: -6 }}
             >
               Back to Login
             </button>
           )}
         </form>
 
-        <p style={{ textAlign: "center", color: "rgba(55, 61, 32, 0.3)", fontSize: 12, fontWeight: 600, marginTop: 32, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+        <p style={{ textAlign: "center", color: isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.35)", fontSize: 12, fontWeight: 600, marginTop: 28, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
           <Shield size={12} />
           Secure Admin Environment
         </p>
@@ -449,4 +509,5 @@ export default function AdminLogin({ onLogin }) {
     </div>
   );
 }
+
 

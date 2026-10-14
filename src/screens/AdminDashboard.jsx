@@ -5,7 +5,8 @@ import {
   BarChart3, FileText, Users, LogOut, Map as MapIcon, RefreshCw,
   Plus, Trash2, Building, CheckCircle, CheckCircle2, Clock, TrendingUp, Search, X, Edit2, Check, Download,
   MapPin, Calendar, Phone, AlertCircle, AlertTriangle, ChevronRight, ChevronDown, ChevronUp, Navigation,
-  ShieldAlert, Activity, Megaphone, HeartPulse, Tent, Truck, Flame, Droplet, Zap, Sprout, Wifi
+  ShieldAlert, Activity, Megaphone, HeartPulse, Tent, Truck, Flame, Droplet, Zap, Sprout, Wifi,
+  Sun, Moon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect from "../components/ui/CustomSelect";
@@ -17,30 +18,71 @@ import {
 } from "recharts";
 import { fetchKloudtechDashboard, adaptKloudtechTelemetry } from "../services/kloudtechService";
 import { logger } from "../lib/logger";
+import { useTheme } from "../context/ThemeContext";
 import { usePaginatedReports } from "../hooks/usePaginatedReports";
 import { usePaginatedAdvisories } from "../hooks/usePaginatedAdvisories";
 import { usePaginatedHospitalRecords } from "../hooks/usePaginatedHospitalRecords";
 import { usePaginatedCDRRMOOps } from "../hooks/usePaginatedCDRRMOOps";
 import { usePaginatedBFPOps } from "../hooks/usePaginatedBFPOps";
 
-/* ── Dynamic Theme from Accent Color ── */
+/* ── Dynamic Theme from Accent Color & Dark Mode ── */
 function hexToRgb(hex) {
-  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  if (!hex || typeof hex !== "string" || !hex.startsWith("#")) return { r: 249, g: 115, b: 22 };
+  const clean = hex.slice(1);
+  const full = clean.length === 3 ? clean.split("").map(c => c + c).join("") : clean;
+  const r = parseInt(full.slice(0, 2), 16) || 249;
+  const g = parseInt(full.slice(2, 4), 16) || 115;
+  const b = parseInt(full.slice(4, 6), 16) || 22;
   return { r, g, b };
 }
 
-function buildTheme(accent, name = "") {
-  const { r, g, b } = hexToRgb(accent);
+function buildTheme(accent, name = "", isDark = true) {
+  const isCustomAccent = accent && accent !== "#373D20";
+  const effectiveAccent = isCustomAccent ? accent : "#f97316";
+  const { r, g, b } = hexToRgb(effectiveAccent);
+
+  if (isDark) {
+    return {
+      accent: effectiveAccent,
+      accentHover: "#ea580c",
+      accentBg: `rgba(${r},${g},${b},0.16)`,
+      accentBorder: `rgba(${r},${g},${b},0.35)`,
+      bg: "#090a0f",
+      card: "#12141a",
+      cardSubtle: "#181b24",
+      cardHeader: "rgba(255, 255, 255, 0.03)",
+      border: "rgba(255, 255, 255, 0.09)",
+      borderMedium: "rgba(255, 255, 255, 0.16)",
+      text: "#ffffff",
+      textSecondary: "#a1a1aa",
+      muted: "#71717a",
+      inputBg: "#161922",
+      inputBorder: "rgba(255, 255, 255, 0.12)",
+      shadowCard: "0 10px 30px rgba(0, 0, 0, 0.6)",
+      title: name ? `${name} Dashboard` : "Admin Console",
+      subtitle: name ? `${name} · CLIMA Portal` : "CLIMA Central Management",
+    };
+  }
+
   return {
-    accent,
-    bg: `rgba(${r},${g},${b},0.04)`,
-    border: `rgba(${r},${g},${b},0.18)`,
-    text: `rgb(${Math.round(r * 0.3)},${Math.round(g * 0.3)},${Math.round(b * 0.3)})`,
-    muted: `rgba(${Math.round(r * 0.4)},${Math.round(g * 0.4)},${Math.round(b * 0.4)},0.55)`,
-    card: "#fff",
+    accent: effectiveAccent,
+    accentHover: "#ea580c",
+    accentBg: `rgba(${r},${g},${b},0.1)`,
+    accentBorder: `rgba(${r},${g},${b},0.25)`,
+    bg: "#f8f9fa",
+    card: "#ffffff",
+    cardSubtle: "#f4f4f6",
+    cardHeader: "rgba(0, 0, 0, 0.02)",
+    border: "rgba(0, 0, 0, 0.08)",
+    borderMedium: "rgba(0, 0, 0, 0.14)",
+    text: "#09090b",
+    textSecondary: "#52525b",
+    muted: "#71717a",
+    inputBg: "#ffffff",
+    inputBorder: "rgba(0, 0, 0, 0.12)",
+    shadowCard: "0 10px 30px rgba(0, 0, 0, 0.06)",
     title: name ? `${name} Dashboard` : "Admin Console",
-    subtitle: name || "CLIMA Portal",
-    accentBg: `rgba(${r},${g},${b},0.08)`,
+    subtitle: name ? `${name} · CLIMA Portal` : "CLIMA Central Management",
   };
 }
 
@@ -50,23 +92,26 @@ const DEPT_DEFAULTS = {
   "CITY VET OFFICE": "#d97706", ENGINEERING: "#7c3aed", "GENERAL SERVICES": "#0891b2",
 };
 
-const DEFAULT_THEME = {
-  accent: "#373D20", bg: "#f4f6f1", border: "#e8ebe4", text: "#1a2612", muted: "rgba(55,61,32,0.5)", card: "#ffffff",
-  title: "Admin Console", subtitle: "CLIMA Portal", accentBg: "rgba(55,61,32,0.06)",
-};
-
-function getTheme(dept) {
-  if (!dept) return DEFAULT_THEME;
-  const name = typeof dept === "string" ? dept : dept.name;
-  const accent = (typeof dept === "object" && dept.accent_color) || DEPT_DEFAULTS[name] || "#373D20";
-  return buildTheme(accent, name);
+function getTheme(dept, isDark) {
+  const name = typeof dept === "string" ? dept : dept?.name;
+  const accent = (typeof dept === "object" && dept?.accent_color) || (name && DEPT_DEFAULTS[name]) || "#f97316";
+  return buildTheme(accent, name, isDark);
 }
 
-const makeStyles = (T) => ({
-  font: "'Nunito', sans-serif",
+const makeStyles = (T, isDark) => ({
+  font: "var(--font-sans, -apple-system, BlinkMacSystemFont, 'Inter', 'Outfit', sans-serif)",
   ...T,
-  green: "#4BB450", red: "#E74C3C", blue: "#3498DB",
-  greenBg: "rgba(75,180,80,0.08)", redBg: "rgba(231,76,60,0.08)", blueBg: "rgba(52,152,219,0.08)",
+  isDark,
+  green: isDark ? "#22c55e" : "#16a34a",
+  greenBg: isDark ? "rgba(34, 197, 94, 0.16)" : "rgba(22, 163, 74, 0.1)",
+  red: isDark ? "#ef4444" : "#dc2626",
+  redBg: isDark ? "rgba(239, 68, 68, 0.16)" : "rgba(220, 38, 38, 0.1)",
+  blue: isDark ? "#3b82f6" : "#2563eb",
+  blueBg: isDark ? "rgba(59, 130, 246, 0.16)" : "rgba(37, 99, 235, 0.1)",
+  amber: isDark ? "#f59e0b" : "#d97706",
+  amberBg: isDark ? "rgba(245, 158, 11, 0.16)" : "rgba(217, 119, 6, 0.1)",
+  purple: isDark ? "#a855f7" : "#7c3aed",
+  purpleBg: isDark ? "rgba(168, 85, 247, 0.16)" : "rgba(124, 58, 237, 0.1)",
 });
 
 const tabVariants = {
@@ -91,37 +136,40 @@ const tabVariants = {
 };
 
 export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, adminCategories, adminDepartment }) {
-  const S = makeStyles(getTheme(isSuperadmin ? null : adminDepartment));
+  const { theme, isDark, toggleTheme } = useTheme();
+  const S = makeStyles(getTheme(isSuperadmin ? null : adminDepartment, isDark), isDark);
 
   const inputStyle = {
-    width: "100%", boxSizing: "border-box", padding: "10px 14px",
-    background: "#fff", border: `1.5px solid ${S.border}`, borderRadius: 10,
+    width: "100%", boxSizing: "border-box", padding: "11px 14px",
+    background: S.inputBg, border: `1.5px solid ${S.inputBorder}`, borderRadius: 12,
     fontSize: 14, fontWeight: 600, outline: "none", fontFamily: S.font,
     color: S.text, transition: "border-color 0.2s, box-shadow 0.2s",
-    boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+    boxShadow: isDark ? "0 1px 3px rgba(0,0,0,0.3)" : "0 1px 2px rgba(0,0,0,0.04)",
   };
   const selectStyle = {
     ...inputStyle,
     appearance: "none", WebkitAppearance: "none", MozAppearance: "none",
     paddingRight: 36, cursor: "pointer",
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(isDark ? "#a1a1aa" : "#71717a")}' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
     backgroundRepeat: "no-repeat",
     backgroundPosition: "right 12px center",
     backgroundSize: "16px",
   };
   const btnPrimary = {
-    padding: "10px 20px", borderRadius: 10, border: "none",
+    padding: "10px 20px", borderRadius: 12, border: "none",
     background: S.accent, color: "#fff", fontWeight: 800, fontSize: 14,
-    cursor: "pointer", fontFamily: S.font, display: "flex", alignItems: "center", gap: 6,
-    boxShadow: `0 2px 8px ${S.accent}33`, transition: "opacity 0.15s, transform 0.15s",
+    cursor: "pointer", fontFamily: S.font, display: "flex", alignItems: "center", gap: 8,
+    boxShadow: `0 4px 14px ${S.accent}44`, transition: "opacity 0.15s, transform 0.15s",
   };
   const btnDanger = {
     background: "none", border: "none", color: S.red, cursor: "pointer",
     padding: 6, borderRadius: 8, display: "flex", alignItems: "center",
   };
   const cardStyle = {
-    background: S.card, border: `1px solid ${S.border}`, borderRadius: 16,
-    padding: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+    background: S.card, border: `1px solid ${S.border}`, borderRadius: 20,
+    padding: 24, boxShadow: S.shadowCard,
+    backdropFilter: isDark ? "blur(16px)" : "none",
+    WebkitBackdropFilter: isDark ? "blur(16px)" : "none",
   };
 
   const [activeTab, setActiveTab] = useState("overview");
@@ -309,59 +357,143 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
   return (
     <div style={{ height: "100vh", display: "flex", background: S.bg, fontFamily: S.font, color: S.text, overflow: "hidden" }}>
       {/* Sidebar */}
-      <div style={{ width: 260, background: S.card, borderRight: `1px solid ${S.border}`, display: "flex", flexDirection: "column", flexShrink: 0, zIndex: 10 }}>
-        <div style={{ padding: "24px 20px", borderBottom: `1px solid ${S.border}`, display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 40, height: 40, background: S.accent, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <BarChart3 size={20} color="#fff" />
+      <div style={{
+        width: 260,
+        background: isDark ? "rgba(18, 20, 26, 0.96)" : S.card,
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderRight: `1px solid ${S.border}`,
+        display: "flex",
+        flexDirection: "column",
+        flexShrink: 0,
+        zIndex: 10,
+        transition: "background 0.25s ease, border-color 0.25s ease",
+      }}>
+        {/* Top Branding */}
+        <div style={{ padding: "20px 20px 18px", borderBottom: `1px solid ${S.border}`, display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <img
+              src="/logo.png"
+              alt="CLIMA Logo"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                filter: isDark
+                  ? "drop-shadow(0 0 1px rgba(255, 255, 255, 0.85)) drop-shadow(0 2px 10px rgba(249, 115, 22, 0.45))"
+                  : "drop-shadow(0 2px 8px rgba(249, 115, 22, 0.25))",
+              }}
+            />
           </div>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>{S.title}</h1>
-            <p style={{ margin: 0, fontSize: 10, color: S.muted, fontWeight: 700 }}>{S.subtitle}</p>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h1 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: S.text, letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              CLIMA Console
+            </h1>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 8px #22c55e", flexShrink: 0 }} />
+              <p style={{ margin: 0, fontSize: 11, color: S.muted, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {isSuperadmin ? "Superadmin Portal" : (adminDepartment?.name || "Admin Portal")}
+              </p>
+            </div>
           </div>
         </div>
 
+        {/* Tab List */}
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
           {visibleTabs.map(tab => {
             const active = activeTab === tab.id;
             return (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 10, border: "none",
-                background: active ? S.accentBg : "transparent", color: active ? S.accent : S.muted,
-                fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: S.font, textAlign: "left",
-                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-              }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.background = S.accentBg; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "11px 14px",
+                  borderRadius: 12,
+                  border: active ? `1px solid ${S.accentBorder}` : "1px solid transparent",
+                  background: active ? S.accentBg : "transparent",
+                  color: active ? S.accent : S.textSecondary,
+                  fontWeight: active ? 800 : 600,
+                  fontSize: 13,
+                  cursor: "pointer",
+                  fontFamily: S.font,
+                  textAlign: "left",
+                  transition: "all 0.15s ease",
+                  boxShadow: active ? `0 2px 10px ${S.accent}22` : "none",
+                }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.background = isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)"; }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
               >
-                {tab.icon} {tab.label}
+                <span style={{ color: active ? S.accent : S.muted, display: "flex", alignItems: "center" }}>
+                  {tab.icon}
+                </span>
+                <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {tab.label}
+                </span>
               </button>
             );
           })}
-          <div style={{ height: 1, background: S.border, margin: "12px 0" }} />
+          <div style={{ height: 1, background: S.border, margin: "10px 0" }} />
           {onMapOverview && (
-            <button onClick={onMapOverview} style={{
-              ...btnPrimary, background: S.greenBg, color: S.green, border: `1px solid rgba(75,180,80,0.2)`, justifyContent: "center",
-            }}>
-              <MapIcon size={16} /> Map View
+            <button
+              onClick={onMapOverview}
+              style={{
+                ...btnPrimary,
+                background: S.blueBg,
+                color: S.blue,
+                border: `1px solid ${S.border}`,
+                borderRadius: 12,
+                justifyContent: "center",
+                boxShadow: "none",
+              }}
+            >
+              <MapIcon size={16} /> Map Overview
             </button>
           )}
         </div>
 
-        <div style={{ padding: "16px 12px", borderTop: `1px solid ${S.border}` }}>
-          <button onClick={onLogout} style={{
-            ...btnPrimary, background: S.redBg, color: S.red, width: "100%", justifyContent: "center",
-          }}>
-            <LogOut size={16} /> Logout
+        {/* Bottom Sidebar Action */}
+        <div style={{ padding: "16px 14px", borderTop: `1px solid ${S.border}`, display: "flex", flexDirection: "column", gap: 8 }}>
+          <button
+            onClick={onLogout}
+            style={{
+              ...btnPrimary,
+              background: S.redBg,
+              color: S.red,
+              border: `1px solid ${S.border}`,
+              borderRadius: 12,
+              width: "100%",
+              justifyContent: "center",
+              boxShadow: "none",
+            }}
+          >
+            <LogOut size={16} /> Sign Out
           </button>
         </div>
       </div>
 
       {/* Main Area */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: S.bg }}>
         {/* Top Bar */}
-        <header style={{ height: 60, background: S.card, borderBottom: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", flexShrink: 0 }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>
+        <header
+          style={{
+            height: 64,
+            background: isDark ? "rgba(18, 20, 26, 0.85)" : "rgba(255, 255, 255, 0.85)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            borderBottom: `1px solid ${S.border}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 28px",
+            flexShrink: 0,
+            zIndex: 5,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: S.text, letterSpacing: "-0.02em" }}>
               {activeTab === "overview" && "Dashboard Overview"}
               {activeTab === "reports" && "Citizen Reports"}
               {activeTab === "advisories" && "Official Advisories"}
@@ -375,9 +507,64 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
               {activeTab === "settings" && "Offices & Categories"}
               {activeTab === "logs" && "System Activity Logs"}
             </h2>
+
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                padding: "3px 8px",
+                borderRadius: 999,
+                background: S.accentBg,
+                color: S.accent,
+                border: `1px solid ${S.accentBorder}`,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+              }}
+            >
+              Live Console
+            </span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <button onClick={() => fetchData()} style={{ ...btnPrimary, padding: 10 }}>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 12,
+                border: `1px solid ${S.border}`,
+                background: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)",
+                color: S.text,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+            >
+              {isDark ? <Sun size={17} color="#f59e0b" /> : <Moon size={17} color="#64748b" />}
+            </button>
+
+            {/* Refresh Button */}
+            <button
+              onClick={() => fetchData()}
+              title="Refresh Console Data"
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 12,
+                border: `1px solid ${S.border}`,
+                background: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)",
+                color: S.text,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+            >
               <RefreshCw size={16} />
             </button>
           </div>
@@ -633,18 +820,21 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
               style={{
-                background: "#fff",
-                borderRadius: 16,
+                background: S.card,
+                border: `1px solid ${S.borderMedium}`,
+                borderRadius: 20,
                 padding: 24,
                 maxWidth: 420,
                 width: "90%",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
+                boxShadow: isDark ? "0 25px 60px rgba(0,0,0,0.75)" : "0 20px 60px rgba(0,0,0,0.2)",
+                fontFamily: S.font,
+                color: S.text,
               }}
             >
-              <h3 style={{ margin: "0 0 12px", fontSize: 18, fontWeight: 800, color: modalConfig.type === "error" ? "#dc2626" : S.accent }}>
+              <h3 style={{ margin: "0 0 12px", fontSize: 18, fontWeight: 800, color: modalConfig.type === "error" ? S.red : S.accent }}>
                 {modalConfig.title}
               </h3>
-              <p style={{ margin: "0 0 20px", fontSize: 14, color: "#52525b", lineHeight: 1.6 }}>
+              <p style={{ margin: "0 0 20px", fontSize: 14, color: S.textSecondary, lineHeight: 1.6 }}>
                 {modalConfig.message}
               </p>
               <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
@@ -652,14 +842,15 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                   <button
                     onClick={() => setShowModal(false)}
                     style={{
-                      padding: "10px 20px",
-                      borderRadius: 8,
-                      border: "1px solid #d4d4d8",
-                      background: "#fff",
-                      color: "#52525b",
+                      padding: "10px 18px",
+                      borderRadius: 10,
+                      border: `1px solid ${S.border}`,
+                      background: S.cardSubtle,
+                      color: S.text,
                       fontSize: 14,
                       fontWeight: 700,
-                      cursor: "pointer"
+                      cursor: "pointer",
+                      fontFamily: S.font,
                     }}
                   >
                     {modalConfig.cancelText}
@@ -669,13 +860,15 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                   onClick={modalConfig.onConfirm}
                   style={{
                     padding: "10px 20px",
-                    borderRadius: 8,
+                    borderRadius: 10,
                     border: "none",
-                    background: modalConfig.type === "error" ? "#dc2626" : S.accent,
+                    background: modalConfig.type === "error" ? S.red : S.accent,
                     color: "#fff",
                     fontSize: 14,
                     fontWeight: 700,
-                    cursor: "pointer"
+                    cursor: "pointer",
+                    fontFamily: S.font,
+                    boxShadow: `0 4px 12px ${S.accent}33`,
                   }}
                 >
                   {modalConfig.confirmText}
@@ -802,7 +995,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         {[1,2,3].map(i => (
-          <div key={i} style={{ ...cardStyle, height: 120, background: "#f9fafb", animation: "pulse 1.5s ease-in-out infinite" }} />
+          <div key={i} style={{ ...cardStyle, height: 120, background: S.cardSubtle, animation: "pulse 1.5s ease-in-out infinite" }} />
         ))}
       </div>
     );
@@ -844,7 +1037,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Date Range Selector */}
-      <div style={{ display: "flex", gap: 8, padding: "12px 16px", background: "#f9fafb", borderRadius: 12, border: `1px solid ${S.border}` }}>
+      <div style={{ display: "flex", gap: 8, padding: "12px 16px", background: S.cardSubtle, borderRadius: 12, border: `1px solid ${S.border}` }}>
         <span style={{ fontSize: 12, fontWeight: 800, color: S.muted, marginRight: 8 }}>TIME RANGE:</span>
         {[7, 30, 90].map(days => (
           <button
@@ -854,7 +1047,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
               padding: "6px 16px",
               borderRadius: 8,
               border: dateRange === days ? `2px solid ${S.accent}` : `1px solid ${S.border}`,
-              background: dateRange === days ? S.accentBg : "#fff",
+              background: dateRange === days ? S.accentBg : S.card,
               color: dateRange === days ? S.accent : S.muted,
               fontWeight: 800,
               fontSize: 12,
@@ -983,7 +1176,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
           
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
             {ktData.temp !== null && (
-              <div style={{ padding: "12px 14px", background: "#fff", borderRadius: 10, border: `1px solid ${S.border}` }}>
+              <div style={{ padding: "12px 14px", background: S.cardSubtle, borderRadius: 10, border: `1px solid ${S.border}` }}>
                 <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Temperature
                 </p>
@@ -993,7 +1186,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
               </div>
             )}
             {ktData.humidity !== null && (
-              <div style={{ padding: "12px 14px", background: "#fff", borderRadius: 10, border: `1px solid ${S.border}` }}>
+              <div style={{ padding: "12px 14px", background: S.cardSubtle, borderRadius: 10, border: `1px solid ${S.border}` }}>
                 <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Humidity
                 </p>
@@ -1003,7 +1196,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
               </div>
             )}
             {ktData.heatIndex !== null && (
-              <div style={{ padding: "12px 14px", background: "#fff", borderRadius: 10, border: `1px solid ${S.border}` }}>
+              <div style={{ padding: "12px 14px", background: S.cardSubtle, borderRadius: 10, border: `1px solid ${S.border}` }}>
                 <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Heat Index
                 </p>
@@ -1013,7 +1206,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
               </div>
             )}
             {ktData.windSpeed !== undefined && (
-              <div style={{ padding: "12px 14px", background: "#fff", borderRadius: 10, border: `1px solid ${S.border}` }}>
+              <div style={{ padding: "12px 14px", background: S.cardSubtle, borderRadius: 10, border: `1px solid ${S.border}` }}>
                 <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Wind Speed
                 </p>
@@ -1023,7 +1216,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
               </div>
             )}
             {ktData.rawPressure && (
-              <div style={{ padding: "12px 14px", background: "#fff", borderRadius: 10, border: `1px solid ${S.border}` }}>
+              <div style={{ padding: "12px 14px", background: S.cardSubtle, borderRadius: 10, border: `1px solid ${S.border}` }}>
                 <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Pressure
                 </p>
@@ -1033,7 +1226,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
               </div>
             )}
             {ktData.uvIndex !== null && (
-              <div style={{ padding: "12px 14px", background: "#fff", borderRadius: 10, border: `1px solid ${S.border}` }}>
+              <div style={{ padding: "12px 14px", background: S.cardSubtle, borderRadius: 10, border: `1px solid ${S.border}` }}>
                 <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
                   UV Index
                 </p>
@@ -1072,7 +1265,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
                 <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
                 <XAxis dataKey="date" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
                 <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
-                <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
+                <Tooltip contentStyle={{ background: S.card, borderRadius: 10, border: `1px solid ${S.border}`, color: S.text, fontSize: 12, fontWeight: 700, boxShadow: S.shadowCard }} />
                 <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
                 <Line type="monotone" dataKey="reports" stroke={S.accent} strokeWidth={2} dot={{ fill: S.accent, r: 4 }} />
               </LineChart>
@@ -1098,7 +1291,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
                 <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
                 <XAxis type="number" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
                 <YAxis type="category" dataKey="category" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} width={120} />
-                <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
+                <Tooltip contentStyle={{ background: S.card, borderRadius: 10, border: `1px solid ${S.border}`, color: S.text, fontSize: 12, fontWeight: 700, boxShadow: S.shadowCard }} />
                 <Bar dataKey="count" fill={S.accent} radius={[0, 8, 8, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -1123,7 +1316,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
                 <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
                 <XAxis dataKey="date" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
                 <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
-                <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
+                <Tooltip contentStyle={{ background: S.card, borderRadius: 10, border: `1px solid ${S.border}`, color: S.text, fontSize: 12, fontWeight: 700, boxShadow: S.shadowCard }} />
                 <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
                 <Line type="monotone" dataKey="admissions" stroke="#d97706" strokeWidth={2} name="Total Admissions" />
                 <Line type="monotone" dataKey="elNinoCases" stroke="#ef4444" strokeWidth={2} name="El Niño Cases" />
@@ -1150,7 +1343,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
                 <CartesianGrid strokeDasharray="3 3" stroke={S.border} />
                 <XAxis dataKey="date" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
                 <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
-                <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
+                <Tooltip contentStyle={{ background: S.card, borderRadius: 10, border: `1px solid ${S.border}`, color: S.text, fontSize: 12, fontWeight: 700, boxShadow: S.shadowCard }} />
                 <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
                 <Line type="monotone" dataKey="cdrrmo" stroke="#10b981" strokeWidth={2} name="CDRRMO" />
                 <Line type="monotone" dataKey="bfp" stroke="#ef4444" strokeWidth={2} name="BFP" />
@@ -1192,7 +1385,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, fontWeight: 700 }} />
+              <Tooltip contentStyle={{ background: S.card, borderRadius: 10, border: `1px solid ${S.border}`, color: S.text, fontSize: 12, fontWeight: 700, boxShadow: S.shadowCard }} />
               <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
             </PieChart>
           </ResponsiveContainer>
@@ -1403,15 +1596,15 @@ function ReportRow({ report, showActions, onUpdateStatus, S, inputStyle, selectS
   const statusMap = { pending: { color: S.red, bg: S.redBg, label: "Pending" }, inprogress: { color: S.blue, bg: S.blueBg, label: "In Progress" }, resolved: { color: S.green, bg: S.greenBg, label: "Resolved" } };
   const st = statusMap[report.status] || statusMap.pending;
   return (
-    <div onClick={onClick} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, border: `1px solid ${S.border}`, background: "#fafcf9", gap: 12, cursor: onClick ? "pointer" : "default", transition: "all 0.15s" }}
-      onMouseEnter={e => { if (onClick) e.currentTarget.style.background = S.accentBg || "#f5f5f4"; }}
-      onMouseLeave={e => { if (onClick) e.currentTarget.style.background = "#fafcf9"; }}>
+    <div onClick={onClick} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, border: `1px solid ${S.border}`, background: S.cardSubtle, gap: 12, cursor: onClick ? "pointer" : "default", transition: "all 0.15s" }}
+      onMouseEnter={e => { if (onClick) e.currentTarget.style.background = S.cardHover || S.accentBg; }}
+      onMouseLeave={e => { if (onClick) e.currentTarget.style.background = S.cardSubtle; }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
         <div style={{ width: 44, height: 44, borderRadius: 10, background: st.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
           {report.photo_url ? <img src={report.photo_url.split(",")[0]} alt="" loading="lazy" width="44" height="44" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <FileText size={18} color="#fff" />}
         </div>
         <div style={{ minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{report.title}</p>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: S.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{report.title}</p>
           <p style={{ margin: "2px 0 0", fontSize: 12, color: S.muted, fontWeight: 600 }}>{report.category || "Uncategorized"} • {report.location} • {new Date(report.created_at).toLocaleDateString()}</p>
         </div>
       </div>
@@ -1657,12 +1850,12 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900 }}>Citizen Reports</h3>
             <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted, fontWeight: 700 }}>{allReports.length} loaded (scroll for more)</p>
           </div>
-          <button onClick={exportToPDF} style={{ padding: "8px 16px", borderRadius: 10, border: `1.5px solid ${S.border}`, background: "#fff", color: S.text, fontWeight: 800, fontSize: 13, cursor: "pointer", fontFamily: S.font, display: "flex", alignItems: "center", gap: 8, transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "#fafafa"} onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+          <button onClick={exportToPDF} style={{ padding: "8px 16px", borderRadius: 10, border: `1.5px solid ${S.border}`, background: S.cardSubtle, color: S.text, fontWeight: 800, fontSize: 13, cursor: "pointer", fontFamily: S.font, display: "flex", alignItems: "center", gap: 8, transition: "background 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = S.card} onMouseLeave={e => e.currentTarget.style.background = S.cardSubtle}>
             <Download size={16} color={S.accent} /> Export PDF
           </button>
         </div>
       
-        <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20, flexWrap: "wrap", background: "#f8fafc", padding: 12, borderRadius: 12, border: `1px solid ${S.border}` }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 20, flexWrap: "wrap", background: S.cardSubtle, padding: 12, borderRadius: 12, border: `1px solid ${S.border}` }}>
           <CustomSelect
             value={categoryFilter}
             onChange={setCategoryFilter}
@@ -1709,6 +1902,7 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
 
 /* ── Users Tab ── */
 function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, showSuccessModal, showErrorModal, showConfirmModal }) {
+  const isDark = S.isDark;
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resetOpen, setResetOpen] = useState(false);
@@ -1993,13 +2187,13 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
             const assignedOffice = u.assigned_department || 'Not Assigned';
             
             return (
-              <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, border: `1px solid ${S.border}`, background: "#fafcf9" }}>
+              <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, border: `1px solid ${S.border}`, background: S.cardSubtle }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: S.accentBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <Users size={18} color={S.accent} />
                   </div>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <p style={{ margin: 0, fontWeight: 800, fontSize: 14 }}>{u.full_name || "Admin"}</p>
+                    <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: S.text }}>{u.full_name || "Admin"}</p>
                     <p style={{ margin: "2px 0 0", fontSize: 12, color: S.muted }}>{u.email}</p>
                     <p style={{ margin: "4px 0 0", fontSize: 11, color: "#16a34a", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={assignedOffice}>
                       📍 {assignedOffice}
@@ -2010,11 +2204,11 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
                   <span style={{ 
                     padding: "3px 10px", 
                     borderRadius: 20, 
-                    background: moduleCount === 0 ? "#fef2f2" : "#f0fdf4", 
-                    color: moduleCount === 0 ? "#dc2626" : "#16a34a", 
+                    background: moduleCount === 0 ? (isDark ? "rgba(239, 68, 68, 0.15)" : "#fef2f2") : (isDark ? "rgba(22, 163, 74, 0.15)" : "#f0fdf4"), 
+                    color: moduleCount === 0 ? "#ef4444" : "#16a34a", 
                     fontSize: 10, 
                     fontWeight: 800, 
-                    border: `1px solid ${moduleCount === 0 ? "#fecaca" : "#bbf7d0"}` 
+                    border: `1px solid ${moduleCount === 0 ? (isDark ? "rgba(239, 68, 68, 0.3)" : "#fecaca") : (isDark ? "rgba(22, 163, 74, 0.3)" : "#bbf7d0")}` 
                   }}>
                     {moduleLabel}
                   </span>
@@ -2039,11 +2233,11 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setResetOpen(false)}
-            style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={e => e.stopPropagation()}
-              style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 425, padding: 24, boxShadow: "0 10px 40px rgba(0,0,0,0.2)", fontFamily: S.font }}>
+              style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: 16, width: "100%", maxWidth: 425, padding: 24, boxShadow: S.shadowCard, fontFamily: S.font }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#d97706", marginBottom: 12 }}>
                 <ShieldAlert size={24} />
                 <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: "#d97706" }}>Reset User Password</h3>
@@ -2051,13 +2245,13 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
               <p style={{ margin: "0 0 16px", fontSize: 14, color: S.text }}>
                 Are you sure you want to reset the password for <strong style={{ fontWeight: 800 }}>{selectedUser.full_name || selectedUser.email}</strong>?
               </p>
-              <div style={{ background: "#fffbeb", border: "1px solid #fef3c7", borderRadius: 8, padding: 12, marginBottom: 20, fontSize: 13, color: "#92400e" }}>
-                Their password will be set to: <strong style={{ background: "#fef3c7", padding: "2px 6px", borderRadius: 4, fontFamily: "monospace", fontSize: 14 }}>CLIMA123!</strong>
+              <div style={{ background: isDark ? "rgba(217, 119, 6, 0.12)" : "#fffbeb", border: isDark ? "1px solid rgba(217, 119, 6, 0.25)" : "1px solid #fef3c7", borderRadius: 8, padding: 12, marginBottom: 20, fontSize: 13, color: isDark ? "#fcd34d" : "#92400e" }}>
+                Their password will be set to: <strong style={{ background: isDark ? "rgba(217, 119, 6, 0.25)" : "#fef3c7", padding: "2px 6px", borderRadius: 4, fontFamily: "monospace", fontSize: 14, color: isDark ? "#fde68a" : "#92400e" }}>CLIMA123!</strong>
                 <br /><br />
                 They will be locked out of their account until they log in with this temporary password and choose a new one.
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                <button onClick={() => setResetOpen(false)} disabled={resetting} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${S.border}`, background: "#fff", fontWeight: 800, cursor: "pointer", color: S.muted }}>Cancel</button>
+                <button onClick={() => setResetOpen(false)} disabled={resetting} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${S.border}`, background: S.cardSubtle, fontWeight: 800, cursor: "pointer", color: S.muted }}>Cancel</button>
                 <button onClick={confirmReset} disabled={resetting} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#d97706", color: "#fff", fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                   {resetting ? "Resetting..." : "Confirm Reset"}
                 </button>
@@ -2096,7 +2290,7 @@ function DeptRow({ d, onColorChange, onNameChange, onDelete, S, btnDanger }) {
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 12, border: `1.5px solid ${S.border}`, background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 12, border: `1.5px solid ${S.border}`, background: S.cardSubtle, boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
       <input type="color" value={color} 
         onChange={handleChange}
         title="Change Office Color"
@@ -2109,10 +2303,10 @@ function DeptRow({ d, onColorChange, onNameChange, onDelete, S, btnDanger }) {
           value={editName}
           onChange={(e) => setEditName(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); }}
-          style={{ flex: 1, fontSize: 13, fontWeight: 800, color: "#18181b", border: `1px solid ${S.border}`, borderRadius: 4, padding: "2px 6px", outline: "none" }}
+          style={{ flex: 1, fontSize: 13, fontWeight: 800, color: S.text, background: S.card, border: `1px solid ${S.border}`, borderRadius: 4, padding: "2px 6px", outline: "none" }}
         />
       ) : (
-        <span style={{ fontWeight: 800, fontSize: 13, color: "#18181b", flex: 1 }}>{d.name}</span>
+        <span style={{ fontWeight: 800, fontSize: 13, color: S.text, flex: 1 }}>{d.name}</span>
       )}
 
       {isEditing ? (
@@ -2540,7 +2734,7 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
                     style={inputStyle}
                   />
                   <button type="button" onClick={() => { setCatGroup(""); setNewGroupName(""); }}
-                    style={{ padding: "8px 12px", borderRadius: 10, border: `1px solid ${S.border}`, background: "#fff", cursor: "pointer", fontFamily: S.font, fontWeight: 700, fontSize: 12, color: S.muted }}>
+                    style={{ padding: "8px 12px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.cardSubtle, cursor: "pointer", fontFamily: S.font, fontWeight: 700, fontSize: 12, color: S.muted }}>
                     Cancel
                   </button>
                 </div>
@@ -2602,11 +2796,11 @@ function CategoryGroupList({ categories, S, btnDanger, delCat }) {
       {Object.entries(grouped).map(([groupName, cats]) => {
         const open = isOpen(groupName);
         return (
-          <div key={groupName} style={{ borderRadius: 14, border: `1px solid ${S.border}`, overflow: "hidden", background: "#fff" }}>
+          <div key={groupName} style={{ borderRadius: 14, border: `1px solid ${S.border}`, overflow: "hidden", background: S.cardSubtle }}>
             <button type="button" onClick={() => toggleGroup(groupName)}
-              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", border: "none", background: open ? (S.accentBg || "#fafafa") : "#fafafa", cursor: "pointer", fontFamily: "'Nunito', sans-serif", transition: "background 0.15s" }}
-              onMouseEnter={e => e.currentTarget.style.background = S.accentBg || "#f5f5f4"}
-              onMouseLeave={e => e.currentTarget.style.background = open ? (S.accentBg || "#fafafa") : "#fafafa"}>
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", border: "none", background: open ? (S.accentBg || S.cardSubtle) : S.cardSubtle, cursor: "pointer", fontFamily: S.font, transition: "background 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.background = S.cardHover || S.accentBg}
+              onMouseLeave={e => e.currentTarget.style.background = open ? (S.accentBg || S.cardSubtle) : S.cardSubtle}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <motion.span animate={{ rotate: open ? 0 : -90 }} transition={{ duration: 0.2 }} style={{ display: "flex", alignItems: "center", color: S.accent }}>
                   <ChevronDown size={16} strokeWidth={2.5} />
@@ -2622,12 +2816,12 @@ function CategoryGroupList({ categories, S, btnDanger, delCat }) {
                   <div style={{ padding: "4px 8px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
                     {cats.map(c => (
                       <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, transition: "background 0.12s" }}
-                        onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        onMouseEnter={e => e.currentTarget.style.background = S.cardHover || S.accentBg} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <span style={{ width: 6, height: 6, borderRadius: "50%", background: S.accent, opacity: 0.4, flexShrink: 0 }} />
-                          <span style={{ fontWeight: 700, fontSize: 13, color: "#18181b" }}>{c.name}</span>
+                          <span style={{ fontWeight: 700, fontSize: 13, color: S.text }}>{c.name}</span>
                           {c.departments?.name && (
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0" }}>→ {c.departments.name}</span>
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: S.isDark ? "rgba(22, 163, 74, 0.15)" : "#f0fdf4", color: "#16a34a", border: S.isDark ? "1px solid rgba(22, 163, 74, 0.3)" : "1px solid #bbf7d0" }}>→ {c.departments.name}</span>
                           )}
                         </div>
                         <button onClick={() => delCat(c.id)} style={btnDanger}><Trash2 size={14} /></button>
@@ -2656,13 +2850,13 @@ function ModulePermissionRow({ user, permissions, modules, moduleCount, onToggle
   ];
 
   return (
-    <div style={{ borderRadius: 14, border: `1px solid ${S.border}`, overflow: "hidden", background: "#fff" }}>
+    <div style={{ borderRadius: 14, border: `1px solid ${S.border}`, overflow: "hidden", background: S.cardSubtle }}>
       {/* User Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#fafafa", borderBottom: isExpanded ? `1px solid ${S.border}` : "none" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: S.cardSubtle, borderBottom: isExpanded ? `1px solid ${S.border}` : "none" }}>
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          style={{ display: "flex", alignItems: "center", gap: 12, border: "none", background: "transparent", cursor: "pointer", fontFamily: "'Nunito', sans-serif", flex: 1, textAlign: "left" }}
+          style={{ display: "flex", alignItems: "center", gap: 12, border: "none", background: "transparent", cursor: "pointer", fontFamily: S.font, flex: 1, textAlign: "left" }}
         >
           <motion.span animate={{ rotate: isExpanded ? 0 : -90 }} transition={{ duration: 0.2 }} style={{ display: "flex", alignItems: "center", color: S.accent }}>
             <ChevronDown size={16} strokeWidth={2.5} />
@@ -2673,11 +2867,11 @@ function ModulePermissionRow({ user, permissions, modules, moduleCount, onToggle
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {moduleCount > 0 ? (
-              <span style={{ fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 20, background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0" }}>
+              <span style={{ fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 20, background: S.isDark ? "rgba(22, 163, 74, 0.15)" : "#dcfce7", color: "#16a34a", border: S.isDark ? "1px solid rgba(22, 163, 74, 0.3)" : "1px solid #bbf7d0" }}>
                 {moduleCount} {moduleCount === 1 ? "Module" : "Modules"}
               </span>
             ) : (
-              <span style={{ fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 20, background: "#fee2e2", color: "#991b1b", border: "1px solid #fecaca" }}>
+              <span style={{ fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 20, background: S.isDark ? "rgba(239, 68, 68, 0.15)" : "#fee2e2", color: "#ef4444", border: S.isDark ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid #fecaca" }}>
                 No Access
               </span>
             )}
@@ -2721,8 +2915,8 @@ function ModulePermissionRow({ user, permissions, modules, moduleCount, onToggle
                       padding: "10px 12px",
                       borderRadius: 8,
                       marginBottom: 4,
-                      background: hasAnyPerm ? "#f0fdf4" : "transparent",
-                      border: hasAnyPerm ? "1px solid #bbf7d0" : "1px solid transparent",
+                      background: hasAnyPerm ? (S.isDark ? "rgba(16, 185, 129, 0.12)" : "#f0fdf4") : "transparent",
+                      border: hasAnyPerm ? (S.isDark ? "1px solid rgba(16, 185, 129, 0.25)" : "1px solid #bbf7d0") : "1px solid transparent",
                       transition: "all 0.15s"
                     }}
                   >
@@ -2740,11 +2934,11 @@ function ModulePermissionRow({ user, permissions, modules, moduleCount, onToggle
                           style={{
                             padding: "4px 10px",
                             borderRadius: 6,
-                            border: perms[key] ? `1.5px solid ${color}` : "1.5px solid #e5e7eb",
-                            background: perms[key] ? color : "#fff",
-                            color: perms[key] ? "#fff" : "#9ca3af",
+                            border: perms[key] ? `1.5px solid ${color}` : `1.5px solid ${S.border}`,
+                            background: perms[key] ? color : S.card,
+                            color: perms[key] ? "#fff" : S.muted,
                             cursor: loadingPermissions ? "not-allowed" : "pointer",
-                            fontFamily: "'Nunito', sans-serif",
+                            fontFamily: S.font,
                             fontWeight: 700,
                             fontSize: 11,
                             transition: "all 0.15s",
@@ -2753,14 +2947,14 @@ function ModulePermissionRow({ user, permissions, modules, moduleCount, onToggle
                           }}
                           onMouseEnter={e => {
                             if (!loadingPermissions && !perms[key]) {
-                              e.currentTarget.style.background = "#f9fafb";
+                              e.currentTarget.style.background = S.cardHover || S.accentBg;
                               e.currentTarget.style.borderColor = color;
                             }
                           }}
                           onMouseLeave={e => {
                             if (!perms[key]) {
-                              e.currentTarget.style.background = "#fff";
-                              e.currentTarget.style.borderColor = "#e5e7eb";
+                              e.currentTarget.style.background = S.card;
+                              e.currentTarget.style.borderColor = S.border;
                             }
                           }}
                         >
@@ -2813,35 +3007,33 @@ function DashboardReportModal({ report, S, onClose, onStatusChange }) {
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
-        style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Nunito', sans-serif", padding: 20 }}>
+        style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: S.font, padding: 20 }}>
         <motion.div
           initial={{ scale: 0.92, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.92, opacity: 0, y: 30 }}
           transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
           onClick={e => e.stopPropagation()}
-          style={{ background: "#fff", borderRadius: 24, width: "100%", maxWidth: 560, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 25px 60px rgba(0,0,0,0.3)" }}>
+          style={{ background: S.card, border: `1px solid ${S.borderMedium}`, borderRadius: 24, width: "100%", maxWidth: 560, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 25px 60px rgba(0,0,0,0.5)", color: S.text }}>
 
           {/* Header */}
-          <div style={{ padding: "24px 28px 20px", borderBottom: "1px solid #f4f4f5", display: "flex", alignItems: "flex-start", gap: 14 }}>
+          <div style={{ padding: "24px 28px 20px", borderBottom: `1px solid ${S.border}`, display: "flex", alignItems: "flex-start", gap: 14 }}>
             <div style={{ width: 48, height: 48, borderRadius: 14, background: st.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {report.photo_url
                 ? <img src={report.photo_url.split(",")[0]} alt="" loading="lazy" width="48" height="48" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 14 }} />
                 : <FileText size={24} color={st.color} />}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#18181b", lineHeight: 1.2 }}>{report.title}</h2>
-              <p style={{ margin: "4px 0 0", fontSize: 12, color: "#a1a1aa", fontWeight: 600 }}>{report.category || "Uncategorized"}</p>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: S.text, lineHeight: 1.2 }}>{report.title}</h2>
+              <p style={{ margin: "4px 0 0", fontSize: 12, color: S.muted, fontWeight: 600 }}>{report.category || "Uncategorized"}</p>
             </div>
-            <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 10, background: "#f4f4f5", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "background 0.15s" }}
-              onMouseEnter={e => e.currentTarget.style.background = "#e4e4e7"}
-              onMouseLeave={e => e.currentTarget.style.background = "#f4f4f5"}>
-              <X size={16} color="#71717a" />
+            <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 10, background: S.cardSubtle, border: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, transition: "background 0.15s" }}>
+              <X size={16} color={S.muted} />
             </button>
           </div>
 
           {/* Scrollable Body */}
           <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px 28px" }}>
             {/* Status */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, padding: "12px 16px", background: st.bg, borderRadius: 14, border: `1px solid ${st.color}22` }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, padding: "12px 16px", background: st.bg, borderRadius: 14, border: `1px solid ${st.color}33` }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 10, height: 10, borderRadius: "50%", background: st.color, boxShadow: `0 0 8px ${st.color}66` }} />
                 <span style={{ fontSize: 13, fontWeight: 800, color: st.color }}>{st.label}</span>
@@ -2864,24 +3056,24 @@ function DashboardReportModal({ report, S, onClose, onStatusChange }) {
             {/* Info Grid */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
               {[
-                { icon: <Users size={14} color="#a1a1aa" />, label: "Reported by", value: report.full_name || "Anonymous" },
-                { icon: <Calendar size={14} color="#a1a1aa" />, label: "Date Filed", value: new Date(report.created_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) },
-                ...(contactNumber ? [{ icon: <Phone size={14} color="#a1a1aa" />, label: "Contact Number", value: contactNumber }] : []),
+                { icon: <Users size={14} color={S.muted} />, label: "Reported by", value: report.full_name || "Anonymous" },
+                { icon: <Calendar size={14} color={S.muted} />, label: "Date Filed", value: new Date(report.created_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) },
+                ...(contactNumber ? [{ icon: <Phone size={14} color={S.muted} />, label: "Contact Number", value: contactNumber }] : []),
                 ...(report.is_guest ? [{ icon: <AlertCircle size={14} color="#d97706" />, label: "Reporter Type", value: "Guest (Unregistered)" }] : []),
                 { icon: <MapPin size={14} color="#16a34a" />, label: "Location", value: report.location || "—", span: true },
               ].map((item, i) => (
-                <div key={i} style={{ padding: "12px 14px", background: "#fafafa", borderRadius: 12, border: "1px solid #f4f4f5", gridColumn: item.span ? "1 / -1" : "auto" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>{item.icon}<span style={{ fontSize: 10, fontWeight: 700, color: "#a1a1aa", textTransform: "uppercase", letterSpacing: 0.5 }}>{item.label}</span></div>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#27272a" }}>{item.value}</p>
+                <div key={i} style={{ padding: "12px 14px", background: S.cardSubtle, borderRadius: 12, border: `1px solid ${S.border}`, gridColumn: item.span ? "1 / -1" : "auto" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>{item.icon}<span style={{ fontSize: 10, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>{item.label}</span></div>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: S.text }}>{item.value}</p>
                 </div>
               ))}
             </div>
 
             {/* Description */}
             <div style={{ marginBottom: 20 }}>
-              <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 800, color: "#a1a1aa", textTransform: "uppercase", letterSpacing: 0.5 }}>Description</p>
-              <div style={{ padding: "14px 16px", background: "#fafafa", borderRadius: 12, border: "1px solid #f4f4f5" }}>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#3f3f46", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{desc}</p>
+              <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>Description</p>
+              <div style={{ padding: "14px 16px", background: S.cardSubtle, borderRadius: 12, border: `1px solid ${S.border}` }}>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: S.text, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{desc}</p>
               </div>
             </div>
 
@@ -2981,7 +3173,7 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle }) {
             <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Audit Logs</h3>
             <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Tracking system modifications for accountability and compliance.</p>
           </div>
-          <button onClick={fetchLogs} style={{ padding: "8px 12px", borderRadius: 8, border: `1px solid ${S.border}`, background: "#fff", cursor: "pointer", fontFamily: S.font, fontWeight: 700, fontSize: 13, color: S.text, display: "flex", alignItems: "center", gap: 6 }}>
+          <button onClick={fetchLogs} style={{ padding: "8px 12px", borderRadius: 8, border: `1px solid ${S.border}`, background: S.cardSubtle, cursor: "pointer", fontFamily: S.font, fontWeight: 700, fontSize: 13, color: S.text, display: "flex", alignItems: "center", gap: 6 }}>
             <RefreshCw size={14} /> Refresh
           </button>
         </div>
@@ -2990,14 +3182,14 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle }) {
           {logs.map(log => {
             const actorName = log.actor_id ? (usersMap[log.actor_id] || "Unknown User") : "System / Guest";
             const actionColor = log.action === "DELETE" ? "#ef4444" : log.action === "INSERT" ? "#10b981" : "#3b82f6";
-            const actionBg = log.action === "DELETE" ? "#fef2f2" : log.action === "INSERT" ? "#ecfdf5" : "#eff6ff";
+            const actionBg = log.action === "DELETE" ? (S.isDark ? "rgba(239, 68, 68, 0.15)" : "#fef2f2") : log.action === "INSERT" ? (S.isDark ? "rgba(16, 185, 129, 0.15)" : "#ecfdf5") : (S.isDark ? "rgba(59, 130, 246, 0.15)" : "#eff6ff");
             
             return (
-              <div key={log.id} style={{ padding: "14px 16px", borderRadius: 12, border: `1px solid ${S.border}`, background: "#fafcf9", display: "flex", flexDirection: "column", gap: 8 }}>
+              <div key={log.id} style={{ padding: "14px 16px", borderRadius: 12, border: `1px solid ${S.border}`, background: S.cardSubtle, display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ padding: "4px 10px", borderRadius: 6, background: actionBg, color: actionColor, fontSize: 11, fontWeight: 900 }}>{log.action}</span>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: "#18181b" }}>{log.table_name}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: S.text }}>{log.table_name}</span>
                   </div>
                   <span style={{ fontSize: 11, color: S.muted, fontWeight: 700 }}>
                     {new Date(log.created_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}
@@ -3006,8 +3198,8 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle }) {
                 
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: S.muted, fontWeight: 600 }}>
                   <Users size={14} /> {actorName} 
-                  <span style={{ color: "#d4d4d8" }}>|</span> 
-                  <span style={{ fontFamily: "monospace", fontSize: 11 }}>ID: {log.record_id.slice(0, 8)}...</span>
+                  <span style={{ color: S.border }}>|</span> 
+                  <span style={{ fontFamily: "monospace", fontSize: 11, color: S.muted }}>ID: {log.record_id.slice(0, 8)}...</span>
                 </div>
               </div>
             );
@@ -3303,24 +3495,25 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                 top: "50%",
                 left: "50%",
                 transform: "translate(-50%, -50%)",
-                background: "#ffffff",
+                background: S.card,
+                border: `1px solid ${S.border}`,
                 borderRadius: 16,
                 padding: 24,
                 maxWidth: 440,
                 width: "90%",
                 zIndex: 9999,
-                boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)"
+                boxShadow: S.shadowCard
               }}
             >
               <div style={{ marginBottom: 16 }}>
-                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: "#18181b", display: "flex", alignItems: "center", gap: 8 }}>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: S.text, display: "flex", alignItems: "center", gap: 8 }}>
                   {modalConfig.type === "success" && <CheckCircle2 size={22} color="#10b981" />}
                   {modalConfig.type === "error" && <AlertTriangle size={22} color="#ef4444" />}
                   {modalConfig.type === "warning" && <AlertTriangle size={22} color="#f59e0b" />}
                   {modalConfig.title}
                 </h3>
               </div>
-              <p style={{ margin: "0 0 24px", fontSize: 14, color: "#52525b", lineHeight: 1.6 }}>
+              <p style={{ margin: "0 0 24px", fontSize: 14, color: S.muted, lineHeight: 1.6 }}>
                 {modalConfig.message}
               </p>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
@@ -3331,7 +3524,8 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                       padding: "10px 20px",
                       borderRadius: 10,
                       border: `1px solid ${S.border}`,
-                      background: "#fff",
+                      background: S.cardSubtle,
+                      color: S.text,
                       fontWeight: 800,
                       cursor: "pointer",
                       fontFamily: S.font,
@@ -3394,7 +3588,7 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
               <textarea value={newAdvisory.content} onChange={e => setNewAdvisory({...newAdvisory, content: e.target.value})} placeholder="Advisory details..." required style={{ ...inputStyle, minHeight: 120, resize: "vertical" }} />
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 8 }}>
-              <button type="button" onClick={() => { setShowForm(false); setEditingAdvisory(null); setNewAdvisory({ title: "", content: "", category: "General", status: "Draft", scheduled_for: "" }); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: "#fff", fontWeight: 800, cursor: "pointer", fontFamily: S.font }}>Cancel</button>
+              <button type="button" onClick={() => { setShowForm(false); setEditingAdvisory(null); setNewAdvisory({ title: "", content: "", category: "General", status: "Draft", scheduled_for: "" }); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.cardSubtle, color: S.text, fontWeight: 800, cursor: "pointer", fontFamily: S.font }}>Cancel</button>
               <button type="submit" disabled={submitting} style={btnPrimary}>
                 <Check size={16} /> {submitting ? "Saving..." : editingAdvisory ? "Update Advisory" : (isSuperadmin ? "Publish Now" : "Submit for Approval")}
               </button>
@@ -3435,7 +3629,7 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                 const author = usersMap[adv.author_id] || "Unknown User";
                 
                 return (
-                  <div key={adv.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: "#fafcf9" }}>
+                  <div key={adv.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: S.cardSubtle }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -3443,15 +3637,15 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                           {adv.departments?.name && <span style={{ fontSize: 10, color: S.muted, fontWeight: 700 }}>• {adv.departments.name}</span>}
                           {adv.scheduled_for && <span style={{ fontSize: 10, color: "#d97706", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}><Clock size={10} /> Scheduled: {new Date(adv.scheduled_for).toLocaleString()}</span>}
                         </div>
-                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#18181b" }}>{adv.title}</h4>
+                        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: S.text }}>{adv.title}</h4>
                       </div>
                       <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800, 
-                        background: isPublished ? "#ecfdf5" : isPending ? "#fffbeb" : isArchived ? "#f4f4f5" : "#eff6ff", 
+                        background: isPublished ? (S.isDark ? "rgba(16, 185, 129, 0.15)" : "#ecfdf5") : isPending ? (S.isDark ? "rgba(217, 119, 6, 0.15)" : "#fffbeb") : isArchived ? (S.isDark ? "rgba(113, 113, 122, 0.15)" : "#f4f4f5") : (S.isDark ? "rgba(59, 130, 246, 0.15)" : "#eff6ff"), 
                         color: isPublished ? "#10b981" : isPending ? "#d97706" : isArchived ? "#71717a" : "#3b82f6" }}>
                         {adv.status}
                       </span>
                     </div>
-                    <p style={{ margin: "0 0 12px", fontSize: 13, color: "#3f3f46", lineHeight: 1.5 }}>{adv.content}</p>
+                    <p style={{ margin: "0 0 12px", fontSize: 13, color: S.text, lineHeight: 1.5, opacity: 0.9 }}>{adv.content}</p>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: S.muted, fontWeight: 600 }}>
                       <span>Author: {author} • Created: {new Date(adv.created_at).toLocaleDateString()}</span>
                       <div style={{ display: "flex", gap: 8 }}>
@@ -3463,7 +3657,8 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                               padding: "6px 12px",
                               borderRadius: 8,
                               border: `1px solid ${S.border}`,
-                              background: "#fff",
+                              background: S.cardSubtle,
+                              color: S.text,
                               fontSize: 12,
                               fontWeight: 700,
                               cursor: "pointer",
@@ -3492,7 +3687,7 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                                 padding: "6px 12px",
                                 borderRadius: 8,
                                 border: "1px solid #d97706",
-                                background: "#fff",
+                                background: S.cardSubtle,
                                 color: "#d97706",
                                 fontSize: 12,
                                 fontWeight: 700,
@@ -3507,8 +3702,8 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                                 padding: "6px 12px",
                                 borderRadius: 8,
                                 border: "1px solid #71717a",
-                                background: "#fff",
-                                color: "#71717a",
+                                background: S.cardSubtle,
+                                color: S.muted,
                                 fontSize: 12,
                                 fontWeight: 700,
                                 cursor: "pointer"
@@ -3538,7 +3733,7 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                               padding: "6px 12px",
                               borderRadius: 8,
                               border: `1px solid ${S.accent}`,
-                              background: "#fff",
+                              background: S.cardSubtle,
                               color: S.accent,
                               fontSize: 12,
                               fontWeight: 700,
@@ -3997,7 +4192,7 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
                               padding: "10px 20px",
                               borderRadius: 10,
                               border: `1px solid ${S.border}`,
-                              background: "#fff",
+                              background: S.cardSubtle,
                               color: S.text,
                               fontSize: 14,
                               fontWeight: 700,
@@ -4458,7 +4653,7 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                   </div>
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 12, borderTop: `1px solid ${S.border}` }}>
                     {editId && (
-                      <button type="button" onClick={() => { setEditId(null); setFormData({ operation_date: new Date().toISOString().split('T')[0], operation_time: "", operation_type: "evacuation", description: "", location: "", personnel_deployed: 0, beneficiaries: 0 }); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: "#fff", color: S.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                      <button type="button" onClick={() => { setEditId(null); setFormData({ operation_date: new Date().toISOString().split('T')[0], operation_time: "", operation_type: "evacuation", description: "", location: "", personnel_deployed: 0, beneficiaries: 0 }); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.cardSubtle, color: S.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                         Cancel
                       </button>
                     )}
@@ -4487,7 +4682,7 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                           </button>
                           <AnimatePresence>
                             {isExpanded && (
-                              <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} transition={{ duration: 0.2 }} style={{ overflow: "hidden", background: "#fff" }}>
+                              <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} transition={{ duration: 0.2 }} style={{ overflow: "hidden", background: S.card }}>
                                 <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                                   {dayRecords.map(record => (
                                     <div key={record.id} style={{ padding: 12, border: `1px solid ${S.border}`, borderRadius: 8, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -4498,7 +4693,7 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                                           <span style={{ fontSize: 12, color: S.muted }}>📍 {record.location}</span>
                                         </div>
                                         <div style={{ display: "flex", gap: 6 }}>
-                                          <button onClick={() => editRecord(record)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${S.border}`, background: "#fff", color: S.text, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                                          <button onClick={() => editRecord(record)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${S.border}`, background: S.cardSubtle, color: S.text, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                                             <Edit2 size={12} /> Edit
                                           </button>
                                           <button onClick={() => deleteRecord(record.id)} style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}>
@@ -4834,7 +5029,7 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
                   </div>
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 12, borderTop: `1px solid ${S.border}` }}>
                     {editId && (
-                      <button type="button" onClick={() => { setEditId(null); setFormData({ operation_date: new Date().toISOString().split('T')[0], operation_time: "", operation_type: "fire_incident", description: "", location: "", personnel_deployed: 0, fire_trucks_dispatched: 0, casualties: 0, property_damage_estimate: 0 }); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: "#fff", color: S.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                      <button type="button" onClick={() => { setEditId(null); setFormData({ operation_date: new Date().toISOString().split('T')[0], operation_time: "", operation_type: "fire_incident", description: "", location: "", personnel_deployed: 0, fire_trucks_dispatched: 0, casualties: 0, property_damage_estimate: 0 }); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.cardSubtle, color: S.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                         Cancel
                       </button>
                     )}
@@ -4863,7 +5058,7 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
                           </button>
                           <AnimatePresence>
                             {isExpanded && (
-                              <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} transition={{ duration: 0.2 }} style={{ overflow: "hidden", background: "#fff" }}>
+                              <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} transition={{ duration: 0.2 }} style={{ overflow: "hidden", background: S.card }}>
                                 <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                                   {dayRecords.map(record => (
                                     <div key={record.id} style={{ padding: 12, border: `1px solid ${S.border}`, borderRadius: 8, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -4874,7 +5069,7 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
                                           <span style={{ fontSize: 12, color: S.muted }}>📍 {record.location}</span>
                                         </div>
                                         <div style={{ display: "flex", gap: 6 }}>
-                                          <button onClick={() => editRecord(record)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${S.border}`, background: "#fff", color: S.text, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                                          <button onClick={() => editRecord(record)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${S.border}`, background: S.cardSubtle, color: S.text, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                                             <Edit2 size={12} /> Edit
                                           </button>
                                           <button onClick={() => deleteRecord(record.id)} style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}>
@@ -5412,7 +5607,7 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
                   </div>
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 12, borderTop: `1px solid ${S.border}` }}>
                     {editId && (
-                      <button type="button" onClick={() => { setEditId(null); setFormData({ category: "farm", report_date: new Date().toISOString().split('T')[0], report_time: "", farmer_name: "", barangay: "", crop_type: "rice", area_affected_hectares: 0, damage_percentage: 0, estimated_loss_value: 0, cause: "drought", description: "", assistance_needed: "", status: "pending", assessed_by: "" }); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: "#fff", color: S.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                      <button type="button" onClick={() => { setEditId(null); setFormData({ category: "farm", report_date: new Date().toISOString().split('T')[0], report_time: "", farmer_name: "", barangay: "", crop_type: "rice", area_affected_hectares: 0, damage_percentage: 0, estimated_loss_value: 0, cause: "drought", description: "", assistance_needed: "", status: "pending", assessed_by: "" }); }} style={{ padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.cardSubtle, color: S.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                         Cancel
                       </button>
                     )}
@@ -5442,7 +5637,7 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
                           </button>
                           <AnimatePresence>
                             {isExpanded && (
-                              <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} transition={{ duration: 0.2 }} style={{ overflow: "hidden", background: "#fff" }}>
+                              <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} transition={{ duration: 0.2 }} style={{ overflow: "hidden", background: S.card }}>
                                 <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                                   {dayRecords.map(record => (
                                     <div key={record.id} style={{ padding: 12, border: `1px solid ${S.border}`, borderRadius: 8, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -5451,11 +5646,11 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
                                           {record.report_time && <span style={{ fontSize: 13, fontWeight: 800, color: S.text }}>{record.report_time}</span>}
                                           <span style={{ fontSize: 13, fontWeight: 800, color: S.text }}>{record.farmer_name}</span>
                                           <span style={{ fontSize: 12, color: S.muted }}>📍 {record.barangay}</span>
-                                          <span style={{ fontSize: 11, color: S.muted, background: "#f0fdf4", padding: "2px 8px", borderRadius: 4 }}>{cropTypeLabels[record.crop_type]}</span>
+                                          <span style={{ fontSize: 11, color: S.muted, background: S.isDark ? "rgba(22, 163, 74, 0.15)" : "#f0fdf4", padding: "2px 8px", borderRadius: 4 }}>{cropTypeLabels[record.crop_type]}</span>
                                           {statusBadge(record.status)}
                                         </div>
                                         <div style={{ display: "flex", gap: 6 }}>
-                                          <button onClick={() => editRecord(record)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${S.border}`, background: "#fff", color: S.text, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                                          <button onClick={() => editRecord(record)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${S.border}`, background: S.cardSubtle, color: S.text, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                                             <Edit2 size={12} /> Edit
                                           </button>
                                           <button onClick={() => deleteRecord(record.id)} style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}>
