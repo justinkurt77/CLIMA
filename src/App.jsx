@@ -13,7 +13,7 @@ import { Map as MapIcon } from "lucide-react";
 import ScrollProgressBar from "./components/ui/ScrollProgressBar";
 import ScrollToTopButton from "./components/ui/ScrollToTopButton";
 import FloatingContactButton from "./components/ui/FloatingContactButton";
-import CookieModal from "./components/ui/CookieModal";`n
+import CookieModal from "./components/ui/CookieModal";
 // Lazy-load the map - only initialises Mapbox GL when user first taps "Maps"
 const MapScreen = lazy(() => import("./screens/MapScreen"));
 const AdminDashboard = lazy(() => import("./screens/AdminDashboard"));
@@ -743,6 +743,7 @@ function App() {
 }
 
 export default App;
+
 
 
 
