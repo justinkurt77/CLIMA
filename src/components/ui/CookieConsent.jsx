@@ -31,7 +31,7 @@ export default function CookieConsent() {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t-2 border-gray-200 dark:border-gray-700 shadow-2xl">
+    <div className="fixed bottom-0 left-0 right-0 z-[9999] bg-white dark:bg-gray-800 border-t-2 border-green-600 dark:border-green-700 shadow-2xl">
       <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           {/* Message */}
@@ -41,7 +41,8 @@ export default function CookieConsent() {
               We comply with <strong>R.A. 10173 (Data Privacy Act of 2012)</strong>.{' '}
               <a
                 href="/legal#privacy-policy"
-                className="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300"
+                className="text-green-600 dark:text-green-400 underline hover:text-green-800 dark:hover:text-green-300"
+                rel="noopener noreferrer"
               >
                 Learn more
               </a>
@@ -49,16 +50,16 @@ export default function CookieConsent() {
           </div>
 
           {/* Buttons */}
-          <div className="flex gap-3 items-center">
+          <div className="flex gap-3 items-center flex-shrink-0">
             <button
               onClick={handleDecline}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
             >
               Decline
             </button>
             <button
               onClick={handleAccept}
-              className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
             >
               Accept
             </button>
