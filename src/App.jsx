@@ -14,6 +14,7 @@ const MapScreen = lazy(() => import("./screens/MapScreen"));
 const AdminDashboard = lazy(() => import("./screens/AdminDashboard"));
 const AdminMapScreen = lazy(() => import("./screens/AdminMapScreen"));
 const AdminLogin = lazy(() => import("./screens/AdminLogin"));
+const LegalScreen = lazy(() => import("./screens/LegalScreen"));
 
 import { supabase } from "./lib/supabase";
 
@@ -369,6 +370,33 @@ function App() {
             }}
           >
             <ElNinoMonitoringDashboard />
+          </motion.div>
+        )}
+
+        {activeScreen === "legal" && (
+          <motion.div
+            key="legal"
+            variants={screenVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={screenVariants.transition}
+            className="screen active citizen-screen-view"
+            style={{
+              zIndex: 10,
+              background: "transparent",
+            }}
+          >
+            <Suspense fallback={<div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              minHeight: '100vh',
+              fontSize: '1.2rem',
+              color: '#666'
+            }}>Loading legal documents...</div>}>
+              <LegalScreen />
+            </Suspense>
           </motion.div>
         )}
 

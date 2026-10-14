@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-003",
+  "type": "perf",
+  "description": "Apply database performance indexes and optimize frontend asset loading. Run PERFORMANCE_INDEXES_WORKING.sql (verified correct column names), compress large images in public/, enable CDN-ready headers, add cache-control headers to Express server.",
+  "status": "pending",
+  "steps": [
+    "Run PERFORMANCE_INDEXES_WORKING.sql in Supabase SQL Editor (creates indexes on: hospital_daily_records.record_date, cdrrmo_daily_operations.operation_date, bfp_operations.operation_date+type, advisories.status+published_at+dept, reports.dept+status+category+created+user). Verify with included SELECT query at bottom of file.",
+    "Compress large images in public/: logo-dark.png (783KB), logo.png (809KB), night.jpg (796KB), rainy_dark.jpg (605KB), stormy_clouds.jpg (723KB), stormy_dark.jpg (696KB), wind_radar.jpg (925KB), wind_radar_light.jpg (1128KB). Use sharp or imagemin CLI: npm install --save-dev sharp-cli, then npx sharp-cli -i public/logo-dark.png -o public/logo-dark-optimized.png --format webp --quality 85, rename optimized versions, repeat for all 8 large images converting JPG to WebP and PNG to WebP with quality 85",
+    "Update vite.config.js to add image optimization plugin if not using CLI: add vite-imagetools plugin, or rely on manual compression from step 2",
+    "Add cache-control middleware to server.js for static assets: app.use(express.static('public', { maxAge: '1d', etag: true }))",
+    "Add API response caching headers in server.js for /api/health: res.set('Cache-Control', 'public, max-age=60')",
+    "Verify Vite production build already minifies JS/CSS (confirmed in vite.config.js: minify: 'terser', cssMinify: true)"
+  ],
+  "acceptance_criteria": [
+    "Database indexes created and verified via pg_stat_user_indexes query",
+    "Large images compressed to <400KB each, converted to WebP format",
+    "Build size reduced (check dist/ total size before/after)",
+    "Cache-Control headers present in server responses",
+    "Production build minified and tree-shaken"
+  ],
+  "verification": [
+    "Execute: Run PERFORMANCE_INDEXES_WORKING.sql in Supabase SQL Editor, copy output of verification query and confirm all 5 tables have indexes",
+    "Execute: ls -lh public/*.webp (confirm new WebP files exist and are smaller)",
+    "Execute: npm run build && du -sh dist/ (compare total size, should be reduced)",
+    "Execute: curl -I http://localhost:3001/api/health (verify Cache-Control header present)",
+    "Execute: npm run build && ls -lh dist/assets/*.js (verify files are minified, typically <500KB per chunk)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

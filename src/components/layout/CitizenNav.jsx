@@ -78,7 +78,7 @@ export default function CitizenNav({
             }}
           >
             <img
-              src="/logo.png"
+              src="/logo.webp"
               alt="CLIMA Logo"
               style={{
                 width: "100%",

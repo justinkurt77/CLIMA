@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import DOMPurify from "dompurify";
 import {
   MapPin,
   ChevronRight,
@@ -25,6 +26,7 @@ import {
 import { LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/logger";
 import {
   fetchKloudtechDashboard,
   fetchKloudtechActiveStations,
@@ -260,7 +262,7 @@ export default function HomeScreen({
           });
         }
       } catch (e) {
-        console.warn("KloudTech telemetry fetch error:", e);
+        logger.warn("KloudTech telemetry fetch error:", e);
       }
 
       // 2. Fetch real-time weather for all remaining barangays
@@ -290,7 +292,7 @@ export default function HomeScreen({
                   };
                 }
               } catch (e) {
-                console.error("Failed to fetch for", bgy.name);
+                logger.error("Failed to fetch for", bgy.name);
               }
             })
           );
@@ -309,15 +311,15 @@ export default function HomeScreen({
   const heroBgUrl = useMemo(() => {
     const icon = weatherInfo.icon;
     if (icon === "Sun" || icon === "CloudSun") {
-      return isDark ? "/sunny_dark.jpg" : "/sunny.jpg";
+      return isDark ? "/sunny_dark.webp" : "/sunny.webp";
     }
     if (icon === "CloudRain" || icon === "CloudLightning") {
-      return isDark ? "/rainy_dark.jpg" : "/rainy.jpg";
+      return isDark ? "/rainy_dark.webp" : "/rainy.webp";
     }
     if (icon === "Moon") {
-      return "/night.jpg";
+      return "/night.webp";
     }
-    return isDark ? "/stormy_dark.jpg" : "/stormy_clouds.jpg";
+    return isDark ? "/stormy_dark.webp" : "/stormy_clouds.webp";
   }, [weatherInfo.icon, isDark]);
 
   const getHeroBackground = () => `url('${heroBgUrl}')`;
@@ -325,15 +327,15 @@ export default function HomeScreen({
   // Preload weather background images for immediate smooth cross-fading in both themes
   useEffect(() => {
     [
-      "/sunny.jpg",
-      "/rainy.jpg",
-      "/night.jpg",
-      "/stormy_clouds.jpg",
-      "/sunny_dark.jpg",
-      "/rainy_dark.jpg",
-      "/stormy_dark.jpg",
-      "/wind_radar.jpg",
-      "/wind_radar_light.jpg",
+      "/sunny.webp",
+      "/rainy.webp",
+      "/night.webp",
+      "/stormy_clouds.webp",
+      "/sunny_dark.webp",
+      "/rainy_dark.webp",
+      "/stormy_dark.webp",
+      "/wind_radar.webp",
+      "/wind_radar_light.webp",
     ].forEach((src) => {
       const img = new Image();
       img.src = src;
@@ -422,7 +424,8 @@ export default function HomeScreen({
     const maxPt = pts.reduce((prev, cur) => (cur.y < prev.y ? cur : prev), pts[0]);
     return { d, areaD, markerPt: maxPt };
   }, [hourlyForecast]);
-  useEffect(() => {
+
+  useEffect(() => {
     const lat = activeCoords?.lat || userLocation?.lat || 15.5490;
     const lng = activeCoords?.lng || userLocation?.lng || 121.0875;
 
@@ -561,7 +564,7 @@ export default function HomeScreen({
           }
         })
         .catch((err) => {
-          console.warn("Forecast fetch error:", err);
+          logger.warn("Forecast fetch error:", err);
         });
     };
 
@@ -608,7 +611,7 @@ export default function HomeScreen({
           }
         }
       } catch (err) {
-        console.warn("KloudTech telemetry error:", err);
+        logger.warn("KloudTech telemetry error:", err);
       }
 
       fetchOpenMeteo(false);
@@ -632,7 +635,7 @@ export default function HomeScreen({
           setAdvisories(data);
         }
       } catch (err) {
-        console.error("Failed to fetch advisories:", err);
+        logger.error("Failed to fetch advisories:", err);
       }
     };
 
@@ -1206,7 +1209,7 @@ export default function HomeScreen({
                     style={{
                       position: "absolute",
                       inset: 0,
-                      backgroundImage: isDark ? "url('/wind_radar.jpg')" : "url('/wind_radar_light.jpg')",
+                      backgroundImage: isDark ? "url('/wind_radar.webp')" : "url('/wind_radar_light.webp')",
                       backgroundPosition: "center",
                       backgroundSize: "cover",
                       backgroundRepeat: "no-repeat",
@@ -1494,9 +1497,12 @@ export default function HomeScreen({
                                     lineHeight: 1.5,
                                   }}
                                 >
-                                  {advisory.content.length > 120
-                                    ? advisory.content.substring(0, 120) + "..."
-                                    : advisory.content}
+                                  {/* Sanitize advisory content to prevent XSS */}
+                                  {DOMPurify.sanitize(
+                                    advisory.content.length > 120
+                                      ? advisory.content.substring(0, 120) + "..."
+                                      : advisory.content
+                                  )}
                                 </p>
                               </div>
                             </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { AlertTriangle, CheckCircle, Bell, Network, Activity } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/logger";
 
 export default function IntelligenceDashboard() {
   const { isDark } = useTheme();
@@ -69,7 +70,7 @@ export default function IntelligenceDashboard() {
       setAlerts(alertsData || []);
       setNotifications(notifsData || []);
     } catch (err) {
-      console.error("Failed to fetch intelligence data:", err);
+      logger.error("Failed to fetch intelligence data:", err);
     } finally {
       setLoading(false);
     }
@@ -88,7 +89,7 @@ export default function IntelligenceDashboard() {
       if (error) throw error;
       fetchData();
     } catch (err) {
-      console.error("Failed to acknowledge alert:", err);
+      logger.error("Failed to acknowledge alert:", err);
     }
   };
 
@@ -105,7 +106,7 @@ export default function IntelligenceDashboard() {
       if (error) throw error;
       fetchData();
     } catch (err) {
-      console.error("Failed to resolve alert:", err);
+      logger.error("Failed to resolve alert:", err);
     }
   };
 

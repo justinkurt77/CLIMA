@@ -47,6 +47,17 @@ export default defineConfig({
         drop_debugger: true,
       },
     },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-mapbox': ['mapbox-gl', '@mapbox/mapbox-gl-geocoder'],
+          'vendor-charts': ['recharts'],
+          'vendor-ui': ['framer-motion', 'lucide-react']
+        }
+      }
+    }
   },
   optimizeDeps: {
     // Pre-bundle mapbox-gl so Vite doesn't reprocess it on every cold start

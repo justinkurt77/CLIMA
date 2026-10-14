@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Facebook, CheckCircle, XCircle, Clock, AlertTriangle } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/logger";
 
 export default function FacebookModerationScreen() {
   const { isDark } = useTheme();
@@ -50,7 +51,7 @@ export default function FacebookModerationScreen() {
       if (error) throw error;
       setPosts(data || []);
     } catch (err) {
-      console.error("Failed to fetch Facebook posts:", err);
+      logger.error("Failed to fetch Facebook posts:", err);
     } finally {
       setLoading(false);
     }
@@ -79,7 +80,7 @@ export default function FacebookModerationScreen() {
 
       fetchFacebookPosts();
     } catch (err) {
-      console.error("Failed to moderate post:", err);
+      logger.error("Failed to moderate post:", err);
       alert("Failed to moderate post");
     }
   };
@@ -101,7 +102,7 @@ export default function FacebookModerationScreen() {
 
       if (error) throw error;
     } catch (err) {
-      console.error("Failed to convert to incident:", err);
+      logger.error("Failed to convert to incident:", err);
     }
   };
 

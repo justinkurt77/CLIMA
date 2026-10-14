@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useInView } from "react-intersection-observer";
 import { supabase } from "../lib/supabase";
+import DOMPurify from "dompurify";
 import {
   BarChart3, FileText, Users, LogOut, Map as MapIcon, RefreshCw,
   Plus, Trash2, Building, CheckCircle, CheckCircle2, Clock, TrendingUp, Search, X, Edit2, Check, Download,
@@ -2993,7 +2994,8 @@ function DashboardReportModal({ report, S, onClose, onStatusChange }) {
   // Parse guest contact from description
   const guestMatch = report.description?.match(/^\[GUEST:.*?-\s*Contact:\s*(.+?)\]/);
   const contactNumber = guestMatch ? guestMatch[1].trim() : null;
-  const desc = report.description?.replace(/^\[GUEST:.*?\]\n\n/s, "") || "No description provided.";
+  // Sanitize user-generated report description to prevent XSS
+  const desc = DOMPurify.sanitize(report.description?.replace(/^\[GUEST:.*?\]\n\n/s, "") || "No description provided.");
 
   const statusMap = {
     pending: { color: "#ef4444", bg: "#fef2f2", label: "Pending" },

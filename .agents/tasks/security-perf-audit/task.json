@@ -1,0 +1,13 @@
+{
+  "task_id": "security-perf-audit",
+  "task_description": "Comprehensive security hardening and performance optimization for CLIMA disaster response platform",
+  "status": "pending",
+  "feature_order": [
+    "FEAT-001",
+    "FEAT-002",
+    "FEAT-003",
+    "FEAT-004",
+    "FEAT-005"
+  ],
+  "blocked_reason": null
+}

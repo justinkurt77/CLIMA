@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import Map, { Marker, Popup, Source, Layer } from "react-map-gl/mapbox";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import DOMPurify from "dompurify";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
@@ -31,6 +32,7 @@ import {
   Phone,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/logger";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { PinMarker } from "../components/map/MapPins";
 import { reverseGeocode } from "../components/ui/report/reportConstants";
@@ -151,7 +153,7 @@ export default function AdminMapScreen({
           })),
         );
       } catch (err) {
-        console.error(err);
+        logger.error(err);
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -1288,7 +1290,7 @@ function ReportDetailModal({ report, onClose, onStatusChange }) {
       setStatus(newStatus);
       if (onStatusChange) onStatusChange(newStatus);
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     } finally {
       setUpdating(false);
     }
@@ -1299,10 +1301,11 @@ function ReportDetailModal({ report, onClose, onStatusChange }) {
     /^\[GUEST:.*?-\s*Contact:\s*(.+?)\]/,
   );
   const contactNumber = guestMatch ? guestMatch[1].trim() : null;
-  // Clean description (strip guest info prefix)
-  const desc =
+  // Clean description (strip guest info prefix) and sanitize to prevent XSS
+  const desc = DOMPurify.sanitize(
     report.description?.replace(/^\[GUEST:.*?\]\n\n/s, "") ||
-    "No description provided.";
+    "No description provided."
+  );
 
   return (
     <AnimatePresence>

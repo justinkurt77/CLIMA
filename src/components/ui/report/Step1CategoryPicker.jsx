@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ChevronLeft, Folder, Loader2, ShieldAlert, Wrench, Trash2, Dog, Construction, TreePine, CarFront, ClipboardList } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "../../../lib/supabase";
+import { logger } from "../../../lib/logger";
 import { CATEGORY_GROUPS } from "./reportConstants";
 import { useTheme } from "../../../context/ThemeContext";
 
@@ -43,7 +44,7 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
           setExpandedGroups({ 0: true });
         }
       } catch (err) {
-        console.error("Error loading categories, using fallback", err);
+        logger.error("Error loading categories, using fallback", err);
         setCategoryGroups(CATEGORY_GROUPS.map(g => ({ name: g.name, items: g.items, iconName: g.iconName })));
         setExpandedGroups({ 0: true });
       } finally {

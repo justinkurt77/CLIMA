@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
 import bodyParser from 'body-parser';
 import rateLimit from 'express-rate-limit';
 import nodemailer from 'nodemailer';
@@ -30,14 +32,52 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Middleware
-app.use(cors({
-  origin: process.env.VITE_APP_URL || 'http://localhost:5173',
-  credentials: true,
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+// Security Middleware
+// Helmet with custom CSP configuration
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https://api.mapbox.com', 'https://events.mapbox.com'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://api.mapbox.com'],
+      imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+      connectSrc: ["'self'", 'https://*.supabase.co', 'https://api.mapbox.com', 'https://events.mapbox.com', 'wss://*.supabase.co', 'https://api.kloudtechsea.com'],
+      workerSrc: ["'self'", 'blob:'],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"]
+    }
+  }
 }));
+
+// Tightened CORS
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:5173', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
 app.use(bodyParser.json());
+
+// Compression middleware for all responses
+app.use(compression());
+
+// Static asset caching (for production builds)
+app.use('/assets', express.static('dist/assets', { maxAge: '1y', immutable: true }));
+app.use(express.static('dist', { maxAge: '1h' }));
+
+// Cache control for API responses
+app.use((req, res, next) => {
+  // Public endpoints can be cached
+  if (req.path.includes('/health')) {
+    res.set('Cache-Control', 'public, max-age=60'); // 1 minute
+  } else {
+    // API endpoints should not be cached
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  }
+  next();
+});
+
 app.use('/api/', globalLimiter); // Apply global rate limiting to all API routes
 
 // Supabase client (service role for admin operations)
