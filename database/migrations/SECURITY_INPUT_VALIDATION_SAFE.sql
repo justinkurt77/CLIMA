@@ -26,6 +26,14 @@ UPDATE advisories
 SET content = 'Please check with local authorities for details.' 
 WHERE content IS NULL OR LENGTH(content) < 10;
 
+UPDATE advisories 
+SET status = 'Draft' 
+WHERE status IS NULL OR status NOT IN ('Draft', 'Pending', 'Published', 'Archived');
+
+UPDATE advisories 
+SET category = 'General' 
+WHERE category IS NULL OR LENGTH(category) < 3;
+
 -- =====================================================
 -- PART 2: Add Check Constraints (with existence checks)
 -- =====================================================
@@ -105,13 +113,22 @@ BEGIN
         CHECK (LENGTH(content) >= 10 AND LENGTH(content) <= 10000);
     END IF;
 
-    -- Severity enum
+    -- Status enum
     IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'check_advisories_severity_valid'
+        SELECT 1 FROM pg_constraint WHERE conname = 'check_advisories_status_valid'
     ) THEN
         ALTER TABLE advisories 
-        ADD CONSTRAINT check_advisories_severity_valid 
-        CHECK (severity IN ('info', 'warning', 'alert', 'critical'));
+        ADD CONSTRAINT check_advisories_status_valid 
+        CHECK (status IN ('Draft', 'Pending', 'Published', 'Archived'));
+    END IF;
+
+    -- Category enum
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'check_advisories_category_valid'
+    ) THEN
+        ALTER TABLE advisories 
+        ADD CONSTRAINT check_advisories_category_valid 
+        CHECK (LENGTH(category) >= 3 AND LENGTH(category) <= 50);
     END IF;
 END $$;
 
