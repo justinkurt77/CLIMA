@@ -456,10 +456,6 @@ export default function AdminLogin({ onLogin }) {
               </button>
             </div>
           )}
-                onBlur={(e) => { e.target.style.borderColor = isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.1)"; }}
-              />
-            </div>
-          )}
 
           {/* Success Message */}
           <AnimatePresence>
