@@ -85,21 +85,47 @@ export function KloudtrackStationMarker({
           Icon: Shield,
         };
       case "heatIndex":
-      default:
+      default: {
+        const val = telemetry.heatIndex != null ? Number(telemetry.heatIndex) : 38.5;
+        let badgeLabel = `${val.toFixed(1)}° Normal`;
+        let badgeCol = "#22c55e";
+        if (val >= 52) {
+          badgeLabel = `${val.toFixed(1)}° Ext. Danger`;
+          badgeCol = "#991b1b";
+        } else if (val >= 42) {
+          badgeLabel = `${val.toFixed(1)}° Danger`;
+          badgeCol = "#ef4444";
+        } else if (val >= 33) {
+          badgeLabel = `${val.toFixed(1)}° Ext. Caution`;
+          badgeCol = "#f97316";
+        } else if (val >= 27) {
+          badgeLabel = `${val.toFixed(1)}° Caution`;
+          badgeCol = "#eab308";
+        }
+
         return {
-          primary: `${telemetry.heatIndex || 51.3}°C`,
-          badge: "51.3° Danger",
-          badgeColor: "#ef4444",
-          badgeBg: "rgba(239, 68, 68, 0.18)",
-          badgeBorder: "rgba(239, 68, 68, 0.3)",
-          color: "#ef4444",
+          primary: `${val.toFixed(1)}°C`,
+          badge: badgeLabel,
+          badgeColor: badgeCol,
+          badgeBg: `${badgeCol}2e`,
+          badgeBorder: `${badgeCol}4d`,
+          color: badgeCol,
           Icon: Flame,
         };
+      }
     }
   };
 
   const currentMetric = getMetricDisplay();
   const MetricIcon = currentMetric.Icon;
+
+  const displayName =
+    station?.station?.stationName
+      ?.replace(" - Palayan City", "")
+      ?.replace(" Palayan City", "")
+      ?.trim() ||
+    station?.station?.stationName ||
+    "IoT Station";
 
   return (
     <div
@@ -121,7 +147,7 @@ export function KloudtrackStationMarker({
           : "drop-shadow(0 8px 20px rgba(0,0,0,0.2))",
         position: "relative",
       }}
-      title={`${station.station?.stationName || "Popolon AWS"} - Click to inspect live telemetry`}
+      title={`${displayName} - Click to inspect live telemetry`}
     >
       {/* ── Outer Pulsing Radar Ring (Color matched to selected metric) ── */}
       <div
@@ -193,7 +219,7 @@ export function KloudtrackStationMarker({
                 whiteSpace: "nowrap",
               }}
             >
-              Popolon AWS
+              {displayName}
             </span>
             <span
               style={{

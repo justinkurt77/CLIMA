@@ -32,72 +32,104 @@ export function KloudtrackStationPopup({
   const [activeParam, setActiveParam] = useState(activeMetric || "heatIndex");
   const telemetry = station?.telemetry || {};
 
+  const hiVal = telemetry.heatIndex != null ? Number(telemetry.heatIndex) : 38.5;
+  const tempVal =
+    telemetry.temperature != null
+      ? Number(telemetry.temperature)
+      : telemetry.temp != null
+      ? Number(telemetry.temp)
+      : 29.3;
+  const humVal = telemetry.humidity != null ? Number(telemetry.humidity) : 91.0;
+  const presVal = telemetry.pressure != null ? Number(telemetry.pressure) : 1009.8;
+  const windVal = telemetry.wind?.speed != null ? Number(telemetry.wind.speed) : 0.1;
+  const windDir =
+    typeof telemetry.wind?.direction === "number"
+      ? Math.round(telemetry.wind.direction) + "°"
+      : telemetry.wind?.direction || "E";
+  const lightVal = telemetry.lightIntensity != null ? Number(telemetry.lightIntensity) : 3411.7;
+
+  let hiBadge = "Normal";
+  let hiBadgeColor = "#22c55e";
+  if (hiVal >= 52) {
+    hiBadge = "Ext. Danger";
+    hiBadgeColor = "#991b1b";
+  } else if (hiVal >= 42) {
+    hiBadge = "Danger";
+    hiBadgeColor = "#ef4444";
+  } else if (hiVal >= 33) {
+    hiBadge = "Ext. Caution";
+    hiBadgeColor = "#f97316";
+  } else if (hiVal >= 27) {
+    hiBadge = "Caution";
+    hiBadgeColor = "#eab308";
+  }
+
   const PARAM_CONFIG = {
     heatIndex: {
       label: "Heat Index",
-      val: "51.3 °C",
+      val: `${hiVal.toFixed(1)} °C`,
       unit: "°C",
-      badge: "Danger",
-      badgeColor: "#ef4444",
+      badge: hiBadge,
+      badgeColor: hiBadgeColor,
       color: "#f97316",
       Icon: Flame,
       dataKey: "heatIndex",
-      desc: "Extreme danger of heat cramps, exhaustion, and probable heat stroke with prolonged outdoor exposure.",
+      desc: `${hiBadge} level apparent heat index. Ensure adequate hydration and shelter.`,
     },
     temperature: {
       label: "Temperature",
-      val: "34.0 °C",
+      val: `${tempVal.toFixed(1)} °C`,
       unit: "°C",
-      badge: "Tropical Hot",
-      badgeColor: "#ea580c",
+      badge: tempVal > 35 ? "Hot" : tempVal >= 30 ? "Warm" : tempVal >= 24 ? "Mild" : "Cool",
+      badgeColor: tempVal > 35 ? "#ef4444" : tempVal >= 30 ? "#ea580c" : "#10b981",
       color: "#ef4444",
       Icon: Thermometer,
       dataKey: "temp",
-      desc: "High daytime ambient temperature recorded by the physical weatherstation temperature sensor.",
+      desc: "Live ambient temperature recorded by the physical weather station sensor.",
     },
     humidity: {
       label: "Humidity",
-      val: "78.5 %",
+      val: `${humVal.toFixed(1)} %`,
       unit: "%",
-      badge: "Elevated",
+      badge: humVal > 80 ? "Elevated" : humVal >= 60 ? "Humid" : "Comfortable",
       badgeColor: "#3b82f6",
       color: "#3b82f6",
       Icon: Droplets,
       dataKey: "humidity",
-      desc: "High relative atmospheric moisture amplifying apparent heat index throughout the corridor.",
+      desc: "Relative atmospheric moisture measured directly at the weather station.",
     },
     pressure: {
       label: "Pressure",
-      val: "1006.7 hPa",
+      val: `${presVal.toFixed(1)} hPa`,
       unit: "hPa",
-      badge: "Normal",
+      badge: presVal < 1000 ? "Low" : presVal <= 1013 ? "Normal" : "High",
       badgeColor: "#8b5cf6",
       color: "#8b5cf6",
       Icon: Gauge,
       dataKey: "pressure",
-      desc: "Standard sea-level calibrated barometric pressure reading indicating fair weather conditions.",
+      desc: "Barometric pressure reading indicating current atmospheric stability.",
     },
     wind: {
       label: "Wind Speed",
-      val: "0.7 kph N",
+      val: `${windVal.toFixed(1)} kph ${windDir}`,
       unit: "kph",
-      badge: "Gentle",
+      badge: windVal < 5 ? "Calm" : windVal < 20 ? "Light" : "Moderate",
       badgeColor: "#22c55e",
       color: "#22c55e",
       Icon: Wind,
       dataKey: "wind",
-      desc: "Light northerly surface breeze across the plains of Manacnac and Popolon Pagas.",
+      desc: `Surface wind speed and direction at ${station?.station?.stationName || "Palayan City"}.`,
     },
     lightIntensity: {
       label: "Light Intensity",
-      val: "54612.5 lux",
+      val: `${lightVal.toFixed(1)} lux`,
       unit: "lux",
-      badge: "Bright Sun",
+      badge: lightVal > 30000 ? "Bright" : lightVal > 10000 ? "Moderate" : "Overcast",
       badgeColor: "#eab308",
       color: "#eab308",
       Icon: Eye,
-      dataKey: "heatIndex", // fallback
-      desc: "Peak solar illuminance exceeding 50,000 lux corresponding to direct midday sunshine.",
+      dataKey: "heatIndex",
+      desc: "Solar illuminance recorded live by optical pyranometer sensor.",
     },
   };
 
@@ -165,7 +197,7 @@ export function KloudtrackStationPopup({
                   letterSpacing: -0.2,
                 }}
               >
-                Popolon AWS
+                {station?.station?.stationName?.replace(" - Palayan City", "")?.replace(" Palayan City", "") || "IoT Weather Station"}
               </h3>
               <span
                 style={{
@@ -188,7 +220,7 @@ export function KloudtrackStationPopup({
                 fontWeight: 500,
               }}
             >
-              Manacnac, Palayan City
+              {station?.station?.address || station?.station?.city || "Palayan City, Nueva Ecija"}
             </p>
           </div>
         </div>

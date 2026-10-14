@@ -383,20 +383,24 @@ function MapScreen({
     attractions: false,
   });
 
-  // Coverage GeoJSON for Popolon AWS station [121.0471, 15.5413]
+  // Coverage GeoJSON for all deployed KloudTech stations (Popolon, Sapang Buho, etc.)
   const stationCoverageGeoJSON = useMemo(() => {
     return {
       type: "FeatureCollection",
-      features: [createGeoJSONCircle([121.0471, 15.5413], 3.2)],
+      features: (weatherStations || [])
+        .filter((s) => s.station?.location && Array.isArray(s.station.location))
+        .map((s) => createGeoJSONCircle(s.station.location, 3.2)),
     };
-  }, []);
+  }, [weatherStations]);
 
   const heatIndexCoverageGeoJSON = useMemo(() => {
     return {
       type: "FeatureCollection",
-      features: [createGeoJSONCircle([121.0471, 15.5413], 1.8)],
+      features: (weatherStations || [])
+        .filter((s) => s.station?.location && Array.isArray(s.station.location))
+        .map((s) => createGeoJSONCircle(s.station.location, 1.8)),
     };
-  }, []);
+  }, [weatherStations]);
 
   // Data States for Dynamic Layers
   const [hospitals, setHospitals] = useState([]);
@@ -1408,6 +1412,8 @@ function MapScreen({
           activeMetric={activeMetric}
           onSelectMetric={setActiveMetric}
           isMapFullView={isMapFullView}
+          stations={weatherStations}
+          selectedStation={selectedKloudtrackStation}
         />
       )}
     </div>

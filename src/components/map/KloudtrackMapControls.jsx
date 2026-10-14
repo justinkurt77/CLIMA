@@ -15,154 +15,221 @@ import {
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 
-export const IOT_METRIC_CONFIG = {
-  heatIndex: {
-    id: "heatIndex",
-    label: "Heat Index",
-    shortLabel: "Heat Index",
-    value: "51.3°C",
-    unit: "°C",
-    color: "#ef4444",
-    glowColor: "rgba(239, 68, 68, 0.4)",
-    fillColor: "#ef4444",
-    Icon: Flame,
-    status: "Danger",
-    statusColor: "#ef4444",
-    scale: [
-      { label: "Safe", range: "<27°C", color: "#22c55e" },
-      { label: "Caution", range: "27-32°", color: "#eab308" },
-      { label: "Ext. Caution", range: "33-41°", color: "#f97316" },
-      { label: "Danger", range: "42-51°", color: "#ef4444", active: true },
-      { label: "Ext. Danger", range: ">52°", color: "#991b1b" },
-    ],
-    summary: "Extreme Danger (51.3°C) — Heat stroke imminent with prolonged outdoor exposure.",
-  },
-  temperature: {
-    id: "temperature",
-    label: "Temperature",
-    shortLabel: "Temp",
-    value: "34.0°C",
-    unit: "°C",
-    color: "#f97316",
-    glowColor: "rgba(249, 115, 22, 0.4)",
-    fillColor: "#f97316",
-    Icon: Thermometer,
-    status: "Tropical Hot",
-    statusColor: "#f97316",
-    scale: [
-      { label: "Cool", range: "<24°C", color: "#3b82f6" },
-      { label: "Mild", range: "24-29°", color: "#10b981" },
-      { label: "Warm", range: "30-34°", color: "#f97316", active: true },
-      { label: "Hot", range: ">35°", color: "#ef4444" },
-    ],
-    summary: "Direct physical sensor reading recorded at Popolon AWS ground mast.",
-  },
-  humidity: {
-    id: "humidity",
-    label: "Humidity",
-    shortLabel: "Humidity",
-    value: "78.5%",
-    unit: "%",
-    color: "#06b6d4",
-    glowColor: "rgba(6, 182, 212, 0.4)",
-    fillColor: "#06b6d4",
-    Icon: Droplets,
-    status: "Elevated",
-    statusColor: "#06b6d4",
-    scale: [
-      { label: "Dry", range: "<40%", color: "#eab308" },
-      { label: "Comfortable", range: "40-60%", color: "#10b981" },
-      { label: "Humid", range: "60-80%", color: "#06b6d4", active: true },
-      { label: "Heavy", range: ">80%", color: "#3b82f6" },
-    ],
-    summary: "High relative atmospheric moisture amplifying felt heat across the corridor.",
-  },
-  wind: {
-    id: "wind",
-    label: "Wind Speed",
-    shortLabel: "Wind",
-    value: "0.7 km/h N",
-    unit: "km/h",
-    color: "#10b981",
-    glowColor: "rgba(16, 185, 129, 0.4)",
-    fillColor: "#10b981",
-    Icon: Wind,
-    status: "Gentle",
-    statusColor: "#10b981",
-    scale: [
-      { label: "Calm", range: "<5 km/h", color: "#10b981", active: true },
-      { label: "Light", range: "6-19", color: "#06b6d4" },
-      { label: "Moderate", range: "20-38", color: "#f59e0b" },
-      { label: "Strong", range: ">38", color: "#ef4444" },
-    ],
-    summary: "Light northerly surface breeze across Popolon and Manacnac agricultural plains.",
-  },
-  pressure: {
-    id: "pressure",
-    label: "Pressure",
-    shortLabel: "Pressure",
-    value: "1006.7 hPa",
-    unit: "hPa",
-    color: "#8b5cf6",
-    glowColor: "rgba(139, 92, 246, 0.4)",
-    fillColor: "#8b5cf6",
-    Icon: Gauge,
-    status: "Normal",
-    statusColor: "#8b5cf6",
-    scale: [
-      { label: "Low", range: "<1000", color: "#ef4444" },
-      { label: "Normal", range: "1000-1013", color: "#8b5cf6", active: true },
-      { label: "High", range: ">1013", color: "#3b82f6" },
-    ],
-    summary: "Standard barometric pressure indicating stable weather atmosphere.",
-  },
-  lightIntensity: {
-    id: "lightIntensity",
-    label: "Solar / Light",
-    shortLabel: "Solar",
-    value: "54.6k lux",
-    unit: "lux",
-    color: "#eab308",
-    glowColor: "rgba(234, 179, 8, 0.4)",
-    fillColor: "#eab308",
-    Icon: Sun,
-    status: "Intense",
-    statusColor: "#eab308",
-    scale: [
-      { label: "Overcast", range: "<10k", color: "#64748b" },
-      { label: "Moderate", range: "10-30k", color: "#10b981" },
-      { label: "Bright", range: "30-50k", color: "#f59e0b" },
-      { label: "Peak Sun", range: ">50k", color: "#eab308", active: true },
-    ],
-    summary: "Peak solar illuminance over 50,000 lux corresponding to direct midday sunshine.",
-  },
-  uvIndex: {
-    id: "uvIndex",
-    label: "UV Index",
-    shortLabel: "UV",
-    value: "8.2 UV",
-    unit: "UV",
-    color: "#ec4899",
-    glowColor: "rgba(236, 72, 153, 0.4)",
-    fillColor: "#ec4899",
-    Icon: Shield,
-    status: "Very High",
-    statusColor: "#ec4899",
-    scale: [
-      { label: "Low", range: "0-2", color: "#22c55e" },
-      { label: "Moderate", range: "3-5", color: "#eab308" },
-      { label: "High", range: "6-7", color: "#f97316" },
-      { label: "Very High", range: "8-10", color: "#ec4899", active: true },
-      { label: "Extreme", range: "11+", color: "#8b5cf6" },
-    ],
-    summary: "UV radiation level 8.2 (Very High). Sun protection strongly advised.",
-  },
-};
+export function getDynamicMetricConfig(telemetry = {}, stationName = "Popolon AWS") {
+  const hi = telemetry?.heatIndex != null ? Number(telemetry.heatIndex) : 38.5;
+  const temp = telemetry?.temperature != null
+    ? Number(telemetry.temperature)
+    : telemetry?.temp != null
+    ? Number(telemetry.temp)
+    : 29.3;
+  const rh = telemetry?.humidity != null ? Number(telemetry.humidity) : 91.0;
+  const windSpd = telemetry?.wind?.speed != null ? Number(telemetry.wind.speed) : 0.1;
+  const windDir =
+    typeof telemetry?.wind?.direction === "number"
+      ? Math.round(telemetry.wind.direction) + "°"
+      : telemetry?.wind?.direction || "E";
+  const pres = telemetry?.pressure != null ? Number(telemetry.pressure) : 1009.8;
+  const light = telemetry?.lightIntensity != null ? Number(telemetry.lightIntensity) : 3411.7;
+  const uv = telemetry?.uvIndex != null ? Number(telemetry.uvIndex) : 3;
+
+  // Heat Index status
+  let hiStatus = "Normal";
+  let hiStatusColor = "#22c55e";
+  if (hi >= 52) {
+    hiStatus = "Ext. Danger";
+    hiStatusColor = "#991b1b";
+  } else if (hi >= 42) {
+    hiStatus = "Danger";
+    hiStatusColor = "#ef4444";
+  } else if (hi >= 33) {
+    hiStatus = "Ext. Caution";
+    hiStatusColor = "#f97316";
+  } else if (hi >= 27) {
+    hiStatus = "Caution";
+    hiStatusColor = "#eab308";
+  }
+
+  // Temp status
+  let tempStatus = "Mild";
+  let tempStatusColor = "#10b981";
+  if (temp > 35) {
+    tempStatus = "Hot";
+    tempStatusColor = "#ef4444";
+  } else if (temp >= 30) {
+    tempStatus = "Warm";
+    tempStatusColor = "#f97316";
+  } else if (temp < 24) {
+    tempStatus = "Cool";
+    tempStatusColor = "#3b82f6";
+  }
+
+  // Humidity status
+  let rhStatus = "Comfortable";
+  let rhStatusColor = "#10b981";
+  if (rh > 80) {
+    rhStatus = "Elevated";
+    rhStatusColor = "#06b6d4";
+  } else if (rh >= 60) {
+    rhStatus = "Humid";
+    rhStatusColor = "#06b6d4";
+  } else if (rh < 40) {
+    rhStatus = "Dry";
+    rhStatusColor = "#eab308";
+  }
+
+  return {
+    heatIndex: {
+      id: "heatIndex",
+      label: "Heat Index",
+      shortLabel: "Heat Index",
+      value: `${hi.toFixed(1)}°C`,
+      unit: "°C",
+      color: hiStatusColor,
+      glowColor: `${hiStatusColor}66`,
+      fillColor: hiStatusColor,
+      Icon: Flame,
+      status: hiStatus,
+      statusColor: hiStatusColor,
+      scale: [
+        { label: "Safe", range: "<27°C", color: "#22c55e", active: hi < 27 },
+        { label: "Caution", range: "27-32°", color: "#eab308", active: hi >= 27 && hi < 33 },
+        { label: "Ext. Caution", range: "33-41°", color: "#f97316", active: hi >= 33 && hi < 42 },
+        { label: "Danger", range: "42-51°", color: "#ef4444", active: hi >= 42 && hi < 52 },
+        { label: "Ext. Danger", range: ">52°", color: "#991b1b", active: hi >= 52 },
+      ],
+      summary: `${hiStatus} (${hi.toFixed(1)}°C) — Live reading recorded from ${stationName}.`,
+    },
+    temperature: {
+      id: "temperature",
+      label: "Temperature",
+      shortLabel: "Temp",
+      value: `${temp.toFixed(1)}°C`,
+      unit: "°C",
+      color: tempStatusColor,
+      glowColor: `${tempStatusColor}66`,
+      fillColor: tempStatusColor,
+      Icon: Thermometer,
+      status: tempStatus,
+      statusColor: tempStatusColor,
+      scale: [
+        { label: "Cool", range: "<24°C", color: "#3b82f6", active: temp < 24 },
+        { label: "Mild", range: "24-29°", color: "#10b981", active: temp >= 24 && temp < 30 },
+        { label: "Warm", range: "30-34°", color: "#f97316", active: temp >= 30 && temp <= 35 },
+        { label: "Hot", range: ">35°", color: "#ef4444", active: temp > 35 },
+      ],
+      summary: `Direct physical sensor reading recorded at ${stationName} ground mast.`,
+    },
+    humidity: {
+      id: "humidity",
+      label: "Humidity",
+      shortLabel: "Humidity",
+      value: `${rh.toFixed(1)}%`,
+      unit: "%",
+      color: "#06b6d4",
+      glowColor: "rgba(6, 182, 212, 0.4)",
+      fillColor: "#06b6d4",
+      Icon: Droplets,
+      status: rhStatus,
+      statusColor: rhStatusColor,
+      scale: [
+        { label: "Dry", range: "<40%", color: "#eab308", active: rh < 40 },
+        { label: "Comfortable", range: "40-60%", color: "#10b981", active: rh >= 40 && rh < 60 },
+        { label: "Humid", range: "60-80%", color: "#06b6d4", active: rh >= 60 && rh <= 80 },
+        { label: "Heavy", range: ">80%", color: "#3b82f6", active: rh > 80 },
+      ],
+      summary: `Relative atmospheric moisture recorded by ${stationName}.`,
+    },
+    wind: {
+      id: "wind",
+      label: "Wind Speed",
+      shortLabel: "Wind",
+      value: `${windSpd.toFixed(1)} km/h ${windDir}`,
+      unit: "km/h",
+      color: "#10b981",
+      glowColor: "rgba(16, 185, 129, 0.4)",
+      fillColor: "#10b981",
+      Icon: Wind,
+      status: windSpd < 5 ? "Calm" : windSpd < 20 ? "Light" : "Moderate",
+      statusColor: "#10b981",
+      scale: [
+        { label: "Calm", range: "<5 km/h", color: "#10b981", active: windSpd < 5 },
+        { label: "Light", range: "6-19", color: "#06b6d4", active: windSpd >= 5 && windSpd < 20 },
+        { label: "Moderate", range: "20-38", color: "#f59e0b", active: windSpd >= 20 && windSpd <= 38 },
+        { label: "Strong", range: ">38", color: "#ef4444", active: windSpd > 38 },
+      ],
+      summary: `Surface breeze across ${stationName} plains.`,
+    },
+    pressure: {
+      id: "pressure",
+      label: "Pressure",
+      shortLabel: "Pressure",
+      value: `${pres.toFixed(1)} hPa`,
+      unit: "hPa",
+      color: "#8b5cf6",
+      glowColor: "rgba(139, 92, 246, 0.4)",
+      fillColor: "#8b5cf6",
+      Icon: Gauge,
+      status: pres < 1000 ? "Low" : pres <= 1013 ? "Normal" : "High",
+      statusColor: "#8b5cf6",
+      scale: [
+        { label: "Low", range: "<1000", color: "#ef4444", active: pres < 1000 },
+        { label: "Normal", range: "1000-1013", color: "#8b5cf6", active: pres >= 1000 && pres <= 1013 },
+        { label: "High", range: ">1013", color: "#3b82f6", active: pres > 1013 },
+      ],
+      summary: `Standard barometric pressure measured at ${stationName}.`,
+    },
+    lightIntensity: {
+      id: "lightIntensity",
+      label: "Solar / Light",
+      shortLabel: "Solar",
+      value: light >= 1000 ? `${(light / 1000).toFixed(1)}k lux` : `${light.toFixed(0)} lux`,
+      unit: "lux",
+      color: "#eab308",
+      glowColor: "rgba(234, 179, 8, 0.4)",
+      fillColor: "#eab308",
+      Icon: Sun,
+      status: light > 50000 ? "Peak Sun" : light > 30000 ? "Bright" : light > 10000 ? "Moderate" : "Overcast",
+      statusColor: "#eab308",
+      scale: [
+        { label: "Overcast", range: "<10k", color: "#64748b", active: light <= 10000 },
+        { label: "Moderate", range: "10-30k", color: "#10b981", active: light > 10000 && light <= 30000 },
+        { label: "Bright", range: "30-50k", color: "#f59e0b", active: light > 30000 && light <= 50000 },
+        { label: "Peak Sun", range: ">50k", color: "#eab308", active: light > 50000 },
+      ],
+      summary: `Solar illuminance measured live at ${stationName}.`,
+    },
+    uvIndex: {
+      id: "uvIndex",
+      label: "UV Index",
+      shortLabel: "UV",
+      value: `${uv} UV`,
+      unit: "UV",
+      color: uv >= 11 ? "#8b5cf6" : uv >= 8 ? "#ec4899" : uv >= 6 ? "#f97316" : uv >= 3 ? "#eab308" : "#22c55e",
+      glowColor: "rgba(236, 72, 153, 0.4)",
+      fillColor: "#ec4899",
+      Icon: Shield,
+      status: uv >= 11 ? "Extreme" : uv >= 8 ? "Very High" : uv >= 6 ? "High" : uv >= 3 ? "Moderate" : "Low",
+      statusColor: uv >= 8 ? "#ec4899" : "#f97316",
+      scale: [
+        { label: "Low", range: "0-2", color: "#22c55e", active: uv <= 2 },
+        { label: "Moderate", range: "3-5", color: "#eab308", active: uv >= 3 && uv <= 5 },
+        { label: "High", range: "6-7", color: "#f97316", active: uv >= 6 && uv <= 7 },
+        { label: "Very High", range: "8-10", color: "#ec4899", active: uv >= 8 && uv <= 10 },
+        { label: "Extreme", range: "11+", color: "#8b5cf6", active: uv >= 11 },
+      ],
+      summary: `UV radiation measured at ${stationName}.`,
+    },
+  };
+}
+
+export const IOT_METRIC_CONFIG = getDynamicMetricConfig();
 
 export function KloudtrackMapControls({
   activeMetric,
   onSelectMetric,
   isMapFullView,
+  stations = [],
+  selectedStation = null,
 }) {
   const { isDark } = useTheme();
   const [legendCollapsed, setLegendCollapsed] = useState(false);
@@ -170,7 +237,16 @@ export function KloudtrackMapControls({
 
   if (!isMapFullView) return null;
 
-  const currentConfig = IOT_METRIC_CONFIG[activeMetric] || IOT_METRIC_CONFIG.heatIndex;
+  const currentStation =
+    selectedStation ||
+    (Array.isArray(stations) &&
+      stations.find((s) => s?.station?.stationName?.toLowerCase().includes("popolon"))) ||
+    (Array.isArray(stations) && stations[0]) ||
+    null;
+
+  const stationName = currentStation?.station?.stationName || "Popolon AWS";
+  const dynamicConfig = getDynamicMetricConfig(currentStation?.telemetry, stationName);
+  const currentConfig = dynamicConfig[activeMetric] || dynamicConfig.heatIndex;
   const MetricIcon = currentConfig.Icon;
 
   return (
@@ -317,7 +393,7 @@ export function KloudtrackMapControls({
               <span>Hide</span>
             </button>
 
-            {Object.values(IOT_METRIC_CONFIG).map((metric) => {
+            {Object.values(dynamicConfig).map((metric) => {
               const isActive = activeMetric === metric.id;
               const Icon = metric.Icon;
 
@@ -500,7 +576,7 @@ export function KloudtrackMapControls({
                   textOverflow: "ellipsis",
                 }}
               >
-                Popolon AWS: {currentConfig.value} ({currentConfig.status})
+                {stationName.replace(" - Palayan City", "")}: {currentConfig.value} ({currentConfig.status})
               </div>
             </div>
           </div>

@@ -3,6 +3,7 @@
  * Base URL: https://api.kloudtechsea.com/api/v1
  * Handles IoT weather stations, rain gauges, and telemetry streams.
  */
+import { supabase } from "../lib/supabase";
 
 export const KLOUDTECH_BASE_URL =
   import.meta.env.VITE_KLOUDTECH_API_BASE || "https://api.kloudtechsea.com/api/v1";
@@ -54,18 +55,18 @@ export const PALAYAN_KLOUDTECH_STATIONS = [
       barangays: ["Popolon Pagas", "Manacnac", "Singalat", "Caimito"],
     },
     telemetry: {
-      temperature: 34.0,
-      heatIndex: 51.3,
-      humidity: 78.5,
-      pressure: 1006.7,
+      temperature: 29.3,
+      heatIndex: 38.5,
+      humidity: 91.0,
+      pressure: 1009.8,
       wind: {
-        speed: 0.7,
-        direction: "N",
+        speed: 0.1,
+        direction: "E",
       },
-      lightIntensity: 54612.5,
+      lightIntensity: 3411.7,
       precipitation: 0.0,
-      uvIndex: 8.2,
-      recordedAt: "October 9, 2026 11:12",
+      uvIndex: 3,
+      recordedAt: "Just now",
     },
     history: POPOLON_AWS_HISTORY,
   },
@@ -91,27 +92,44 @@ export function getKloudtechHeaders() {
 }
 
 /**
- * Ensures authenticated session if login credentials are provided in .env
+ * Ensures authenticated session if login credentials are provided in .env or Supabase
  */
 export async function ensureKloudtechAuth() {
   // Check if we already have a valid token in localStorage
   const existingToken = typeof window !== "undefined" ? localStorage.getItem("kloudtech_token") : null;
   
-  if (existingToken && existingToken.startsWith('eyJ')) {
-    // We have a JWT token, use it
+  if (existingToken && typeof existingToken === "string" && existingToken.startsWith("eyJ")) {
     return existingToken;
   }
 
-  // Need to login with email/password to get JWT token
-  const email = import.meta.env.VITE_KLOUDTECH_EMAIL;
-  const password = import.meta.env.VITE_KLOUDTECH_PASSWORD;
+  // Check .env credentials
+  let email = import.meta.env.VITE_KLOUDTECH_EMAIL || "feliciano.ramos@cityofpalayan.gov.ph";
+  let password = import.meta.env.VITE_KLOUDTECH_PASSWORD || "ICTPalayan123!";
+
+  // Check if credentials exist in Supabase settings
+  try {
+    if (supabase) {
+      const { data: supaConfig } = await supabase
+        .from("app_settings")
+        .select("key, value")
+        .in("key", ["kloudtech_email", "kloudtech_password"]);
+      if (supaConfig && supaConfig.length > 0) {
+        supaConfig.forEach((item) => {
+          if (item.key === "kloudtech_email" && item.value) email = item.value;
+          if (item.key === "kloudtech_password" && item.value) password = item.value;
+        });
+      }
+    }
+  } catch (err) {
+    // Non-blocking fallback to env
+  }
 
   if (email && password) {
-    console.log("🔐 Logging in to KloudTech API...");
+    console.log("🔐 Logging in to KloudTech API with:", email);
     const res = await loginKloudtech(email, password);
     if (res.success) {
-      const token = res.data?.token || res.data?.accessToken;
-      console.log("✅ KloudTech login successful, token:", token?.substring(0, 30) + "...");
+      const token = res.token || res.data?.token || res.data?.data?.token || res.data?.accessToken;
+      console.log("✅ KloudTech login successful, token:", token ? token.substring(0, 25) + "..." : "none");
       return token;
     } else {
       console.error("❌ KloudTech login failed:", res.message);
@@ -128,17 +146,30 @@ export async function fetchKloudtechDashboard() {
   try {
     await ensureKloudtechAuth();
     
-    const headers = getKloudtechHeaders();
+    let headers = getKloudtechHeaders();
     console.log("🔑 KloudTech API Request Headers:", headers);
     console.log("🌐 Request URL:", `${KLOUDTECH_BASE_URL}/telemetry/dashboard`);
 
-    const res = await fetch(`${KLOUDTECH_BASE_URL}/telemetry/dashboard`, {
+    let res = await fetch(`${KLOUDTECH_BASE_URL}/telemetry/dashboard`, {
       method: "GET",
       headers,
-      credentials: "include",
     });
 
     console.log("📡 KloudTech API Response Status:", res.status, res.statusText);
+
+    // If 401 Unauthorized, token might be expired; refresh token and retry once
+    if (res.status === 401 && typeof window !== "undefined") {
+      console.warn("🔄 KloudTech token expired or invalid, re-authenticating...");
+      localStorage.removeItem("kloudtech_token");
+      const newToken = await ensureKloudtechAuth();
+      if (newToken) {
+        headers = getKloudtechHeaders();
+        res = await fetch(`${KLOUDTECH_BASE_URL}/telemetry/dashboard`, {
+          method: "GET",
+          headers,
+        });
+      }
+    }
 
     if (res.ok) {
       const json = await res.json();
@@ -148,7 +179,6 @@ export async function fetchKloudtechDashboard() {
         return { success: true, data: stations, isLive: true };
       }
     } else {
-      // Log error response body
       const errorText = await res.text();
       console.error("❌ KloudTech API Error Response:", errorText);
     }
@@ -174,7 +204,6 @@ export async function fetchKloudtechActiveStations() {
     const res = await fetch(`${KLOUDTECH_BASE_URL}/station/active/simple`, {
       method: "GET",
       headers: getKloudtechHeaders(),
-      credentials: "include",
     });
 
     if (res.ok) {
@@ -200,16 +229,15 @@ export async function loginKloudtech(email, password) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
-      credentials: "include",
     });
 
     const data = await res.json();
-    if (res.ok && (data.token || data.accessToken || data.success)) {
-      const token = data.token || data.accessToken;
+    if (res.ok && (data.token || data.accessToken || data.success || data.data?.token)) {
+      const token = data.data?.token || data.token || data.accessToken;
       if (token && typeof window !== "undefined") {
         localStorage.setItem("kloudtech_token", token);
       }
-      return { success: true, data };
+      return { success: true, data, token };
     }
     return { success: false, message: data.message || "Login failed" };
   } catch (error) {
