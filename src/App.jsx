@@ -255,9 +255,6 @@ function App() {
     <div
       className={`app-shell ${isAdminView ? "admin-mode" : "citizen-mode"}`}
     >
-      {/* Accessibility: Skip to main content */}
-      { /* Skip removed - causing display issues */ }
-      
       {/* Scroll progress indicator */}
       {!isAdminView && <ScrollProgressBar />}
       
@@ -746,4 +743,6 @@ function App() {
 }
 
 export default App;
+
+
 
