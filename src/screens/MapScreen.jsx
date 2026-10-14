@@ -712,7 +712,7 @@ function MapScreen({
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {showMapUI && (
           <div className="map-header">
-            <div className="map-title">Report Map 🗺️</div>
+            <div className="map-title">Report Map</div>
             <div className="map-search">
               <Search size={14} color="var(--gray)" />
               <span>Search for a place...</span>
@@ -721,7 +721,22 @@ function MapScreen({
         )}
         <div className="map-container">
           <div className="map-loading">
-            <div style={{ fontSize: 48, marginBottom: 8 }}>🗺️</div>
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: "50%",
+                background: "rgba(239, 68, 68, 0.12)",
+                border: "1px solid rgba(239, 68, 68, 0.25)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 12,
+                color: "#ef4444",
+              }}
+            >
+              <MapPin size={26} strokeWidth={2.2} />
+            </div>
             <div className="map-loading-text">Mapbox Token Required</div>
             <div
               style={{

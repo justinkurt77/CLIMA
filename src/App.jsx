@@ -7,6 +7,7 @@ import ReportModal from "./components/ui/ReportModal";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import ElNinoMonitoringDashboard from "./components/dashboard/ElNinoMonitoringDashboard";
 import { logger } from "./lib/logger";
+import { Map as MapIcon } from "lucide-react";
 
 // Lazy-load the map — only initialises Mapbox GL when user first taps "Maps"
 const MapScreen = lazy(() => import("./screens/MapScreen"));
@@ -305,7 +306,9 @@ function App() {
               <Suspense
                 fallback={
                   <div className="map-loading" style={{ position: "relative", flex: 1 }}>
-                    <div style={{ fontSize: 34, marginBottom: 6 }}>🗺️</div>
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: 8, color: "var(--accent)" }}>
+                      <MapIcon size={34} style={{ opacity: 0.7 }} />
+                    </div>
                     <div className="map-loading-text">Loading map...</div>
                   </div>
                 }
@@ -492,7 +495,9 @@ function App() {
                 className="map-loading"
                 style={{ position: "relative", flex: 1 }}
               >
-                <div style={{ fontSize: 34, marginBottom: 6 }}>🗺️</div>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 8, color: "var(--accent)" }}>
+                  <MapIcon size={34} style={{ opacity: 0.7 }} />
+                </div>
                 <div className="map-loading-text">Loading map...</div>
               </div>
             }
