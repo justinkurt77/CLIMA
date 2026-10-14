@@ -142,8 +142,31 @@ export async function ensureKloudtechAuth() {
 
 /**
  * Fetch real-time dashboard telemetry for all active IoT stations
+ * Gracefully falls back to local data if API is unavailable
  */
 export async function fetchKloudtechDashboard() {
+  // Check if we should skip API calls (localStorage flag for CORS failures)
+  if (typeof window !== 'undefined') {
+    const corsFailure = localStorage.getItem('kloudtech_cors_failure');
+    if (corsFailure) {
+      const timestamp = parseInt(corsFailure);
+      const hoursSinceFailure = (Date.now() - timestamp) / (1000 * 60 * 60);
+      // Skip API calls for 24 hours after CORS failure
+      if (hoursSinceFailure < 24) {
+        logger.log("⚠️ KloudTech API skipped (CORS failure), using fallback data");
+        return {
+          success: true,
+          data: PALAYAN_KLOUDTECH_STATIONS,
+          isLocalFallback: true,
+          isLive: false,
+        };
+      } else {
+        // Clear flag after 24 hours, retry
+        localStorage.removeItem('kloudtech_cors_failure');
+      }
+    }
+  }
+
   try {
     await ensureKloudtechAuth();
     
@@ -151,11 +174,17 @@ export async function fetchKloudtechDashboard() {
     logger.log("🔑 KloudTech API Request Headers:", headers);
     logger.log("🌐 Request URL:", `${KLOUDTECH_BASE_URL}/telemetry/dashboard`);
 
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
     let res = await fetch(`${KLOUDTECH_BASE_URL}/telemetry/dashboard`, {
       method: "GET",
       headers,
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId);
     logger.log("📡 KloudTech API Response Status:", res.status, res.statusText);
 
     // If 401 Unauthorized, token might be expired; refresh token and retry once
@@ -168,6 +197,7 @@ export async function fetchKloudtechDashboard() {
         res = await fetch(`${KLOUDTECH_BASE_URL}/telemetry/dashboard`, {
           method: "GET",
           headers,
+          signal: controller.signal,
         });
       }
     }
@@ -177,6 +207,10 @@ export async function fetchKloudtechDashboard() {
       logger.log("✅ KloudTech API Response Data:", json);
       const stations = Array.isArray(json) ? json : json.data || [];
       if (stations.length > 0) {
+        // Clear CORS failure flag on success
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('kloudtech_cors_failure');
+        }
         return { success: true, data: stations, isLive: true };
       }
     } else {
@@ -184,11 +218,20 @@ export async function fetchKloudtechDashboard() {
       logger.error("❌ KloudTech API Error Response:", errorText);
     }
   } catch (error) {
-    logger.warn("KloudTech live fetch notice:", error.message);
+    // Check if CORS error
+    if (error.message && (error.message.includes('CORS') || error.message.includes('Failed to fetch') || error.name === 'AbortError')) {
+      logger.warn("⚠️ KloudTech API CORS/Network issue, using fallback data");
+      // Mark CORS failure to avoid repeated attempts
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kloudtech_cors_failure', Date.now().toString());
+      }
+    } else {
+      logger.warn("KloudTech live fetch notice:", error.message);
+    }
   }
 
   // Fallback to verified physical Popolon AWS station telemetry
-  logger.log("⚠️ Using fallback station data");
+  logger.log("📍 Using verified Popolon AWS station data (fallback)");
   return {
     success: true,
     data: PALAYAN_KLOUDTECH_STATIONS,
@@ -223,25 +266,41 @@ export async function fetchKloudtechActiveStations() {
 
 /**
  * Attempt to authenticate against KloudTech SEA API
+ * Fails gracefully if CORS blocks the request
  */
 export async function loginKloudtech(email, password) {
   try {
+    // Add timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const res = await fetch(`${KLOUDTECH_BASE_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId);
     const data = await res.json();
+    
     if (res.ok && (data.token || data.accessToken || data.success || data.data?.token)) {
       const token = data.data?.token || data.token || data.accessToken;
       if (token && typeof window !== "undefined") {
         localStorage.setItem("kloudtech_token", token);
+        // Clear CORS failure flag on successful login
+        localStorage.removeItem('kloudtech_cors_failure');
       }
       return { success: true, data, token };
     }
     return { success: false, message: data.message || "Login failed" };
   } catch (error) {
+    // Mark CORS failure to avoid repeated login attempts
+    if (error.message && (error.message.includes('CORS') || error.message.includes('Failed to fetch') || error.name === 'AbortError')) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kloudtech_cors_failure', Date.now().toString());
+      }
+    }
     return { success: false, message: error.message };
   }
 }
