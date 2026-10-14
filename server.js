@@ -59,6 +59,13 @@ app.use(cors({
 
 app.use(bodyParser.json());
 
+// Compression middleware for all responses
+app.use(compression());
+
+// Static asset caching (for production builds)
+app.use('/assets', express.static('dist/assets', { maxAge: '1y', immutable: true }));
+app.use(express.static('dist', { maxAge: '1h' }));
+
 // Cache control for API responses
 app.use((req, res, next) => {
   // Public endpoints can be cached
@@ -70,10 +77,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-
-// Compression middleware for API responses
-import compression from 'compression';
-app.use(compression());
 
 app.use('/api/', globalLimiter); // Apply global rate limiting to all API routes
 

@@ -311,15 +311,15 @@ export default function HomeScreen({
   const heroBgUrl = useMemo(() => {
     const icon = weatherInfo.icon;
     if (icon === "Sun" || icon === "CloudSun") {
-      return isDark ? "/sunny_dark.jpg" : "/sunny.jpg";
+      return isDark ? "/sunny_dark.webp" : "/sunny.webp";
     }
     if (icon === "CloudRain" || icon === "CloudLightning") {
-      return isDark ? "/rainy_dark.jpg" : "/rainy.jpg";
+      return isDark ? "/rainy_dark.webp" : "/rainy.webp";
     }
     if (icon === "Moon") {
-      return "/night.jpg";
+      return "/night.webp";
     }
-    return isDark ? "/stormy_dark.jpg" : "/stormy_clouds.jpg";
+    return isDark ? "/stormy_dark.webp" : "/stormy_clouds.webp";
   }, [weatherInfo.icon, isDark]);
 
   const getHeroBackground = () => `url('${heroBgUrl}')`;
@@ -327,15 +327,15 @@ export default function HomeScreen({
   // Preload weather background images for immediate smooth cross-fading in both themes
   useEffect(() => {
     [
-      "/sunny.jpg",
-      "/rainy.jpg",
-      "/night.jpg",
-      "/stormy_clouds.jpg",
-      "/sunny_dark.jpg",
-      "/rainy_dark.jpg",
-      "/stormy_dark.jpg",
-      "/wind_radar.jpg",
-      "/wind_radar_light.jpg",
+      "/sunny.webp",
+      "/rainy.webp",
+      "/night.webp",
+      "/stormy_clouds.webp",
+      "/sunny_dark.webp",
+      "/rainy_dark.webp",
+      "/stormy_dark.webp",
+      "/wind_radar.webp",
+      "/wind_radar_light.webp",
     ].forEach((src) => {
       const img = new Image();
       img.src = src;
@@ -1209,7 +1209,7 @@ export default function HomeScreen({
                     style={{
                       position: "absolute",
                       inset: 0,
-                      backgroundImage: isDark ? "url('/wind_radar.jpg')" : "url('/wind_radar_light.jpg')",
+                      backgroundImage: isDark ? "url('/wind_radar.webp')" : "url('/wind_radar_light.webp')",
                       backgroundPosition: "center",
                       backgroundSize: "cover",
                       backgroundRepeat: "no-repeat",

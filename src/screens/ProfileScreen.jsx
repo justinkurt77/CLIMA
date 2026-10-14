@@ -744,7 +744,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                   }}
                 >
                   <img
-                    src="/palayan_ict.png"
+                    src="/palayan_ict.webp"
                     alt="Palayan City ICT Division Logo"
                     style={{
                       height: 52,
@@ -888,6 +888,83 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                       {theme}
                     </span>
                   </button>
+                </div>
+              </div>
+
+              {/* Legal links section */}
+              <div style={{
+                padding: '20px 24px',
+                borderTop: `1px solid ${S.border}`,
+                background: S.card
+              }}>
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: S.textSub,
+                  textAlign: 'center',
+                  marginBottom: '12px',
+                  fontWeight: '600'
+                }}>
+                  Legal Information
+                </div>
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  gap: '8px 16px',
+                  fontSize: '0.8rem'
+                }}>
+                  <button
+                    onClick={() => setActiveScreen && setActiveScreen('legal')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: S.primary,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      padding: '4px 0',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Terms of Service
+                  </button>
+                  <span style={{ color: S.border }}>•</span>
+                  <button
+                    onClick={() => setActiveScreen && setActiveScreen('legal')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: S.primary,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      padding: '4px 0',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Privacy Policy
+                  </button>
+                  <span style={{ color: S.border }}>•</span>
+                  <button
+                    onClick={() => setActiveScreen && setActiveScreen('legal')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: S.primary,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      padding: '4px 0',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Legal Documents
+                  </button>
+                </div>
+                <div style={{
+                  fontSize: '0.7rem',
+                  color: S.textSub,
+                  textAlign: 'center',
+                  marginTop: '12px'
+                }}>
+                  © 2025 Palayan City ICT Office
                 </div>
               </div>
 

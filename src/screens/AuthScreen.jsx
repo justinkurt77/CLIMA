@@ -412,7 +412,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
             }}
           >
             <img
-              src="/logo.png"
+              src="/logo.webp"
               alt="CLIMA Logo"
               style={{
                 width: "100%",

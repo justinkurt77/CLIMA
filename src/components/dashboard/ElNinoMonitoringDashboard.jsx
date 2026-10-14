@@ -274,7 +274,7 @@ function ElNinoMonitoringDashboard() {
     sum + (parseFloat(d.estimated_loss_value) || 0), 0
   );
 
-  const heroBgUrl = isDark ? "/sunny_dark.jpg" : "/sunny.jpg";
+  const heroBgUrl = isDark ? "/sunny_dark.webp" : "/sunny.webp";
 
   return (
     <>
