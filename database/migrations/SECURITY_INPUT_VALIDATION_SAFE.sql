@@ -148,22 +148,67 @@ BEGIN
             CHECK (LENGTH(crop_type) >= 2);
         END IF;
 
-        -- Damage assessment length
+        -- Farmer name not empty
         IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint WHERE conname = 'check_agri_damage_length'
+            SELECT 1 FROM pg_constraint WHERE conname = 'check_agri_farmer_name_not_empty'
         ) THEN
             ALTER TABLE agriculture_damage_reports 
-            ADD CONSTRAINT check_agri_damage_length 
-            CHECK (LENGTH(damage_assessment) >= 10 AND LENGTH(damage_assessment) <= 2000);
+            ADD CONSTRAINT check_agri_farmer_name_not_empty 
+            CHECK (LENGTH(farmer_name) >= 2);
         END IF;
 
-        -- Affected area positive
+        -- Barangay not empty
         IF NOT EXISTS (
-            SELECT 1 FROM pg_constraint WHERE conname = 'check_agri_affected_area_positive'
+            SELECT 1 FROM pg_constraint WHERE conname = 'check_agri_barangay_not_empty'
         ) THEN
             ALTER TABLE agriculture_damage_reports 
-            ADD CONSTRAINT check_agri_affected_area_positive 
-            CHECK (affected_area_hectares > 0);
+            ADD CONSTRAINT check_agri_barangay_not_empty 
+            CHECK (LENGTH(barangay) >= 2);
+        END IF;
+
+        -- Area affected must be non-negative
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'check_agri_area_affected_positive'
+        ) THEN
+            ALTER TABLE agriculture_damage_reports 
+            ADD CONSTRAINT check_agri_area_affected_positive 
+            CHECK (area_affected_hectares >= 0);
+        END IF;
+
+        -- Damage percentage must be 0-100
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'check_agri_damage_percentage_range'
+        ) THEN
+            ALTER TABLE agriculture_damage_reports 
+            ADD CONSTRAINT check_agri_damage_percentage_range 
+            CHECK (damage_percentage >= 0 AND damage_percentage <= 100);
+        END IF;
+
+        -- Estimated loss value must be non-negative
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'check_agri_loss_value_positive'
+        ) THEN
+            ALTER TABLE agriculture_damage_reports 
+            ADD CONSTRAINT check_agri_loss_value_positive 
+            CHECK (estimated_loss_value >= 0);
+        END IF;
+
+        -- Status enum
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'check_agri_status_valid'
+        ) THEN
+            ALTER TABLE agriculture_damage_reports 
+            ADD CONSTRAINT check_agri_status_valid 
+            CHECK (status IN ('pending', 'assessed', 'assistance_provided'));
+        END IF;
+
+        -- Category enum
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'check_agri_category_valid'
+        ) THEN
+            ALTER TABLE agriculture_damage_reports 
+            ADD CONSTRAINT check_agri_category_valid 
+            CHECK (category IN ('farm', 'livestock'));
         END IF;
     END IF;
 END $$;
