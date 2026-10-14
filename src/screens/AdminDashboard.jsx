@@ -3062,7 +3062,7 @@ function DashboardReportModal({ report, S, onClose, onStatusChange }) {
                 { icon: <Calendar size={14} color={S.muted} />, label: "Date Filed", value: new Date(report.created_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) },
                 ...(contactNumber ? [{ icon: <Phone size={14} color={S.muted} />, label: "Contact Number", value: contactNumber }] : []),
                 ...(report.is_guest ? [{ icon: <AlertCircle size={14} color="#d97706" />, label: "Reporter Type", value: "Guest (Unregistered)" }] : []),
-                { icon: <MapPin size={14} color="#16a34a" />, label: "Location", value: report.location || "—", span: true },
+                { icon: <MapPin size={14} color="#16a34a" />, label: "Location", value: report.location || "N/A", span: true },
               ].map((item, i) => (
                 <div key={i} style={{ padding: "12px 14px", background: S.cardSubtle, borderRadius: 12, border: `1px solid ${S.border}`, gridColumn: item.span ? "1 / -1" : "auto" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>{item.icon}<span style={{ fontSize: 10, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>{item.label}</span></div>

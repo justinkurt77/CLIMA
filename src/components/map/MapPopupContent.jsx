@@ -140,7 +140,7 @@ export function MapPopupContent({
             style={{ flexShrink: 0, marginTop: 2 }}
           />
           <span style={{ fontSize: 10, color: "#555", lineHeight: 1.4 }}>
-            {popupGeo ? popupGeo.road || "—" : "Loading…"}
+            {popupGeo ? popupGeo.road || "N/A" : "Loading…"}
           </span>
         </div>
         {/* Barangay row */}
@@ -151,7 +151,7 @@ export function MapPopupContent({
             style={{ flexShrink: 0, marginTop: 2 }}
           />
           <span style={{ fontSize: 10, color: "#555", lineHeight: 1.4 }}>
-            {popupGeo ? popupGeo.barangay || "—" : "Loading…"}
+            {popupGeo ? popupGeo.barangay || "N/A" : "Loading…"}
           </span>
         </div>
         {selectedReport.createdAt && (

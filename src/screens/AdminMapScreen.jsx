@@ -1205,7 +1205,7 @@ function PopupCard({ report, geo, onClose, onViewDetail }) {
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <MapPin size={10} color="#16a34a" />
           <span style={{ fontSize: 10, color: Z[500] }}>
-            {geo ? geo.barangay || geo.road || "—" : "Loading…"}
+            {geo ? geo.barangay || geo.road || "N/A" : "Loading…"}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -1510,7 +1510,7 @@ function ReportDetailModal({ report, onClose, onStatusChange }) {
                 {
                   icon: <MapPin size={14} color="#16a34a" />,
                   label: "Location",
-                  value: report.location || "—",
+                  value: report.location || "N/A",
                   span: true,
                 },
               ].map((item, i) => (

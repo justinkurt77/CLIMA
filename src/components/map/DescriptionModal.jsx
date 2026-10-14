@@ -81,7 +81,7 @@ export function DescriptionModal({
             Location
           </div>
           <div style={{ fontSize: 12, color: "#555", lineHeight: 1.5 }}>
-            {selectedReport.location || "—"}
+            {selectedReport.location || "N/A"}
           </div>
         </div>
 
