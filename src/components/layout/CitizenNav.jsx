@@ -6,6 +6,8 @@ import {
   User,
   RotateCw,
   Activity,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
@@ -34,7 +36,7 @@ export default function CitizenNav({
   onOpenModal,
   onRefresh,
 }) {
-  const { isDark } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -129,8 +131,17 @@ export default function CitizenNav({
           })}
         </div>
 
-        {/* Bottom: Refresh & Last updated label */}
+        {/* Bottom: Dark Mode Toggle, Refresh & Last updated label */}
         <div className="desktop-sidebar-bottom">
+          <button
+            className="desktop-refresh-btn"
+            onClick={toggleTheme}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            aria-label="Toggle dark mode"
+            style={{ marginBottom: 8 }}
+          >
+            {isDark ? <Sun size={17} strokeWidth={2.2} /> : <Moon size={17} strokeWidth={2.2} />}
+          </button>
           <button
             className={`desktop-refresh-btn ${isRefreshing ? "spin" : ""}`}
             onClick={handleRefresh}

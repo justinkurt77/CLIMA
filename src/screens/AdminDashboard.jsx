@@ -2767,7 +2767,7 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
           </div>
         </form>
 
-        {/* Categories grouped by group_name — collapsible */}
+        {/* Categories grouped by group_name - collapsible */}
         <CategoryGroupList categories={categories} S={S} btnDanger={btnDanger} delCat={delCat} />
       </div>
     </div>

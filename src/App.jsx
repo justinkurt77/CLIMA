@@ -9,12 +9,20 @@ import ElNinoMonitoringDashboard from "./components/dashboard/ElNinoMonitoringDa
 import { logger } from "./lib/logger";
 import { Map as MapIcon } from "lucide-react";
 
-// Lazy-load the map — only initialises Mapbox GL when user first taps "Maps"
+// New production components
+import SkipToContent from "./components/accessibility/SkipToContent";
+import ScrollProgressBar from "./components/ui/ScrollProgressBar";
+import ScrollToTopButton from "./components/ui/ScrollToTopButton";
+import FloatingContactButton from "./components/ui/FloatingContactButton";
+import CookieConsent from "./components/ui/CookieConsent";
+
+// Lazy-load the map - only initialises Mapbox GL when user first taps "Maps"
 const MapScreen = lazy(() => import("./screens/MapScreen"));
 const AdminDashboard = lazy(() => import("./screens/AdminDashboard"));
 const AdminMapScreen = lazy(() => import("./screens/AdminMapScreen"));
 const AdminLogin = lazy(() => import("./screens/AdminLogin"));
 const LegalScreen = lazy(() => import("./screens/LegalScreen"));
+const NotFoundScreen = lazy(() => import("./screens/NotFoundScreen"));
 
 import { supabase } from "./lib/supabase";
 
@@ -249,6 +257,12 @@ function App() {
     <div
       className={`app-shell ${isAdminView ? "admin-mode" : "citizen-mode"}`}
     >
+      {/* Accessibility: Skip to main content */}
+      <SkipToContent />
+      
+      {/* Scroll progress indicator */}
+      {!isAdminView && <ScrollProgressBar />}
+      
       {/* ADMIN LAYER (Handled as a screen now) */}
 
       {/* SCREENS LAYER */}
@@ -264,6 +278,7 @@ function App() {
             style={{
               zIndex: 10,
             }}
+            id="main-content"
           >
             <HomeScreen
               onOpenModal={openModal}
@@ -400,6 +415,34 @@ function App() {
           </motion.div>
         )}
 
+        {/* 404 Not Found - Catch-all for invalid routes */}
+        {!['home', 'emergency', 'maps', 'profile', 'elnino', 'legal', 'admin', 'admin-map'].includes(activeScreen) && (
+          <motion.div
+            key="notfound"
+            variants={screenVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={screenVariants.transition}
+            className="screen active citizen-screen-view"
+            style={{
+              zIndex: 10,
+              background: "transparent",
+            }}
+          >
+            <Suspense fallback={<div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              minHeight: '100vh',
+              fontSize: '1.2rem',
+              color: '#666'
+            }}>Loading...</div>}>
+              <NotFoundScreen onNavigate={setActiveScreen} />
+            </Suspense>
+          </motion.div>
+        )}
+
         {activeScreen === "admin" && (
           <motion.div
             key="admin"
@@ -505,7 +548,7 @@ function App() {
         )}
       </AnimatePresence>
 
-      {/* MAP — Background layer: only visible on admin views */}
+      {/* MAP - Background layer: only visible on admin views */}
       <div
         style={{
           position: "absolute",
@@ -691,6 +734,15 @@ function App() {
 
       {/* TOAST */}
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
+      
+      {/* Scroll to top button - citizen view only */}
+      {!isAdminView && <ScrollToTopButton />}
+      
+      {/* Floating emergency contact button - citizen view only */}
+      {!isAdminView && <FloatingContactButton />}
+      
+      {/* Cookie consent banner */}
+      {!isAdminView && <CookieConsent />}
     </div>
   );
 }

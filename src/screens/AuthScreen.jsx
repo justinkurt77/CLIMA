@@ -251,7 +251,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
 
       if (error) throw error;
 
-      // User is now signed in — move to reset password screen
+      // User is now signed in - move to reset password screen
       setMode("reset_password");
       setMsg(null);
     } catch (err) {

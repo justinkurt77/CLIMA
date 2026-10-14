@@ -1362,7 +1362,7 @@ function MapScreen({
           </div>
         )}
 
-        {/* FAB — only on Maps tab */}
+        {/* FAB - only on Maps tab */}
         {showMapUI && (
           <>
             <button

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Check } from "lucide-react";
 
 /**
- * CustomSelect — A fully styled dropdown replacement for <select>.
+ * CustomSelect - A fully styled dropdown replacement for <select>.
  *
  * Props:
  *   value       – current value
