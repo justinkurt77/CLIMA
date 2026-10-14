@@ -10,12 +10,10 @@ import { logger } from "./lib/logger";
 import { Map as MapIcon } from "lucide-react";
 
 // New production components
-import SkipToContent from "./components/accessibility/SkipToContent";
 import ScrollProgressBar from "./components/ui/ScrollProgressBar";
 import ScrollToTopButton from "./components/ui/ScrollToTopButton";
 import FloatingContactButton from "./components/ui/FloatingContactButton";
-import CookieConsent from "./components/ui/CookieConsent";
-
+import CookieModal from "./components/ui/CookieModal";`n
 // Lazy-load the map - only initialises Mapbox GL when user first taps "Maps"
 const MapScreen = lazy(() => import("./screens/MapScreen"));
 const AdminDashboard = lazy(() => import("./screens/AdminDashboard"));
@@ -258,7 +256,7 @@ function App() {
       className={`app-shell ${isAdminView ? "admin-mode" : "citizen-mode"}`}
     >
       {/* Accessibility: Skip to main content */}
-      <SkipToContent />
+      { /* Skip removed - causing display issues */ }
       
       {/* Scroll progress indicator */}
       {!isAdminView && <ScrollProgressBar />}
@@ -742,9 +740,10 @@ function App() {
       {!isAdminView && <FloatingContactButton />}
       
       {/* Cookie consent banner */}
-      {!isAdminView && <CookieConsent />}
+      {!isAdminView && <CookieModal />}
     </div>
   );
 }
 
 export default App;
+
