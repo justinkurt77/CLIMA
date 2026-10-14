@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import Map, { Marker, Popup, Source, Layer } from "react-map-gl/mapbox";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import DOMPurify from "dompurify";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
@@ -1300,10 +1301,11 @@ function ReportDetailModal({ report, onClose, onStatusChange }) {
     /^\[GUEST:.*?-\s*Contact:\s*(.+?)\]/,
   );
   const contactNumber = guestMatch ? guestMatch[1].trim() : null;
-  // Clean description (strip guest info prefix)
-  const desc =
+  // Clean description (strip guest info prefix) and sanitize to prevent XSS
+  const desc = DOMPurify.sanitize(
     report.description?.replace(/^\[GUEST:.*?\]\n\n/s, "") ||
-    "No description provided.";
+    "No description provided."
+  );
 
   return (
     <AnimatePresence>

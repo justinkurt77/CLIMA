@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
+import DOMPurify from "dompurify";
 import {
   X,
   Landmark,
@@ -222,7 +223,8 @@ export function MapPopupContent({
                       overflowWrap: "anywhere",
                     }}
                   >
-                    {selectedReport.description}
+                    {/* Sanitize user-generated description to prevent XSS */}
+                    {DOMPurify.sanitize(selectedReport.description)}
                   </div>
                 </motion.div>
               )}

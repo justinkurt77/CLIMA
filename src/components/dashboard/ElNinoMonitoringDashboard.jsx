@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import DOMPurify from "dompurify";
 import {
   Megaphone,
   HeartPulse,
@@ -851,7 +852,8 @@ function AdvisoryCard({ advisory, isDark }) {
             maxHeight: expanded ? 'none' : 60,
             overflow: 'hidden',
           }}>
-            {advisory.content}
+            {/* Sanitize advisory content to prevent XSS */}
+            {DOMPurify.sanitize(advisory.content)}
           </p>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import DOMPurify from "dompurify";
 import {
   MapPin,
   ChevronRight,
@@ -1496,9 +1497,12 @@ export default function HomeScreen({
                                     lineHeight: 1.5,
                                   }}
                                 >
-                                  {advisory.content.length > 120
-                                    ? advisory.content.substring(0, 120) + "..."
-                                    : advisory.content}
+                                  {/* Sanitize advisory content to prevent XSS */}
+                                  {DOMPurify.sanitize(
+                                    advisory.content.length > 120
+                                      ? advisory.content.substring(0, 120) + "..."
+                                      : advisory.content
+                                  )}
                                 </p>
                               </div>
                             </div>
