@@ -296,6 +296,7 @@ import { PhotoLightbox } from "../components/map/PhotoLightbox";
 import { DescriptionModal } from "../components/map/DescriptionModal";
 import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/logger";
 import { PALAYAN_KLOUDTECH_STATIONS, fetchKloudtechDashboard } from "../services/kloudtechService";
 import { KloudtrackStationMarker } from "../components/map/KloudtrackStationMarker";
 import { KloudtrackStationPopup } from "../components/map/KloudtrackStationPopup";
@@ -426,10 +427,10 @@ function MapScreen({
       if (result.success && result.data) {
         setWeatherStations(result.data);
         setLastWeatherUpdate(new Date());
-        console.log(`✅ Weather data ${result.isLive ? 'LIVE' : 'FALLBACK'} updated:`, result.data);
+        logger.log(`✅ Weather data ${result.isLive ? 'LIVE' : 'FALLBACK'} updated:`, result.data);
       }
     } catch (error) {
-      console.error('Failed to refresh weather data:', error);
+      logger.error('Failed to refresh weather data:', error);
     } finally {
       setIsLoadingWeather(false);
     }
@@ -461,7 +462,7 @@ function MapScreen({
         if (error) throw error;
         setHospitals(data || []);
       } catch (err) {
-        console.error("Failed to load hospitals:", err);
+        logger.error("Failed to load hospitals:", err);
       }
     };
 
@@ -484,7 +485,7 @@ function MapScreen({
           attractions: attractionsRes.features || [],
         });
       } catch (err) {
-        console.error("Failed to load tourism data:", err);
+        logger.error("Failed to load tourism data:", err);
       }
     };
 
@@ -595,7 +596,7 @@ function MapScreen({
           setBarangayMarkers(markers);
         }
       })
-      .catch((err) => console.error("Failed to load barangay map:", err));
+      .catch((err) => logger.error("Failed to load barangay map:", err));
   }, []);
 
   // Overview View: Auto-fit bounds for Admin or Map Screen

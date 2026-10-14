@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Apply database input validation constraints by running SECURITY_INPUT_VALIDATION_FINAL.sql. This adds check constraints for reports (description length, lat/lng ranges, status enum), advisories (title/content length), agriculture_damage_reports (positive values, percentage range), and validation triggers for hospital beds, BFP personnel, CDRRMO operations.",
+  "status": "pending",
+  "steps": [
+    "Backup current database: Document current row counts from reports, advisories, agriculture_damage_reports tables in findings for rollback reference",
+    "Run SECURITY_INPUT_VALIDATION_FINAL.sql in Supabase SQL Editor. This script: (1) Fixes existing invalid data (sets defaults for missing/invalid values), (2) Adds constraints after data is clean, (3) Creates validation triggers",
+    "Verify constraints created: Run verification query at bottom of SECURITY_INPUT_VALIDATION_FINAL.sql (SELECT conname, conrelid::regclass FROM pg_constraint...) and confirm constraints exist",
+    "Verify triggers created: Run trigger verification query (SELECT trigger_name, event_object_table FROM information_schema.triggers...) and confirm 4 triggers exist",
+    "Test constraint enforcement: Try inserting a report with lat=999 via Supabase dashboard, should fail with check constraint error",
+    "Test trigger enforcement: Try inserting hospital_daily_records with available_beds > total_bed_capacity via dashboard, should fail with trigger error"
+  ],
+  "acceptance_criteria": [
+    "SECURITY_INPUT_VALIDATION_FINAL.sql runs without errors",
+    "All check constraints created: reports (4 constraints), advisories (2-4 constraints depending on column existence), agriculture_damage_reports (4 constraints)",
+    "All triggers created: validate_guest_report, validate_hospital_beds, validate_bfp_personnel, validate_cdrrmo_personnel",
+    "Invalid data prevented: manual tests confirm constraints block bad inserts",
+    "Existing data preserved: row counts unchanged"
+  ],
+  "verification": [
+    "Execute: Run SECURITY_INPUT_VALIDATION_FINAL.sql in Supabase SQL Editor, confirm 'Query executed successfully'",
+    "Execute: Run both verification queries at bottom of SQL file, copy constraint and trigger lists to findings",
+    "Manual: In Supabase dashboard, try INSERT INTO reports (description, lat, lng) VALUES ('short', 999, 999) - should fail",
+    "Manual: Check table row counts before/after: SELECT 'reports' as tbl, count(*) FROM reports UNION ALL SELECT 'advisories', count(*) FROM advisories (verify no data loss)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

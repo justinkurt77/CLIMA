@@ -1,0 +1,32 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Apply comprehensive security hardening: update vulnerable dependencies (21 vulnerabilities: 2 low, 4 moderate, 15 high), expand DOMPurify usage to all user-generated content displays, add CORS tightening, implement CSP headers, add security headers middleware to server.js, verify RLS policies in database.",
+  "status": "pending",
+  "steps": [
+    "Run npm audit fix --force to update vulnerable dependencies, then verify app still builds and runs",
+    "Import DOMPurify in src/screens/AdminDashboard.jsx, src/screens/AdminMapScreen.jsx, src/screens/HomeScreen.jsx and sanitize all report.title, report.description, report.location displays (follow pattern from src/components/ui/ReportCard.jsx lines 64-65)",
+    "Add helmet middleware to server.js: npm install helmet, import helmet, app.use(helmet({ contentSecurityPolicy: false })) - CSP will be custom configured",
+    "Add custom CSP header middleware to server.js after helmet: app.use((req,res,next) => { res.setHeader('Content-Security-Policy', \"default-src 'self'; script-src 'self' 'unsafe-inline' https://api.mapbox.com; style-src 'self' 'unsafe-inline' https://api.mapbox.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://api.mapbox.com wss://*.supabase.co https://api.kloudtechsea.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'\"); next(); })",
+    "Tighten CORS in server.js: change origin to only process.env.VITE_APP_URL with no fallback, add exposedHeaders: ['RateLimit-Limit', 'RateLimit-Remaining']",
+    "Add X-Frame-Options, X-Content-Type-Options, Strict-Transport-Security headers via helmet configuration",
+    "Verify .gitignore already excludes .env (confirmed: line 18 has .env)",
+    "Check Supabase RLS policies are enabled: run SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public' in Supabase SQL Editor and verify all tables have rowsecurity = true"
+  ],
+  "acceptance_criteria": [
+    "npm audit shows 0 high vulnerabilities (moderate/low acceptable if no fix available)",
+    "All user-generated text content sanitized with DOMPurify before display",
+    "Server responds with helmet security headers including CSP, X-Frame-Options, X-Content-Type-Options, HSTS",
+    "CORS only allows configured origin, no wildcard",
+    "RLS enabled on all public tables in Supabase"
+  ],
+  "verification": [
+    "Execute: npm audit (check vulnerabilities reduced from 21 to <5)",
+    "Execute: npm run build && npm run dev, test app loads and functions work",
+    "Execute: curl -I http://localhost:3001/api/health (check response headers include X-Frame-Options, Content-Security-Policy, X-Content-Type-Options, Strict-Transport-Security)",
+    "Manual: Submit a test report with <script>alert('xss')</script> in title, verify it displays as plain text not executed",
+    "Manual: Run RLS verification query in Supabase SQL Editor"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

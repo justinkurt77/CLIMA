@@ -31,6 +31,7 @@ import {
   Phone,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/logger";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { PinMarker } from "../components/map/MapPins";
 import { reverseGeocode } from "../components/ui/report/reportConstants";
@@ -151,7 +152,7 @@ export default function AdminMapScreen({
           })),
         );
       } catch (err) {
-        console.error(err);
+        logger.error(err);
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -1288,7 +1289,7 @@ function ReportDetailModal({ report, onClose, onStatusChange }) {
       setStatus(newStatus);
       if (onStatusChange) onStatusChange(newStatus);
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     } finally {
       setUpdating(false);
     }

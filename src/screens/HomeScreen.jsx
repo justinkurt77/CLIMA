@@ -25,6 +25,7 @@ import {
 import { LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/logger";
 import {
   fetchKloudtechDashboard,
   fetchKloudtechActiveStations,
@@ -260,7 +261,7 @@ export default function HomeScreen({
           });
         }
       } catch (e) {
-        console.warn("KloudTech telemetry fetch error:", e);
+        logger.warn("KloudTech telemetry fetch error:", e);
       }
 
       // 2. Fetch real-time weather for all remaining barangays
@@ -290,7 +291,7 @@ export default function HomeScreen({
                   };
                 }
               } catch (e) {
-                console.error("Failed to fetch for", bgy.name);
+                logger.error("Failed to fetch for", bgy.name);
               }
             })
           );
@@ -422,7 +423,8 @@ export default function HomeScreen({
     const maxPt = pts.reduce((prev, cur) => (cur.y < prev.y ? cur : prev), pts[0]);
     return { d, areaD, markerPt: maxPt };
   }, [hourlyForecast]);
-  useEffect(() => {
+
+  useEffect(() => {
     const lat = activeCoords?.lat || userLocation?.lat || 15.5490;
     const lng = activeCoords?.lng || userLocation?.lng || 121.0875;
 
@@ -561,7 +563,7 @@ export default function HomeScreen({
           }
         })
         .catch((err) => {
-          console.warn("Forecast fetch error:", err);
+          logger.warn("Forecast fetch error:", err);
         });
     };
 
@@ -608,7 +610,7 @@ export default function HomeScreen({
           }
         }
       } catch (err) {
-        console.warn("KloudTech telemetry error:", err);
+        logger.warn("KloudTech telemetry error:", err);
       }
 
       fetchOpenMeteo(false);
@@ -632,7 +634,7 @@ export default function HomeScreen({
           setAdvisories(data);
         }
       } catch (err) {
-        console.error("Failed to fetch advisories:", err);
+        logger.error("Failed to fetch advisories:", err);
       }
     };
 

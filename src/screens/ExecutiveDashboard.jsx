@@ -24,6 +24,7 @@ import {
 } from "recharts";
 import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/logger";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
@@ -85,7 +86,7 @@ export default function ExecutiveDashboard() {
         fire: generateMockFireData(),
       });
     } catch (err) {
-      console.error("Failed to fetch analytics:", err);
+      logger.error("Failed to fetch analytics:", err);
     } finally {
       setLoading(false);
     }

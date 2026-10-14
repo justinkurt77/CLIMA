@@ -4,6 +4,7 @@
  * Handles IoT weather stations, rain gauges, and telemetry streams.
  */
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/logger";
 
 export const KLOUDTECH_BASE_URL =
   import.meta.env.VITE_KLOUDTECH_API_BASE || "https://api.kloudtechsea.com/api/v1";
@@ -125,14 +126,14 @@ export async function ensureKloudtechAuth() {
   }
 
   if (email && password) {
-    console.log("🔐 Logging in to KloudTech API with:", email);
+    logger.log("🔐 Logging in to KloudTech API with:", email);
     const res = await loginKloudtech(email, password);
     if (res.success) {
       const token = res.token || res.data?.token || res.data?.data?.token || res.data?.accessToken;
-      console.log("✅ KloudTech login successful, token:", token ? token.substring(0, 25) + "..." : "none");
+      logger.log("✅ KloudTech login successful, token:", token ? token.substring(0, 25) + "..." : "none");
       return token;
     } else {
-      console.error("❌ KloudTech login failed:", res.message);
+      logger.error("❌ KloudTech login failed:", res.message);
     }
   }
 
@@ -147,19 +148,19 @@ export async function fetchKloudtechDashboard() {
     await ensureKloudtechAuth();
     
     let headers = getKloudtechHeaders();
-    console.log("🔑 KloudTech API Request Headers:", headers);
-    console.log("🌐 Request URL:", `${KLOUDTECH_BASE_URL}/telemetry/dashboard`);
+    logger.log("🔑 KloudTech API Request Headers:", headers);
+    logger.log("🌐 Request URL:", `${KLOUDTECH_BASE_URL}/telemetry/dashboard`);
 
     let res = await fetch(`${KLOUDTECH_BASE_URL}/telemetry/dashboard`, {
       method: "GET",
       headers,
     });
 
-    console.log("📡 KloudTech API Response Status:", res.status, res.statusText);
+    logger.log("📡 KloudTech API Response Status:", res.status, res.statusText);
 
     // If 401 Unauthorized, token might be expired; refresh token and retry once
     if (res.status === 401 && typeof window !== "undefined") {
-      console.warn("🔄 KloudTech token expired or invalid, re-authenticating...");
+      logger.warn("🔄 KloudTech token expired or invalid, re-authenticating...");
       localStorage.removeItem("kloudtech_token");
       const newToken = await ensureKloudtechAuth();
       if (newToken) {
@@ -173,21 +174,21 @@ export async function fetchKloudtechDashboard() {
 
     if (res.ok) {
       const json = await res.json();
-      console.log("✅ KloudTech API Response Data:", json);
+      logger.log("✅ KloudTech API Response Data:", json);
       const stations = Array.isArray(json) ? json : json.data || [];
       if (stations.length > 0) {
         return { success: true, data: stations, isLive: true };
       }
     } else {
       const errorText = await res.text();
-      console.error("❌ KloudTech API Error Response:", errorText);
+      logger.error("❌ KloudTech API Error Response:", errorText);
     }
   } catch (error) {
-    console.warn("KloudTech live fetch notice:", error.message);
+    logger.warn("KloudTech live fetch notice:", error.message);
   }
 
   // Fallback to verified physical Popolon AWS station telemetry
-  console.log("⚠️ Using fallback station data");
+  logger.log("⚠️ Using fallback station data");
   return {
     success: true,
     data: PALAYAN_KLOUDTECH_STATIONS,
@@ -214,7 +215,7 @@ export async function fetchKloudtechActiveStations() {
       };
     }
   } catch (error) {
-    console.warn("KloudTech active stations fetch error:", error);
+    logger.warn("KloudTech active stations fetch error:", error);
   }
 
   return { success: true, data: PALAYAN_KLOUDTECH_STATIONS.map((s) => s.station) };

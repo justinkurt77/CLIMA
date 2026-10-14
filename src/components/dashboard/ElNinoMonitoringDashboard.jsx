@@ -26,6 +26,7 @@ import {
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
 import { supabase } from "../../lib/supabase";
+import { logger } from "../../lib/logger";
 
 const COLORS = {
   heatStroke: "#ef4444",
@@ -115,7 +116,7 @@ function ElNinoMonitoringDashboard() {
       
       setData(prev => ({ ...prev, advisories: advisories || [] }));
     } catch (error) {
-      console.error('Error fetching advisories:', error);
+      logger.error('Error fetching advisories:', error);
     }
   };
 
@@ -132,7 +133,7 @@ function ElNinoMonitoringDashboard() {
       
       setData(prev => ({ ...prev, hospitalRecords: records || [] }));
     } catch (error) {
-      console.error('Error fetching hospital data:', error);
+      logger.error('Error fetching hospital data:', error);
     }
   };
 
@@ -150,7 +151,7 @@ function ElNinoMonitoringDashboard() {
       
       setData(prev => ({ ...prev, bfpOperations: operations || [] }));
     } catch (error) {
-      console.error('Error fetching BFP operations:', error);
+      logger.error('Error fetching BFP operations:', error);
     }
   };
 
@@ -167,7 +168,7 @@ function ElNinoMonitoringDashboard() {
       
       setData(prev => ({ ...prev, cdrrmoOperations: operations || [] }));
     } catch (error) {
-      console.error('Error fetching CDRRMO operations:', error);
+      logger.error('Error fetching CDRRMO operations:', error);
     }
   };
 
@@ -181,7 +182,7 @@ function ElNinoMonitoringDashboard() {
       
       setData(prev => ({ ...prev, agricultureDamages: damages || [] }));
     } catch (error) {
-      console.error('Error fetching agriculture damages:', error);
+      logger.error('Error fetching agriculture damages:', error);
     }
   };
 
@@ -208,7 +209,7 @@ function ElNinoMonitoringDashboard() {
         powerInterruptions: power || [],
       }));
     } catch (error) {
-      console.error('Error fetching interruptions:', error);
+      logger.error('Error fetching interruptions:', error);
     }
   };
 
