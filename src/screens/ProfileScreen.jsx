@@ -894,12 +894,12 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
               {/* Legal links section */}
               <div style={{
                 padding: '20px 24px',
-                borderTop: `1px solid ${S.border}`,
-                background: S.card
+                borderTop: '1px solid var(--border-subtle)',
+                background: 'var(--bg-card)'
               }}>
                 <div style={{
                   fontSize: '0.75rem',
-                  color: S.textSub,
+                  color: 'var(--text-secondary)',
                   textAlign: 'center',
                   marginBottom: '12px',
                   fontWeight: '600'
@@ -918,7 +918,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: S.primary,
+                      color: 'var(--btn-primary-bg)',
                       cursor: 'pointer',
                       textDecoration: 'underline',
                       padding: '4px 0',
@@ -927,13 +927,13 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                   >
                     Terms of Service
                   </button>
-                  <span style={{ color: S.border }}>•</span>
+                  <span style={{ color: 'var(--border-subtle)' }}>•</span>
                   <button
                     onClick={() => setActiveScreen && setActiveScreen('legal')}
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: S.primary,
+                      color: 'var(--btn-primary-bg)',
                       cursor: 'pointer',
                       textDecoration: 'underline',
                       padding: '4px 0',
@@ -942,13 +942,13 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                   >
                     Privacy Policy
                   </button>
-                  <span style={{ color: S.border }}>•</span>
+                  <span style={{ color: 'var(--border-subtle)' }}>•</span>
                   <button
                     onClick={() => setActiveScreen && setActiveScreen('legal')}
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: S.primary,
+                      color: 'var(--btn-primary-bg)',
                       cursor: 'pointer',
                       textDecoration: 'underline',
                       padding: '4px 0',
@@ -960,7 +960,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                 </div>
                 <div style={{
                   fontSize: '0.7rem',
-                  color: S.textSub,
+                  color: 'var(--text-secondary)',
                   textAlign: 'center',
                   marginTop: '12px'
                 }}>

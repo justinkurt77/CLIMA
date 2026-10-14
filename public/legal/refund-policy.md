@@ -3,147 +3,89 @@
 **Effective Date:** January 15, 2025  
 **Last Updated:** January 15, 2025
 
-## 1. No-Cost Government Service
+## 1. Free Government Service
 
-CLIMA (Climate Information Monitoring and Awareness) is a **free public service** provided by Palayan City Government to all residents and stakeholders. There are **no fees, subscriptions, or charges** of any kind for using CLIMA.
+CLIMA (Climate and Disaster Information Monitoring Application) is a free public service provided by the City Government of Palayan, Nueva Ecija, Philippines. The platform is operated as part of the city government's disaster risk reduction and emergency response mandate under the National Disaster Risk Reduction and Management Act (RA 10121).
 
-## 2. What This Means
+## 2. No Fees or Charges
 
-- **No Registration Fees:** Creating an account is free
-- **No Usage Fees:** All features are available at no cost
-- **No Premium Tiers:** All users have equal access to all functionality
-- **No Hidden Charges:** No surprise bills or payment requests
-- **No In-App Purchases:** No features locked behind paywalls
+There are no fees, charges, or costs associated with:
 
-## 3. Why This Policy Exists
+- Creating a user account on CLIMA
+- Submitting disaster or incident reports
+- Accessing weather advisories and emergency information
+- Receiving report status updates and notifications
+- Using any feature or function of the CLIMA platform
 
-This Refund Policy exists to clarify that CLIMA is a government public service funded by:
+The platform does not offer paid subscriptions, premium tiers, in-app purchases, or any other monetized services.
 
-- **Local Government Budget:** Palayan City appropriations for ICT and disaster management
-- **National Government Support:** DRRM funds from national agencies
-- **Development Partners:** Grants and technical assistance (when applicable)
+## 3. No Refunds Applicable
 
-As a tax-funded service, CLIMA operates on a **no-charge, no-refund basis**.
+Because CLIMA is a free service with no charges, subscription fees, or payments of any kind, there are no circumstances under which refunds would be applicable. Users do not make any financial transactions through the platform.
 
-## 4. Scenarios NOT Involving Refunds
+## 4. Government Operational Funding
 
-### 4.1 Voluntary Donations
-If you wish to support disaster response efforts in Palayan City:
-- Donations should be directed to the City Treasurer's Office or CDRRMO
-- Donations are separate from CLIMA and are not "payments" for service
-- Donation receipts issued by proper accounting office, not CLIMA platform
+CLIMA is funded through the annual budget of the City Government of Palayan as part of the city's information technology and disaster management appropriations. Operational costs are covered by local government tax revenue and do not involve direct charges to users.
 
-### 4.2 Paid Third-Party Services (If You Use Them Separately)
-CLIMA integrates with third-party services (Mapbox, weather APIs), but Palayan City covers these costs. If you separately subscribe to these services for personal use:
-- Those subscriptions are between you and the third party
-- Palayan City cannot process refunds for third-party subscriptions
-- Contact the third-party provider directly for billing issues
+## 5. No Third-Party Charges
 
-### 4.3 Data or Mobile Charges
-Using CLIMA on mobile devices may consume data:
-- Your mobile carrier may charge data fees (this is between you and your carrier)
-- Connect to Wi-Fi to avoid data charges where possible
-- Palayan City does not reimburse data or telecommunication fees
+The City Government of Palayan does not authorize any third party to charge fees for access to CLIMA or related services. If you are asked to pay for CLIMA access, registration, or any feature, this is not legitimate and should be reported immediately to:
 
-## 5. Service Availability and Compensation
+**City Government of Palayan**  
+Information and Communications Technology Division  
+Email: ict@palayancity.gov.ph  
+Phone: (044) 940-1234
 
-### 5.1 No Guarantee of Uninterrupted Service
-CLIMA is provided "as is" with no uptime guarantees. Service may be unavailable due to:
-- Scheduled maintenance
-- Technical failures
-- Natural disasters (ironic, but true!)
-- Insufficient budget or resources
+## 6. Data Usage and Mobile Charges
 
-### 5.2 No Compensation for Downtime
-Because CLIMA is free, Palayan City does not provide:
-- Service credits
-- Monetary compensation for unavailability
-- Refunds (there's nothing to refund!)
+While CLIMA itself is free, please note that:
 
-### 5.3 Alternative Channels During Downtime
-If CLIMA is unavailable during emergencies, use these backup channels:
-- **Emergency Hotline:** 911
-- **CDRRMO Direct Line:** (044) XXX-XXXX
-- **City Hall Main Line:** (044) XXX-XXXX
-- **Facebook Page:** City Government of Palayan (official)
-- **SMS Alerts:** Pre-registered numbers receive emergency texts
+- Standard mobile data or internet connection charges from your telecommunications provider may apply when using CLIMA on mobile devices
+- Photo uploads consume data bandwidth which may be subject to your mobile data plan limits
+- Map loading and location services may use cellular data
 
-## 6. Fraudulent Payment Requests
+These charges are between you and your internet or mobile service provider. The City Government of Palayan is not responsible for data charges incurred while using CLIMA.
 
-### 6.1 Beware of Scams
-Palayan City will **NEVER**:
-- Ask for payment to access CLIMA
-- Request credit card or bank account information through CLIMA
-- Demand fees for report submission or prioritization
-- Offer "premium" or "VIP" access for a price
+## 7. Related Government Services
 
-### 6.2 Report Suspected Fraud
-If anyone claims to represent CLIMA and requests payment:
-1. **Do not pay**
-2. **Report to Palayan City ICT Office immediately**
-   - Email: ict@palayan.gov.ph
-   - Phone: (044) XXX-XXXX
-3. **Report to authorities** if wire transfer or personal information was provided
-   - PNP Anti-Cybercrime Group: (02) 8723-0401
-   - NBI Cybercrime Division: (02) 8525-4093
+CLIMA is a reporting and coordination platform. Actual emergency response services provided by government agencies (fire suppression, medical transport, disaster relief) are separate government functions that are also provided free of charge to residents under the government's disaster response mandate.
 
-## 7. Government Transparency and Accountability
+If you are charged a fee for any emergency response service provided by Palayan City government agencies in connection with a CLIMA report, please contact the City Mayor's Office for clarification.
 
-### 7.1 Budget Transparency
-CLIMA's operational costs are part of Palayan City's annual budget, which is:
-- Approved by the Sangguniang Panlungsod (City Council)
-- Subject to Commission on Audit (COA) review
-- Disclosed in accordance with Full Disclosure Policy (FDP)
+## 8. Billing Inquiries
 
-Residents can request budget documents through:
-- Freedom of Information (FOI) requests to City Hall
-- Public budget hearings (announced annually)
+For questions about government service fees or charges unrelated to CLIMA but associated with Palayan City Government services:
 
-### 7.2 No Financial Conflict of Interest
-CLIMA personnel do not:
-- Receive commissions or bonuses based on user activity
-- Have financial incentives to promote third-party services
-- Personally benefit from CLIMA operations beyond regular government salaries
+**City Treasurer's Office**  
+City Hall Building  
+Brgy. Singalat, Palayan City, Nueva Ecija  
+Phone: (044) 940-XXXX (City Hall Main Line)
 
-## 8. Terms and Conditions Govern
+## 9. Future Changes
 
-This Refund Policy is part of CLIMA's overall [Terms of Service](/legal/terms-of-service). In case of conflict, the Terms of Service prevail.
+The City Government of Palayan commits to maintaining CLIMA as a free public service. Should any future policy changes affect this commitment, users will be notified with at least 90 days advance notice through the platform and official city government communication channels.
 
-## 9. Changes to This Policy
+## 10. User Contributions
 
-Given that CLIMA is a no-charge service, this Refund Policy is unlikely to change. However, if Palayan City decides to introduce optional paid features in the future (e.g., premium data analytics for businesses), this policy will be updated with:
+CLIMA does not solicit or accept donations, contributions, or voluntary payments from users. The platform is fully funded through the city government budget.
 
-- 60 days' advance notice
-- Clear explanation of what remains free vs. what is paid
-- Separate refund terms for any paid features
+## 11. Fraudulent Charge Disclaimer
 
-Such changes would require City Council approval and public consultation.
+The City Government of Palayan is not responsible for fraudulent charges made by unauthorized third parties claiming association with CLIMA. If you believe you have been the victim of fraud involving CLIMA or government services, please report it to:
 
-## 10. Contact Information
+- **Palayan City Police Station:** (044) 940-XXXX
+- **National Bureau of Investigation (NBI):** cybercrime.nbi.gov.ph
+- **PNP Anti-Cybercrime Group:** pnp.gov.ph/acg
 
-For questions about CLIMA's no-cost model or to report fraudulent payment requests:
+## 12. Contact Information
 
-**Palayan City ICT Office**  
-City Hall, Palayan City, Nueva Ecija 3132  
-Email: ict@palayan.gov.ph  
-Phone: (044) XXX-XXXX  
-Office Hours: Monday-Friday, 8:00 AM - 5:00 PM
+For clarification regarding this Refund Policy or to report suspected fraudulent charges:
 
-**For Fraud Reporting:**  
-PNP Palayan City Station: (044) XXX-XXXX  
-PNP Anti-Cybercrime Group Hotline: (02) 8723-0401  
+**Information and Communications Technology Division**  
+City Government of Palayan  
+2nd Floor, City Hall Building  
+Brgy. Singalat, Palayan City, Nueva Ecija  
+Email: ict@palayancity.gov.ph  
+Phone: (044) 940-1234
 
-## 11. Acknowledgment
-
-By using CLIMA, you acknowledge that:
-- You understand CLIMA is a free public service
-- No payment is required or expected for any CLIMA features
-- You will report any fraudulent payment requests
-- You will not demand refunds or compensation for service unavailability
-
----
-
-**CLIMA is proudly offered free of charge to all residents of Palayan City as part of our commitment to public safety, transparency, and disaster resilience.**
-
-*Walang bayad. Walang refund. Dahil libre ang serbisyong ito para sa lahat.*  
-*(No charge. No refund. Because this service is free for everyone.)*
+By using CLIMA, you acknowledge that this is a free government service and that no refunds are applicable because no charges are assessed.

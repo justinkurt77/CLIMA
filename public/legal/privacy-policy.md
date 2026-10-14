@@ -5,328 +5,210 @@
 
 ## 1. Introduction
 
-This Privacy Policy explains how Palayan City Government, through the Information and Communications Technology (ICT) Office, collects, uses, shares, and protects your personal information when you use CLIMA (Climate Information Monitoring and Awareness).
+The City Government of Palayan is committed to protecting your privacy and personal data. This Privacy Policy explains how we collect, use, store, and protect your information when you use the CLIMA (Climate and Disaster Information Monitoring Application) platform. This policy applies to all users of the CLIMA web application and related services.
 
-CLIMA complies with the **Data Privacy Act of 2012 (Republic Act No. 10173)** and its Implementing Rules and Regulations (IRR), as well as all circulars and issuances of the National Privacy Commission (NPC).
+CLIMA is designed to facilitate disaster response coordination and climate monitoring for residents of Palayan City, Nueva Ecija, Philippines. Your personal data is processed in accordance with Republic Act 10173 (Data Privacy Act of 2012) and implementing rules and regulations.
 
 ## 2. Data Controller
 
-**Personal Information Controller:**  
-Palayan City Information and Communications Technology Office  
-City Hall, Palayan City, Nueva Ecija 3132, Philippines  
-Email: ict@palayan.gov.ph  
+The City Government of Palayan, through its Information and Communications Technology Division, acts as the data controller for personal information collected through CLIMA. We are responsible for ensuring that your personal data is processed lawfully, fairly, and transparently.
 
-**Data Protection Officer:**  
-[Name and contact information to be designated in accordance with R.A. 10173]
+**Contact:**  
+Data Protection Officer  
+City Government of Palayan  
+2nd Floor, City Hall Building  
+Brgy. Singalat, Palayan City, Nueva Ecija  
+Email: ict@palayancity.gov.ph  
+Phone: (044) 940-1234
 
-## 3. Legal Basis for Processing
+## 3. Personal Data We Collect
 
-We process your personal information under the following legal bases:
+When you register for and use CLIMA, we collect the following categories of personal data:
 
-1. **Consent:** You provide explicit consent when creating an account or submitting reports
-2. **Legal Obligation:** Compliance with disaster response laws (R.A. 10121 - Disaster Risk Reduction and Management Act of 2010)
-3. **Vital Interests:** Processing necessary to protect life and safety during emergencies
-4. **Performance of Public Function:** Exercise of official authority for public safety and disaster management
-5. **Legitimate Interests:** Aggregated data analysis for improving disaster response capabilities
+### Account Information
+- Full name (first name and last name)
+- Email address
+- Phone number (optional)
+- Password (stored in encrypted form)
+- Profile photo/avatar (optional)
+- Account creation date and last login
 
-## 4. Information We Collect
+### Disaster Report Data
+- Report descriptions and incident details
+- Geographic location coordinates (latitude and longitude)
+- Date and time of reported incidents
+- Category of disaster or incident
+- Photos and images uploaded with reports
+- Report status and update history
 
-### 4.1 Information You Provide Directly
-
-**For Citizen Users (Report Submission):**
-- Full name (optional for guest reports)
-- Contact number (required for follow-up)
-- Email address (optional)
-- GPS coordinates (automatic if location services enabled)
-- Photo evidence of incidents
-- Description of disaster/incident
-
-**For Admin Users (Government Personnel):**
-- Full name
-- Official email address
-- Assigned department/agency
-- Role/position
-- Password (encrypted)
-- Activity logs (login times, actions performed)
-
-### 4.2 Information Collected Automatically
-
-**Device and Usage Information:**
-- IP address (anonymized after 90 days)
+### Technical Data
+- IP address
+- Device type and operating system
 - Browser type and version
-- Operating system
-- Device type (mobile, tablet, desktop)
-- Screen resolution
-- Pages visited and time spent
-- Click patterns and feature usage
+- Session data and authentication tokens
+- Usage logs and access timestamps
 
-**Location Data:**
-- GPS coordinates (only if you enable location services)
-- Approximate location derived from IP address
-- Location history for submitted reports (retained for incident tracking)
+### Government Personnel Data
+For authorized government users (CDRRMO, BFP, Agriculture, Hospital staff):
+- Department affiliation
+- Job title and role
+- Assigned categories for incident management
+- Administrative action logs
 
-**Technical Logs:**
-- Error logs and diagnostic data
-- Performance metrics (page load times, API response times)
-- Security logs (failed login attempts, suspicious activity)
+## 4. Legal Basis for Processing
 
-### 4.3 Information from Third-Party Services
+We process your personal data based on the following legal grounds under Republic Act 10173:
 
-- **Mapbox:** Geocoding and reverse geocoding results
-- **KloudTech API:** Weather data (does not contain personal information)
-- **Supabase:** Authentication metadata (email verification status, last login)
+- **Consent:** You provide explicit consent when creating an account and submitting reports
+- **Legal Obligation:** Processing is necessary to comply with government disaster response mandates under the National Disaster Risk Reduction and Management Act (RA 10121)
+- **Public Interest:** Processing supports disaster risk reduction, emergency response coordination, and public safety functions of local government
+- **Legitimate Interests:** Processing enables the operation and improvement of disaster response services for the benefit of Palayan City residents
 
-## 5. How We Use Your Information
+## 5. How We Use Your Data
 
-### 5.1 Primary Uses
+Your personal data is used exclusively for the following purposes:
 
-- **Disaster Response:** Route incident reports to appropriate emergency responders
-- **Emergency Communication:** Send weather alerts and evacuation advisories
-- **Resource Allocation:** Track hospital capacity, emergency personnel deployment
-- **Situational Awareness:** Generate real-time dashboards for decision-makers
-- **Agricultural Support:** Coordinate assistance for farmers affected by calamities
+### Disaster Response and Coordination
+- Processing and routing disaster and incident reports to appropriate government agencies
+- Coordinating emergency response between CDRRMO, BFP, Agriculture Office, and Hospital
+- Tracking incident status and response progress
+- Generating damage assessments and disaster response reports
+- Maintaining historical records for disaster preparedness planning
 
-### 5.2 Administrative Uses
+### Account Management
+- Creating and maintaining user accounts
+- Authenticating users and securing access
+- Communicating report status updates and official advisories
+- Providing customer support
 
-- **User Authentication:** Verify identity and prevent unauthorized access
-- **Account Management:** Process password resets, account updates
-- **System Security:** Detect and prevent fraud, abuse, and cyberattacks
-- **Service Improvement:** Analyze usage patterns to enhance user experience
-- **Compliance:** Respond to legal requests and government audits
-
-### 5.3 Statistical and Research Uses
-
-- **Anonymized Analytics:** Aggregate trends in disaster types, frequency, and geographic distribution
-- **Policy Development:** Inform disaster preparedness plans and resource allocation
-- **Public Reports:** Generate transparency reports (all personal identifiers removed)
-
-We do NOT use your personal information for:
-- Commercial marketing or advertising
-- Selling or renting data to third parties
-- Political campaigning or profiling
-- Automated decision-making that significantly affects your rights
+### Platform Operation and Security
+- Monitoring system performance and uptime
+- Detecting and preventing fraudulent reports and security threats
+- Analyzing usage patterns to improve service delivery
+- Maintaining audit logs for accountability
 
 ## 6. Data Sharing and Disclosure
 
-### 6.1 Authorized Government Agencies
+Your personal data may be shared with authorized parties as described below:
 
-We share personal information with authorized agencies ONLY when necessary for disaster response:
+### Government Agencies
+Disaster reports and associated personal data are shared with:
+- City Disaster Risk Reduction and Management Office (CDRRMO)
+- Bureau of Fire Protection (BFP) Palayan City
+- City Agriculture Office
+- Palayan City District Hospital
+- Philippine National Police (for criminal incidents)
+- Provincial and National Disaster Management Authorities (during major disasters)
 
-- **CDRRMO Palayan:** Incident reports within their jurisdiction
-- **Bureau of Fire Protection:** Fire-related emergencies
-- **Philippine National Police:** Criminal incidents or security threats
-- **Department of Health:** Public health emergencies
-- **Department of Agriculture:** Crop damage assessments
-- **National Disaster Risk Reduction and Management Council (NDRRMC):** Major calamities
+Sharing is limited to information necessary for emergency response coordination and is governed by inter-agency data processing agreements.
 
-Data sharing is governed by Memoranda of Agreement (MOA) and Data Sharing Agreements (DSA) in accordance with NPC guidelines.
+### Data Processors
+We utilize the following third-party data processors:
 
-### 6.2 Service Providers (Data Processors)
+**Supabase (Backend Infrastructure)**  
+Supabase provides database, authentication, and file storage services. Your data is stored on Supabase cloud infrastructure with encryption in transit and at rest. Supabase acts as a data processor under our instruction and is bound by data protection agreements.
 
-We use third-party service providers who process data on our behalf:
+**Mapbox (Mapping Services)**  
+Mapbox provides mapping and geolocation services. Location coordinates from disaster reports are transmitted to Mapbox servers for map rendering. Mapbox processes this data solely to provide mapping functionality.
 
-- **Supabase (USA):** Database hosting and authentication (GDPR-compliant, ISO 27001 certified)
-- **Mapbox (USA):** Mapping and geolocation services (no personal data beyond coordinates)
-- **KloudTech (Southeast Asia):** Weather API (anonymous API calls)
-- **Hosting Provider:** Web server and CDN (anonymized logs only)
+We ensure that all data processors comply with appropriate data protection standards through contractual agreements.
 
-All service providers are contractually required to:
-- Process data only as instructed by Palayan City
-- Implement adequate security measures
-- Not use data for their own purposes
-- Comply with GDPR and Philippine data privacy standards
-
-### 6.3 Legal Disclosures
-
-We may disclose personal information when required by law:
-- Valid court orders or subpoenas
-- National security or law enforcement requests
-- Investigation of crimes or cybercrimes (R.A. 10175)
-- Protection of rights, property, or safety of Palayan City or the public
-
-We will notify affected users of legal requests unless prohibited by law.
-
-### 6.4 Public Disclosure
-
-The following information is made publicly available:
-- Aggregated disaster statistics (no personal identifiers)
-- Weather data and forecasts
-- Public advisories and emergency bulletins
-- Hospital bed capacity and resource availability
-
-**Personal information (names, contact details, exact addresses) is NEVER disclosed publicly without explicit consent.**
+### Legal Disclosures
+We may disclose personal data when required by law, court order, or lawful request from government authorities, or to protect public safety during emergencies.
 
 ## 7. Data Retention
 
-We retain personal information only as long as necessary:
+We retain personal data for the following periods:
 
-| Data Type | Retention Period | Legal Basis |
-|-----------|------------------|-------------|
-| Incident reports | 7 years | R.A. 10121 (DRRM Act) |
-| Admin user accounts | Duration of employment + 3 years | Government auditing requirements |
-| Activity logs | 2 years | Cybercrime Prevention Act (R.A. 10175) |
-| IP address (raw) | 90 days | Security monitoring |
-| IP address (anonymized) | 2 years | Usage analytics |
-| Photo evidence | 7 years | Evidence preservation |
-| Password reset OTPs | 10 minutes (expired after use) | Security best practice |
+- **Active User Accounts:** Retained while account is active and for 2 years after last login
+- **Disaster Reports:** Retained permanently as government disaster response records
+- **Technical Logs:** Retained for 12 months for security and audit purposes
+- **Deleted Accounts:** Personal profile data deleted within 30 days of account deletion request; disaster reports are anonymized but retained for government records
 
-After retention periods expire, data is permanently deleted or anonymized for archival purposes.
+## 8. Your Rights Under the Data Privacy Act
 
-## 8. Your Data Privacy Rights
+Under Republic Act 10173, you have the following rights:
 
-Under the Data Privacy Act of 2012, you have the following rights:
+### Right to Access
+You may request a copy of your personal data held by the City Government of Palayan through CLIMA.
 
-### 8.1 Right to Be Informed
-You have the right to know what personal information we collect, why, and how it is used (this Privacy Policy fulfills this right).
+### Right to Correction
+You may request correction of inaccurate or incomplete personal data. You can update most account information directly through your profile settings.
 
-### 8.2 Right to Access
-You can request a copy of your personal information we hold. Contact the ICT Office with:
-- Valid government-issued ID
-- Specific data categories requested
-- Response within 30 days (may be extended to 60 days for complex requests)
+### Right to Erasure
+You may request deletion of your personal data, subject to our legal obligations to retain government disaster response records. Profile information can be deleted, but disaster reports may be anonymized rather than deleted.
 
-### 8.3 Right to Rectification
-You can request correction of inaccurate or incomplete information:
-- Admin users: Update profile through CLIMA dashboard
-- Citizen users: Contact ICT Office or submit new report with corrections
+### Right to Data Portability
+You may request a copy of your personal data in a structured, commonly used format.
 
-### 8.4 Right to Erasure ("Right to Be Forgotten")
-You can request deletion of your data if:
-- Data is no longer necessary for disaster response
-- You withdraw consent (where consent was the legal basis)
-- Data was unlawfully processed
+### Right to Object
+You may object to processing of your personal data for specific purposes, subject to overriding legal obligations for disaster response.
 
-**Exceptions:** We cannot delete data if retention is required by law (e.g., disaster records, financial audits, ongoing investigations).
+### Right to Withdraw Consent
+You may withdraw consent for data processing at any time, which may result in inability to continue using certain CLIMA features.
 
-### 8.5 Right to Object
-You can object to processing based on legitimate interests or public function. We will stop processing unless we demonstrate compelling legal grounds.
+To exercise these rights, contact the Data Protection Officer at ict@palayancity.gov.ph.
 
-### 8.6 Right to Data Portability
-You can request your data in a structured, commonly used, machine-readable format (JSON, CSV) for transfer to another controller.
+## 9. Data Security
 
-### 8.7 Right to Damages
-If you suffer damages due to our violation of R.A. 10173, you may be entitled to compensation.
+We implement appropriate technical and organizational measures to protect your personal data, including:
 
-### 8.8 Right to File a Complaint
-You may file a complaint with:
+- **Encryption:** Data transmitted between your device and our servers is encrypted using HTTPS/TLS protocols
+- **Access Controls:** Row-level security policies restrict data access to authorized users only
+- **Authentication:** Secure password hashing and authentication tokens
+- **Server-Side Validation:** All user inputs are validated and sanitized to prevent injection attacks
+- **Rate Limiting:** Protection against brute force attacks and system abuse
+- **Security Monitoring:** Continuous monitoring for unauthorized access attempts
 
-**National Privacy Commission**  
-5th Floor, Delegation Building, PICC Complex  
-Pasay City, Metro Manila 1307  
-Website: https://www.privacy.gov.ph  
-Hotline: (02) 8234-2228  
-Email: info@privacy.gov.ph  
+Despite these measures, no system can guarantee absolute security. We encourage users to protect their account credentials and report suspicious activity.
 
-## 9. Security Measures
+## 10. Cookies and Tracking
 
-We implement technical, organizational, and physical safeguards:
+CLIMA uses essential cookies and local storage for:
 
-### 9.1 Technical Measures
-- **Encryption:** HTTPS/TLS for all data in transit, AES-256 for data at rest
-- **Authentication:** Secure password hashing (bcrypt), multi-factor authentication for admins
-- **Access Controls:** Role-based access (RBAC), row-level security (RLS) in database
-- **Security Monitoring:** Intrusion detection, automated vulnerability scanning
-- **Rate Limiting:** Protection against brute-force attacks and DDoS
-- **Input Validation:** Sanitization to prevent SQL injection and XSS attacks
+- Session management and user authentication
+- Remembering user preferences (theme settings)
+- Maintaining application state
 
-### 9.2 Organizational Measures
-- **Data Protection Officer:** Designated DPO oversees compliance
-- **Privacy by Design:** Data minimization and purpose limitation from the start
-- **Employee Training:** Annual data privacy training for all personnel with access
-- **Incident Response Plan:** Documented procedures for data breaches
+We do not use third-party advertising cookies or tracking scripts for marketing purposes.
 
-### 9.3 Physical Measures
-- **Secure Hosting:** Data centers with 24/7 security, fire suppression, redundant power
-- **Backup and Recovery:** Daily encrypted backups, disaster recovery testing
-- **Access Logs:** All physical and logical access logged and audited
+## 11. Children's Privacy
 
-### 9.4 Data Breach Notification
+CLIMA is intended for use by adults and authorized government personnel. We do not knowingly collect personal data from children under 13 years of age. If we become aware that we have collected data from a child without parental consent, we will delete it promptly.
 
-In the event of a personal data breach:
-1. **Internal Notification:** DPO notified within 24 hours
-2. **NPC Notification:** Within 72 hours of becoming aware (if risk to rights)
-3. **User Notification:** Without undue delay if high risk of harm
-4. **Mitigation:** Immediate steps to contain and remediate breach
+## 12. International Data Transfers
 
-Breach notifications will include:
-- Nature of the breach and data affected
-- Likely consequences
-- Measures taken to address the breach
-- Contact point for more information
-
-## 10. Children's Privacy
-
-CLIMA is not intended for children under 18 years old without parental guidance. We do not knowingly collect personal information from minors.
-
-If a parent or guardian becomes aware that their child has provided personal information without consent, please contact us immediately. We will delete such information promptly.
-
-## 11. Cookies and Tracking Technologies
-
-CLIMA uses cookies and similar technologies:
-
-### 11.1 Essential Cookies (Required)
-- **Authentication:** Keeps you logged in (session cookies)
-- **Security:** CSRF tokens, session management
-- **Preferences:** Language selection, theme (light/dark mode)
-
-### 11.2 Analytics Cookies (Optional)
-- **Usage Analytics:** Anonymized tracking of page views and feature usage
-- **Performance Monitoring:** Page load times, error rates
-
-You can disable analytics cookies through browser settings without affecting core functionality.
-
-### 11.3 Third-Party Cookies
-- **Mapbox:** Caching map tiles for faster loading
-- None of our third-party integrations use advertising or tracking cookies.
-
-## 12. Cross-Border Data Transfers
-
-Some of our service providers (Supabase, Mapbox) are located outside the Philippines. Data transfers are protected by:
-
-- **Standard Contractual Clauses:** GDPR-compliant data transfer agreements
-- **Adequacy Decisions:** Transfers only to countries with adequate data protection
-- **Your Consent:** You consent to these transfers when using CLIMA
-
-If you have concerns about international transfers, contact our DPO.
+Your personal data is stored on servers located outside the Philippines as part of Supabase cloud infrastructure. We ensure that appropriate safeguards are in place through contractual agreements and compliance with international data protection standards.
 
 ## 13. Changes to This Privacy Policy
 
-We may update this Privacy Policy to reflect:
-- Changes in laws or NPC guidelines
-- New features or services
-- Feedback from users or regulators
+We may update this Privacy Policy periodically to reflect changes in our data practices or legal requirements. We will notify users of material changes through email or in-app notifications. Continued use of CLIMA after changes constitutes acceptance of the updated policy.
 
-**Notification of Changes:**
-- Significant changes: Email notification + in-app banner
-- Minor changes: Updated "Last Modified" date at top of this page
+## 14. No Sale of Personal Data
 
-Your continued use after changes constitutes acceptance. If you disagree with changes, you may discontinue use and request data deletion.
+The City Government of Palayan does not sell, rent, or trade your personal data to third parties for commercial purposes. Your data is used solely for disaster response coordination and government operations as described in this policy.
 
-## 14. Contact Us
+## 15. Automated Decision-Making
 
-For privacy-related questions, requests, or complaints:
+CLIMA does not employ automated decision-making or profiling that produces legal effects or significantly affects users. All disaster report routing and response decisions involve human review by authorized government personnel.
 
-**Data Privacy Officer**  
-Palayan City ICT Office  
-City Hall, Palayan City, Nueva Ecija 3132  
-Email: dpo@palayan.gov.ph | ict@palayan.gov.ph  
-Phone: (044) XXX-XXXX  
+## 16. Contact and Complaints
 
-**Response Times:**
-- Privacy inquiries: 5 business days
-- Data access requests: 30 days (extendable to 60 days)
-- Data breach notifications: Within 72 hours
+For questions, concerns, or complaints regarding this Privacy Policy or our data practices, please contact:
 
-## 15. Consent and Acknowledgment
+**Data Protection Officer**  
+City Government of Palayan  
+2nd Floor, City Hall Building  
+Brgy. Singalat, Palayan City, Nueva Ecija  
+Email: ict@palayancity.gov.ph  
+Phone: (044) 940-1234
 
-By using CLIMA, you acknowledge that:
-- You have read and understood this Privacy Policy
-- You consent to the collection, use, and sharing of your personal information as described
-- You understand your rights under R.A. 10173
-- You can withdraw consent at any time (subject to legal retention requirements)
+If you are not satisfied with our response, you may file a complaint with the National Privacy Commission of the Philippines:
 
----
+**National Privacy Commission**  
+5th Floor, Philippine International Convention Center  
+Vicente Sotto St., Pasay City, Metro Manila  
+Website: privacy.gov.ph  
+Email: info@privacy.gov.ph
 
-**Palayan City Government is committed to protecting your privacy while serving the public good. Thank you for trusting us with your information to keep our community safe.**
-
-*This Privacy Policy complies with the Data Privacy Act of 2012 (R.A. 10173), its Implementing Rules and Regulations, and all applicable National Privacy Commission circulars and advisories.*
+By using CLIMA, you acknowledge that you have read, understood, and agree to this Privacy Policy.
