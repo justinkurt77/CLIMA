@@ -1,4 +1,4 @@
-﻿import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Info,
   Shield,
@@ -709,6 +709,20 @@ export default function AboutScreen() {
           </motion.div>
         </div>
       </div>
+
+      {/* Legal Modals */}
+      <LegalModal
+        isOpen={showPrivacyPolicy}
+        onClose={() => setShowPrivacyPolicy(false)}
+        title="Privacy Policy"
+        contentUrl="/legal/privacy-policy.md"
+      />
+      <LegalModal
+        isOpen={showTermsOfService}
+        onClose={() => setShowTermsOfService(false)}
+        title="Terms of Service"
+        contentUrl="/legal/terms-of-service.md"
+      />
     </div>
   );
 }
