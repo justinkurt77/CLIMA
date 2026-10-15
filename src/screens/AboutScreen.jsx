@@ -24,6 +24,7 @@ import './AboutScreen.css';
 
 export default function AboutScreen() {
   const { isDark } = useTheme();
+  const [showNPCBadge, setShowNPCBadge] = useState(false);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -486,32 +487,103 @@ export default function AboutScreen() {
               Protection Officer (DPO) and operates a compliant Data Processing System (DPS).
             </p>
             <div
+              onClick={() => setShowNPCBadge(true)}
               style={{
                 background: 'var(--bg-card-subtle)',
                 border: '1px solid var(--border-subtle)',
                 borderRadius: 12,
                 padding: 12,
                 marginBottom: 12,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 12,
-                flexWrap: 'wrap',
+                fontSize: 13,
+                fontWeight: 800,
+                color: 'var(--text-primary)',
+                textAlign: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)';
+                e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = isDark ? 'var(--bg-card-subtle)' : 'var(--bg-card-subtle)';
+                e.currentTarget.style.borderColor = isDark ? 'var(--border-subtle)' : 'var(--border-subtle)';
               }}
             >
-              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
-                🇵🇭 Datos ng Pilipino, Protektado Ko!
-              </span>
-              <img
-                src="/images/legal/npm-dpo-dps-badge.png"
-                alt="NPC DPO/DPS Compliance Badge"
-                style={{
-                  height: 40,
-                  width: 'auto',
-                  objectFit: 'contain',
-                }}
-              />
+              🇵🇭 Datos ng Pilipino, Protektado Ko! 👁️
             </div>
+
+            {/* NPC Badge Modal */}
+            <AnimatePresence>
+              {showNPCBadge && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setShowNPCBadge(false)}
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'rgba(0, 0, 0, 0.85)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 99999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 20,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.8, opacity: 0 }}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      maxWidth: '90vw',
+                      maxHeight: '90vh',
+                      position: 'relative',
+                    }}
+                  >
+                    <img
+                      src="/images/legal/npm-dpo-dps-badge.png"
+                      alt="NPC DPO/DPS Compliance Badge"
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        maxHeight: '90vh',
+                        objectFit: 'contain',
+                        borderRadius: 8,
+                        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+                      }}
+                    />
+                    <button
+                      onClick={() => setShowNPCBadge(false)}
+                      style={{
+                        position: 'absolute',
+                        top: -12,
+                        right: -12,
+                        width: 36,
+                        height: 36,
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: 20,
+                        fontWeight: 700,
+                        color: '#000000',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                      }}
+                    >
+                      ×
+                    </button>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <a
                 href="#legal"
