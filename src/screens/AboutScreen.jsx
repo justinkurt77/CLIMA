@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+﻿import { motion } from 'framer-motion';
 import {
   Info,
   Shield,
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import './AboutScreen.css';
 
 export default function AboutScreen() {
   const [copied, setCopied] = useState(false);
@@ -48,6 +49,7 @@ export default function AboutScreen() {
     <div
       style={{
         position: 'absolute',
+        zIndex: 9999,
         inset: 0,
         display: 'flex',
         flexDirection: 'column',
@@ -261,7 +263,7 @@ export default function AboutScreen() {
               <Feature>Citizen reporting system with photo uploads</Feature>
               <Feature>Multi-department coordination (CDRRMO, BFP, Agriculture, Water, Power)</Feature>
               <Feature>Emergency hotlines directory</Feature>
-              <Feature>El Niño impact monitoring dashboard</Feature>
+              <Feature>El NiÃ±o impact monitoring dashboard</Feature>
               <Feature>Heat index tracking and advisories</Feature>
               <Feature>Dark mode support</Feature>
             </FeatureList>
@@ -386,7 +388,7 @@ export default function AboutScreen() {
               >
                 Privacy Policy <ExternalLink size={12} />
               </a>
-              <span style={{ color: 'var(--text-secondary)' }}>•</span>
+              <span style={{ color: 'var(--text-secondary)' }}>â€¢</span>
               <a
                 href="/legal/terms-of-service"
                 style={{
