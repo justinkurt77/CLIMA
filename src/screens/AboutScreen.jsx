@@ -102,7 +102,7 @@ export default function AboutScreen() {
         {/* Header Section with Logos */}
         <div
           style={{
-            background: 'var(--bg-app)',
+            background: '#000000',
             padding: '40px 20px 32px',
             marginTop: 'env(safe-area-inset-top, 0px)',
             textAlign: 'center',
@@ -111,7 +111,7 @@ export default function AboutScreen() {
               : '0 4px 16px rgba(0, 0, 0, 0.2)',
             position: 'relative',
             zIndex: 1,
-            borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           }}
         >
           {/* Logos Row with single connected white background */}
@@ -165,7 +165,7 @@ export default function AboutScreen() {
             style={{
               fontSize: 28,
               fontWeight: 900,
-              color: isDark ? '#ffffff' : '#09090b',
+              color: '#ffffff',
               margin: '0 0 8px',
               fontFamily: "'Baloo 2', cursive",
               letterSpacing: '-0.5px',
@@ -177,7 +177,7 @@ export default function AboutScreen() {
             style={{
               fontSize: 14,
               fontWeight: 600,
-              color: isDark ? 'rgba(255, 255, 255, 0.9)' : '#18181b',
+              color: 'rgba(255, 255, 255, 0.9)',
               margin: 0,
               lineHeight: 1.5,
             }}
@@ -188,7 +188,7 @@ export default function AboutScreen() {
             style={{
               fontSize: 12,
               fontWeight: 600,
-              color: isDark ? 'rgba(255, 255, 255, 0.75)' : '#52525b',
+              color: 'rgba(255, 255, 255, 0.75)',
               margin: '8px 0 0',
             }}
           >
@@ -199,14 +199,14 @@ export default function AboutScreen() {
           <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', gap: 8 }}>
             <div
               style={{
-                background: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)',
+                background: 'rgba(255, 255, 255, 0.15)',
                 backdropFilter: 'blur(10px)',
-                border: isDark ? '1px solid rgba(255, 255, 255, 0.25)' : '1px solid rgba(0, 0, 0, 0.12)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
                 padding: '6px 12px',
                 borderRadius: 20,
                 fontSize: 12,
                 fontWeight: 700,
-                color: isDark ? '#ffffff' : '#09090b',
+                color: '#ffffff',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 6,
@@ -248,9 +248,9 @@ export default function AboutScreen() {
               onClick={handleShare}
               style={{
                 marginTop: 12,
-                background: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.08)',
+                background: 'rgba(255, 255, 255, 0.2)',
                 backdropFilter: 'blur(10px)',
-                border: isDark ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(0, 0, 0, 0.12)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
                 padding: '8px 16px',
                 borderRadius: 20,
                 fontSize: 13,
