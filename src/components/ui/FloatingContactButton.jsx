@@ -1,13 +1,15 @@
 ﻿import { Phone } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import EmergencyContactsModal from './EmergencyContactsModal';
 
 /**
  * FloatingContactButton - Fixed emergency contact button
- * Provides quick access to emergency services
+ * Opens emergency contacts modal with all Palayan City services
  */
 export default function FloatingContactButton() {
   const [isHovered, setIsHovered] = useState(false);
   const [showText, setShowText] = useState(window.innerWidth >= 640);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -18,7 +20,7 @@ export default function FloatingContactButton() {
   }, []);
 
   const handleContact = () => {
-    window.location.href = 'tel:911';
+    setIsModalOpen(true);
   };
 
   const baseStyle = {
@@ -43,15 +45,22 @@ export default function FloatingContactButton() {
   };
 
   return (
-    <button
-      onClick={handleContact}
-      aria-label="Emergency Contact - Call 911"
-      style={baseStyle}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <Phone style={{ width: '20px', height: '20px' }} />
-      {showText && <span>Emergency</span>}
-    </button>
+    <>
+      <button
+        onClick={handleContact}
+        aria-label="Emergency Contacts"
+        style={baseStyle}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <Phone style={{ width: '20px', height: '20px' }} />
+        {showText && <span>Emergency</span>}
+      </button>
+
+      <EmergencyContactsModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
+    </>
   );
 }

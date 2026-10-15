@@ -2,7 +2,7 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import CitizenNav from "./components/layout/CitizenNav";
 import HomeScreen from "./screens/HomeScreen";
 import ProfileScreen from "./screens/ProfileScreen";
-import EmergencyScreen from "./screens/EmergencyScreen";
+import AboutScreen from "./screens/AboutScreen";
 import ReportModal from "./components/ui/ReportModal";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import ElNinoMonitoringDashboard from "./components/dashboard/ElNinoMonitoringDashboard";
@@ -286,9 +286,9 @@ function App() {
           </motion.div>
         )}
 
-        {activeScreen === "emergency" && (
+        {activeScreen === "about" && (
           <motion.div
-            key="emergency"
+            key="about"
             variants={screenVariants}
             initial="initial"
             animate="animate"
@@ -297,7 +297,7 @@ function App() {
             className="screen active citizen-screen-view"
             style={{ zIndex: 10, background: "transparent" }}
           >
-            <EmergencyScreen />
+            <AboutScreen />
           </motion.div>
         )}
 

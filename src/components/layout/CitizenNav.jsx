@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Home,
   MapPin,
-  Phone,
+  Info,
   User,
   RotateCw,
   Activity,
@@ -17,7 +17,7 @@ const MOBILE_NAV_ITEMS = [
   { id: "home", label: "Home", icon: Home },
   { id: "maps", label: "Map", icon: MapPin },
   { id: "elnino", label: "El Niño", icon: Activity },
-  { id: "emergency", label: "Hotlines", icon: Phone },
+  { id: "about", label: "About", icon: Info },
   { id: "profile", label: "Profile", icon: User },
 ];
 
@@ -25,7 +25,7 @@ const DESKTOP_NAV_ITEMS = [
   { id: "home", label: "Home", icon: Home },
   { id: "maps", label: "Map", icon: MapPin },
   { id: "elnino", label: "El Niño", icon: Activity },
-  { id: "emergency", label: "Hotlines", icon: Phone },
+  { id: "about", label: "About", icon: Info },
   { id: "profile", label: "Profile", icon: User },
 ];
 
