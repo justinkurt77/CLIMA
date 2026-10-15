@@ -250,7 +250,7 @@ export default function AboutScreen() {
               disaster preparedness and response capabilities.
             </p>
             <p style={{ ...textStyle, marginTop: 12 }}>
-              <strong>Launch Date:</strong> January 25, 2025<br />
+              <strong>Launch Date:</strong> TBA<br />
               <strong>Service Area:</strong> 19 Barangays of Palayan City
             </p>
           </Section>
@@ -263,7 +263,7 @@ export default function AboutScreen() {
               <Feature>Citizen reporting system with photo uploads</Feature>
               <Feature>Multi-department coordination (CDRRMO, BFP, Agriculture, Water, Power)</Feature>
               <Feature>Emergency hotlines directory</Feature>
-              <Feature>El NiÃ±o impact monitoring dashboard</Feature>
+              <Feature>El Nino impact monitoring dashboard</Feature>
               <Feature>Heat index tracking and advisories</Feature>
               <Feature>Dark mode support</Feature>
             </FeatureList>
@@ -292,7 +292,7 @@ export default function AboutScreen() {
               <p style={textStyle}>
                 We extend our deepest gratitude to{' '}
                 <a
-                  href="https://kloudtechsea.com"
+                  href="https://homepage.kloudtechsea.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -348,7 +348,6 @@ export default function AboutScreen() {
 
           {/* Development Team */}
           <Section title="Development Team" icon={Users}>
-            <TechRow label="Lead Developer" value="Justin Kurt" />
             <TechRow label="ICT Division" value="Palayan City Government" />
             <div style={{ marginTop: 12 }}>
               <p style={{ ...textStyle, fontWeight: 700, marginBottom: 8 }}>Partner Agencies:</p>
@@ -373,9 +372,10 @@ export default function AboutScreen() {
             <p style={{ ...textStyle, marginTop: 12 }}>
               <strong>Datos ng Pilipino, Protektado Ko!</strong>
             </p>
-            <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <a
-                href="/legal/privacy-policy"
+                href="#legal"
+                onClick={(e) => { e.preventDefault(); window.location.hash = ''; setTimeout(() => window.location.pathname = '/legal', 10); }}
                 style={{
                   fontSize: 13,
                   fontWeight: 700,
@@ -384,13 +384,15 @@ export default function AboutScreen() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 4,
+                  cursor: 'pointer',
                 }}
               >
                 Privacy Policy <ExternalLink size={12} />
               </a>
-              <span style={{ color: 'var(--text-secondary)' }}>â€¢</span>
+              <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>•</span>
               <a
-                href="/legal/terms-of-service"
+                href="#legal"
+                onClick={(e) => { e.preventDefault(); window.location.hash = ''; setTimeout(() => window.location.pathname = '/legal', 10); }}
                 style={{
                   fontSize: 13,
                   fontWeight: 700,
@@ -399,6 +401,7 @@ export default function AboutScreen() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 4,
+                  cursor: 'pointer',
                 }}
               >
                 Terms of Service <ExternalLink size={12} />
