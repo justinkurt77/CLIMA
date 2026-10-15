@@ -56,7 +56,6 @@ export default function AboutScreen() {
     { icon: Info, label: 'Emergency Hotlines', desc: 'Quick access directory' },
     { icon: BarChart3, label: 'El Niño Dashboard', desc: 'Impact monitoring' },
     { icon: Thermometer, label: 'Heat Index', desc: 'Live advisories' },
-    { icon: Sparkles, label: 'Dark Mode', desc: 'Full theme support' },
   ];
 
   const techStack = [
@@ -104,7 +103,7 @@ export default function AboutScreen() {
         {/* Header Section with Logos */}
         <div
           style={{
-            background: isDark ? '#1a1d2e' : '#161922',
+            background: 'var(--bg-app)',
             padding: '40px 20px 32px',
             marginTop: 'env(safe-area-inset-top, 0px)',
             textAlign: 'center',
@@ -113,7 +112,7 @@ export default function AboutScreen() {
               : '0 4px 16px rgba(0, 0, 0, 0.2)',
             position: 'relative',
             zIndex: 1,
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.08)',
           }}
         >
           {/* Logos Row with single connected white background */}
@@ -167,7 +166,7 @@ export default function AboutScreen() {
             style={{
               fontSize: 28,
               fontWeight: 900,
-              color: '#ffffff',
+              color: isDark ? '#ffffff' : '#09090b',
               margin: '0 0 8px',
               fontFamily: "'Baloo 2', cursive",
               letterSpacing: '-0.5px',
@@ -179,7 +178,7 @@ export default function AboutScreen() {
             style={{
               fontSize: 14,
               fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.9)',
+              color: isDark ? 'rgba(255, 255, 255, 0.9)' : '#18181b',
               margin: 0,
               lineHeight: 1.5,
             }}
@@ -190,7 +189,7 @@ export default function AboutScreen() {
             style={{
               fontSize: 12,
               fontWeight: 600,
-              color: 'rgba(255, 255, 255, 0.75)',
+              color: isDark ? 'rgba(255, 255, 255, 0.75)' : '#52525b',
               margin: '8px 0 0',
             }}
           >
@@ -208,7 +207,7 @@ export default function AboutScreen() {
                 borderRadius: 20,
                 fontSize: 12,
                 fontWeight: 700,
-                color: '#ffffff',
+                color: isDark ? '#ffffff' : '#09090b',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 6,
