@@ -614,7 +614,7 @@ export default function AboutScreen() {
               </a>
               <a
                 href="#legal"
-                onClick={(e) => { e.preventDefault(); setShowPrivacyPolicy(true); }}
+                onClick={(e) => { e.preventDefault(); setShowTermsOfService(true); }}
                 style={{
                   flex: 1,
                   minWidth: 140,
