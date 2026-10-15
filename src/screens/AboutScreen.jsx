@@ -72,55 +72,105 @@ export default function AboutScreen() {
         {/* Header Section with Logos */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-            padding: '32px 20px',
+            background: isDark ? '#161922' : '#1a1d2e',
+            padding: '40px 20px 32px',
             marginTop: 'env(safe-area-inset-top, 0px)',
             textAlign: 'center',
-            boxShadow: '0 4px 16px rgba(37, 99, 235, 0.2)',
+            boxShadow: isDark 
+              ? '0 4px 16px rgba(0, 0, 0, 0.3)' 
+              : '0 4px 16px rgba(0, 0, 0, 0.2)',
             position: 'relative',
             zIndex: 1,
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           }}
         >
-          {/* Logos Row */}
+          {/* Logos Row with white circular backgrounds */}
           <div
             style={{
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
-              gap: 20,
-              marginBottom: 20,
+              gap: 16,
+              marginBottom: 24,
             }}
           >
-            <img
-              src="/images/legal/palayan-city-seal.png"
-              alt="Palayan City"
+            {/* Palayan City Seal */}
+            <div
               style={{
-                width: 70,
-                height: 70,
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2))',
+                width: 90,
+                height: 90,
+                borderRadius: '50%',
+                background: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 12,
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                border: '3px solid rgba(255, 255, 255, 0.1)',
               }}
-            />
-            <img
-              src="/logo.webp"
-              alt="CLIMA"
+            >
+              <img
+                src="/images/legal/palayan-city-seal.png"
+                alt="Palayan City"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                }}
+              />
+            </div>
+            
+            {/* CLIMA Logo */}
+            <div
               style={{
-                width: 70,
-                height: 70,
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2))',
+                width: 90,
+                height: 90,
+                borderRadius: '50%',
+                background: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 12,
+                boxShadow: '0 4px 16px rgba(249, 115, 22, 0.3)',
+                border: '3px solid rgba(249, 115, 22, 0.2)',
               }}
-            />
-            <img
-              src="/images/legal/ict-division-logo.png"
-              alt="ICT Division"
+            >
+              <img
+                src="/logo.webp"
+                alt="CLIMA"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                }}
+              />
+            </div>
+            
+            {/* ICT Division Logo */}
+            <div
               style={{
-                width: 70,
-                height: 70,
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2))',
+                width: 90,
+                height: 90,
+                borderRadius: '50%',
+                background: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 12,
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                border: '3px solid rgba(255, 255, 255, 0.1)',
               }}
-            />
+            >
+              <img
+                src="/images/legal/ict-division-logo.png"
+                alt="ICT Division"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                }}
+              />
+            </div>
           </div>
 
           <h1
