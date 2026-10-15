@@ -438,58 +438,6 @@ export default function AboutScreen() {
             </div>
           </motion.div>
 
-          {/* PalaSumbong Hero Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.25 }}
-            style={{
-              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-              borderRadius: 16,
-              padding: 24,
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 8px 24px rgba(245, 87, 108, 0.25)',
-              marginBottom: 20,
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                bottom: -50,
-                left: -50,
-                width: 200,
-                height: 200,
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '50%',
-                filter: 'blur(40px)',
-              }}
-            />
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <Heart size={24} color="#ffffff" strokeWidth={2.5} />
-                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#ffffff', margin: 0 }}>
-                  Built on PalaSumbong
-                </h2>
-              </div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255, 255, 255, 0.95)', lineHeight: 1.7, marginBottom: 12 }}>
-                CLIMA stands on the shoulders of{' '}
-                <strong style={{ fontWeight: 800 }}>PalaSumbong</strong>, a proven
-                citizen reporting and engagement platform that served as the foundation of this project.
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 12 }}>
-                <StatBadge value="60%" label="Time Saved" />
-                <StatBadge value="100%" label="Battle-tested" />
-              </div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)', lineHeight: 1.7, margin: 0 }}>
-                PalaSumbong's citizen-first design philosophy enabled us to focus our efforts on
-                climate-specific features and multi-agency coordination rather than rebuilding core
-                infrastructure from scratch.
-              </p>
-            </div>
-          </motion.div>
-
           {/* Development Team Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -552,7 +500,7 @@ export default function AboutScreen() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.35 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
             style={{
               background: 'var(--bg-card)',
               borderRadius: 16,
@@ -644,7 +592,7 @@ export default function AboutScreen() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.4 }}
+            transition={{ duration: 0.4, delay: 0.35 }}
             style={{
               background: 'var(--bg-card)',
               borderRadius: 16,
@@ -671,7 +619,7 @@ export default function AboutScreen() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.45 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
             style={{
               background: 'var(--bg-card)',
               borderRadius: 16,
@@ -826,28 +774,6 @@ function InfoPill({ label, value }) {
       <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
         {value}
       </span>
-    </div>
-  );
-}
-
-function StatBadge({ value, label }) {
-  return (
-    <div
-      style={{
-        background: 'rgba(255, 255, 255, 0.2)',
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255, 255, 255, 0.3)',
-        borderRadius: 12,
-        padding: '10px 12px',
-        textAlign: 'center',
-      }}
-    >
-      <div style={{ fontSize: 20, fontWeight: 900, color: '#ffffff', marginBottom: 2 }}>
-        {value}
-      </div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255, 255, 255, 0.9)' }}>
-        {label}
-      </div>
     </div>
   );
 }
