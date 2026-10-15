@@ -68,6 +68,8 @@ export default function AboutScreen() {
             marginTop: 'env(safe-area-inset-top, 0px)',
             textAlign: 'center',
             boxShadow: '0 4px 16px rgba(37, 99, 235, 0.2)',
+            position: 'relative',
+            zIndex: 1,
           }}
         >
           {/* Logos Row */}
@@ -220,7 +222,15 @@ export default function AboutScreen() {
         </div>
 
         {/* Content Sections */}
-        <div style={{ padding: '20px', paddingBottom: '110px' }}>
+        <div 
+          style={{ 
+            padding: '20px', 
+            paddingBottom: '110px',
+            background: 'var(--bg-app)',
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
           {/* System Overview */}
           <Section title="About CLIMA" icon={Info}>
             <p style={textStyle}>
