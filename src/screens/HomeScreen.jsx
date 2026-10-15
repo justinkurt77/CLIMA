@@ -235,7 +235,7 @@ export default function HomeScreen({
       // 1. First, attempt to query KloudTech SEA IoT telemetry (ONLY if live and authenticated)
       try {
         const ktRes = await fetchKloudtechDashboard();
-        if (ktRes.success && !ktRes.isLocalFallback && ktRes.isLive && Array.isArray(ktRes.data) && ktRes.data.length > 0) {
+        if (ktRes.success && Array.isArray(ktRes.data) && ktRes.data.length > 0) {
           ktRes.data.forEach((item) => {
             const stName = item.station?.stationName || item.station?.city || "";
             const tel = item.telemetry;
@@ -573,7 +573,7 @@ export default function HomeScreen({
       let isKloudtechLive = false;
       try {
         const ktRes = await fetchKloudtechDashboard();
-        if (ktRes.success && !ktRes.isLocalFallback && ktRes.isLive && Array.isArray(ktRes.data) && ktRes.data.length > 0) {
+        if (ktRes.success && Array.isArray(ktRes.data) && ktRes.data.length > 0) {
           const match = ktRes.data.find((item) => {
             const stName = (item.station?.stationName || item.station?.city || "").toLowerCase();
             const stAddress = (item.station?.address || "").toLowerCase();

@@ -1814,6 +1814,42 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
     cursor: pointer;
     position: relative;
   }
+
+  .floating-contact-btn {
+    bottom: calc(72px + 12px + 24px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 18px !important;
+  }
+}
+
+/* Floating Emergency Contact Button */
+.floating-contact-btn {
+  position: absolute;
+  bottom: 28px;
+  right: 28px;
+  z-index: 1001;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #dc2626;
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 8px 22px rgba(220, 38, 38, 0.45);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-contact-btn:hover {
+  background-color: #b91c1c;
+  box-shadow: 0 12px 28px rgba(220, 38, 38, 0.65);
+  transform: scale(1.08);
+}
+
+.floating-contact-btn:active {
+  transform: scale(0.96);
 }
 
 /* Desktop Sidebar Items */

@@ -230,6 +230,7 @@ export function KloudtrackMapControls({
   isMapFullView,
   stations = [],
   selectedStation = null,
+  onSelectStation = null,
 }) {
   const { isDark } = useTheme();
   const [legendCollapsed, setLegendCollapsed] = useState(false);
@@ -608,6 +609,79 @@ export function KloudtrackMapControls({
               transition={{ duration: 0.2 }}
               style={{ overflow: "hidden" }}
             >
+              {/* Station Switcher Pill Bar (Popolon AWS vs Sapang Buho AWS) */}
+              {Array.isArray(stations) && stations.length > 1 && (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 6,
+                    marginTop: 8,
+                    marginBottom: 8,
+                    background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+                    padding: 3,
+                    borderRadius: 10,
+                  }}
+                >
+                  {stations.map((st) => {
+                    const id = st.station?.id;
+                    const name = (st.station?.stationName || "Station")
+                      .replace(" - Palayan City", "")
+                      .replace(" Palayan City", "");
+                    const isSelected =
+                      (currentStation?.station?.id && currentStation?.station?.id === id) ||
+                      (currentStation?.station?.stationName === st.station?.stationName);
+                    return (
+                      <button
+                        key={id || name}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onSelectStation) onSelectStation(st);
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: "5px 8px",
+                          fontSize: 10,
+                          fontWeight: isSelected ? 800 : 600,
+                          borderRadius: 7,
+                          border: isSelected
+                            ? `1px solid ${currentConfig.color}`
+                            : "1px solid transparent",
+                          background: isSelected
+                            ? isDark
+                              ? "rgba(255,255,255,0.14)"
+                              : "#ffffff"
+                            : "transparent",
+                          color: isSelected
+                            ? isDark
+                              ? "#ffffff"
+                              : "#09090b"
+                            : isDark
+                            ? "#a1a1aa"
+                            : "#71717a",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 4,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: "50%",
+                            background: isSelected ? currentConfig.color : "#71717a",
+                          }}
+                        />
+                        {name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Color Ramp Bar */}
               <div
                 style={{

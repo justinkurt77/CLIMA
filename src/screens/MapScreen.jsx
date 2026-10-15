@@ -795,11 +795,11 @@ function MapScreen({
           ref={mapRef}
           mapboxAccessToken={MAPBOX_TOKEN}
           initialViewState={{
-            longitude: userLocation?.lng || 121.0827,
-            latitude: userLocation?.lat || 15.5398,
-            zoom: 17,
-            pitch: 52,
-            bearing: -15,
+            longitude: userLocation?.lng || 121.085,
+            latitude: userLocation?.lat || 15.545,
+            zoom: userLocation ? 16.5 : 13.8,
+            pitch: userLocation ? 45 : 25,
+            bearing: -10,
           }}
           style={{ width: "100%", height: "100%" }}
           mapStyle={`mapbox://styles/mapbox/${mapStyleId}`}
@@ -1433,6 +1433,17 @@ function MapScreen({
           isMapFullView={isMapFullView}
           stations={weatherStations}
           selectedStation={selectedKloudtrackStation}
+          onSelectStation={(st) => {
+            setSelectedKloudtrackStation(st);
+            if (st?.station?.location && Array.isArray(st.station.location) && mapRef.current) {
+              mapRef.current.flyTo({
+                center: [st.station.location[0], st.station.location[1]],
+                zoom: 16.5,
+                pitch: 45,
+                duration: 1200,
+              });
+            }
+          }}
         />
       )}
     </div>

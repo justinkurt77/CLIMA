@@ -812,7 +812,7 @@ export default function AdminOverviewCommand({
                   }}
                 />
                 <span>
-                  {conditions.isLive ? "LIVE · Popolon AWS" : "Open-Meteo Model"} · {ago(conditions.stamp, now)}
+                  {conditions.isLive ? `LIVE · ${conditions.source || "Palayan AWS"}` : "Open-Meteo Model"} · {ago(conditions.stamp, now)}
                 </span>
               </div>
             </motion.div>

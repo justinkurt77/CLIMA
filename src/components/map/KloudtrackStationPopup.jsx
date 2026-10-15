@@ -19,7 +19,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import { POPOLON_AWS_HISTORY } from "../../services/kloudtechService";
+import { POPOLON_AWS_HISTORY, SAPANG_BUHO_AWS_HISTORY } from "../../services/kloudtechService";
 
 export function KloudtrackStationPopup({
   station,
@@ -363,7 +363,15 @@ export function KloudtrackStationPopup({
           {/* Mini Sparkline Chart */}
           <div style={{ height: 60, width: "100%", marginTop: 6 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={POPOLON_AWS_HISTORY.slice(-12)}>
+              <AreaChart
+                data={(
+                  station?.history && station.history.length > 0
+                    ? station.history
+                    : station?.station?.stationName?.toLowerCase().includes("sapang")
+                    ? SAPANG_BUHO_AWS_HISTORY
+                    : POPOLON_AWS_HISTORY
+                ).slice(-12)}
+              >
                 <defs>
                   <linearGradient id="popupAreaGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={currentCfg.color} stopOpacity={0.4} />
