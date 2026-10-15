@@ -686,7 +686,7 @@ export default function AboutScreen() {
               <ContactRow label="ICT Division" value="Palayan City Government" />
               <ContactRow label="Address" value="2nd Floor, City Hall, Brgy. Singalat" />
               <ContactRow label="Email" value="ict@palayancity.gov.ph" />
-              <ContactRow label="Phone" value="(044) 940-1234" />
+              <ContactRow label="Phone" value="09288038973" />
             </div>
             <div
               style={{
