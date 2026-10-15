@@ -1,4 +1,4 @@
-﻿import { Helmet } from "react-helmet-async";
+import { Helmet } from "react-helmet-async";
 import { AlertTriangle, Home, MapPin } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 
@@ -64,7 +64,7 @@ export default function NotFoundScreen({ onNavigate }) {
               }}
             />
             <img 
-              src="/logo.jpg" 
+              src="/logo.png" 
               alt="CLIMA" 
               style={{
                 width: 60,
