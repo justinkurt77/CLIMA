@@ -412,9 +412,12 @@ function App() {
             style={{
               zIndex: 10,
               background: "transparent",
-              overflowY: "auto",
-              position: "fixed",
+              overflow: "hidden",
+              position: "absolute",
               inset: 0,
+              width: "100%",
+              height: "100%",
+              borderRadius: "inherit",
             }}
           >
             <ErrorBoundary>
@@ -459,8 +462,11 @@ function App() {
             transition={{ duration: 0.35 }}
             style={{
               zIndex: 10,
-              position: "fixed",
+              position: "absolute",
               inset: 0,
+              width: "100%",
+              height: "100%",
+              borderRadius: "inherit",
             }}
           >
             <ErrorBoundary>

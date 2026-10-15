@@ -7,7 +7,7 @@ import {
   Plus, Trash2, Building, CheckCircle, CheckCircle2, Clock, TrendingUp, Search, X, Edit2, Check, Download,
   MapPin, Calendar, Phone, AlertCircle, AlertTriangle, ChevronRight, ChevronDown, ChevronUp, Navigation,
   ShieldAlert, Activity, Megaphone, HeartPulse, Tent, Truck, Flame, Droplet, Zap, Sprout, Wifi,
-  Sun, Moon
+  Sun, Moon, Bell, Menu, Layers
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect from "../components/ui/CustomSelect";
@@ -25,39 +25,41 @@ import { usePaginatedAdvisories } from "../hooks/usePaginatedAdvisories";
 import { usePaginatedHospitalRecords } from "../hooks/usePaginatedHospitalRecords";
 import { usePaginatedCDRRMOOps } from "../hooks/usePaginatedCDRRMOOps";
 import { usePaginatedBFPOps } from "../hooks/usePaginatedBFPOps";
+import AdminOverviewCommand from "../components/dashboard/AdminOverviewCommand";
 
 /* ── Dynamic Theme from Accent Color & Dark Mode ── */
 function hexToRgb(hex) {
-  if (!hex || typeof hex !== "string" || !hex.startsWith("#")) return { r: 249, g: 115, b: 22 };
+  if (!hex || typeof hex !== "string" || !hex.startsWith("#")) return { r: 245, g: 158, b: 11 };
   const clean = hex.slice(1);
   const full = clean.length === 3 ? clean.split("").map(c => c + c).join("") : clean;
-  const r = parseInt(full.slice(0, 2), 16) || 249;
-  const g = parseInt(full.slice(2, 4), 16) || 115;
-  const b = parseInt(full.slice(4, 6), 16) || 22;
+  const r = parseInt(full.slice(0, 2), 16) || 245;
+  const g = parseInt(full.slice(2, 4), 16) || 158;
+  const b = parseInt(full.slice(4, 6), 16) || 11;
   return { r, g, b };
 }
 
 function buildTheme(accent, name = "", isDark = true) {
   const isCustomAccent = accent && accent !== "#373D20";
-  const effectiveAccent = isCustomAccent ? accent : "#f97316";
+  const effectiveAccent = isCustomAccent ? accent : "#f59e0b";
   const { r, g, b } = hexToRgb(effectiveAccent);
 
   if (isDark) {
     return {
       accent: effectiveAccent,
-      accentHover: "#ea580c",
+      accentHover: "#d97706",
       accentBg: `rgba(${r},${g},${b},0.16)`,
       accentBorder: `rgba(${r},${g},${b},0.35)`,
-      bg: "#090a0f",
-      card: "#12141a",
-      cardSubtle: "#181b24",
+      bg: "#000000",
+      surface: "#09090b",
+      card: "#121214",
+      cardSubtle: "#18181b",
       cardHeader: "rgba(255, 255, 255, 0.03)",
       border: "rgba(255, 255, 255, 0.09)",
       borderMedium: "rgba(255, 255, 255, 0.16)",
       text: "#ffffff",
       textSecondary: "#a1a1aa",
       muted: "#71717a",
-      inputBg: "#161922",
+      inputBg: "#161618",
       inputBorder: "rgba(255, 255, 255, 0.12)",
       shadowCard: "0 10px 30px rgba(0, 0, 0, 0.6)",
       title: name ? `${name} Dashboard` : "Admin Console",
@@ -67,10 +69,11 @@ function buildTheme(accent, name = "", isDark = true) {
 
   return {
     accent: effectiveAccent,
-    accentHover: "#ea580c",
+    accentHover: "#d97706",
     accentBg: `rgba(${r},${g},${b},0.1)`,
     accentBorder: `rgba(${r},${g},${b},0.25)`,
-    bg: "#f8f9fa",
+    bg: "#ffffff",
+    surface: "#ffffff",
     card: "#ffffff",
     cardSubtle: "#f4f4f6",
     cardHeader: "rgba(0, 0, 0, 0.02)",
@@ -120,17 +123,11 @@ const tabVariants = {
     opacity: 1, 
     y: 0, 
     display: "block",
-    position: "relative",
-    top: 0,
-    left: 0,
     transition: { duration: 0.22, ease: "easeOut" } 
   },
   inactive: { 
     opacity: 0, 
     y: 8, 
-    position: "absolute",
-    top: 0,
-    left: 0,
     transitionEnd: { display: "none" }, 
     transition: { duration: 0.14, ease: "easeIn" } 
   }
@@ -139,6 +136,25 @@ const tabVariants = {
 export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, adminCategories, adminDepartment }) {
   const { theme, isDark, toggleTheme } = useTheme();
   const S = makeStyles(getTheme(isSuperadmin ? null : adminDepartment, isDark), isDark);
+
+  const floatingTabStyle = {
+    position: "absolute",
+    top: 68,
+    bottom: 14,
+    left: 88,
+    right: 14,
+    borderRadius: 22,
+    background: isDark ? "rgba(18, 18, 20, 0.94)" : "rgba(255, 255, 255, 0.94)",
+    backdropFilter: "blur(24px)",
+    WebkitBackdropFilter: "blur(24px)",
+    border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
+    boxShadow: isDark ? "0 25px 60px rgba(0, 0, 0, 0.65)" : "0 20px 50px rgba(0, 0, 0, 0.08)",
+    overflowY: "auto",
+    padding: "24px 28px",
+    boxSizing: "border-box",
+    zIndex: 35,
+    color: S.text,
+  };
 
   const inputStyle = {
     width: "100%", boxSizing: "border-box", padding: "11px 14px",
@@ -177,9 +193,12 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
   const [departments, setDepartments] = useState([]);
   const [categories, setCategories] = useState([]);
   const [reports, setReports] = useState([]);
+  const [lastSync, setLastSync] = useState(null);
   const [loading, setLoading] = useState(true);
   const [detailReport, setDetailReport] = useState(null);
   const [selectedDeptId, setSelectedDeptId] = useState("all");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   
   // Permission enforcement state
   const [myPermissions, setMyPermissions] = useState({});
@@ -229,6 +248,13 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
   }, []);
 
   const loadMyPermissions = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUser(user);
+    } catch (e) {
+      // ignore
+    }
+
     if (isSuperadmin) {
       // Superadmins have all permissions
       setMyPermissions({});
@@ -316,9 +342,26 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
       }
       const { data: repData } = await query;
       setReports(repData || []);
+      setLastSync(new Date());
     } catch (err) { logger.error(err); }
     finally { if (!silent) setLoading(false); }
   };
+
+  // Live reports: refresh instantly on any change to the reports table, with a
+  // periodic silent refresh as a safety net if the realtime channel is unavailable.
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin_dashboard_reports")
+      .on("postgres_changes", { event: "*", schema: "public", table: "reports" }, () => fetchData(true))
+      .subscribe();
+    const poll = setInterval(() => {
+      if (!document.hidden) fetchData(true);
+    }, 30000);
+    return () => {
+      clearInterval(poll);
+      supabase.removeChannel(channel);
+    };
+  }, [selectedDeptId, isSuperadmin, adminCategories]);
 
   const tabs = [
     { id: "overview", label: "Dashboard", icon: <BarChart3 size={18} />, module: "dashboard" },
@@ -356,238 +399,424 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
   );
 
   return (
-    <div style={{ height: "100vh", display: "flex", background: S.bg, fontFamily: S.font, color: S.text, overflow: "hidden" }}>
-      {/* Sidebar */}
-      <div style={{
-        width: 260,
-        background: isDark ? "rgba(18, 20, 26, 0.96)" : S.card,
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderRight: `1px solid ${S.border}`,
-        display: "flex",
-        flexDirection: "column",
-        flexShrink: 0,
-        zIndex: 10,
-        transition: "background 0.25s ease, border-color 0.25s ease",
-      }}>
-        {/* Top Branding */}
-        <div style={{ padding: "20px 20px 18px", borderBottom: `1px solid ${S.border}`, display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        background: isDark ? "#000000" : "#ffffff",
+        fontFamily: S.font,
+        color: S.text,
+        overflow: "hidden",
+        borderRadius: "inherit",
+      }}
+    >
+      {/* ── 1. Docked Slim Sidebar (Pixel-perfect match to desktop reference) ── */}
+      <aside
+        style={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          left: 0,
+          width: 72,
+          background: isDark ? "rgba(10, 10, 12, 0.96)" : "rgba(255, 255, 255, 0.96)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          borderRight: `1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)"}`,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "20px 0 16px",
+          zIndex: 50,
+        }}
+      >
+        {/* Top: CLIMA Logo & User Avatar */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+          <button
+            onClick={() => setActiveTab("overview")}
+            title="CLIMA GIS Command"
+            style={{
+              width: 44,
+              height: 44,
+              padding: 0,
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "transform 0.2s ease",
+            }}
+          >
             <img
               src="/logo.png"
               alt="CLIMA Logo"
               style={{
-                width: "100%",
-                height: "100%",
+                width: 36,
+                height: 36,
                 objectFit: "contain",
-                filter: isDark
-                  ? "drop-shadow(0 0 1px rgba(255, 255, 255, 0.85)) drop-shadow(0 2px 10px rgba(249, 115, 22, 0.45))"
-                  : "drop-shadow(0 2px 8px rgba(249, 115, 22, 0.25))",
+                filter: "drop-shadow(0 2px 10px rgba(245, 158, 11, 0.5))",
               }}
             />
-          </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <h1 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: S.text, letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              CLIMA Console
-            </h1>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 8px #22c55e", flexShrink: 0 }} />
-              <p style={{ margin: 0, fontSize: 11, color: S.muted, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {isSuperadmin ? "Superadmin Portal" : (adminDepartment?.name || "Admin Portal")}
-              </p>
-            </div>
+          </button>
+
+          <div
+            onClick={() => {
+              if (isSuperadmin) setActiveTab("users");
+            }}
+            title={currentUser?.email || (isSuperadmin ? "Superadmin" : "Admin")}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)",
+              border: "1.5px solid rgba(245, 158, 11, 0.4)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: isSuperadmin ? "pointer" : "default",
+              color: "#f59e0b",
+              fontWeight: 800,
+              fontSize: 13,
+            }}
+          >
+            {(currentUser?.email?.[0] || (isSuperadmin ? "S" : adminDepartment?.name?.[0]) || "A").toUpperCase()}
           </div>
         </div>
 
-        {/* Tab List */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "16px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
-          {visibleTabs.map(tab => {
-            const active = activeTab === tab.id;
+        {/* Center: Module Navigation Icons */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 12,
+            overflowY: "auto",
+            scrollbarWidth: "none",
+            maxHeight: "calc(100vh - 280px)",
+            padding: "4px 0",
+          }}
+        >
+          {visibleTabs.map((tab) => {
+            const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
+                title={tab.label}
+                aria-label={tab.label}
                 style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  border: "none",
+                  background: isActive ? "linear-gradient(135deg, #f59e0b, #f97316)" : "transparent",
+                  color: isActive ? "#ffffff" : isDark ? "#a1a1aa" : "#71717a",
+                  cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
-                  gap: 12,
-                  padding: "11px 14px",
-                  borderRadius: 12,
-                  border: active ? `1px solid ${S.accentBorder}` : "1px solid transparent",
-                  background: active ? S.accentBg : "transparent",
-                  color: active ? S.accent : S.textSecondary,
-                  fontWeight: active ? 800 : 600,
-                  fontSize: 13,
-                  cursor: "pointer",
-                  fontFamily: S.font,
-                  textAlign: "left",
-                  transition: "all 0.15s ease",
-                  boxShadow: active ? `0 2px 10px ${S.accent}22` : "none",
+                  justifyContent: "center",
+                  boxShadow: isActive
+                    ? "0 4px 14px rgba(245, 158, 11, 0.45)"
+                    : "none",
+                  transition: "all 0.18s ease",
                 }}
-                onMouseEnter={e => { if (!active) e.currentTarget.style.background = isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)"; }}
-                onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)";
+                    e.currentTarget.style.color = isDark ? "#ffffff" : "#09090b";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = isDark ? "#a1a1aa" : "#71717a";
+                  }
+                }}
               >
-                <span style={{ color: active ? S.accent : S.muted, display: "flex", alignItems: "center" }}>
-                  {tab.icon}
-                </span>
-                <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {tab.label}
-                </span>
+                {tab.icon}
               </button>
             );
           })}
-          <div style={{ height: 1, background: S.border, margin: "10px 0" }} />
-          {onMapOverview && (
-            <button
-              onClick={onMapOverview}
-              style={{
-                ...btnPrimary,
-                background: S.blueBg,
-                color: S.blue,
-                border: `1px solid ${S.border}`,
-                borderRadius: 12,
-                justifyContent: "center",
-                boxShadow: "none",
-              }}
-            >
-              <MapIcon size={16} /> Map Overview
-            </button>
-          )}
         </div>
 
-        {/* Bottom Sidebar Action */}
-        <div style={{ padding: "16px 14px", borderTop: `1px solid ${S.border}`, display: "flex", flexDirection: "column", gap: 8 }}>
+        {/* Bottom: Theme, Refresh, Logout, Updated Status */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
           <button
-            onClick={onLogout}
+            onClick={toggleTheme}
+            title={isDark ? "Light Mode" : "Dark Mode"}
             style={{
-              ...btnPrimary,
-              background: S.redBg,
-              color: S.red,
-              border: `1px solid ${S.border}`,
-              borderRadius: 12,
-              width: "100%",
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"}`,
+              background: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
+              color: isDark ? "#f59e0b" : "#d97706",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
               justifyContent: "center",
-              boxShadow: "none",
             }}
           >
-            <LogOut size={16} /> Sign Out
+            {isDark ? <Sun size={14} /> : <Moon size={14} />}
           </button>
-        </div>
-      </div>
 
-      {/* Main Area */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: S.bg }}>
-        {/* Top Bar */}
-        <header
-          style={{
-            height: 64,
-            background: isDark ? "rgba(18, 20, 26, 0.85)" : "rgba(255, 255, 255, 0.85)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            borderBottom: `1px solid ${S.border}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 28px",
-            flexShrink: 0,
-            zIndex: 5,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: S.text, letterSpacing: "-0.02em" }}>
-              {activeTab === "overview" && "Dashboard Overview"}
-              {activeTab === "reports" && "Citizen Reports"}
-              {activeTab === "advisories" && "Official Advisories"}
-              {activeTab === "hospitals" && "Hospital Capacity & Health Analytics"}
-              {activeTab === "operations" && "CDRRMO Operations & Evacuations"}
-              {activeTab === "bfp" && "BFP Operations & Fire Risk"}
-              {activeTab === "agriculture" && "Agricultural Damage Reports"}
-              {activeTab === "water" && "Water Utility & Interruptions"}
-              {activeTab === "power" && "Power Utility & Outages"}
-              {activeTab === "users" && "User Management"}
-              {activeTab === "settings" && "Offices & Categories"}
-              {activeTab === "logs" && "System Activity Logs"}
-            </h2>
+          <button
+            onClick={() => fetchData()}
+            title="Refresh Telemetry"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"}`,
+              background: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
+              color: isDark ? "#a1a1aa" : "#71717a",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <RefreshCw size={14} />
+          </button>
 
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 800,
-                padding: "3px 8px",
-                borderRadius: 999,
-                background: S.accentBg,
-                color: S.accent,
-                border: `1px solid ${S.accentBorder}`,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-              }}
-            >
-              Live Console
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, textAlign: "center" }}>
+            <span style={{ fontSize: 9, fontWeight: 800, color: "#f59e0b", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              Updated
+            </span>
+            <span style={{ fontSize: 8, color: isDark ? "#71717a" : "#a1a1aa", fontWeight: 700 }}>
+              {lastSync ? lastSync.toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" }) : "—"}
             </span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* Theme Toggle Button */}
-            <button
-              onClick={toggleTheme}
-              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 12,
-                border: `1px solid ${S.border}`,
-                background: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)",
-                color: S.text,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-            >
-              {isDark ? <Sun size={17} color="#f59e0b" /> : <Moon size={17} color="#64748b" />}
-            </button>
-
-            {/* Refresh Button */}
-            <button
-              onClick={() => fetchData()}
-              title="Refresh Console Data"
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 12,
-                border: `1px solid ${S.border}`,
-                background: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)",
-                color: S.text,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-            >
-              <RefreshCw size={16} />
-            </button>
-          </div>
-        </header>
-
-        {/* Content */}
-        <main ref={mainRef} style={{ flex: 1, overflowY: "auto", position: "relative" }}>
-          <motion.div
-            variants={tabVariants}
-            initial="inactive"
-            animate={activeTab === "overview" ? "active" : "inactive"}
-            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+          <button
+            onClick={onLogout}
+            title="Sign Out"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              background: "rgba(239, 68, 68, 0.12)",
+              color: "#ef4444",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.15s ease",
+            }}
           >
-            <OverviewTab reports={reports} S={S} cardStyle={cardStyle} onViewReport={setDetailReport} />
+            <LogOut size={13} />
+          </button>
+        </div>
+      </aside>
+
+      {/* ── 2. Floating Top Capsule Island ── */}
+      <header
+        style={{
+          position: "absolute",
+          top: 14,
+          left: 88,
+          right: 14,
+          height: 44,
+          zIndex: 40,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          pointerEvents: "none",
+        }}
+      >
+        {/* Left: Brand / Live Telemetry Pill */}
+        <div
+          style={{
+            pointerEvents: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "6px 14px",
+            borderRadius: 9999,
+            background: isDark ? "rgba(18, 18, 20, 0.92)" : "rgba(255, 255, 255, 0.92)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
+            boxShadow: isDark ? "0 10px 30px rgba(0, 0, 0, 0.5)" : "0 8px 24px rgba(0, 0, 0, 0.06)",
+          }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 900, color: S.text, letterSpacing: "-0.01em" }}>
+            Palayan Command
+          </span>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 800,
+              padding: "2px 8px",
+              borderRadius: 9999,
+              background: "rgba(245, 158, 11, 0.18)",
+              color: "#f59e0b",
+              border: "1px solid rgba(245, 158, 11, 0.35)",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+            }}
+          >
+            LIVE
+          </span>
+          <span style={{ fontSize: 11, color: S.textSecondary, fontWeight: 700 }}>
+            {isSuperadmin ? "Superadmin Portal" : (adminDepartment?.name || "Operations Lead")}
+          </span>
+        </div>
+
+        {/* Center: Dribbble-Style Horizontal Capsule Navigation */}
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+            pointerEvents: "auto",
+            display: "flex",
+            alignItems: "center",
+            background: isDark ? "rgba(18, 18, 20, 0.92)" : "rgba(255, 255, 255, 0.92)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            borderRadius: 9999,
+            padding: "3px 4px",
+            border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
+            boxShadow: isDark ? "0 10px 30px rgba(0, 0, 0, 0.5)" : "0 8px 24px rgba(0, 0, 0, 0.06)",
+            gap: 2,
+          }}
+        >
+          {[
+            { id: "overview", label: "Overview" },
+            { id: "reports", label: "Citizen Reports" },
+            { id: "advisories", label: "Advisories" },
+            { id: "operations", label: "Operations" },
+            { id: "hospitals", label: "Hospitals" },
+          ]
+            .filter(t => isSuperadmin || canViewModule(t.id === "overview" ? "dashboard" : t.id))
+            .map((pill) => {
+              const isAct = activeTab === pill.id;
+              return (
+                <button
+                  key={pill.id}
+                  onClick={() => setActiveTab(pill.id)}
+                  style={{
+                    padding: "5px 14px",
+                    borderRadius: 9999,
+                    border: "none",
+                    background: isAct ? "linear-gradient(135deg, #f59e0b, #f97316)" : "transparent",
+                    color: isAct ? "#ffffff" : isDark ? "#a1a1aa" : "#71717a",
+                    fontWeight: isAct ? 800 : 700,
+                    fontSize: 12,
+                    cursor: "pointer",
+                    fontFamily: S.font,
+                    boxShadow: isAct ? "0 2px 10px rgba(245, 158, 11, 0.35)" : "none",
+                    transition: "all 0.18s ease",
+                  }}
+                >
+                  {pill.label}
+                </button>
+              );
+            })}
+        </div>
+
+        {/* Right: Search, Notifications, Avatar Pill (hidden on overview since it is integrated beside Palayan City in inspector) */}
+        {activeTab !== "overview" ? (
+          <div
+            style={{
+              pointerEvents: "auto",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              background: isDark ? "rgba(18, 18, 20, 0.92)" : "rgba(255, 255, 255, 0.92)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              borderRadius: 9999,
+              padding: "4px 8px",
+              border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
+              boxShadow: isDark ? "0 10px 30px rgba(0, 0, 0, 0.5)" : "0 8px 24px rgba(0, 0, 0, 0.06)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "2px 10px 2px 4px",
+                borderRadius: 9999,
+                background: "rgba(255, 255, 255, 0.06)",
+              }}
+            >
+              <div
+                style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #f59e0b, #ea580c)",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 900,
+                  fontSize: 11,
+                }}
+              >
+                {(currentUser?.email?.[0] || (isSuperadmin ? "S" : adminDepartment?.name?.[0]) || "A").toUpperCase()}
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "#ffffff", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {currentUser?.email?.split("@")[0] || (isSuperadmin ? "Superadmin" : "Admin")}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div style={{ width: 10, pointerEvents: "none" }} />
+        )}
+      </header>
+
+      {/* ── 3. Main Workspace Area ── */}
+      <main ref={mainRef} style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+        <motion.div
+          variants={tabVariants}
+          initial="inactive"
+          animate={activeTab === "overview" ? "active" : "inactive"}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 1 }}
+        >
+            <OverviewTab
+              reports={reports}
+              S={S}
+              cardStyle={cardStyle}
+              onViewReport={setDetailReport}
+              onNavigateTab={setActiveTab}
+              onMapOverview={onMapOverview}
+              isSuperadmin={isSuperadmin}
+              adminDepartment={adminDepartment}
+              currentUser={currentUser}
+            />
           </motion.div>
 
           <motion.div
             variants={tabVariants}
             initial="inactive"
             animate={activeTab === "reports" ? "active" : "inactive"}
-            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+            style={floatingTabStyle}
           >
+            <div style={{ marginBottom: 14 }}>
+              <button
+                onClick={() => setActiveTab("overview")}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  background: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.35)",
+                  color: "#f59e0b",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                ← Back to GIS Map
+              </button>
+            </div>
             <ReportsTab reports={reports} onUpdate={() => fetchData(true)} S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} onViewReport={setDetailReport} />
           </motion.div>
 
@@ -595,8 +824,25 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             variants={tabVariants}
             initial="inactive"
             animate={activeTab === "advisories" ? "active" : "inactive"}
-            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+            style={floatingTabStyle}
           >
+            <div style={{ marginBottom: 14 }}>
+              <button
+                onClick={() => setActiveTab("overview")}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  background: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.35)",
+                  color: "#f59e0b",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                ← Back to GIS Map
+              </button>
+            </div>
             <AdvisoriesTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} />
           </motion.div>
 
@@ -604,8 +850,25 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             variants={tabVariants}
             initial="inactive"
             animate={activeTab === "hospitals" ? "active" : "inactive"}
-            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+            style={floatingTabStyle}
           >
+            <div style={{ marginBottom: 14 }}>
+              <button
+                onClick={() => setActiveTab("overview")}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  background: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.35)",
+                  color: "#f59e0b",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                ← Back to GIS Map
+              </button>
+            </div>
             <HospitalsTab 
               S={S} 
               cardStyle={cardStyle} 
@@ -625,8 +888,25 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             variants={tabVariants}
             initial="inactive"
             animate={activeTab === "operations" ? "active" : "inactive"}
-            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+            style={floatingTabStyle}
           >
+            <div style={{ marginBottom: 14 }}>
+              <button
+                onClick={() => setActiveTab("overview")}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  background: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.35)",
+                  color: "#f59e0b",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                ← Back to GIS Map
+              </button>
+            </div>
             <OperationsTab 
               S={S} 
               cardStyle={cardStyle} 
@@ -646,8 +926,25 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             variants={tabVariants}
             initial="inactive"
             animate={activeTab === "bfp" ? "active" : "inactive"}
-            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+            style={floatingTabStyle}
           >
+            <div style={{ marginBottom: 14 }}>
+              <button
+                onClick={() => setActiveTab("overview")}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  background: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.35)",
+                  color: "#f59e0b",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                ← Back to GIS Map
+              </button>
+            </div>
             <BfpOperationsTab 
               S={S} 
               cardStyle={cardStyle} 
@@ -667,8 +964,25 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             variants={tabVariants}
             initial="inactive"
             animate={activeTab === "agriculture" ? "active" : "inactive"}
-            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+            style={floatingTabStyle}
           >
+            <div style={{ marginBottom: 14 }}>
+              <button
+                onClick={() => setActiveTab("overview")}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  background: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.35)",
+                  color: "#f59e0b",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                ← Back to GIS Map
+              </button>
+            </div>
             <AgricultureDamagesTab 
               S={S} 
               cardStyle={cardStyle} 
@@ -688,8 +1002,25 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             variants={tabVariants}
             initial="inactive"
             animate={activeTab === "water" ? "active" : "inactive"}
-            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+            style={floatingTabStyle}
           >
+            <div style={{ marginBottom: 14 }}>
+              <button
+                onClick={() => setActiveTab("overview")}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  background: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.35)",
+                  color: "#f59e0b",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                ← Back to GIS Map
+              </button>
+            </div>
             <WaterUtilityTab 
               S={S} 
               cardStyle={cardStyle} 
@@ -709,8 +1040,25 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             variants={tabVariants}
             initial="inactive"
             animate={activeTab === "power" ? "active" : "inactive"}
-            style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+            style={floatingTabStyle}
           >
+            <div style={{ marginBottom: 14 }}>
+              <button
+                onClick={() => setActiveTab("overview")}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  background: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.35)",
+                  color: "#f59e0b",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                ← Back to GIS Map
+              </button>
+            </div>
             <PowerUtilityTab 
               S={S} 
               cardStyle={cardStyle} 
@@ -732,8 +1080,25 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                 variants={tabVariants}
                 initial="inactive"
                 animate={activeTab === "users" ? "active" : "inactive"}
-                style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+                style={floatingTabStyle}
               >
+                <div style={{ marginBottom: 14 }}>
+                  <button
+                    onClick={() => setActiveTab("overview")}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: 9999,
+                      background: "rgba(245, 158, 11, 0.12)",
+                      border: "1px solid rgba(245, 158, 11, 0.35)",
+                      color: "#f59e0b",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ← Back to GIS Map
+                  </button>
+                </div>
                 <UsersTab 
                   categories={categories} 
                   departments={departments} 
@@ -753,8 +1118,25 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                 variants={tabVariants}
                 initial="inactive"
                 animate={activeTab === "settings" ? "active" : "inactive"}
-                style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+                style={floatingTabStyle}
               >
+                <div style={{ marginBottom: 14 }}>
+                  <button
+                    onClick={() => setActiveTab("overview")}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: 9999,
+                      background: "rgba(245, 158, 11, 0.12)",
+                      border: "1px solid rgba(245, 158, 11, 0.35)",
+                      color: "#f59e0b",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ← Back to GIS Map
+                  </button>
+                </div>
                 <SettingsTab 
                   departments={departments} 
                   categories={categories} 
@@ -776,14 +1158,30 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                 variants={tabVariants}
                 initial="inactive"
                 animate={activeTab === "logs" ? "active" : "inactive"}
-                style={{ width: "100%", padding: 32, boxSizing: "border-box" }}
+                style={floatingTabStyle}
               >
+                <div style={{ marginBottom: 14 }}>
+                  <button
+                    onClick={() => setActiveTab("overview")}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: 9999,
+                      background: "rgba(245, 158, 11, 0.12)",
+                      border: "1px solid rgba(245, 158, 11, 0.35)",
+                      color: "#f59e0b",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ← Back to GIS Map
+                  </button>
+                </div>
                 <ActivityLogsTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} />
               </motion.div>
             </>
           )}
         </main>
-      </div>
 
       {/* Report Detail Modal */}
       {detailReport && (
@@ -919,7 +1317,17 @@ function formatDateShort(dateStr) {
 }
 
 /* ── Overview Tab - Analytics Dashboard ── */
-function OverviewTab({ reports, S, cardStyle, onViewReport }) {
+function OverviewTab({
+  reports,
+  S,
+  cardStyle,
+  onViewReport,
+  onNavigateTab,
+  onMapOverview,
+  isSuperadmin,
+  adminDepartment,
+  currentUser,
+}) {
   const [analyticsData, setAnalyticsData] = useState({
     hospitalRecords: [],
     cdrrmoRecords: [],
@@ -929,6 +1337,7 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState(30);
   const [ktData, setKtData] = useState(null);
+  const [showDetailedAnalytics, setShowDetailedAnalytics] = useState(false);
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -992,15 +1401,8 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
     }
   };
 
-  if (loading) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-        {[1,2,3].map(i => (
-          <div key={i} style={{ ...cardStyle, height: 120, background: S.cardSubtle, animation: "pulse 1.5s ease-in-out infinite" }} />
-        ))}
-      </div>
-    );
-  }
+  // The map is independent of the analytics queries, so it renders immediately
+  // while the (collapsed) analytics data loads in the background.
 
   // Calculate summary metrics
   const last7Days = getDateDaysAgo(7);
@@ -1036,9 +1438,64 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
   const statusDistributionData = prepareStatusDistribution(reports);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* Date Range Selector */}
-      <div style={{ display: "flex", gap: 8, padding: "12px 16px", background: S.cardSubtle, borderRadius: 12, border: `1px solid ${S.border}` }}>
+    <div style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "hidden" }}>
+      {/* ── 1. Modern Command Center Overview (Full-Bleed Floating Map) ── */}
+      <AdminOverviewCommand
+        reports={reports}
+        isDark={S.isDark}
+        onViewReport={onViewReport}
+        isSuperadmin={isSuperadmin}
+        adminDepartment={adminDepartment}
+        currentUser={currentUser}
+      />
+
+      {/* Floating Detailed Analytics Panel when opened */}
+      <AnimatePresence>
+        {showDetailedAnalytics && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            style={{
+              position: "absolute",
+              top: 68,
+              bottom: 14,
+              left: 84,
+              right: 14,
+              borderRadius: 22,
+              background: "rgba(14, 23, 14, 0.94)",
+              backdropFilter: "blur(24px)",
+              WebkitBackdropFilter: "blur(24px)",
+              border: `1px solid ${S.border}`,
+              boxShadow: "0 25px 60px rgba(0, 0, 0, 0.65)",
+              overflowY: "auto",
+              padding: "24px 28px",
+              zIndex: 40,
+              display: "flex",
+              flexDirection: "column",
+              gap: 24,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: S.text }}>Detailed Operations Analytics</h3>
+              <button
+                onClick={() => setShowDetailedAnalytics(false)}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  background: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.35)",
+                  color: "#f59e0b",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                ✕ Close Analytics
+              </button>
+            </div>
+          {/* Date Range Selector */}
+          <div style={{ display: "flex", gap: 8, padding: "12px 16px", background: S.cardSubtle, borderRadius: 12, border: `1px solid ${S.border}` }}>
         <span style={{ fontSize: 12, fontWeight: 800, color: S.muted, marginRight: 8 }}>TIME RANGE:</span>
         {[7, 30, 90].map(days => (
           <button
@@ -1393,6 +1850,9 @@ function OverviewTab({ reports, S, cardStyle, onViewReport }) {
           </div>
         )}
       </div>
+        </motion.div>
+      )}
+      </AnimatePresence>
     </div>
   );
 }

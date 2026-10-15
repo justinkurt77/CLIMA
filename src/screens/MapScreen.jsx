@@ -34,6 +34,7 @@ import {
   ChevronDown,
   Globe,
   Moon,
+  Sun,
   Map as MapIcon,
 } from "lucide-react";
 
@@ -1317,15 +1318,17 @@ function MapScreen({
               }}
             >
               {[
-                { id: "dark-v11", Icon: Moon },
-                { id: "streets-v12", Icon: MapIcon },
-                { id: "satellite-streets-v12", Icon: Globe },
+                { id: "dark-v11", Icon: Moon, title: "Dark Mode" },
+                { id: "streets-v12", Icon: Sun, title: "Light Mode" },
+                { id: "satellite-streets-v12", Icon: Globe, title: "Satellite View" },
               ].map((layer) => {
                 const isActive = mapStyleId === layer.id;
                 return (
                   <button
                     key={layer.id}
                     onClick={() => setMapStyleId(layer.id)}
+                    title={layer.title}
+                    aria-label={layer.title}
                     style={{
                       width: 52,
                       height: 52,

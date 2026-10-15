@@ -1,16 +1,16 @@
 :root,
 html.light {
   color-scheme: light;
-  --red: #f97316;
-  --red-dark: #ea580c;
-  --yellow: #f4f4f5;
+  --red: #f59e0b;
+  --red-dark: #d97706;
+  --yellow: #fef08a;
   --cream: #ffffff;
   --dark: #ffffff;
   --gray: #71717a;
-  --light-gray: #f4f4f5;
+  --light-gray: #f4f4f6;
   --green: #18181b;
   --blue: #27272a;
-  --orange: #f97316;
+  --orange: #f59e0b;
   --white: #ffffff;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -28,18 +28,18 @@ html.light {
   --text-secondary: #52525b;
   --text-muted: #71717a;
 
-  /* Accent Color Tokens - Solid Orange (No Gradient) */
-  --accent-orange: #f97316;
-  --accent-orange-hover: #ea580c;
-  --accent-glow: rgba(249, 115, 22, 0.35);
+  /* Accent Color Tokens - Vibrant Orange Yellow (Amber) */
+  --accent-orange: #f59e0b;
+  --accent-orange-hover: #d97706;
+  --accent-glow: rgba(245, 158, 11, 0.35);
 
-  --btn-primary-bg: #f97316;
+  --btn-primary-bg: #f59e0b;
   --btn-primary-text: #ffffff;
   --nav-bg: rgba(255, 255, 255, 0.92);
   --nav-border: rgba(0, 0, 0, 0.1);
-  --nav-active-bg: rgba(249, 115, 22, 0.12);
-  --nav-active-border: rgba(249, 115, 22, 0.4);
-  --nav-active-text: #ea580c;
+  --nav-active-bg: rgba(245, 158, 11, 0.14);
+  --nav-active-border: rgba(245, 158, 11, 0.45);
+  --nav-active-text: #d97706;
   --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.1);
 }
@@ -47,16 +47,16 @@ html.light {
 html.dark,
 [data-theme="dark"] {
   color-scheme: dark;
-  --red: #f97316;
-  --red-dark: #ea580c;
-  --yellow: #f4f4f5;
+  --red: #f59e0b;
+  --red-dark: #d97706;
+  --yellow: #fef08a;
   --cream: #18181b;
   --dark: #000000;
   --gray: #71717a;
   --light-gray: #18181b;
   --green: #ffffff;
   --blue: #e4e4e7;
-  --orange: #f97316;
+  --orange: #f59e0b;
   --white: #ffffff;
   --map-land: #09090b;
 
@@ -72,18 +72,18 @@ html.dark,
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
 
-  /* Accent Color Tokens - Solid Orange (No Gradient) */
-  --accent-orange: #f97316;
-  --accent-orange-hover: #ea580c;
-  --accent-glow: rgba(249, 115, 22, 0.45);
+  /* Accent Color Tokens - Vibrant Orange Yellow (Amber) */
+  --accent-orange: #f59e0b;
+  --accent-orange-hover: #d97706;
+  --accent-glow: rgba(245, 158, 11, 0.45);
 
-  --btn-primary-bg: #f97316;
+  --btn-primary-bg: #f59e0b;
   --btn-primary-text: #ffffff;
   --nav-bg: rgba(12, 12, 14, 0.94);
   --nav-border: rgba(255, 255, 255, 0.12);
-  --nav-active-bg: rgba(249, 115, 22, 0.2);
-  --nav-active-border: rgba(249, 115, 22, 0.5);
-  --nav-active-text: #f97316;
+  --nav-active-bg: rgba(245, 158, 11, 0.22);
+  --nav-active-border: rgba(245, 158, 11, 0.55);
+  --nav-active-text: #f59e0b;
   --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.75);
 }
@@ -200,18 +200,20 @@ body {
   transition: background-color 0.25s ease;
 }
 
-/* Mobile Citizen Shell */
+/* Mobile Shell */
 @media (max-width: 1023px) {
-  .app-shell.citizen-mode {
+  .app-shell.citizen-mode,
+  .app-shell.admin-mode {
     max-width: 480px;
     margin: 0 auto;
     box-shadow: var(--shadow-lg), 0 0 1px var(--border-medium);
   }
 }
 
-/* Desktop PC Citizen Shell: Extra side margins and rounder corners */
+/* Desktop PC Floating Shell: Margins on all sides and rounded corners (Matches Client-Side UI) */
 @media (min-width: 1024px) {
-  .app-shell.citizen-mode {
+  .app-shell.citizen-mode,
+  .app-shell.admin-mode {
     position: fixed;
     top: 24px;
     bottom: 24px;
@@ -230,6 +232,36 @@ body {
     flex-direction: row;
     overflow: hidden;
   }
+
+  .app-shell.admin-mode {
+    border: 1px solid var(--border-medium);
+    background: var(--bg-surface);
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border-subtle);
+  }
+
+  html.dark .app-shell.admin-mode,
+  [data-theme="dark"] .app-shell.admin-mode {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #000000;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+
+  html.light .app-shell.admin-mode,
+  [data-theme="light"] .app-shell.admin-mode {
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: #ffffff;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  }
+}
+
+html.dark body:has(.app-shell.admin-mode),
+[data-theme="dark"] body:has(.app-shell.admin-mode) {
+  background: #000000 !important;
+}
+
+html.light body:has(.app-shell.admin-mode),
+[data-theme="light"] body:has(.app-shell.admin-mode) {
+  background: #f1f3f5 !important;
 }
 
 
