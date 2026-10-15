@@ -1,0 +1,49 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Foundation & Build Configuration: Set unique page titles per route, add social meta tags, create custom 404 page, add skip-to-content links, create print.css, defer non-critical scripts, enhance Vite code splitting, remove unused dependencies, strip em-dashes and placeholder text from all components, add UTM tracking helper, replace Vite favicon with Palayan City seal",
+  "status": "pending",
+  "steps": [
+    "1. Install react-helmet-async: run 'npm install react-helmet-async' and wrap App in HelmetProvider in main.jsx",
+    "2. Add <Helmet> to each screen component (HomeScreen, MapScreen, ProfileScreen, EmergencyScreen, ElNinoMonitoringDashboard, LegalScreen, AdminDashboard, AdminMapScreen) with unique <title> tags: 'CLIMA - [Screen Name] | Palayan City Government'",
+    "3. In index.html, add OpenGraph and Twitter Card meta tags in <head>: og:title, og:description, og:image (point to /social-share.png), og:url, twitter:card, twitter:image. Set meta description to 'Climate Information Monitoring and Awareness - Official disaster response platform of Palayan City Government, Nueva Ecija'",
+    "4. Create src/screens/NotFoundScreen.jsx: professional 404 page with 'Page Not Found' heading, friendly message, and button to return home. Export as lazy component",
+    "5. In App.jsx, add route logic: if activeScreen is not in valid list and not admin paths, show NotFoundScreen",
+    "6. Create public/print.css: hide navigation, modals, map controls; show content in black on white with readable fonts; add '@media print' rules",
+    "7. In index.html <head>, add <link rel='stylesheet' href='/print.css' media='print'>",
+    "8. Create src/components/accessibility/SkipToContent.jsx: invisible link that appears on keyboard focus, jumps to #main-content",
+    "9. In App.jsx, render SkipToContent as first child, add id='main-content' to main screen container div",
+    "10. In index.html, move Google Fonts link to end of <head> and mark external scripts with defer attribute where appropriate (already module script is deferred by default)",
+    "11. Review vite.config.js manualChunks: confirmed already optimized with vendor-react, vendor-supabase, vendor-mapbox, vendor-charts, vendor-ui. No changes needed",
+    "12. Run 'npm list --depth=0' and check for unused dependencies. Found body-parser (unused in client), jspdf/jspdf-autotable (if not used in client exports). If confirmed unused, remove with 'npm uninstall body-parser jspdf jspdf-autotable'. Update package.json",
+    "13. Grep all .jsx files for em-dash character '—' and replace with hyphen '-' or remove. Files: AdminMapScreen.jsx, AdminDashboard.jsx (found in placeholder text)",
+    "14. Grep all .jsx files for 'placeholder' and 'Lorem' and 'ipsum'. Replace input placeholders with professional government prompts. Remove any lorem ipsum filler. Key files: ProfileScreen, AdminLogin, ForgotPasswordScreen, ChangePasswordScreen, AdminDashboard (input fields), ensure all say real instructions",
+    "15. Create src/lib/utm.js: export addUTMParams(url, source, medium, campaign) helper that appends ?utm_source=... to external links",
+    "16. Replace public/vite.svg with Palayan City government seal: if logo.webp is the seal, copy it to favicon.ico format using sharp or online converter. Update index.html <link rel='icon'> to point to /favicon.ico. Update manifest.webmanifest icons array to reference /logo.webp with proper sizes",
+    "17. In index.html, update <title> from 'CLIMA' to 'CLIMA - Palayan City Disaster Response | Climate Monitoring & Awareness'",
+    "18. Run 'npm run build' and confirm no errors, check dist/ output"
+  ],
+  "acceptance_criteria": [
+    "Each screen shows unique browser tab title when active",
+    "Social share tags visible in page source (view-source:http://localhost:5173)",
+    "Pressing Tab on page load focuses 'Skip to content' link",
+    "Print preview (Ctrl+P) shows clean content without nav bars or map controls",
+    "No em-dash characters (—) found in any component text",
+    "No placeholder text like 'Lorem ipsum', 'admin@example.com', 'Type new group name…' with ellipsis, all replaced with real government instructions",
+    "Favicon shows Palayan City seal icon in browser tab",
+    "npm run build completes successfully with no errors"
+  ],
+  "verification": [
+    "Run 'npm run build' and confirm exit code 0",
+    "Run 'npm run dev', open http://localhost:5173 in browser",
+    "Navigate to each screen (Home, Maps, Profile, Emergency, El Niño, Legal) and check browser tab title changes",
+    "View page source and confirm meta tags for og:title, og:description, og:image, twitter:card are present",
+    "Press Tab key on page load and confirm 'Skip to content' link appears and is focused",
+    "Press Ctrl+P (print preview) and confirm navigation and map are hidden, content is readable",
+    "Search all .jsx files with grep '—' and confirm no results",
+    "Search all .jsx files with grep -i 'lorem\\|ipsum' and confirm no results",
+    "Check favicon in browser tab shows Palayan seal"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

@@ -10,6 +10,8 @@ import {
   MapPin,
   CheckCircle,
   KeyRound,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
@@ -44,6 +46,12 @@ export default function AuthScreen({ onLoginSuccess, session }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [msg, setMsg] = useState(null);
+  
+  // Password visibility toggles
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -251,7 +259,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
 
       if (error) throw error;
 
-      // User is now signed in — move to reset password screen
+      // User is now signed in - move to reset password screen
       setMode("reset_password");
       setMsg(null);
     } catch (err) {
@@ -307,6 +315,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
     value,
     onChange,
     disabled = false,
+    isPassword = false,
+    showPasswordState = false,
+    togglePasswordVisibility = null,
   ) => (
     <div style={{ position: "relative", marginBottom: 14 }}>
       <div
@@ -315,7 +326,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
         {icon}
       </div>
       <input
-        type={type}
+        type={isPassword && !showPasswordState ? "password" : type}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -323,6 +334,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
         style={{
           width: "100%",
           padding: "14px 16px 14px 44px",
+          paddingRight: isPassword ? "44px" : "16px",
           borderRadius: 14,
           border: "1px solid rgba(255, 255, 255, 0.15)",
           background: "#18181b",
@@ -343,6 +355,28 @@ export default function AuthScreen({ onLoginSuccess, session }) {
           e.target.style.boxShadow = "none";
         }}
       />
+      {isPassword && togglePasswordVisibility && (
+        <button
+          type="button"
+          onClick={togglePasswordVisibility}
+          style={{
+            position: "absolute",
+            right: 14,
+            top: 14,
+            background: "none",
+            border: "none",
+            color: "#ffffff",
+            cursor: "pointer",
+            padding: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          aria-label={showPasswordState ? "Hide password" : "Show password"}
+        >
+          {showPasswordState ? <EyeOff size={20} /> : <Eye size={20} />}
+        </button>
+      )}
     </div>
   );
 
@@ -530,10 +564,14 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 )}
                 {renderInput(
                   <Lock size={20} />,
-                  "password",
+                  "text",
                   "Password",
                   password,
                   setPassword,
+                  false,
+                  true,
+                  showPassword,
+                  () => setShowPassword(!showPassword),
                 )}
 
                 <motion.button
@@ -905,17 +943,25 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 )}
                 {renderInput(
                   <Lock size={20} />,
-                  "password",
+                  "text",
                   "New Password",
                   password,
                   setPassword,
+                  false,
+                  true,
+                  showPassword,
+                  () => setShowPassword(!showPassword),
                 )}
                 {renderInput(
                   <Lock size={20} />,
-                  "password",
+                  "text",
                   "Confirm Password",
                   confirmPassword,
                   setConfirmPassword,
+                  false,
+                  true,
+                  showConfirmPassword,
+                  () => setShowConfirmPassword(!showConfirmPassword),
                 )}
 
                 <motion.button
@@ -1276,17 +1322,25 @@ export default function AuthScreen({ onLoginSuccess, session }) {
 
                 {renderInput(
                   <Lock size={20} />,
-                  "password",
+                  "text",
                   "New Password",
                   resetPassword,
                   setResetPassword,
+                  false,
+                  true,
+                  showResetPassword,
+                  () => setShowResetPassword(!showResetPassword),
                 )}
                 {renderInput(
                   <Lock size={20} />,
-                  "password",
+                  "text",
                   "Confirm New Password",
                   resetConfirmPassword,
                   setResetConfirmPassword,
+                  false,
+                  true,
+                  showResetConfirmPassword,
+                  () => setShowResetConfirmPassword(!showResetConfirmPassword),
                 )}
 
                 <motion.button

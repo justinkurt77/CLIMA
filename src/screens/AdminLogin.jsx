@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Shield, Lock, Mail, ArrowRight, BarChart3, AlertCircle, Sun, Moon } from "lucide-react";
+import { Shield, Lock, Mail, ArrowRight, BarChart3, AlertCircle, Sun, Moon, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { logger } from "../lib/logger";
@@ -18,6 +18,8 @@ export default function AdminLogin({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [sessionUser, setSessionUser] = useState(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const superadminsHashes = [
     '980f32df69a604ee31a4ca3a18cfea910de69ef3c496124dc8e19f76c4fa5686',
@@ -369,13 +371,13 @@ export default function AdminLogin({ onLogin }) {
                 <Lock size={18} />
               </div>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Admin Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 style={{
-                  width: "100%", boxSizing: "border-box", padding: "14px 16px 14px 46px",
+                  width: "100%", boxSizing: "border-box", padding: "14px 46px 14px 46px",
                   background: isDark ? "#161922" : "#f4f4f6",
                   border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.1)",
                   borderRadius: 14,
@@ -385,6 +387,27 @@ export default function AdminLogin({ onLogin }) {
                 onFocus={(e) => { e.target.style.borderColor = "#f97316"; }}
                 onBlur={(e) => { e.target.style.borderColor = isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.1)"; }}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: 16,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  color: isDark ? "#71717a" : "#a1a1aa",
+                  cursor: "pointer",
+                  padding: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           )}
 
@@ -394,13 +417,13 @@ export default function AdminLogin({ onLogin }) {
                 <Lock size={18} />
               </div>
               <input
-                type="password"
+                type={showNewPassword ? "text" : "password"}
                 placeholder="Enter New Password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
                 style={{
-                  width: "100%", boxSizing: "border-box", padding: "14px 16px 14px 46px",
+                  width: "100%", boxSizing: "border-box", padding: "14px 46px 14px 46px",
                   background: isDark ? "#161922" : "#f4f4f6",
                   border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.1)",
                   borderRadius: 14,
@@ -410,6 +433,27 @@ export default function AdminLogin({ onLogin }) {
                 onFocus={(e) => { e.target.style.borderColor = "#f97316"; }}
                 onBlur={(e) => { e.target.style.borderColor = isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.1)"; }}
               />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                style={{
+                  position: "absolute",
+                  right: 16,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  color: isDark ? "#71717a" : "#a1a1aa",
+                  cursor: "pointer",
+                  padding: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                aria-label={showNewPassword ? "Hide password" : "Show password"}
+              >
+                {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           )}
 

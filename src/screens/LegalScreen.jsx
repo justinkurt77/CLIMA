@@ -251,6 +251,187 @@ function LegalScreen() {
     return parts;
   };
 
+  // Compliance badges section for Privacy Policy
+  const ComplianceBadges = () => (
+    <div
+      style={{
+        background: "var(--bg-card)",
+        borderRadius: 16,
+        padding: 24,
+        marginBottom: 32,
+        border: "1px solid var(--border-subtle)",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+      }}
+    >
+      <h2
+        style={{
+          fontSize: 18,
+          fontWeight: 800,
+          color: "var(--text-primary)",
+          marginBottom: 16,
+          textAlign: "center",
+        }}
+      >
+        Data Protection Compliance
+      </h2>
+      
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: 24,
+          marginBottom: 20,
+        }}
+      >
+        {/* NPC Registration Badge */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <img
+            src="/images/legal/npc-dpo-dps-badge.png"
+            alt="National Privacy Commission - DPO/DPS Registered"
+            style={{
+              width: "100%",
+              maxWidth: 180,
+              height: "auto",
+              borderRadius: 8,
+            }}
+          />
+          <div style={{ textAlign: "center" }}>
+            <p
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                margin: 0,
+              }}
+            >
+              NPC Registered
+            </p>
+            <p
+              style={{
+                fontSize: 11,
+                color: "var(--text-secondary)",
+                margin: "4px 0 0 0",
+              }}
+            >
+              Valid until June 23, 2027
+            </p>
+          </div>
+        </div>
+
+        {/* ICT Division Logo */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <img
+            src="/images/legal/ict-division-logo.png"
+            alt="Palayan City ICT Division"
+            style={{
+              width: "100%",
+              maxWidth: 180,
+              height: "auto",
+              borderRadius: 8,
+            }}
+          />
+          <div style={{ textAlign: "center" }}>
+            <p
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                margin: 0,
+              }}
+            >
+              ICT Division
+            </p>
+            <p
+              style={{
+                fontSize: 11,
+                color: "var(--text-secondary)",
+                margin: "4px 0 0 0",
+              }}
+            >
+              Palayan City Government
+            </p>
+          </div>
+        </div>
+
+        {/* Palayan City Seal */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <img
+            src="/images/legal/palayan-city-seal.png"
+            alt="Lungsod ng Palayan - Kabisera ng Nueva Ecija"
+            style={{
+              width: "100%",
+              maxWidth: 180,
+              height: "auto",
+              borderRadius: 8,
+            }}
+          />
+          <div style={{ textAlign: "center" }}>
+            <p
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                margin: 0,
+              }}
+            >
+              Official Seal
+            </p>
+            <p
+              style={{
+                fontSize: 11,
+                color: "var(--text-secondary)",
+                margin: "4px 0 0 0",
+              }}
+            >
+              City Government of Palayan
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          background: "var(--bg-base)",
+          borderRadius: 12,
+          padding: 16,
+          borderLeft: "4px solid #2563eb",
+        }}
+      >
+        <p
+          style={{
+            fontSize: 13,
+            lineHeight: 1.6,
+            color: "var(--text-primary)",
+            margin: 0,
+          }}
+        >
+          <strong>Datos ng Pilipino, Protektado Ko!</strong> - The City Government of Palayan is officially registered with the National Privacy Commission as a Data Protection Officer (DPO) and operates a compliant Data Processing System (DPS). Your personal data is protected under Republic Act 10173 (Data Privacy Act of 2012).
+        </p>
+      </div>
+    </div>
+  );
+
   return (
     <div
       style={{
@@ -409,6 +590,8 @@ function LegalScreen() {
                 margin: "0 auto",
               }}
             >
+              {/* Show compliance badges only for Privacy Policy */}
+              {activeTab === "privacy" && <ComplianceBadges />}
               {renderMarkdown(content)}
             </motion.div>
           )}

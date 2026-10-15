@@ -224,7 +224,7 @@ body {
     max-width: none;
     max-height: none;
     transform: none;
-    border-radius: 38px;
+    border-radius: 10px;
     border: 1px solid var(--border-medium);
     box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border-subtle);
     background: var(--bg-app);
@@ -370,7 +370,7 @@ html.light body:has(.app-shell.admin-mode),
 .report-cta {
   margin: 16px 16px 0;
   background: var(--yellow);
-  border-radius: 20px;
+  border-radius: 8px;
   padding: 18px 16px;
   display: flex;
   align-items: center;
@@ -627,7 +627,7 @@ html.light body:has(.app-shell.admin-mode),
   font-size: 10px;
   font-weight: 700;
   padding: 3px 9px;
-  border-radius: 20px;
+  border-radius: 8px;
 }
 
 .status-badge.pending {
@@ -850,7 +850,7 @@ html.light body:has(.app-shell.admin-mode),
   width: 64px;
   height: 64px;
   background: rgba(74, 94, 54, 0.95);
-  border-radius: 28px;
+  border-radius: 10px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -893,7 +893,7 @@ html.light body:has(.app-shell.admin-mode),
 
 .modal-sheet {
   background: var(--cream);
-  border-radius: 28px 28px 0 0;
+  border-radius: 10px 28px 0 0;
   padding: 20px 16px;
   padding-bottom: calc(24px + var(--safe-bottom));
   width: 100%;
@@ -1044,7 +1044,7 @@ html.light body:has(.app-shell.admin-mode),
 .profile-badge {
   background: rgba(255, 255, 255, 0.22);
   padding: 4px 14px;
-  border-radius: 20px;
+  border-radius: 8px;
   font-size: 11px;
   color: white;
   font-weight: 700;
@@ -1330,7 +1330,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .mapboxgl-popup-content {
-  border-radius: 20px !important;
+  border-radius: 8px !important;
   padding: 14px !important;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18) !important;
 }
@@ -1415,7 +1415,7 @@ html.light body:has(.app-shell.admin-mode),
 .profile-pill {
   background: var(--bg-card);
   border: 1px solid var(--border-medium);
-  border-radius: 28px;
+  border-radius: 10px;
   padding: 22px 24px;
   display: flex;
   align-items: center;
@@ -1446,7 +1446,7 @@ html.light body:has(.app-shell.admin-mode),
 .profile-stats-bar {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 22px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   padding: 16px 0;
@@ -1507,7 +1507,7 @@ html.light body:has(.app-shell.admin-mode),
 .menu-item-green {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 20px;
+  border-radius: 8px;
   padding: 16px 20px;
   display: flex;
   align-items: center;
@@ -1787,7 +1787,7 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
     margin-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     margin-left: 14px;
     margin-right: 14px;
-    border-radius: 26px;
+    border-radius: 10px;
     background: var(--nav-bg);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
@@ -2080,7 +2080,7 @@ html.dark .desktop-header-backdrop,
 
 .desktop-search-input {
   height: 40px;
-  border-radius: 20px;
+  border-radius: 8px;
   border: 1px solid var(--border-medium);
   background: var(--bg-card);
   color: var(--text-primary);
@@ -2119,7 +2119,7 @@ html.dark .desktop-header-backdrop,
 .desktop-report-btn {
   height: 40px;
   padding: 0 20px;
-  border-radius: 20px;
+  border-radius: 8px;
   background: var(--accent-orange);
   color: #ffffff;
   border: none;
@@ -2156,7 +2156,7 @@ html.dark .desktop-header-backdrop,
 /* 1. Desktop Hero Card */
 .desktop-hero-card {
   min-height: 290px;
-  border-radius: 24px;
+  border-radius: 10px;
   padding: 28px 30px;
   position: relative;
   overflow: hidden;
@@ -2257,7 +2257,7 @@ html.dark .desktop-pill,
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 20px;
+  border-radius: 8px;
   padding: 20px 22px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
   transition: all 0.3s ease;
@@ -2281,7 +2281,7 @@ html.dark .desktop-hero-glass-card,
 /* 2. Desktop Hourly Forecast Card */
 .desktop-hourly-card {
   background: var(--bg-card);
-  border-radius: 22px;
+  border-radius: 10px;
   padding: 16px 18px;
   border: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-card);
@@ -2340,7 +2340,7 @@ html.dark .desktop-hero-glass-card,
 /* 3. Desktop 7-Day Forecast Card */
 .desktop-weekly-card {
   background: var(--bg-card);
-  border-radius: 22px;
+  border-radius: 10px;
   padding: 20px 22px;
   border: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-card);
@@ -2395,7 +2395,7 @@ html.dark .desktop-hero-glass-card,
 /* ──── Right Column Cards ──── */
 .desktop-card {
   background: var(--bg-card);
-  border-radius: 22px;
+  border-radius: 10px;
   border: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-card);
 }
@@ -2578,7 +2578,7 @@ html.dark .desktop-hero-glass-card,
 /* 3. Wind Map Card */
 .desktop-wind-card {
   min-height: 150px;
-  border-radius: 22px;
+  border-radius: 10px;
   overflow: hidden;
   position: relative;
   cursor: pointer;
@@ -2682,7 +2682,7 @@ html.dark .desktop-wind-direction,
   margin-top: 24px;
   background: var(--bg-card);
   border: 1px solid var(--border-medium);
-  border-radius: 24px;
+  border-radius: 10px;
   padding: 24px;
   box-shadow: var(--shadow-card);
   display: flex;
@@ -3047,7 +3047,7 @@ html.dark .desktop-wind-direction,
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  border-radius: 20px;
+  border-radius: 8px;
   background: var(--bg-card);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -3103,3 +3103,4 @@ html.dark .desktop-wind-direction,
     transform: rotate(360deg);
   }
 }
+

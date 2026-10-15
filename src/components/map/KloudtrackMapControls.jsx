@@ -97,7 +97,7 @@ export function getDynamicMetricConfig(telemetry = {}, stationName = "Popolon AW
         { label: "Danger", range: "42-51°", color: "#ef4444", active: hi >= 42 && hi < 52 },
         { label: "Ext. Danger", range: ">52°", color: "#991b1b", active: hi >= 52 },
       ],
-      summary: `${hiStatus} (${hi.toFixed(1)}°C) — Live reading recorded from ${stationName}.`,
+      summary: `${hiStatus} (${hi.toFixed(1)}°C) - Live reading recorded from ${stationName}.`,
     },
     temperature: {
       id: "temperature",
@@ -254,7 +254,7 @@ export function KloudtrackMapControls({
       {/* ── 1. Bottom Horizontal Parameter Switcher Pill Bar ── */}
       <AnimatePresence mode="wait">
         {barMinimized ? (
-          /* Minimized Compact Single Pill — Exact matching size with collapsed legend */
+          /* Minimized Compact Single Pill - Exact matching size with collapsed legend */
           <motion.button
             key="minimized-pill"
             initial={{ opacity: 0, scale: 0.95, y: 12 }}

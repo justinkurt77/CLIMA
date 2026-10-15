@@ -1,0 +1,47 @@
+{
+  "id": "FEAT-005",
+  "type": "docs",
+  "description": "Final Polish & Audit: Update all stale content dates, run production build and fix any errors, run Lighthouse audit via CLI and capture scores (Performance, Accessibility, Best Practices, SEO), document all production enhancements in PRODUCTION_ENHANCEMENTS.md with before/after notes and metrics",
+  "status": "pending",
+  "steps": [
+    "1. Grep all .jsx and .md files for date strings, 'last updated', 'updated at', copyright years. Update to current date (2024 or 2025 as appropriate). Check footer copyright, legal document last-modified dates, any hardcoded timestamps in components",
+    "2. Remove any fake reviews, testimonials, customer counters, metrics dashboards with placeholder data, 'Made with AI' tags, or marketing copy that doesn't apply to a government platform. This is a professional disaster response system, not a commercial product",
+    "3. Run 'npm run build' and capture full output including chunk sizes, warnings, errors. Fix any build errors. Address chunk size warnings by reviewing manualChunks strategy - if AdminDashboard chunk is still >500KB after splitting, consider further lazy loading for tabs or chart components",
+    "4. Install Lighthouse CLI: 'npm install -g lighthouse' (or use npx lighthouse). Start production preview: 'npm run build && npm run preview', note the preview URL (usually http://localhost:4173)",
+    "5. Run Lighthouse audit: 'npx lighthouse http://localhost:4173 --output=html --output-path=./lighthouse-report.html --chrome-flags=\"--headless\" --preset=desktop --only-categories=performance,accessibility,best-practices,seo'. This generates lighthouse-report.html",
+    "6. Open lighthouse-report.html in browser and record scores: Performance (target >= 90), Accessibility (target >= 90 for WCAG 2.1 AA), Best Practices (target >= 90), SEO (target >= 90)",
+    "7. If any score is below target, investigate flagged issues. Common issues: missing alt text on images, low contrast text, missing meta descriptions, render-blocking resources, large JS bundles. Fix issues and re-run audit",
+    "8. For Accessibility: verify all interactive elements have proper ARIA labels, all images have alt text (can be empty alt='' for decorative images), color contrast meets WCAG AA (4.5:1 for normal text, 3:1 for large text). Use browser DevTools Accessibility Audit or axe DevTools extension for additional checks",
+    "9. For Performance: verify code splitting is working (separate chunks for routes), images are compressed (check public/ folder sizes - use sharp or imagemin to compress if needed), API responses are cached (React Query already handles this), no unnecessary re-renders (React DevTools Profiler)",
+    "10. Create PRODUCTION_ENHANCEMENTS.md in project root. Structure: # CLIMA Production Enhancements, ## Overview (summary of all changes), ## Performance Optimizations (list chunk splitting, lazy loading, caching, debounce, pagination with before/after metrics), ## UX Improvements (dark mode toggle, scroll controls, search, FAQ, cookie consent, confirmation modals, hover states, password toggles, copy buttons), ## Accessibility (skip links, WCAG compliance notes, keyboard navigation, focus management), ## Content & Branding (removed placeholders/em-dashes, added Palayan seal, social share image, footer, legal pages), ## Build & Deployment (Vite config, dependency cleanup, custom domain config), ## Lighthouse Scores (before/after if available, current scores), ## Known Limitations (note that full WCAG validation requires manual testing with assistive technologies)",
+    "11. In PRODUCTION_ENHANCEMENTS.md, document before/after bundle sizes from npm run build output. Example: 'Before: index.js 1.2MB, After: index.js 760KB + vendor-mapbox 1.6MB + AdminDashboard 754KB'. Calculate total size reduction or explain chunking strategy",
+    "12. In PRODUCTION_ENHANCEMENTS.md, document before/after Lighthouse scores if baseline exists (if not, just document current scores)",
+    "13. Add ## Testing Checklist section in PRODUCTION_ENHANCEMENTS.md: list all features to test manually (dark mode toggle works, pagination loads more data, search returns results, cookie consent saves preference, FAQ accordion expands, scroll-to-top button appears, floating contact button works, confirmation modal prevents accidental deletes, password visibility toggle works, copy-to-clipboard works, skip-to-content link works, print stylesheet hides nav, social meta tags appear in source)",
+    "14. Add ## Future Recommendations section: suggest image compression for public/ assets, consider setting up CI/CD with Lighthouse checks, add E2E tests with Playwright or Cypress, monitor Core Web Vitals in production, implement server-side rendering or static generation for faster initial loads, add service worker caching strategy for offline support (PWA already configured but review workbox config)",
+    "15. Run final 'npm run build' and ensure clean output with no errors",
+    "16. Commit all changes with message: 'feat: production enhancements - performance, UX, accessibility, branding'. Do not push (user will review first)"
+  ],
+  "acceptance_criteria": [
+    "No hardcoded old dates or 'last updated' text with stale timestamps remain in components or legal docs",
+    "npm run build completes with exit code 0 and no errors (warnings about chunk size are acceptable if documented)",
+    "Lighthouse Performance score >= 85 (90 ideal), Accessibility >= 90, Best Practices >= 90, SEO >= 90",
+    "lighthouse-report.html exists in project root with scores captured",
+    "PRODUCTION_ENHANCEMENTS.md exists in project root with all sections completed and metrics documented",
+    "All changes committed to git with descriptive message (not pushed)",
+    "Manual testing checklist in PRODUCTION_ENHANCEMENTS.md is comprehensive and reflects all FEAT-001 through FEAT-004 features"
+  ],
+  "verification": [
+    "Run 'grep -r \"last updated\\|Last Updated\\|Copyright 202[0-3]\" src/' and confirm no stale dates",
+    "Run 'npm run build' and confirm exit code 0, save output to compare bundle sizes",
+    "Run 'npm run preview' to start production server on localhost:4173",
+    "Run 'npx lighthouse http://localhost:4173 --output=html --output-path=./lighthouse-report.html --preset=desktop --only-categories=performance,accessibility,best-practices,seo'",
+    "Open lighthouse-report.html and verify all scores: Performance, Accessibility, Best Practices, SEO. Record scores",
+    "If any score <85, investigate issues in Lighthouse report, fix them, rebuild, and re-run audit",
+    "Verify PRODUCTION_ENHANCEMENTS.md exists and contains: Overview, Performance Optimizations, UX Improvements, Accessibility, Content & Branding, Build & Deployment, Lighthouse Scores, Known Limitations, Testing Checklist, Future Recommendations sections",
+    "Run 'git status' and confirm all modified files are staged",
+    "Run 'git log -1' and confirm latest commit message is 'feat: production enhancements - performance, UX, accessibility, branding'",
+    "Do NOT push to remote - user will review first"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

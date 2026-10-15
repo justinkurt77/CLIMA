@@ -12,16 +12,22 @@ export default defineConfig({
       manifest: {
         name: "CLIMA - Climate Information Monitoring and Awareness",
         short_name: "CLIMA",
-        description: "Climate Information Monitoring and Awareness",
+        description: "Official disaster response platform of Palayan City Government, Nueva Ecija",
         theme_color: "#f5f3f0",
         background_color: "#f5f3f0",
         display: "fullscreen",
         display_override: ["fullscreen", "standalone"],
         icons: [
           {
-            src: "/vite.svg",
-            sizes: "192x192 512x512",
-            type: "image/svg+xml",
+            src: "/logo.webp",
+            sizes: "192x192",
+            type: "image/webp",
+            purpose: "any maskable",
+          },
+          {
+            src: "/logo.webp",
+            sizes: "512x512",
+            type: "image/webp",
             purpose: "any maskable",
           },
         ],

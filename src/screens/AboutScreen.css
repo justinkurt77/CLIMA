@@ -1,0 +1,16 @@
+﻿/* AboutScreen Isolation - prevents any external overlays */
+.about-screen-wrapper {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 10 !important;
+  isolation: isolate !important;
+}
+
+.about-screen-wrapper * {
+  position: relative;
+}
+
+.about-screen-wrapper::before,
+.about-screen-wrapper::after {
+  display: none !important;
+}

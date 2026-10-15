@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import DOMPurify from "dompurify";
 import {
@@ -223,7 +223,7 @@ export default function AdminMapScreen({
   );
 }
 
-/* â”€â”€ Full Report Detail Modal â”€â”€ */
+/* ── Full Report Detail Modal ── */
 function ReportDetailModal({ report, onClose, onStatusChange }) {
   const { isDark } = useTheme();
   const Z = getZTokens(isDark);
