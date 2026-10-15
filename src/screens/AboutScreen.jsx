@@ -15,9 +15,11 @@ import {
   Heart,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
 
 export default function AboutScreen() {
   const [copied, setCopied] = useState(false);
+  const { isDark } = useTheme();
 
   const copyVersion = () => {
     navigator.clipboard.writeText('1.0.0');
@@ -39,6 +41,9 @@ export default function AboutScreen() {
     }
   };
 
+  const bgColor = isDark ? '#18181b' : '#ffffff';
+  const contentBg = isDark ? '#27272a' : '#f9fafb';
+
   return (
     <div
       style={{
@@ -47,9 +52,10 @@ export default function AboutScreen() {
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        background: 'var(--bg-app)',
+        background: bgColor,
         fontFamily: "'Nunito', -apple-system, sans-serif",
       }}
+      className="about-screen-wrapper"
     >
       {/* Scrollable Content */}
       <div
@@ -58,6 +64,7 @@ export default function AboutScreen() {
           flex: 1,
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
+          background: bgColor,
         }}
       >
         {/* Header Section with Logos */}
@@ -226,9 +233,10 @@ export default function AboutScreen() {
           style={{ 
             padding: '20px', 
             paddingBottom: '110px',
-            background: 'var(--bg-app)',
+            background: bgColor,
             position: 'relative',
             zIndex: 1,
+            minHeight: '100vh',
           }}
         >
           {/* System Overview */}
