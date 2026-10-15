@@ -20,11 +20,14 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import LegalModal from '../components/ui/LegalModal';
 import './AboutScreen.css';
 
 export default function AboutScreen() {
   const { isDark } = useTheme();
   const [showNPCBadge, setShowNPCBadge] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showTermsOfService, setShowTermsOfService] = useState(false);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -587,7 +590,7 @@ export default function AboutScreen() {
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <a
                 href="#legal"
-                onClick={(e) => { e.preventDefault(); window.location.hash = ''; setTimeout(() => window.location.pathname = '/legal', 10); }}
+                onClick={(e) => { e.preventDefault(); setShowPrivacyPolicy(true); }}
                 style={{
                   flex: 1,
                   minWidth: 140,
@@ -611,7 +614,7 @@ export default function AboutScreen() {
               </a>
               <a
                 href="#legal"
-                onClick={(e) => { e.preventDefault(); window.location.hash = ''; setTimeout(() => window.location.pathname = '/legal', 10); }}
+                onClick={(e) => { e.preventDefault(); setShowPrivacyPolicy(true); }}
                 style={{
                   flex: 1,
                   minWidth: 140,
