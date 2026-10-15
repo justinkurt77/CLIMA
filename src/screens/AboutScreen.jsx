@@ -104,7 +104,7 @@ export default function AboutScreen() {
         {/* Header Section with Logos */}
         <div
           style={{
-            background: 'var(--bg-app)',
+            background: isDark ? '#1a1d2e' : '#161922',
             padding: '40px 20px 32px',
             marginTop: 'env(safe-area-inset-top, 0px)',
             textAlign: 'center',
