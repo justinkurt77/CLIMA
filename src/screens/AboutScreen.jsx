@@ -84,93 +84,51 @@ export default function AboutScreen() {
             borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           }}
         >
-          {/* Logos Row with white circular backgrounds */}
+          {/* Logos Row with single connected white background */}
           <div
             style={{
-              display: 'flex',
-              justifyContent: 'center',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: 16,
+              gap: 20,
+              background: '#ffffff',
+              padding: '16px 28px',
+              borderRadius: 60,
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.1)',
               marginBottom: 24,
             }}
           >
             {/* Palayan City Seal */}
-            <div
+            <img
+              src="/images/legal/palayan-city-seal.png"
+              alt="Palayan City"
               style={{
-                width: 80,
-                height: 80,
-                borderRadius: '50%',
-                background: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 12,
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                border: '3px solid rgba(255, 255, 255, 0.1)',
+                width: 70,
+                height: 70,
+                objectFit: 'contain',
               }}
-            >
-              <img
-                src="/images/legal/palayan-city-seal.png"
-                alt="Palayan City"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                }}
-              />
-            </div>
+            />
             
-            {/* CLIMA Logo */}
-            <div
+            {/* CLIMA Logo - Larger */}
+            <img
+              src="/logo.webp"
+              alt="CLIMA"
               style={{
-                width: 110,
-                height: 110,
-                borderRadius: '50%',
-                background: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 12,
-                boxShadow: '0 4px 16px rgba(249, 115, 22, 0.3)',
-                border: '3px solid rgba(249, 115, 22, 0.2)',
+                width: 90,
+                height: 90,
+                objectFit: 'contain',
               }}
-            >
-              <img
-                src="/logo.webp"
-                alt="CLIMA"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                }}
-              />
-            </div>
+            />
             
             {/* ICT Division Logo */}
-            <div
+            <img
+              src="/images/legal/ict-division-logo.png"
+              alt="ICT Division"
               style={{
-                width: 80,
-                height: 80,
-                borderRadius: '50%',
-                background: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 12,
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                border: '3px solid rgba(255, 255, 255, 0.1)',
+                width: 70,
+                height: 70,
+                objectFit: 'contain',
               }}
-            >
-              <img
-                src="/images/legal/ict-division-logo.png"
-                alt="ICT Division"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                }}
-              />
-            </div>
+            />
           </div>
 
           <h1
