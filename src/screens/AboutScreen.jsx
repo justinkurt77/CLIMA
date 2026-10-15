@@ -53,14 +53,6 @@ export default function AboutScreen() {
     { icon: Thermometer, label: 'Heat Index', desc: 'Live advisories' },
   ];
 
-  const techStack = [
-    { icon: Code, label: 'Frontend', value: 'React 18, Vite', color: '#61dafb' },
-    { icon: Database, label: 'Backend', value: 'Supabase PostgreSQL', color: '#3ecf8e' },
-    { icon: MapPin, label: 'Mapping', value: 'Mapbox GL JS', color: '#4264fb' },
-    { icon: Cloud, label: 'Weather', value: 'KloudTech API', color: '#f59e0b' },
-    { icon: Shield, label: 'Security', value: 'RLS + JWT Auth', color: '#ef4444' },
-    { icon: Zap, label: 'Animation', value: 'Framer Motion', color: '#a855f7' },
-  ];
 
   const agencies = [
     'CDRRMO Palayan',
@@ -319,31 +311,6 @@ export default function AboutScreen() {
             </div>
           </motion.div>
 
-          {/* Technology Stack Grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.15 }}
-            style={{ marginBottom: 20 }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-              <Code size={20} strokeWidth={2.5} color="var(--text-primary)" />
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                Technology Stack
-              </h2>
-            </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-                gap: 12,
-              }}
-            >
-              {techStack.map((tech, idx) => (
-                <TechCard key={idx} icon={tech.icon} label={tech.label} value={tech.value} color={tech.color} delay={idx * 0.05} />
-              ))}
-            </div>
-          </motion.div>
 
           {/* KloudTech Acknowledgment Hero Card */}
           <motion.div
@@ -774,51 +741,6 @@ function FeatureCard({ icon: Icon, label, desc, delay }) {
   );
 }
 
-function TechCard({ icon: Icon, label, value, color, delay }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3, delay }}
-      whileHover={{ scale: 1.02, y: -2 }}
-      style={{
-        background: 'var(--bg-card)',
-        borderRadius: 16,
-        padding: 16,
-        border: '1px solid var(--border-subtle)',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-        cursor: 'default',
-        transition: 'all 0.2s',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-      }}
-    >
-      <div
-        style={{
-          width: 42,
-          height: 42,
-          borderRadius: 12,
-          background: `${color}15`,
-          border: `1px solid ${color}30`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Icon size={20} strokeWidth={2.5} color={color} />
-      </div>
-      <div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>
-          {label}
-        </div>
-        <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.3 }}>
-          {value}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
 
 function InfoPill({ label, value }) {
   return (
