@@ -199,9 +199,9 @@ export default function AboutScreen() {
           <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', gap: 8 }}>
             <div
               style={{
-                background: 'rgba(255, 255, 255, 0.15)',
+                background: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)',
                 backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.25)',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.25)' : '1px solid rgba(0, 0, 0, 0.12)',
                 padding: '6px 12px',
                 borderRadius: 20,
                 fontSize: 12,
@@ -248,9 +248,9 @@ export default function AboutScreen() {
               onClick={handleShare}
               style={{
                 marginTop: 12,
-                background: 'rgba(255, 255, 255, 0.2)',
+                background: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.08)',
                 backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(0, 0, 0, 0.12)',
                 padding: '8px 16px',
                 borderRadius: 20,
                 fontSize: 13,
