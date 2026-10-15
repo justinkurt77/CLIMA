@@ -13,6 +13,12 @@ import {
   Users,
   Award,
   Heart,
+  Zap,
+  Map,
+  Bell,
+  BarChart3,
+  Thermometer,
+  Sparkles,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
@@ -42,8 +48,34 @@ export default function AboutScreen() {
     }
   };
 
-  const bgColor = isDark ? '#161922' : '#1a1d2e';
-  const contentBg = isDark ? '#27272a' : '#f9fafb';
+  const features = [
+    { icon: Cloud, label: 'Real-time Weather', desc: 'KloudTech powered monitoring' },
+    { icon: Map, label: 'Interactive Maps', desc: '11+ disaster layers' },
+    { icon: Bell, label: 'Citizen Reports', desc: 'Photo upload system' },
+    { icon: Users, label: 'Multi-Agency', desc: 'CDRRMO, BFP coordination' },
+    { icon: Info, label: 'Emergency Hotlines', desc: 'Quick access directory' },
+    { icon: BarChart3, label: 'El Niño Dashboard', desc: 'Impact monitoring' },
+    { icon: Thermometer, label: 'Heat Index', desc: 'Live advisories' },
+    { icon: Sparkles, label: 'Dark Mode', desc: 'Full theme support' },
+  ];
+
+  const techStack = [
+    { icon: Code, label: 'Frontend', value: 'React 18, Vite', color: '#61dafb' },
+    { icon: Database, label: 'Backend', value: 'Supabase PostgreSQL', color: '#3ecf8e' },
+    { icon: MapPin, label: 'Mapping', value: 'Mapbox GL JS', color: '#4264fb' },
+    { icon: Cloud, label: 'Weather', value: 'KloudTech API', color: '#f59e0b' },
+    { icon: Shield, label: 'Security', value: 'RLS + JWT Auth', color: '#ef4444' },
+    { icon: Zap, label: 'Animation', value: 'Framer Motion', color: '#a855f7' },
+  ];
+
+  const agencies = [
+    'CDRRMO Palayan',
+    'Bureau of Fire Protection (BFP)',
+    'City Agriculture Office',
+    'City Water & Power Services',
+    'City Health Office',
+    'Palayan City Hospital',
+  ];
 
   return (
     <div
@@ -54,7 +86,7 @@ export default function AboutScreen() {
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        background: bgColor,
+        background: 'var(--bg-app)',
         fontFamily: "'Nunito', -apple-system, sans-serif",
       }}
       className="about-screen-wrapper"
@@ -66,13 +98,13 @@ export default function AboutScreen() {
           flex: 1,
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
-          background: bgColor,
+          background: 'var(--bg-app)',
         }}
       >
         {/* Header Section with Logos */}
         <div
           style={{
-            background: isDark ? '#161922' : '#1a1d2e',
+            background: 'var(--bg-app)',
             padding: '40px 20px 32px',
             marginTop: 'env(safe-area-inset-top, 0px)',
             textAlign: 'center',
@@ -243,199 +275,439 @@ export default function AboutScreen() {
           style={{ 
             padding: '20px', 
             paddingBottom: '110px',
-            background: bgColor,
+            background: 'var(--bg-app)',
             position: 'relative',
             zIndex: 1,
             minHeight: '100vh',
           }}
         >
-          {/* System Overview */}
-          <Section title="About CLIMA" icon={Info}>
-            <p style={textStyle}>
+          {/* System Overview Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            style={{
+              background: 'var(--bg-card)',
+              borderRadius: 16,
+              padding: 20,
+              border: '1px solid var(--border-subtle)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+              marginBottom: 20,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Info size={20} color="#ffffff" strokeWidth={2.5} />
+              </div>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                About CLIMA
+              </h2>
+            </div>
+            <p style={{ ...textStyle, lineHeight: 1.7, marginBottom: 16 }}>
               CLIMA is a comprehensive disaster response and climate monitoring platform for
               Palayan City, Nueva Ecija, Philippines. The system enables real-time incident
               reporting, multi-agency coordination, and climate data visualization to enhance
               disaster preparedness and response capabilities.
             </p>
-            <p style={{ ...textStyle, marginTop: 12 }}>
-              <strong>Launch Date:</strong> TBA<br />
-              <strong>Service Area:</strong> 19 Barangays of Palayan City
-            </p>
-          </Section>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <InfoPill label="Launch Date" value="TBA" />
+              <InfoPill label="Service Area" value="19 Barangays" />
+            </div>
+          </motion.div>
 
-          {/* Key Features */}
-          <Section title="Key Features" icon={Award}>
-            <FeatureList>
-              <Feature>Real-time weather monitoring powered by KloudTech</Feature>
-              <Feature>Interactive disaster mapping with 11+ layers</Feature>
-              <Feature>Citizen reporting system with photo uploads</Feature>
-              <Feature>Multi-department coordination (CDRRMO, BFP, Agriculture, Water, Power)</Feature>
-              <Feature>Emergency hotlines directory</Feature>
-              <Feature>El Nino impact monitoring dashboard</Feature>
-              <Feature>Heat index tracking and advisories</Feature>
-              <Feature>Dark mode support</Feature>
-            </FeatureList>
-          </Section>
-
-          {/* Technology Stack */}
-          <Section title="Technology Stack" icon={Code}>
-            <TechRow icon={<Code size={16} />} label="Frontend" value="React 18, Vite, TailwindCSS" />
-            <TechRow icon={<Database size={16} />} label="Backend" value="Supabase (PostgreSQL + Auth + Storage)" />
-            <TechRow icon={<MapPin size={16} />} label="Mapping" value="Mapbox GL JS" />
-            <TechRow icon={<Cloud size={16} />} label="Weather Data" value="KloudTech Climate API" />
-            <TechRow icon={<Shield size={16} />} label="Security" value="Row-Level Security, JWT Auth" />
-          </Section>
-
-          {/* Acknowledgments - KloudTech */}
-          <Section title="Powered by KloudTech" icon={Cloud}>
+          {/* Key Features Grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            style={{ marginBottom: 20 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <Award size={20} strokeWidth={2.5} color="var(--text-primary)" />
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                Key Features
+              </h2>
+            </div>
             <div
               style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 12,
-                padding: 16,
-                marginBottom: 12,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                gap: 12,
               }}
             >
-              <p style={textStyle}>
+              {features.map((feature, idx) => (
+                <FeatureCard key={idx} icon={feature.icon} label={feature.label} desc={feature.desc} delay={idx * 0.05} />
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Technology Stack Grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            style={{ marginBottom: 20 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <Code size={20} strokeWidth={2.5} color="var(--text-primary)" />
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                Technology Stack
+              </h2>
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                gap: 12,
+              }}
+            >
+              {techStack.map((tech, idx) => (
+                <TechCard key={idx} icon={tech.icon} label={tech.label} value={tech.value} color={tech.color} delay={idx * 0.05} />
+              ))}
+            </div>
+          </motion.div>
+
+          {/* KloudTech Acknowledgment Hero Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              borderRadius: 16,
+              padding: 24,
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 8px 24px rgba(102, 126, 234, 0.25)',
+              marginBottom: 20,
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                top: -50,
+                right: -50,
+                width: 200,
+                height: 200,
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '50%',
+                filter: 'blur(40px)',
+              }}
+            />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <Cloud size={24} color="#ffffff" strokeWidth={2.5} />
+                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#ffffff', margin: 0 }}>
+                  Powered by KloudTech
+                </h2>
+              </div>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255, 255, 255, 0.95)', lineHeight: 1.7, marginBottom: 12 }}>
                 We extend our deepest gratitude to{' '}
                 <a
                   href="https://homepage.kloudtechsea.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
-                    color: '#2563eb',
-                    fontWeight: 700,
-                    textDecoration: 'none',
+                    color: '#ffffff',
+                    fontWeight: 800,
+                    textDecoration: 'underline',
+                    textDecorationColor: 'rgba(255, 255, 255, 0.5)',
                   }}
                 >
                   KloudTech <ExternalLink size={12} style={{ display: 'inline', verticalAlign: 'middle' }} />
                 </a>{' '}
                 for providing real-time climate and weather data for Palayan City.
               </p>
-              <p style={{ ...textStyle, marginTop: 12 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)', lineHeight: 1.7, margin: 0 }}>
                 Their telemetry infrastructure enables accurate monitoring of temperature, rainfall,
                 humidity, and weather conditions critical for disaster preparedness. Without
                 KloudTech's reliable climate monitoring, this disaster response platform would not be
                 possible.
               </p>
             </div>
-          </Section>
+          </motion.div>
 
-          {/* Acknowledgments - PalaSumbong */}
-          <Section title="Built on PalaSumbong" icon={Heart}>
+          {/* PalaSumbong Hero Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.25 }}
+            style={{
+              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              borderRadius: 16,
+              padding: 24,
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 8px 24px rgba(245, 87, 108, 0.25)',
+              marginBottom: 20,
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
             <div
               style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: 12,
-                padding: 16,
+                position: 'absolute',
+                bottom: -50,
+                left: -50,
+                width: 200,
+                height: 200,
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '50%',
+                filter: 'blur(40px)',
               }}
-            >
-              <p style={textStyle}>
+            />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <Heart size={24} color="#ffffff" strokeWidth={2.5} />
+                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#ffffff', margin: 0 }}>
+                  Built on PalaSumbong
+                </h2>
+              </div>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255, 255, 255, 0.95)', lineHeight: 1.7, marginBottom: 12 }}>
                 CLIMA stands on the shoulders of{' '}
-                <strong style={{ color: 'var(--text-primary)' }}>PalaSumbong</strong>, a proven
+                <strong style={{ fontWeight: 800 }}>PalaSumbong</strong>, a proven
                 citizen reporting and engagement platform that served as the foundation of this project.
               </p>
-              <p style={{ ...textStyle, marginTop: 12 }}>
-                By leveraging PalaSumbong's robust architecture, we:
-              </p>
-              <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
-                <li style={{ ...textStyle, marginBottom: 6 }}>Cut development time by 60%</li>
-                <li style={{ ...textStyle, marginBottom: 6 }}>Inherited battle-tested citizen reporting features</li>
-                <li style={{ ...textStyle, marginBottom: 6 }}>Utilized existing government integrations</li>
-                <li style={{ ...textStyle, marginBottom: 6 }}>Built on a stable, proven codebase</li>
-              </ul>
-              <p style={{ ...textStyle, marginTop: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 12 }}>
+                <StatBadge value="60%" label="Time Saved" />
+                <StatBadge value="100%" label="Battle-tested" />
+              </div>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255, 255, 255, 0.9)', lineHeight: 1.7, margin: 0 }}>
                 PalaSumbong's citizen-first design philosophy enabled us to focus our efforts on
                 climate-specific features and multi-agency coordination rather than rebuilding core
                 infrastructure from scratch.
               </p>
             </div>
-          </Section>
+          </motion.div>
 
-          {/* Development Team */}
-          <Section title="Development Team" icon={Users}>
-            <TechRow label="ICT Division" value="Palayan City Government" />
-            <div style={{ marginTop: 12 }}>
-              <p style={{ ...textStyle, fontWeight: 700, marginBottom: 8 }}>Partner Agencies:</p>
-              <ul style={{ margin: 0, paddingLeft: 20 }}>
-                <li style={textStyle}>CDRRMO Palayan</li>
-                <li style={textStyle}>Bureau of Fire Protection (BFP)</li>
-                <li style={textStyle}>City Agriculture Office</li>
-                <li style={textStyle}>City Water & Power Services</li>
-                <li style={textStyle}>City Health Office</li>
-                <li style={textStyle}>Palayan City Hospital</li>
-              </ul>
+          {/* Development Team Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            style={{
+              background: 'var(--bg-card)',
+              borderRadius: 16,
+              padding: 20,
+              border: '1px solid var(--border-subtle)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+              marginBottom: 20,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <Users size={20} strokeWidth={2.5} color="var(--text-primary)" />
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                Development Team
+              </h2>
             </div>
-          </Section>
+            <div style={{
+              background: 'var(--bg-card-subtle)',
+              borderRadius: 12,
+              padding: 16,
+              marginBottom: 14,
+              border: '1px solid var(--border-subtle)',
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>
+                ICT Division
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                Palayan City Government
+              </div>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 10 }}>
+              Partner Agencies:
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
+              {agencies.map((agency, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: 'var(--bg-card-subtle)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 10,
+                    padding: '10px 12px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: 'var(--text-primary)',
+                    textAlign: 'center',
+                  }}
+                >
+                  {agency}
+                </div>
+              ))}
+            </div>
+          </motion.div>
 
-          {/* Legal & Privacy */}
-          <Section title="Legal & Privacy" icon={FileText}>
-            <p style={textStyle}>
+          {/* Legal & Privacy Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.35 }}
+            style={{
+              background: 'var(--bg-card)',
+              borderRadius: 16,
+              padding: 20,
+              border: '1px solid var(--border-subtle)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+              marginBottom: 20,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <Shield size={20} strokeWidth={2.5} color="var(--text-primary)" />
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                Legal & Privacy
+              </h2>
+            </div>
+            <p style={{ ...textStyle, lineHeight: 1.7, marginBottom: 12 }}>
               CLIMA is compliant with Republic Act 10173 (Data Privacy Act of 2012). The City
               Government of Palayan is registered with the National Privacy Commission as a Data
               Protection Officer (DPO) and operates a compliant Data Processing System (DPS).
             </p>
-            <p style={{ ...textStyle, marginTop: 12 }}>
-              <strong>Datos ng Pilipino, Protektado Ko!</strong>
-            </p>
-            <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div
+              style={{
+                background: 'var(--bg-card-subtle)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 12,
+                padding: 12,
+                fontSize: 13,
+                fontWeight: 800,
+                color: 'var(--text-primary)',
+                marginBottom: 12,
+                textAlign: 'center',
+              }}
+            >
+              🇵🇭 Datos ng Pilipino, Protektado Ko!
+            </div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <a
                 href="#legal"
                 onClick={(e) => { e.preventDefault(); window.location.hash = ''; setTimeout(() => window.location.pathname = '/legal', 10); }}
                 style={{
+                  flex: 1,
+                  minWidth: 140,
+                  background: 'var(--bg-card-subtle)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 10,
+                  padding: '10px 14px',
                   fontSize: 13,
                   fontWeight: 700,
                   color: '#2563eb',
                   textDecoration: 'none',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 4,
+                  justifyContent: 'center',
+                  gap: 6,
                   cursor: 'pointer',
+                  transition: 'all 0.2s',
                 }}
               >
                 Privacy Policy <ExternalLink size={12} />
               </a>
-              <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>•</span>
               <a
                 href="#legal"
                 onClick={(e) => { e.preventDefault(); window.location.hash = ''; setTimeout(() => window.location.pathname = '/legal', 10); }}
                 style={{
+                  flex: 1,
+                  minWidth: 140,
+                  background: 'var(--bg-card-subtle)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 10,
+                  padding: '10px 14px',
                   fontSize: 13,
                   fontWeight: 700,
                   color: '#2563eb',
                   textDecoration: 'none',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 4,
+                  justifyContent: 'center',
+                  gap: 6,
                   cursor: 'pointer',
+                  transition: 'all 0.2s',
                 }}
               >
                 Terms of Service <ExternalLink size={12} />
               </a>
             </div>
-          </Section>
+          </motion.div>
 
-          {/* Open Source */}
-          <Section title="Open Source Libraries" icon={Code}>
-            <p style={textStyle}>
+          {/* Open Source Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+            style={{
+              background: 'var(--bg-card)',
+              borderRadius: 16,
+              padding: 20,
+              border: '1px solid var(--border-subtle)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+              marginBottom: 20,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <Code size={20} strokeWidth={2.5} color="var(--text-primary)" />
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                Open Source
+              </h2>
+            </div>
+            <p style={{ ...textStyle, lineHeight: 1.7 }}>
               CLIMA is built with open source technologies including React, Mapbox, Supabase,
               TailwindCSS, Framer Motion, Chart.js, Lucide React, React Query, and many other
               community-driven projects. We are grateful to all open source contributors.
             </p>
-          </Section>
+          </motion.div>
 
-          {/* Contact */}
-          <Section title="Contact & Support" icon={Info}>
-            <TechRow label="ICT Division" value="Palayan City Government" />
-            <TechRow label="Address" value="2nd Floor, City Hall, Brgy. Singalat" />
-            <TechRow label="Email" value="ict@palayancity.gov.ph" />
-            <TechRow label="Phone" value="(044) 940-1234" />
-            <p style={{ ...textStyle, marginTop: 12, fontWeight: 700 }}>
-              For emergencies, use the Emergency Hotlines button at the bottom-right of the screen.
-            </p>
-          </Section>
+          {/* Contact Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.45 }}
+            style={{
+              background: 'var(--bg-card)',
+              borderRadius: 16,
+              padding: 20,
+              border: '1px solid var(--border-subtle)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <Info size={20} strokeWidth={2.5} color="var(--text-primary)" />
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                Contact & Support
+              </h2>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <ContactRow label="ICT Division" value="Palayan City Government" />
+              <ContactRow label="Address" value="2nd Floor, City Hall, Brgy. Singalat" />
+              <ContactRow label="Email" value="ict@palayancity.gov.ph" />
+              <ContactRow label="Phone" value="(044) 940-1234" />
+            </div>
+            <div
+              style={{
+                marginTop: 16,
+                padding: 12,
+                background: 'var(--bg-card-subtle)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 12,
+                fontSize: 13,
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                textAlign: 'center',
+              }}
+            >
+              ⚠️ For emergencies, use the Emergency Hotlines button
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>
@@ -443,110 +715,163 @@ export default function AboutScreen() {
 }
 
 // Helper Components
-function Section({ title, icon: Icon, children }) {
+function FeatureCard({ icon: Icon, label, desc, delay }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3, delay }}
+      whileHover={{ scale: 1.02, y: -2 }}
       style={{
-        marginBottom: 24,
+        background: 'var(--bg-card)',
+        borderRadius: 16,
+        padding: 16,
+        border: '1px solid var(--border-subtle)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+        cursor: 'default',
+        transition: 'all 0.2s',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
       }}
     >
       <div
         style={{
+          width: 42,
+          height: 42,
+          borderRadius: 12,
+          background: 'var(--bg-card-subtle)',
+          border: '1px solid var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
-          marginBottom: 12,
+          justifyContent: 'center',
         }}
       >
         <Icon size={20} strokeWidth={2.5} color="var(--text-primary)" />
-        <h2
-          style={{
-            fontSize: 18,
-            fontWeight: 800,
-            color: 'var(--text-primary)',
-            margin: 0,
-            fontFamily: "'Baloo 2', cursive",
-          }}
-        >
-          {title}
-        </h2>
       </div>
-      <div
-        style={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 16,
-          padding: 16,
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-        }}
-      >
-        {children}
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 2 }}>
+          {label}
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+          {desc}
+        </div>
       </div>
     </motion.div>
   );
 }
 
-function TechRow({ icon, label, value }) {
+function TechCard({ icon: Icon, label, value, color, delay }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3, delay }}
+      whileHover={{ scale: 1.02, y: -2 }}
+      style={{
+        background: 'var(--bg-card)',
+        borderRadius: 16,
+        padding: 16,
+        border: '1px solid var(--border-subtle)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+        cursor: 'default',
+        transition: 'all 0.2s',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+      }}
+    >
+      <div
+        style={{
+          width: 42,
+          height: 42,
+          borderRadius: 12,
+          background: `${color}15`,
+          border: `1px solid ${color}30`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Icon size={20} strokeWidth={2.5} color={color} />
+      </div>
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>
+          {label}
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+          {value}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function InfoPill({ label, value }) {
   return (
     <div
       style={{
+        background: 'var(--bg-card-subtle)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 10,
+        padding: '8px 14px',
         display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        padding: '8px 0',
-        borderBottom: '1px solid var(--border-subtle)',
+        alignItems: 'center',
+        gap: 8,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {icon && <span style={{ color: 'var(--text-secondary)' }}>{icon}</span>}
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: 'var(--text-secondary)',
-          }}
-        >
-          {label}
-        </span>
-      </div>
-      <span
-        style={{
-          fontSize: 13,
-          fontWeight: 700,
-          color: 'var(--text-primary)',
-          textAlign: 'right',
-          flex: 1,
-          marginLeft: 16,
-        }}
-      >
+      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
+        {label}:
+      </span>
+      <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
         {value}
       </span>
     </div>
   );
 }
 
-function FeatureList({ children }) {
+function StatBadge({ value, label }) {
   return (
-    <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {children}
-    </ul>
+    <div
+      style={{
+        background: 'rgba(255, 255, 255, 0.2)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255, 255, 255, 0.3)',
+        borderRadius: 12,
+        padding: '10px 12px',
+        textAlign: 'center',
+      }}
+    >
+      <div style={{ fontSize: 20, fontWeight: 900, color: '#ffffff', marginBottom: 2 }}>
+        {value}
+      </div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255, 255, 255, 0.9)' }}>
+        {label}
+      </div>
+    </div>
   );
 }
 
-function Feature({ children }) {
+function ContactRow({ label, value }) {
   return (
-    <li
+    <div
       style={{
-        fontSize: 14,
-        fontWeight: 600,
-        color: 'var(--text-primary)',
-        lineHeight: 1.5,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '10px 14px',
+        background: 'var(--bg-card-subtle)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 10,
       }}
     >
-      {children}
-    </li>
+      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>
+        {label}
+      </span>
+      <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', textAlign: 'right', flex: 1, marginLeft: 16 }}>
+        {value}
+      </span>
+    </div>
   );
 }
 
