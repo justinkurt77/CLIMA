@@ -3008,14 +3008,57 @@ html.dark .desktop-wind-direction,
   padding: 16px 14px 10px;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.kloudtech-chart-card:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.kloudtech-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 2px;
+}
+
+.bklit-chart-badge {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 999px;
+  line-height: 1;
+}
+
+.bklit-pulse-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: kloudBeaconPulseDot 2s infinite ease-in-out;
+}
+
+@keyframes kloudBeaconPulseDot {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
 }
 
 .kloudtech-chart-title {
   font-size: 13px;
   font-weight: 700;
   color: var(--text-secondary);
-  padding-left: 6px;
+  padding-left: 2px;
 }
 
 .kloudtech-chart-body {

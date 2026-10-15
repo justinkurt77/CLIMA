@@ -1725,7 +1725,7 @@ function OverviewTab({
                 <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
                 <Tooltip contentStyle={{ background: S.card, borderRadius: 10, border: `1px solid ${S.border}`, color: S.text, fontSize: 12, fontWeight: 700, boxShadow: S.shadowCard }} />
                 <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
-                <Line type="monotone" dataKey="reports" stroke={S.accent} strokeWidth={2} dot={{ fill: S.accent, r: 4 }} />
+                <Line type="monotone" dataKey="reports" stroke={S.accent} strokeWidth={2.4} dot={false} isAnimationActive={true} animationDuration={1200} animationEasing="ease-out" />
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -1750,7 +1750,7 @@ function OverviewTab({
                 <XAxis type="number" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
                 <YAxis type="category" dataKey="category" stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} width={120} />
                 <Tooltip contentStyle={{ background: S.card, borderRadius: 10, border: `1px solid ${S.border}`, color: S.text, fontSize: 12, fontWeight: 700, boxShadow: S.shadowCard }} />
-                <Bar dataKey="count" fill={S.accent} radius={[0, 8, 8, 0]} />
+                <Bar dataKey="count" fill={S.accent} radius={[0, 8, 8, 0]} isAnimationActive={true} animationDuration={1000} animationEasing="ease-out" />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -1776,8 +1776,8 @@ function OverviewTab({
                 <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
                 <Tooltip contentStyle={{ background: S.card, borderRadius: 10, border: `1px solid ${S.border}`, color: S.text, fontSize: 12, fontWeight: 700, boxShadow: S.shadowCard }} />
                 <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
-                <Line type="monotone" dataKey="admissions" stroke="#d97706" strokeWidth={2} name="Total Admissions" />
-                <Line type="monotone" dataKey="elNinoCases" stroke="#ef4444" strokeWidth={2} name="El Niño Cases" />
+                <Line type="monotone" dataKey="admissions" stroke="#d97706" strokeWidth={2.4} name="Total Admissions" dot={false} isAnimationActive={true} animationDuration={1200} animationEasing="ease-out" />
+                <Line type="monotone" dataKey="elNinoCases" stroke="#ef4444" strokeWidth={2.4} name="El Niño Cases" dot={false} isAnimationActive={true} animationDuration={1200} animationEasing="ease-out" />
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -1803,9 +1803,9 @@ function OverviewTab({
                 <YAxis stroke={S.muted} style={{ fontSize: 11, fontWeight: 700 }} />
                 <Tooltip contentStyle={{ background: S.card, borderRadius: 10, border: `1px solid ${S.border}`, color: S.text, fontSize: 12, fontWeight: 700, boxShadow: S.shadowCard }} />
                 <Legend wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
-                <Line type="monotone" dataKey="cdrrmo" stroke="#10b981" strokeWidth={2} name="CDRRMO" />
-                <Line type="monotone" dataKey="bfp" stroke="#ef4444" strokeWidth={2} name="BFP" />
-                <Line type="monotone" dataKey="ambulance" stroke="#8b5cf6" strokeWidth={2} name="Ambulance" />
+                <Line type="monotone" dataKey="cdrrmo" stroke="#10b981" strokeWidth={2.4} name="CDRRMO" dot={false} isAnimationActive={true} animationDuration={1200} animationEasing="ease-out" />
+                <Line type="monotone" dataKey="bfp" stroke="#ef4444" strokeWidth={2.4} name="BFP" dot={false} isAnimationActive={true} animationDuration={1200} animationEasing="ease-out" />
+                <Line type="monotone" dataKey="ambulance" stroke="#8b5cf6" strokeWidth={2.4} name="Ambulance" dot={false} isAnimationActive={true} animationDuration={1200} animationEasing="ease-out" />
               </LineChart>
             </ResponsiveContainer>
           )}

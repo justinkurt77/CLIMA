@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useRef } from "react";
+import { motion, useInView } from "framer-motion";
 import {
   Thermometer,
   Flame,
@@ -24,6 +24,76 @@ import {
 } from "recharts";
 import { POPOLON_AWS_HISTORY } from "../services/kloudtechService";
 
+// Bklit UI Interactive Active Marker (Glowing Ring Indicator)
+function BklitActiveDot(props) {
+  const { cx, cy, stroke = "#f59e0b" } = props;
+  if (cx == null || cy == null) return null;
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={10} fill={stroke} fillOpacity={0.25} />
+      <circle cx={cx} cy={cy} r={5.5} fill="#ffffff" stroke={stroke} strokeWidth={2.5} />
+      <circle cx={cx} cy={cy} r={2.5} fill={stroke} />
+    </g>
+  );
+}
+
+// Bklit UI Glassmorphism Floating Tooltip
+function BklitTooltip({ active, payload, label, unit = "", title = "", isDark = true }) {
+  if (!active || !payload || !payload.length) return null;
+  const item = payload[0];
+  const color = item.stroke || item.color || item.fill || "#f59e0b";
+  const rawVal = item.value;
+  const val = typeof rawVal === "number" ? rawVal.toFixed(1) : rawVal;
+
+  return (
+    <div
+      style={{
+        background: isDark ? "rgba(18, 20, 26, 0.92)" : "rgba(255, 255, 255, 0.94)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+        border: isDark ? "1px solid rgba(255, 255, 255, 0.14)" : "1px solid rgba(0, 0, 0, 0.1)",
+        borderRadius: "10px",
+        padding: "8px 12px",
+        boxShadow: "0 10px 30px rgba(0, 0, 0, 0.45)",
+        minWidth: "125px",
+        pointerEvents: "none",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "10px",
+          fontWeight: 700,
+          color: isDark ? "#94a3b8" : "#64748b",
+          marginBottom: 4,
+          textTransform: "uppercase",
+          letterSpacing: "0.5px",
+        }}
+      >
+        {label}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              background: color,
+              boxShadow: `0 0 8px ${color}`,
+            }}
+          />
+          <span style={{ fontSize: "11px", fontWeight: 600, color: isDark ? "#cbd5e1" : "#475569" }}>
+            {title || item.name}
+          </span>
+        </div>
+        <span style={{ fontSize: "13px", fontWeight: 800, color: isDark ? "#ffffff" : "#09090b" }}>
+          {val} {unit}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 const TIME_TICKS = [
   "8 Oct 11:00",
   "8 Oct 14:00",
@@ -36,6 +106,8 @@ const TIME_TICKS = [
 ];
 
 export default function KloudtechStationView({ isDark = true, liveData = null }) {
+  const chartsRef = useRef(null);
+  const areChartsInView = useInView(chartsRef, { once: true, margin: "-40px" });
   const [dateRange, setDateRange] = useState("1 Day");
   const [interval, setInterval] = useState("1 hour");
 
@@ -330,7 +402,7 @@ export default function KloudtechStationView({ isDark = true, liveData = null })
       </motion.div>
 
       {/* ──── 5. CHARTS 2x3 GRID ──── */}
-      <div className="kloudtech-charts-grid">
+      <div className="kloudtech-charts-grid" ref={chartsRef}>
         {/* CHART 1: Heat Index History */}
         <motion.div
           initial={{ opacity: 0, y: 26, scale: 0.985 }}
@@ -339,15 +411,39 @@ export default function KloudtechStationView({ isDark = true, liveData = null })
           transition={{ duration: 0.5, delay: 0.03, ease: [0.16, 1, 0.3, 1] }}
           className="kloudtech-chart-card"
         >
-          <div className="kloudtech-chart-title">Heat Index History</div>
+          <div className="kloudtech-chart-header">
+            <div className="kloudtech-chart-title">Heat Index History</div>
+            <div className="bklit-chart-badge" style={{ color: "#f97316", background: "rgba(249, 115, 22, 0.12)", border: "1px solid rgba(249, 115, 22, 0.25)" }}>
+              <span className="bklit-pulse-indicator" style={{ background: "#f97316" }} />
+              <span>{displayHeatIndex} °C</span>
+            </div>
+          </div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
               <AreaChart data={chartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} />
-                <YAxis domain={["auto", "auto"]} tick={axisTickStyle} />
-                <Tooltip contentStyle={chartTooltipStyle} formatter={(val) => [`${val} °C`, "Heat Index"]} />
-                <Area type="monotone" dataKey="heatIndex" stroke="#ea580c" strokeWidth={2.4} fill="none" />
+                <defs>
+                  <linearGradient id="bklit-heat-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f97316" stopOpacity={0.42} />
+                    <stop offset="60%" stopColor="#f97316" stopOpacity={0.12} />
+                    <stop offset="100%" stopColor="#f97316" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="4 4" stroke={gridStroke} vertical={false} opacity={isDark ? 0.35 : 0.6} />
+                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} axisLine={false} tickLine={false} />
+                <YAxis domain={["auto", "auto"]} tick={axisTickStyle} axisLine={false} tickLine={false} />
+                <Tooltip content={<BklitTooltip unit="°C" title="Heat Index" isDark={isDark} />} />
+                <Area
+                  type="monotone"
+                  dataKey="heatIndex"
+                  stroke="#f97316"
+                  strokeWidth={2.4}
+                  fill="url(#bklit-heat-grad)"
+                  isAnimationActive={areChartsInView}
+                  animationDuration={1300}
+                  animationEasing="ease-out"
+                  animationBegin={60}
+                  activeDot={<BklitActiveDot stroke="#f97316" />}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -361,15 +457,39 @@ export default function KloudtechStationView({ isDark = true, liveData = null })
           transition={{ duration: 0.5, delay: 0.07, ease: [0.16, 1, 0.3, 1] }}
           className="kloudtech-chart-card"
         >
-          <div className="kloudtech-chart-title">Temperature History</div>
+          <div className="kloudtech-chart-header">
+            <div className="kloudtech-chart-title">Temperature History</div>
+            <div className="bklit-chart-badge" style={{ color: "#ef4444", background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.25)" }}>
+              <span className="bklit-pulse-indicator" style={{ background: "#ef4444" }} />
+              <span>{displayTemp} °C</span>
+            </div>
+          </div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
               <AreaChart data={chartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} />
-                <YAxis domain={["auto", "auto"]} tick={axisTickStyle} />
-                <Tooltip contentStyle={chartTooltipStyle} formatter={(val) => [`${val} °C`, "Temperature"]} />
-                <Area type="monotone" dataKey="temp" stroke="#ef4444" strokeWidth={2.4} fill="none" />
+                <defs>
+                  <linearGradient id="bklit-temp-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ef4444" stopOpacity={0.42} />
+                    <stop offset="60%" stopColor="#ef4444" stopOpacity={0.12} />
+                    <stop offset="100%" stopColor="#ef4444" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="4 4" stroke={gridStroke} vertical={false} opacity={isDark ? 0.35 : 0.6} />
+                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} axisLine={false} tickLine={false} />
+                <YAxis domain={["auto", "auto"]} tick={axisTickStyle} axisLine={false} tickLine={false} />
+                <Tooltip content={<BklitTooltip unit="°C" title="Temperature" isDark={isDark} />} />
+                <Area
+                  type="monotone"
+                  dataKey="temp"
+                  stroke="#ef4444"
+                  strokeWidth={2.4}
+                  fill="url(#bklit-temp-grad)"
+                  isAnimationActive={areChartsInView}
+                  animationDuration={1300}
+                  animationEasing="ease-out"
+                  animationBegin={120}
+                  activeDot={<BklitActiveDot stroke="#ef4444" />}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -383,15 +503,39 @@ export default function KloudtechStationView({ isDark = true, liveData = null })
           transition={{ duration: 0.5, delay: 0.11, ease: [0.16, 1, 0.3, 1] }}
           className="kloudtech-chart-card"
         >
-          <div className="kloudtech-chart-title">Humidity History</div>
+          <div className="kloudtech-chart-header">
+            <div className="kloudtech-chart-title">Humidity History</div>
+            <div className="bklit-chart-badge" style={{ color: "#3b82f6", background: "rgba(59, 130, 246, 0.12)", border: "1px solid rgba(59, 130, 246, 0.25)" }}>
+              <span className="bklit-pulse-indicator" style={{ background: "#3b82f6" }} />
+              <span>{typeof displayHumidity === "number" ? displayHumidity.toFixed(1) : displayHumidity} %</span>
+            </div>
+          </div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
               <AreaChart data={chartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} />
-                <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={axisTickStyle} />
-                <Tooltip contentStyle={chartTooltipStyle} formatter={(val) => [`${val} %`, "Humidity"]} />
-                <Area type="monotone" dataKey="humidity" stroke="#3b82f6" strokeWidth={2} fill="#1d4ed8" fillOpacity={0.4} />
+                <defs>
+                  <linearGradient id="bklit-humidity-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.42} />
+                    <stop offset="60%" stopColor="#3b82f6" stopOpacity={0.12} />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="4 4" stroke={gridStroke} vertical={false} opacity={isDark ? 0.35 : 0.6} />
+                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tick={axisTickStyle} axisLine={false} tickLine={false} />
+                <Tooltip content={<BklitTooltip unit="%" title="Humidity" isDark={isDark} />} />
+                <Area
+                  type="monotone"
+                  dataKey="humidity"
+                  stroke="#3b82f6"
+                  strokeWidth={2.4}
+                  fill="url(#bklit-humidity-grad)"
+                  isAnimationActive={areChartsInView}
+                  animationDuration={1300}
+                  animationEasing="ease-out"
+                  animationBegin={180}
+                  activeDot={<BklitActiveDot stroke="#3b82f6" />}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -405,15 +549,39 @@ export default function KloudtechStationView({ isDark = true, liveData = null })
           transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="kloudtech-chart-card"
         >
-          <div className="kloudtech-chart-title">Pressure History</div>
+          <div className="kloudtech-chart-header">
+            <div className="kloudtech-chart-title">Pressure History</div>
+            <div className="bklit-chart-badge" style={{ color: "#a855f7", background: "rgba(168, 85, 247, 0.12)", border: "1px solid rgba(168, 85, 247, 0.25)" }}>
+              <span className="bklit-pulse-indicator" style={{ background: "#a855f7" }} />
+              <span>{displayPressure}</span>
+            </div>
+          </div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
               <AreaChart data={chartData} margin={{ top: 12, right: 12, left: -6, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} />
-                <YAxis domain={["auto", "auto"]} tick={axisTickStyle} />
-                <Tooltip contentStyle={chartTooltipStyle} formatter={(val) => [`${val} hPa`, "Pressure"]} />
-                <Area type="monotone" dataKey="pressure" stroke="#7c3aed" strokeWidth={2} fill="#6d28d9" fillOpacity={0.4} />
+                <defs>
+                  <linearGradient id="bklit-pressure-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#a855f7" stopOpacity={0.42} />
+                    <stop offset="60%" stopColor="#a855f7" stopOpacity={0.12} />
+                    <stop offset="100%" stopColor="#a855f7" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="4 4" stroke={gridStroke} vertical={false} opacity={isDark ? 0.35 : 0.6} />
+                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} axisLine={false} tickLine={false} />
+                <YAxis domain={["auto", "auto"]} tick={axisTickStyle} axisLine={false} tickLine={false} />
+                <Tooltip content={<BklitTooltip unit="hPa" title="Pressure" isDark={isDark} />} />
+                <Area
+                  type="monotone"
+                  dataKey="pressure"
+                  stroke="#a855f7"
+                  strokeWidth={2.4}
+                  fill="url(#bklit-pressure-grad)"
+                  isAnimationActive={areChartsInView}
+                  animationDuration={1300}
+                  animationEasing="ease-out"
+                  animationBegin={240}
+                  activeDot={<BklitActiveDot stroke="#a855f7" />}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -427,15 +595,36 @@ export default function KloudtechStationView({ isDark = true, liveData = null })
           transition={{ duration: 0.5, delay: 0.19, ease: [0.16, 1, 0.3, 1] }}
           className="kloudtech-chart-card"
         >
-          <div className="kloudtech-chart-title">Wind History</div>
+          <div className="kloudtech-chart-header">
+            <div className="kloudtech-chart-title">Wind History</div>
+            <div className="bklit-chart-badge" style={{ color: "#10b981", background: "rgba(16, 185, 129, 0.12)", border: "1px solid rgba(16, 185, 129, 0.25)" }}>
+              <span className="bklit-pulse-indicator" style={{ background: "#10b981" }} />
+              <span>{displayWind}</span>
+            </div>
+          </div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
               <BarChart data={chartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} />
-                <YAxis domain={[0, "auto"]} tick={axisTickStyle} />
-                <Tooltip contentStyle={chartTooltipStyle} formatter={(val) => [`${val} kph`, "Wind Speed"]} />
-                <Bar dataKey="wind" fill="#22c55e" maxBarSize={14} radius={[2, 2, 0, 0]} />
+                <defs>
+                  <linearGradient id="bklit-wind-bar-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#34d399" />
+                    <stop offset="100%" stopColor="#059669" stopOpacity={0.75} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="4 4" stroke={gridStroke} vertical={false} opacity={isDark ? 0.35 : 0.6} />
+                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, "auto"]} tick={axisTickStyle} axisLine={false} tickLine={false} />
+                <Tooltip content={<BklitTooltip unit="kph" title="Wind Speed" isDark={isDark} />} />
+                <Bar
+                  dataKey="wind"
+                  fill="url(#bklit-wind-bar-grad)"
+                  maxBarSize={16}
+                  radius={[6, 6, 0, 0]}
+                  isAnimationActive={areChartsInView}
+                  animationDuration={1100}
+                  animationEasing="ease-out"
+                  animationBegin={280}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -449,15 +638,36 @@ export default function KloudtechStationView({ isDark = true, liveData = null })
           transition={{ duration: 0.5, delay: 0.23, ease: [0.16, 1, 0.3, 1] }}
           className="kloudtech-chart-card"
         >
-          <div className="kloudtech-chart-title">UV Index History</div>
+          <div className="kloudtech-chart-header">
+            <div className="kloudtech-chart-title">UV Index History</div>
+            <div className="bklit-chart-badge" style={{ color: "#c084fc", background: "rgba(192, 132, 252, 0.12)", border: "1px solid rgba(192, 132, 252, 0.25)" }}>
+              <span className="bklit-pulse-indicator" style={{ background: "#c084fc" }} />
+              <span>UV {displayUv}</span>
+            </div>
+          </div>
           <div className="kloudtech-chart-body">
             <ResponsiveContainer width="100%" height={175}>
               <BarChart data={chartData} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} />
-                <YAxis domain={[0, "auto"]} tick={axisTickStyle} />
-                <Tooltip contentStyle={chartTooltipStyle} formatter={(val) => [`${val}`, "UV Index"]} />
-                <Bar dataKey="uv" fill="#a855f7" maxBarSize={14} radius={[2, 2, 0, 0]} />
+                <defs>
+                  <linearGradient id="bklit-uv-bar-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#c084fc" />
+                    <stop offset="100%" stopColor="#7c3aed" stopOpacity={0.75} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="4 4" stroke={gridStroke} vertical={false} opacity={isDark ? 0.35 : 0.6} />
+                <XAxis dataKey="time" ticks={chartTicks} tick={axisTickStyle} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, "auto"]} tick={axisTickStyle} axisLine={false} tickLine={false} />
+                <Tooltip content={<BklitTooltip unit="" title="UV Index" isDark={isDark} />} />
+                <Bar
+                  dataKey="uv"
+                  fill="url(#bklit-uv-bar-grad)"
+                  maxBarSize={16}
+                  radius={[6, 6, 0, 0]}
+                  isAnimationActive={areChartsInView}
+                  animationDuration={1100}
+                  animationEasing="ease-out"
+                  animationBegin={340}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
