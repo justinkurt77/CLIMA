@@ -606,33 +606,6 @@ export default function AboutScreen() {
             </div>
           </motion.div>
 
-          {/* Open Source Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.35 }}
-            style={{
-              background: 'var(--bg-card)',
-              borderRadius: 16,
-              padding: 20,
-              border: '1px solid var(--border-subtle)',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-              marginBottom: 20,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <Code size={20} strokeWidth={2.5} color="var(--text-primary)" />
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                Open Source
-              </h2>
-            </div>
-            <p style={{ ...textStyle, lineHeight: 1.7 }}>
-              CLIMA is built with open source technologies including React, Mapbox, Supabase,
-              TailwindCSS, Framer Motion, Chart.js, Lucide React, React Query, and many other
-              community-driven projects. We are grateful to all open source contributors.
-            </p>
-          </motion.div>
-
           {/* Contact Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
