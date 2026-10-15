@@ -42,7 +42,7 @@ export default function AboutScreen() {
     }
   };
 
-  const bgColor = isDark ? '#18181b' : '#ffffff';
+  const bgColor = isDark ? '#161922' : '#1a1d2e';
   const contentBg = isDark ? '#27272a' : '#f9fafb';
 
   return (
@@ -97,8 +97,8 @@ export default function AboutScreen() {
             {/* Palayan City Seal */}
             <div
               style={{
-                width: 90,
-                height: 90,
+                width: 80,
+                height: 80,
                 borderRadius: '50%',
                 background: '#ffffff',
                 display: 'flex',
@@ -123,8 +123,8 @@ export default function AboutScreen() {
             {/* CLIMA Logo */}
             <div
               style={{
-                width: 90,
-                height: 90,
+                width: 110,
+                height: 110,
                 borderRadius: '50%',
                 background: '#ffffff',
                 display: 'flex',
@@ -149,8 +149,8 @@ export default function AboutScreen() {
             {/* ICT Division Logo */}
             <div
               style={{
-                width: 90,
-                height: 90,
+                width: 80,
+                height: 80,
                 borderRadius: '50%',
                 background: '#ffffff',
                 display: 'flex',
