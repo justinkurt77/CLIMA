@@ -491,14 +491,26 @@ export default function AboutScreen() {
                 border: '1px solid var(--border-subtle)',
                 borderRadius: 12,
                 padding: 12,
-                fontSize: 13,
-                fontWeight: 800,
-                color: 'var(--text-primary)',
                 marginBottom: 12,
-                textAlign: 'center',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 12,
+                flexWrap: 'wrap',
               }}
             >
-              🇵🇭 Datos ng Pilipino, Protektado Ko!
+              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
+                🇵🇭 Datos ng Pilipino, Protektado Ko!
+              </span>
+              <img
+                src="/images/legal/npm-dpo-dps-badge.png"
+                alt="NPC DPO/DPS Compliance Badge"
+                style={{
+                  height: 40,
+                  width: 'auto',
+                  objectFit: 'contain',
+                }}
+              />
             </div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <a
