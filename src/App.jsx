@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+﻿import { useState, useEffect, lazy, Suspense } from "react";
 import CitizenNav from "./components/layout/CitizenNav";
 import HomeScreen from "./screens/HomeScreen";
 import ProfileScreen from "./screens/ProfileScreen";
@@ -232,7 +232,7 @@ function App() {
   const openModal = () => {
     // Check if user is authenticated before opening modal
     if (!session || !session.user?.user_metadata?.first_name) {
-      // User not logged in or profile incomplete → redirect to profile/auth
+      // User not logged in or profile incomplete â†’ redirect to profile/auth
       setActiveScreen('profile');
       return;
     }
@@ -411,7 +411,7 @@ function App() {
         )}
 
         {/* 404 Not Found - Catch-all for invalid routes */}
-        {!['home', 'emergency', 'maps', 'profile', 'elnino', 'legal', 'admin', 'admin-map'].includes(activeScreen) && (
+        {!['home', 'about', 'maps', 'profile', 'elnino', 'legal', 'admin', 'admin-map'].includes(activeScreen) && (
           <motion.div
             key="notfound"
             variants={screenVariants}
