@@ -7,7 +7,6 @@ import {
   Database,
   Code,
   ExternalLink,
-  Copy,
   Share2,
   FileText,
   Users,
@@ -24,14 +23,7 @@ import { useTheme } from '../context/ThemeContext';
 import './AboutScreen.css';
 
 export default function AboutScreen() {
-  const [copied, setCopied] = useState(false);
   const { isDark } = useTheme();
-
-  const copyVersion = () => {
-    navigator.clipboard.writeText('1.0.0');
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -213,33 +205,7 @@ export default function AboutScreen() {
               }}
             >
               <span>Version 1.0.0</span>
-              <button
-                onClick={copyVersion}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                <Copy size={14} color="#ffffff" />
-              </button>
             </div>
-            {copied && (
-              <motion.span
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                style={{
-                  fontSize: 11,
-                  color: '#ffffff',
-                  fontWeight: 700,
-                }}
-              >
-                Copied!
-              </motion.span>
-            )}
           </div>
 
           {/* Share Button */}
