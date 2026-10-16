@@ -2182,11 +2182,16 @@ html.dark .desktop-header-backdrop,
   gap: 18px;
 }
 
-.desktop-left-column,
-.desktop-right-column {
+.desktop-left-column {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.desktop-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* 1. Desktop Hero Card */
@@ -3253,48 +3258,208 @@ html.dark .desktop-wind-direction,
   scrollbar-color: rgba(150, 150, 150, 0.3) transparent;
 }
 
-.facebook-feed-scroll::-webkit-scrollbar {
+.facebook-feed-scroll,
+.civic-feed-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(150, 150, 150, 0.3) transparent;
+}
+
+.facebook-feed-scroll::-webkit-scrollbar,
+.civic-feed-scroll::-webkit-scrollbar {
   width: 6px;
 }
 
-.facebook-feed-scroll::-webkit-scrollbar-track {
+.facebook-feed-scroll::-webkit-scrollbar-track,
+.civic-feed-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.facebook-feed-scroll::-webkit-scrollbar-thumb {
+.facebook-feed-scroll::-webkit-scrollbar-thumb,
+.civic-feed-scroll::-webkit-scrollbar-thumb {
   background: rgba(150, 150, 150, 0.35);
   border-radius: 9999px;
 }
 
-.facebook-feed-scroll::-webkit-scrollbar-thumb:hover {
+.facebook-feed-scroll::-webkit-scrollbar-thumb:hover,
+.civic-feed-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(150, 150, 150, 0.55);
 }
 
-.fb-post-action-btn {
-  flex: 1;
-  display: flex;
+.civic-action-pill {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  font-size: 13px;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card-subtle);
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.18s ease;
   color: var(--text-secondary);
 }
 
-.fb-post-action-btn:hover {
+.civic-action-pill:hover {
   background: rgba(150, 150, 150, 0.12);
+  color: var(--text-primary);
+  border-color: var(--border-medium);
 }
 
-.fb-post-action-btn.active-liked {
-  color: #1877f2;
+.civic-action-pill.active {
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+  border-color: rgba(249, 115, 22, 0.35);
 }
 
-.fb-post-action-btn.active-liked:hover {
-  background: rgba(24, 119, 242, 0.12);
+/* ── Aesthetic Mobile/Social-Style Advisory Feed (Inspired by Modern App Card) ── */
+.aesthetic-post-card {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  border-radius: 28px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.05), 0 2px 8px -2px rgba(0, 0, 0, 0.02);
+  padding: 20px 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.dark .aesthetic-post-card,
+[data-theme="dark"] .aesthetic-post-card {
+  background: #171a22;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 14px 34px -6px rgba(0, 0, 0, 0.45);
+}
+
+.aesthetic-avatar-ring {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  padding: 2.5px;
+  border: 2px dashed #f97316;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.aesthetic-avatar-ring:hover {
+  transform: rotate(15deg);
+}
+
+.aesthetic-avatar-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(249, 115, 22, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.aesthetic-more-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(140, 140, 140, 0.09);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.18s ease;
+}
+
+.aesthetic-more-btn:hover {
+  background: rgba(140, 140, 140, 0.18);
+  color: var(--text-primary);
+  transform: scale(1.05);
+}
+
+.aesthetic-post-img-container {
+  width: 100%;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+.aesthetic-post-img {
+  width: 100%;
+  max-height: 230px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.aesthetic-post-img-container:hover .aesthetic-post-img {
+  transform: scale(1.02);
+}
+
+.aesthetic-action-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 15px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  border: none;
+  cursor: pointer;
+  background: #f4f4f5;
+  color: #27272a;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+html.dark .aesthetic-action-pill,
+[data-theme="dark"] .aesthetic-action-pill {
+  background: rgba(255, 255, 255, 0.07);
+  color: #e4e4e7;
+}
+
+.aesthetic-action-pill:hover {
+  background: rgba(249, 115, 22, 0.14);
+  color: #f97316;
+  transform: translateY(-1px);
+}
+
+.aesthetic-action-pill:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.aesthetic-action-pill.active-heart {
+  background: rgba(239, 68, 68, 0.14);
+  color: #ef4444;
+}
+
+.aesthetic-action-pill.active-comment {
+  background: rgba(59, 130, 246, 0.14);
+  color: #3b82f6;
+}
+
+.aesthetic-action-pill.active-saved {
+  background: rgba(249, 115, 22, 0.16);
+  color: #f97316;
+}
+
+.aesthetic-see-more {
+  font-weight: 800;
+  color: var(--text-primary);
+  cursor: pointer;
+  margin-left: 6px;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.aesthetic-see-more:hover {
+  color: #f97316;
+  text-decoration: underline;
 }
