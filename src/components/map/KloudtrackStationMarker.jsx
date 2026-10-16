@@ -36,7 +36,7 @@ export function KloudtrackStationMarker({
         };
       case "humidity":
         return {
-          primary: `${telemetry.humidity || 78.5}%`,
+          primary: `${Math.round(Number(telemetry.humidity || 78.5))}%`,
           badge: "Elevated",
           badgeColor: "#06b6d4",
           badgeBg: "rgba(6, 182, 212, 0.18)",
@@ -46,7 +46,7 @@ export function KloudtrackStationMarker({
         };
       case "wind":
         return {
-          primary: `${telemetry.wind?.speed || 0.7} km/h`,
+          primary: `${Number(telemetry.wind?.speed || 0.7).toFixed(1)} km/h`,
           badge: `${telemetry.wind?.direction || "N"} Gentle`,
           badgeColor: "#10b981",
           badgeBg: "rgba(16, 185, 129, 0.18)",
@@ -56,7 +56,7 @@ export function KloudtrackStationMarker({
         };
       case "pressure":
         return {
-          primary: `${telemetry.pressure || 1006.7} hPa`,
+          primary: `${Number(telemetry.pressure || 1006.7).toFixed(1)} hPa`,
           badge: "Normal",
           badgeColor: "#8b5cf6",
           badgeBg: "rgba(139, 92, 246, 0.18)",
@@ -66,7 +66,7 @@ export function KloudtrackStationMarker({
         };
       case "lightIntensity":
         return {
-          primary: "54.6k lux",
+          primary: Number(telemetry.lightIntensity) >= 1000 ? `${(Number(telemetry.lightIntensity) / 1000).toFixed(1)}k lux` : `${Number(telemetry.lightIntensity || 3400).toFixed(0)} lux`,
           badge: "Peak Sun",
           badgeColor: "#eab308",
           badgeBg: "rgba(234, 179, 8, 0.18)",
@@ -76,7 +76,7 @@ export function KloudtrackStationMarker({
         };
       case "uvIndex":
         return {
-          primary: `${telemetry.uvIndex || 8.2} UV`,
+          primary: `${Number(telemetry.uvIndex || 8.2).toFixed(1)} UV`,
           badge: "Very High",
           badgeColor: "#ec4899",
           badgeBg: "rgba(236, 72, 153, 0.18)",

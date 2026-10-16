@@ -105,7 +105,7 @@ const TIME_TICKS = [
   "9 Oct 11:00",
 ];
 
-export default function KloudtechStationView({ isDark = true, liveData = null }) {
+function KloudtechStationView({ isDark = true, liveData = null }) {
   const chartsRef = useRef(null);
   const areChartsInView = useInView(chartsRef, { once: true, margin: "-40px" });
   const [dateRange, setDateRange] = useState("1 Day");
@@ -187,7 +187,7 @@ export default function KloudtechStationView({ isDark = true, liveData = null })
       >
         <h1 className="kloudtech-main-heading">Dashboard</h1>
         <p className="kloudtech-main-subheading">
-          Manage all users across the platform. Add, edit, assign roles, and control access to organizations and stations.
+          Live sensor telemetry, microclimate metrics, and historical meteorological data for Palayan City.
         </p>
       </motion.div>
 
@@ -676,3 +676,5 @@ export default function KloudtechStationView({ isDark = true, liveData = null })
     </section>
   );
 }
+
+export default React.memo(KloudtechStationView);

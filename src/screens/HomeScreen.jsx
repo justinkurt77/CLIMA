@@ -22,6 +22,10 @@ import {
   Moon,
   Search,
   ArrowUp,
+  ArrowLeft,
+  ArrowRight,
+  Activity,
+  Loader2,
 } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 import { useTheme } from "../context/ThemeContext";
@@ -33,7 +37,7 @@ import {
   adaptKloudtechTelemetry,
   KLOUDTECH_BASE_URL,
 } from "../services/kloudtechService";
-import KloudtechStationView from "../components/KloudtechStationView";
+import LazyKloudtechDashboard from "../components/LazyKloudtechDashboard";
 import LiveConditionsCard from "../components/dashboard/LiveConditionsCard";
 
 const WEATHER_ICONS = {
@@ -185,7 +189,8 @@ export default function HomeScreen({
   const rootRef = useRef(null);
   const headerRef = useRef(null);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [currentTemp, setCurrentTemp] = useState(26);
+  const [isLoadingWeather, setIsLoadingWeather] = useState(true);
+  const [currentTemp, setCurrentTemp] = useState(null);
   const [selectedBarangay, setSelectedBarangay] = useState("Popolon Pagas");
   const [activeCoords, setActiveCoords] = useState({ lat: 15.5413, lng: 121.0471 });
 
@@ -203,13 +208,14 @@ export default function HomeScreen({
     return () => el.removeEventListener("scroll", handleScroll);
   }, []);
   const [weatherInfo, setWeatherInfo] = useState({
-    msg: "Clear sky",
+    msg: "Syncing live weather...",
     sub: "Live Meteorological Sensor • Palayan City",
-    icon: "Moon",
-    high: 31,
-    low: 24,
+    icon: null,
+    high: null,
+    low: null,
   });
   const [humidity, setHumidity] = useState(85);
+  const [homePage, setHomePage] = useState(1); // 1 = Weather Overview, 2 = Telemetry Dashboard
   const [windSpeed, setWindSpeed] = useState(1.2);
   const [windDirection, setWindDirection] = useState("North");
   const [rainChance, setRainChance] = useState(0);
@@ -310,6 +316,9 @@ export default function HomeScreen({
   }, [refreshTrigger]);
 
   const heroBgUrl = useMemo(() => {
+    if (isLoadingWeather || !weatherInfo.icon) {
+      return null;
+    }
     const icon = weatherInfo.icon;
     if (icon === "Sun" || icon === "CloudSun") {
       return isDark ? "/sunny_dark.webp" : "/sunny.webp";
@@ -321,7 +330,7 @@ export default function HomeScreen({
       return "/night.webp";
     }
     return isDark ? "/stormy_dark.webp" : "/stormy_clouds.webp";
-  }, [weatherInfo.icon, isDark]);
+  }, [weatherInfo.icon, isDark, isLoadingWeather]);
 
   const getHeroBackground = () => `url('${heroBgUrl}')`;
 
@@ -379,6 +388,7 @@ export default function HomeScreen({
   const handleSelectBarangay = (bgy) => {
     setSelectedBarangay(bgy.name);
     setActiveCoords({ lat: bgy.lat, lng: bgy.lng });
+    setIsLoadingWeather(true);
   };
 
   const handleSearchSubmit = (e) => {
@@ -440,6 +450,7 @@ export default function HomeScreen({
             }
 
             setWeatherInfo(getWeatherInfo(code, t, todayHigh, todayLow, isDay));
+            setIsLoadingWeather(false);
           }
 
           if (data.hourly?.time && data.hourly?.temperature_2m) {
@@ -530,6 +541,10 @@ export default function HomeScreen({
         })
         .catch((err) => {
           logger.warn("Forecast fetch error:", err);
+          setIsLoadingWeather(false);
+        })
+        .finally(() => {
+          setIsLoadingWeather(false);
         });
     };
 
@@ -555,12 +570,15 @@ export default function HomeScreen({
 
           if (match && match.telemetry) {
             const adapted = adaptKloudtechTelemetry(match.telemetry);
-            if (adapted.temp !== null) setCurrentTemp(adapted.temp);
-            if (adapted.humidity !== null) setHumidity(adapted.humidity);
-            if (adapted.windSpeed !== null) setWindSpeed(adapted.windSpeed);
+            if (adapted.temp !== null) setCurrentTemp(Math.round(Number(adapted.temp)));
+            if (adapted.humidity !== null) setHumidity(Math.round(Number(adapted.humidity)));
+            if (adapted.windSpeed !== null) setWindSpeed(Math.round(Number(adapted.windSpeed) * 10) / 10);
             if (adapted.windDirection) setWindDirection(getWindDirectionText(adapted.windDirection));
-            if (adapted.pressure) setPressure(adapted.pressure);
-            if (adapted.heatIndex !== null) setCurrentHeatIndex(adapted.heatIndex);
+            if (adapted.pressure) {
+              const pNum = parseFloat(adapted.pressure);
+              setPressure(!isNaN(pNum) ? `${pNum.toFixed(1)} hPa` : adapted.pressure);
+            }
+            if (adapted.heatIndex !== null) setCurrentHeatIndex(Math.round(Number(adapted.heatIndex) * 10) / 10);
             if (adapted.precip === 0) setRainChance(0);
 
             setWeatherInfo({
@@ -570,6 +588,7 @@ export default function HomeScreen({
               high: (adapted.temp || 30) + 2,
               low: (adapted.temp || 30) - 4,
             });
+            setIsLoadingWeather(false);
             isKloudtechLive = true;
             fetchOpenMeteo(true, adapted.temp, adapted.icon);
             return;
@@ -689,8 +708,8 @@ export default function HomeScreen({
       heatIndex: currentHeatIndex,
       temp: currentTemp,
       humidity: humidity,
-      pressure: String(pressure).includes("hPa") ? pressure : `${pressure} hPa`,
-      wind: `${windSpeed} kph ${windDirection?.charAt(0) || "N"}`,
+      pressure: String(pressure).includes("hPa") ? pressure : `${parseFloat(pressure) || pressure} hPa`,
+      wind: `${Number(windSpeed || 0).toFixed(1)} kph ${windDirection?.charAt(0) || "N"}`,
       uv: uvIndex,
       light: isDayTime ? "52400.0 lux" : "0.0 lux",
       precip: `${rainChance > 0 ? (rainChance * 0.1).toFixed(1) : "0.0"} mm`,
@@ -732,6 +751,36 @@ export default function HomeScreen({
               <span className="desktop-loc-city">Brgy. {selectedBarangay}, Palayan City</span>
             </div>
             <div className="desktop-loc-date">{formattedDate}</div>
+          </div>
+
+          {/* Center: Page 1 / Page 2 Switcher */}
+          <div className="desktop-page-switcher">
+            <button
+              type="button"
+              onClick={() => {
+                setHomePage(1);
+                const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+                el?.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`desktop-page-tab ${homePage === 1 ? "active" : ""}`}
+              title="View Weather Overview"
+            >
+              <Sun size={14} strokeWidth={2.4} />
+              <span>Page 1: Weather</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setHomePage(2);
+                const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+                el?.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`desktop-page-tab ${homePage === 2 ? "active" : ""}`}
+              title="View Live Station Telemetry Dashboard"
+            >
+              <Activity size={14} strokeWidth={2.4} />
+              <span>Page 2: Dashboard</span>
+            </button>
           </div>
 
           {/* Right: Search, Report Button, and Theme Toggle */}
@@ -799,8 +848,10 @@ export default function HomeScreen({
           </div>
         </header>
 
-        {/* 2-COLUMN MAIN DASHBOARD GRID */}
-        <main className="desktop-main-grid">
+        {homePage === 1 ? (
+          <>
+            {/* 2-COLUMN MAIN DASHBOARD GRID */}
+            <main className="desktop-main-grid">
           {/* ──── LEFT COLUMN (~62%) ──── */}
           <div className="desktop-left-column">
             {/* 1. HERO WEATHER CARD */}
@@ -814,52 +865,79 @@ export default function HomeScreen({
                 backgroundColor: "#161922",
               }}
             >
-              {/* Dynamic Animated Background Transition */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  overflow: "hidden",
-                  zIndex: 0,
-                  pointerEvents: "none",
-                }}
-              >
-                <AnimatePresence initial={false}>
-                  <motion.div
-                    key={heroBgUrl}
-                    initial={{ opacity: 0, scale: 1.04 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.98 }}
-                    transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      backgroundImage: `url('${heroBgUrl}')`,
-                      backgroundPosition: "center",
-                      backgroundSize: "cover",
-                      backgroundRepeat: "no-repeat",
-                    }}
-                  />
-                </AnimatePresence>
-              </div>
-              {/* Left Side: Large Temperature & Conditions */}
-              <div className="desktop-hero-info">
-                <div className="desktop-hero-temp">{currentTemp}°</div>
-                <div className="desktop-hero-condition">{weatherInfo.msg}</div>
-                <div className="desktop-hero-subcondition">{weatherInfo.sub}</div>
-
-                <div className="desktop-hero-pills">
-                  <span className="desktop-pill">H {weatherInfo.high}°</span>
-                  <span className="desktop-pill">L {weatherInfo.low}°</span>
+              {isLoadingWeather ? (
+                <div className="desktop-hero-loading-skeleton">
+                  <div className="desktop-hero-info">
+                    <div className="skeleton-box" style={{ width: 140, height: 84, borderRadius: 18, marginBottom: 14 }} />
+                    <div className="skeleton-box" style={{ width: 220, height: 26, borderRadius: 8, marginBottom: 8 }} />
+                    <div className="skeleton-box" style={{ width: 280, height: 16, borderRadius: 6, marginBottom: 20 }} />
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <div className="skeleton-box" style={{ width: 70, height: 28, borderRadius: 999 }} />
+                      <div className="skeleton-box" style={{ width: 70, height: 28, borderRadius: 999 }} />
+                    </div>
+                  </div>
+                  <div className="desktop-hero-glass-card" style={{ opacity: 0.85 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--accent-orange, #f97316)", marginBottom: 8 }}>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>Syncing live microclimate...</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 12 }}>
+                      Fetching live sensor metrics & forecast for Brgy. {selectedBarangay}...
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* Dynamic Animated Background Transition */}
+                  {heroBgUrl && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        overflow: "hidden",
+                        zIndex: 0,
+                        pointerEvents: "none",
+                      }}
+                    >
+                      <AnimatePresence initial={false}>
+                        <motion.div
+                          key={heroBgUrl}
+                          initial={{ opacity: 0, scale: 1.04 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.98 }}
+                          transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            backgroundImage: `url('${heroBgUrl}')`,
+                            backgroundPosition: "center",
+                            backgroundSize: "cover",
+                            backgroundRepeat: "no-repeat",
+                          }}
+                        />
+                      </AnimatePresence>
+                    </div>
+                  )}
+                  {/* Left Side: Large Temperature & Conditions */}
+                  <div className="desktop-hero-info">
+                    <div className="desktop-hero-temp">{currentTemp != null ? `${currentTemp}°` : "--"}</div>
+                    <div className="desktop-hero-condition">{weatherInfo.msg}</div>
+                    <div className="desktop-hero-subcondition">{weatherInfo.sub}</div>
 
-              {/* Right Side: Frosted Glass Floating Card */}
-              <div className="desktop-hero-glass-card">
-                <p>
-                  With real time data and advanced technology, we provide reliable forecasts for any location around the world.
-                </p>
-              </div>
+                    <div className="desktop-hero-pills">
+                      <span className="desktop-pill">H {weatherInfo.high != null ? `${weatherInfo.high}°` : "--"}</span>
+                      <span className="desktop-pill">L {weatherInfo.low != null ? `${weatherInfo.low}°` : "--"}</span>
+                    </div>
+                  </div>
+
+                  {/* Right Side: Frosted Glass Floating Card */}
+                  <div className="desktop-hero-glass-card">
+                    <p>
+                      With real time data and advanced technology, we provide reliable forecasts for any location around the world.
+                    </p>
+                  </div>
+                </>
+              )}
             </motion.div>
 
             {/* 2. HOURLY FORECAST ROW */}
@@ -1090,7 +1168,7 @@ export default function HomeScreen({
               <div className="desktop-wind-overlay">
                 <div className="desktop-wind-content">
                   <div className="desktop-wind-title">Wind & Atmosphere</div>
-                  <div className="desktop-wind-speed">{windSpeed} km/h</div>
+                  <div className="desktop-wind-speed">{Number(windSpeed || 0).toFixed(1)} km/h</div>
                   <div className="desktop-wind-direction">{windDirection}</div>
                 </div>
 
@@ -1103,8 +1181,57 @@ export default function HomeScreen({
           </div>
         </main>
 
-        {/* ──── KLOUDTECH IOT WEATHER STATION TELEMETRY & HISTORICAL CHARTS ──── */}
-        <KloudtechStationView isDark={isDark} liveData={liveStationData} />
+        {/* Page 2 Telemetry Callout Card */}
+        <div className="home-page-transition-card">
+          <div className="transition-card-content">
+            <div className="transition-badge">
+              <Activity size={13} strokeWidth={2.4} />
+              <span>PAGE 2: LIVE TELEMETRY</span>
+            </div>
+            <div className="transition-title">Live Station Telemetry & Historical Charts</div>
+            <div className="transition-desc">
+              Explore 24-hour heat index trends, barometric curves, wind logs, and microclimate analytics from Palayan physical AWS ground stations.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setHomePage(2);
+              const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+              el?.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="transition-btn"
+          >
+            <span>Open Page 2 Dashboard</span>
+            <ArrowRight size={16} strokeWidth={2.4} />
+          </button>
+        </div>
+      </>
+    ) : (
+      /* Page 2: Dedicated Station Telemetry Dashboard */
+      <div className="desktop-page-two-container">
+        <div className="page-two-top-bar">
+          <button
+            type="button"
+            onClick={() => {
+              setHomePage(1);
+              const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+              el?.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="page-two-back-btn"
+          >
+            <ArrowLeft size={16} strokeWidth={2.4} />
+            <span>← Back to Page 1: Weather Overview</span>
+          </button>
+          <div className="page-two-tag">
+            <span className="live-dot" />
+            <span>PAGE 2: IOT STATION TELEMETRY</span>
+          </div>
+        </div>
+
+        <LazyKloudtechDashboard isDark={isDark} liveData={liveStationData} />
+      </div>
+    )}
 
         {/* Floating Scroll-to-Top Command Button */}
         <AnimatePresence>
@@ -1217,6 +1344,38 @@ export default function HomeScreen({
           </div>
         </div>
 
+        {/* Mobile Page 1 / Page 2 Switcher */}
+        <div className="mobile-page-switcher">
+          <button
+            type="button"
+            onClick={() => {
+              setHomePage(1);
+              const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+              el?.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className={`mobile-page-tab ${homePage === 1 ? "active" : ""}`}
+            title="View Weather Overview"
+          >
+            <Sun size={14} strokeWidth={2.4} />
+            <span>Page 1: Weather</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setHomePage(2);
+              const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+              el?.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className={`mobile-page-tab ${homePage === 2 ? "active" : ""}`}
+            title="View Live Station Telemetry Dashboard"
+          >
+            <Activity size={14} strokeWidth={2.4} />
+            <span>Page 2: Dashboard</span>
+          </button>
+        </div>
+
+        {homePage === 1 ? (
+          <>
         {/* ── OFFICIAL ADVISORIES SECTION ── */}
         {advisories.length > 0 && (
           <div style={{ padding: "14px 16px 0" }}>
@@ -1479,176 +1638,203 @@ export default function HomeScreen({
               boxShadow: "var(--shadow-card)",
               position: "relative",
               overflow: "hidden",
+              minHeight: 180,
             }}
           >
-            {/* Dynamic Animated Background Transition */}
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                overflow: "hidden",
-                zIndex: 0,
-                pointerEvents: "none",
-              }}
-            >
-              <AnimatePresence initial={false}>
-                <motion.div
-                  key={heroBgUrl}
-                  initial={{ opacity: 0, scale: 1.04 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+            {isLoadingWeather ? (
+              <div style={{ position: "relative", zIndex: 2 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div className="skeleton-box" style={{ width: 110, height: 68, borderRadius: 16, marginBottom: 12 }} />
+                    <div className="skeleton-box" style={{ width: 170, height: 22, borderRadius: 6, marginBottom: 8 }} />
+                    <div className="skeleton-box" style={{ width: 210, height: 14, borderRadius: 4, marginBottom: 14 }} />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <div className="skeleton-box" style={{ width: 58, height: 26, borderRadius: 999 }} />
+                      <div className="skeleton-box" style={{ width: 58, height: 26, borderRadius: 999 }} />
+                    </div>
+                  </div>
+                  <div className="skeleton-box" style={{ width: 90, height: 80, borderRadius: 14 }} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                  <div className="skeleton-box" style={{ height: 36, borderRadius: 8 }} />
+                  <div className="skeleton-box" style={{ height: 36, borderRadius: 8 }} />
+                  <div className="skeleton-box" style={{ height: 36, borderRadius: 8 }} />
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Dynamic Animated Background Transition */}
+                {heroBgUrl && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      overflow: "hidden",
+                      zIndex: 0,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <AnimatePresence initial={false}>
+                      <motion.div
+                        key={heroBgUrl}
+                        initial={{ opacity: 0, scale: 1.04 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          backgroundImage: `url('${heroBgUrl}')`,
+                          backgroundPosition: "center",
+                          backgroundSize: "cover",
+                          backgroundRepeat: "no-repeat",
+                        }}
+                      />
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Soft gradient for text legibility */}
+                <div
                   style={{
                     position: "absolute",
                     inset: 0,
-                    backgroundImage: `url('${heroBgUrl}')`,
-                    backgroundPosition: "center",
-                    backgroundSize: "cover",
-                    backgroundRepeat: "no-repeat",
+                    background: isDark
+                      ? "linear-gradient(180deg, rgba(10, 12, 16, 0.48) 0%, rgba(10, 12, 16, 0.15) 45%, rgba(10, 12, 16, 0.55) 100%)"
+                      : "linear-gradient(180deg, rgba(10, 12, 16, 0.28) 0%, rgba(10, 12, 16, 0.05) 45%, rgba(10, 12, 16, 0.35) 100%)",
+                    zIndex: 1,
+                    pointerEvents: "none",
+                    transition: "background 0.5s ease",
                   }}
                 />
-              </AnimatePresence>
-            </div>
+                
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative", zIndex: 2 }}>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 74,
+                        fontWeight: 900,
+                        lineHeight: 1,
+                        letterSpacing: -3.5,
+                        color: "#ffffff",
+                        textShadow: "0 3px 12px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.7)",
+                      }}
+                    >
+                      {currentTemp != null ? `${currentTemp}°` : "--"}
+                    </div>
+                    <div style={{ marginTop: 8, fontSize: 18, fontWeight: 700, color: "#ffffff", textShadow: "0 2px 8px rgba(0, 0, 0, 0.6)" }}>
+                      {weatherInfo.msg}
+                    </div>
+                    <div style={{ marginTop: 4, fontSize: 12, color: "#ffffff", fontWeight: 700, textShadow: "0 1px 6px rgba(0, 0, 0, 0.6)" }}>
+                      Brgy. {selectedBarangay}, Palayan City
+                    </div>
 
-            {/* Soft gradient for text legibility */}
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: isDark
-                  ? "linear-gradient(180deg, rgba(10, 12, 16, 0.48) 0%, rgba(10, 12, 16, 0.15) 45%, rgba(10, 12, 16, 0.55) 100%)"
-                  : "linear-gradient(180deg, rgba(10, 12, 16, 0.28) 0%, rgba(10, 12, 16, 0.05) 45%, rgba(10, 12, 16, 0.35) 100%)",
-                zIndex: 1,
-                pointerEvents: "none",
-                transition: "background 0.5s ease",
-              }}
-            />
-            
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative", zIndex: 2 }}>
-              <div>
-                <div
-                  style={{
-                    fontSize: 74,
-                    fontWeight: 900,
-                    lineHeight: 1,
-                    letterSpacing: -3.5,
-                    color: "#ffffff",
-                    textShadow: "0 3px 12px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.7)",
-                  }}
-                >
-                  {currentTemp}°
-                </div>
-                <div style={{ marginTop: 8, fontSize: 18, fontWeight: 700, color: "#ffffff", textShadow: "0 2px 8px rgba(0, 0, 0, 0.6)" }}>
-                  {weatherInfo.msg}
-                </div>
-                <div style={{ marginTop: 4, fontSize: 12, color: "#ffffff", fontWeight: 700, textShadow: "0 1px 6px rgba(0, 0, 0, 0.6)" }}>
-                  Brgy. {selectedBarangay}, Palayan City
-                </div>
-
-                <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-                  <span
-                    style={{
-                      background: "rgba(255, 255, 255, 0.1)",
-                      border: "1px solid rgba(255, 255, 255, 0.12)",
-                      padding: "4px 10px",
-                      borderRadius: 12,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "#ffffff",
-                    }}
-                  >
-                    H {weatherInfo.high}°
-                  </span>
-                  <span
-                    style={{
-                      background: "rgba(255, 255, 255, 0.05)",
-                      border: "1px solid rgba(255, 255, 255, 0.08)",
-                      padding: "4px 10px",
-                      borderRadius: 12,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "rgba(255, 255, 255, 0.7)",
-                    }}
-                  >
-                    L {weatherInfo.low}°
-                  </span>
-                </div>
-              </div>
-
-              {/* Heat Index Badge */}
-              <div style={{ textAlign: "right" }}>
-                <div
-                  style={{
-                    background: "rgba(255, 255, 255, 0.1)",
-                    border: "1px solid rgba(255, 255, 255, 0.2)",
-                    color: "#ffffff",
-                    padding: "6px 12px",
-                    borderRadius: 14,
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: 0.3,
-                    marginBottom: 8,
-                  }}
-                >
-                  {heatIndex}
-                </div>
-                <div
-                  style={{
-                    background: "rgba(255, 255, 255, 0.04)",
-                    border: "1px solid rgba(255, 255, 255, 0.08)",
-                    borderRadius: 14,
-                    padding: "8px 12px",
-                    textAlign: "center",
-                  }}
-                >
-                  <div style={{ fontSize: 9, color: "rgba(255, 255, 255, 0.7)", fontWeight: 800, letterSpacing: 0.5, marginBottom: 4 }}>
-                    HEAT INDEX
+                    <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                      <span
+                        style={{
+                          background: "rgba(255, 255, 255, 0.1)",
+                          border: "1px solid rgba(255, 255, 255, 0.12)",
+                          padding: "4px 10px",
+                          borderRadius: 12,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#ffffff",
+                        }}
+                      >
+                        H {weatherInfo.high != null ? `${weatherInfo.high}°` : "--"}
+                      </span>
+                      <span
+                        style={{
+                          background: "rgba(255, 255, 255, 0.05)",
+                          border: "1px solid rgba(255, 255, 255, 0.08)",
+                          padding: "4px 10px",
+                          borderRadius: 12,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "rgba(255, 255, 255, 0.7)",
+                        }}
+                      >
+                        L {weatherInfo.low != null ? `${weatherInfo.low}°` : "--"}
+                      </span>
+                    </div>
                   </div>
-                  <div style={{ fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
-                    {currentTemp + 6}°C
+
+                  {/* Heat Index Badge */}
+                  <div style={{ textAlign: "right" }}>
+                    <div
+                      style={{
+                        background: "rgba(255, 255, 255, 0.1)",
+                        border: "1px solid rgba(255, 255, 255, 0.2)",
+                        color: "#ffffff",
+                        padding: "6px 12px",
+                        borderRadius: 14,
+                        fontSize: 11,
+                        fontWeight: 800,
+                        letterSpacing: 0.3,
+                        marginBottom: 8,
+                      }}
+                    >
+                      {heatIndex}
+                    </div>
+                    <div
+                      style={{
+                        background: "rgba(255, 255, 255, 0.04)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: 14,
+                        padding: "8px 12px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <div style={{ fontSize: 9, color: "rgba(255, 255, 255, 0.7)", fontWeight: 800, letterSpacing: 0.5, marginBottom: 4 }}>
+                        HEAT INDEX
+                      </div>
+                      <div style={{ fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
+                        {currentTemp != null ? `${currentTemp + 6}°C` : "--"}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Sensor strip */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: 8,
-                marginTop: 20,
-                paddingTop: 16,
-                borderTop: "1px solid rgba(255, 255, 255, 0.12)",
-                position: "relative",
-                zIndex: 1,
-              }}
-            >
-              {[
-                { Icon: Droplets, label: "Humidity", val: `${humidity}%` },
-                { Icon: Wind, label: "Wind", val: `${windSpeed} km/h` },
-                { Icon: Gauge, label: "Pressure", val: pressure },
-              ].map(({ Icon, label, val }) => (
-                <div key={label} style={{ textAlign: "center" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 4,
-                      fontSize: 10,
-                      color: "rgba(255, 255, 255, 0.7)",
-                      fontWeight: 700,
-                      marginBottom: 4,
-                    }}
-                  >
-                    <Icon size={12} color="#ffffff" />
-                    {label}
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: "#ffffff" }}>{val}</div>
+                {/* Sensor strip */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: 8,
+                    marginTop: 20,
+                    paddingTop: 16,
+                    borderTop: "1px solid rgba(255, 255, 255, 0.12)",
+                    position: "relative",
+                    zIndex: 1,
+                  }}
+                >
+                  {[
+                    { Icon: Droplets, label: "Humidity", val: `${Math.round(Number(humidity))}%` },
+                    { Icon: Wind, label: "Wind", val: `${Number(windSpeed || 0).toFixed(1)} km/h` },
+                    { Icon: Gauge, label: "Pressure", val: pressure },
+                  ].map(({ Icon, label, val }) => (
+                    <div key={label} style={{ textAlign: "center" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 4,
+                          fontSize: 10,
+                          color: "rgba(255, 255, 255, 0.7)",
+                          fontWeight: 700,
+                          marginBottom: 4,
+                        }}
+                      >
+                        <Icon size={12} color="#ffffff" />
+                        {label}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: "#ffffff" }}>{val}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -2000,12 +2186,87 @@ export default function HomeScreen({
               </div>
             )}
           </div>
+        </div>
 
-          {/* ──── KLOUDTECH IOT WEATHER STATION TELEMETRY & HISTORICAL CHARTS ──── */}
-          <div style={{ marginTop: 20 }}>
-            <KloudtechStationView isDark={isDark} liveData={liveStationData} />
+        {/* Mobile Page 1 Transition Card to Page 2 */}
+        <div
+          style={{
+            margin: "20px 16px 24px",
+            padding: "20px 20px",
+            borderRadius: 22,
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-card)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 14,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span className="transition-badge">
+              <span className="live-dot" /> Page 2 Available
+            </span>
+            <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700 }}>5 Live Sensor Charts</span>
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>
+              IoT Station Telemetry & Historical Charts
+            </h3>
+            <p style={{ margin: "5px 0 0", fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.45 }}>
+              Detailed sensor telemetry and historical trends from Kloudtech Palayan AWS are located on Page 2 for smooth, zero-lag browsing.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setHomePage(2);
+              const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+              el?.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="transition-btn"
+            style={{ width: "100%", justifyContent: "center" }}
+          >
+            <span>Open Page 2: Station Telemetry</span>
+            <ArrowRight size={16} strokeWidth={2.4} />
+          </button>
+        </div>
+      </>
+    ) : (
+      /* Mobile Page 2 View */
+      <div style={{ padding: "16px 16px 40px", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "12px 16px",
+            borderRadius: 18,
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-card)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setHomePage(1);
+              const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+              el?.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="page-two-back-btn"
+          >
+            <ArrowLeft size={15} strokeWidth={2.4} />
+            <span>← Back to Page 1</span>
+          </button>
+          <div className="page-two-tag">
+            <span className="live-dot" />
+            <span>PAGE 2: TELEMETRY</span>
           </div>
         </div>
+
+        <LazyKloudtechDashboard isDark={isDark} liveData={liveStationData} />
+      </div>
+    )}
       </div>
     </div>
   );

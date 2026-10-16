@@ -420,7 +420,10 @@ function App() {
             {(tabLoading && loadingTab === "elnino") || forcedSkeleton === "elnino" ? (
               <ElNinoTabSkeleton />
             ) : (
-              <ElNinoMonitoringDashboard />
+              <ElNinoMonitoringDashboard
+                session={session}
+                onNavigateToAuth={() => handleTabChange("profile")}
+              />
             )}
           </motion.div>
         )}

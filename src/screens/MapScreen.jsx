@@ -688,6 +688,14 @@ function MapScreen({
         mapRef={mapRef}
         activeLayers={activeLayers}
         onToggleLayer={toggleLayer}
+        activeMetric={activeMetric}
+        onSelectMetric={setActiveMetric}
+        weatherStations={weatherStations}
+        selectedStation={selectedKloudtrackStation}
+        onSelectStation={(st) => {
+          closePopup();
+          setSelectedKloudtrackStation(st);
+        }}
         onCategoryClick={(categoryId) => {
           // Set only this category as active
           setActiveFilters([categoryId]);
