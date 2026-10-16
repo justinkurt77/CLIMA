@@ -43,16 +43,13 @@ export default defineConfig({
   define: {
     'global': 'globalThis',
   },
+  esbuild: {
+    drop: ['console', 'debugger'],
+  },
   build: {
     sourcemap: false,
-    minify: "terser",
+    minify: "esbuild",
     cssMinify: true,
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
-    },
     rollupOptions: {
       output: {
         manualChunks: {

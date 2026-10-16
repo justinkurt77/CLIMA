@@ -21,9 +21,35 @@ import {
   MapPin,
   Radio,
   Flame,
+  Plus,
+  Crosshair,
+  Edit3,
+  Trash2,
+  Building2,
+  Phone,
+  Layers,
+  Filter,
+  CheckCircle2,
+  HeartPulse,
+  ShieldAlert,
+  ShieldCheck,
+  Zap,
+  Sprout,
+  Landmark,
+  AlertTriangle,
 } from "lucide-react";
 import { PinMarker } from "../map/MapPins";
 import { useLiveOpsData, getHeatRisk } from "../../hooks/useLiveOpsData";
+import {
+  PIN_CATEGORIES,
+  PIN_STATUSES,
+  getPinnedLocations,
+  savePinnedLocation,
+  deletePinnedLocation,
+  subscribePinnedLocations,
+} from "../../lib/pinnedLocationsStorage";
+import PinLocationModal from "../map/PinLocationModal";
+import CustomPinMarker from "../map/CustomPinMarker";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "";
 const TZ = "Asia/Manila";
@@ -111,6 +137,24 @@ export default function AdminOverviewCommand({
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
   const [isTelemetryVisible, setIsTelemetryVisible] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
+
+  // Custom Pinned Locations State (Water facilities, hospitals, fire stations, etc.)
+  const [pinnedLocations, setPinnedLocations] = useState(() => getPinnedLocations());
+  const [isPinningMode, setIsPinningMode] = useState(false);
+  const [selectedPin, setSelectedPin] = useState(null);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [editingPin, setEditingPin] = useState(null);
+  const [tempPinCoords, setTempPinCoords] = useState(null);
+  const [draftPinData, setDraftPinData] = useState(null);
+  const [pinCategoryFilter, setPinCategoryFilter] = useState("all");
+  const [inspectorSection, setInspectorSection] = useState("reports"); // "reports" | "pins"
+
+  useEffect(() => {
+    const unsub = subscribePinnedLocations((pins) => {
+      setPinnedLocations(pins);
+    });
+    return unsub;
+  }, []);
 
   const mapRef = useRef(null);
   const didFit = useRef(false);
@@ -260,16 +304,101 @@ export default function AdminOverviewCommand({
 
   const selectReport = (r) => {
     setInfoPopup(null);
+    setSelectedPin(null);
     setSelectedReport(r);
     if (hasCoords(r) && mapRef.current) {
       mapRef.current.flyTo({ center: [Number(r.lng), Number(r.lat)], zoom: 16.5, duration: 1000 });
     }
   };
 
-  const clearSelection = () => {
+  const selectPin = useCallback((pin) => {
     setSelectedReport(null);
     setInfoPopup(null);
-  };
+    setSelectedPin(pin);
+    if (mapRef.current) {
+      mapRef.current.flyTo({ center: [Number(pin.lng), Number(pin.lat)], zoom: 16.2, duration: 800 });
+    }
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedReport(null);
+    setSelectedPin(null);
+    setInfoPopup(null);
+  }, []);
+
+  const handleMapClick = useCallback(
+    (e) => {
+      if (isPinningMode) {
+        if (e.lngLat) {
+          const newCoords = [e.lngLat.lng, e.lngLat.lat];
+          setTempPinCoords(newCoords);
+          if (draftPinData) {
+            setDraftPinData((prev) => ({
+              ...prev,
+              lng: String(Number(e.lngLat.lng).toFixed(6)),
+              lat: String(Number(e.lngLat.lat).toFixed(6)),
+            }));
+          }
+          setShowPinModal(true);
+          setIsPinningMode(false);
+        }
+        return;
+      }
+      clearSelection();
+    },
+    [isPinningMode, clearSelection, draftPinData],
+  );
+
+  const handleSavePin = useCallback((pinData) => {
+    const updated = savePinnedLocation(pinData);
+    setPinnedLocations(updated);
+    setDraftPinData(null);
+    setEditingPin(null);
+    setTempPinCoords(null);
+    const target =
+      updated.find(
+        (p) =>
+          p.name === pinData.name &&
+          Math.abs(Number(p.lat) - Number(pinData.lat)) < 0.0001 &&
+          Math.abs(Number(p.lng) - Number(pinData.lng)) < 0.0001,
+      ) || updated[0];
+    if (target) {
+      setSelectedPin(target);
+      setSelectedReport(null);
+      if (mapRef.current) {
+        mapRef.current.flyTo({ center: [Number(target.lng), Number(target.lat)], zoom: 16, duration: 800 });
+      }
+    }
+  }, []);
+
+  const handleDeletePin = useCallback(
+    (pinId) => {
+      const updated = deletePinnedLocation(pinId);
+      setPinnedLocations(updated);
+      if (selectedPin?.id === pinId) {
+        setSelectedPin(null);
+      }
+    },
+    [selectedPin],
+  );
+
+  const filteredPins = useMemo(() => {
+    if (pinCategoryFilter === "all") return pinnedLocations;
+    return pinnedLocations.filter((p) => p.category === pinCategoryFilter);
+  }, [pinnedLocations, pinCategoryFilter]);
+
+  const categoryCounts = useMemo(() => {
+    const c = { all: pinnedLocations.length };
+    Object.keys(PIN_CATEGORIES).forEach((key) => {
+      c[key] = 0;
+    });
+    pinnedLocations.forEach((p) => {
+      if (c[p.category] !== undefined) {
+        c[p.category] += 1;
+      }
+    });
+    return c;
+  }, [pinnedLocations]);
 
   const sectionLabel = {
     fontSize: 9,
@@ -306,10 +435,22 @@ export default function AdminOverviewCommand({
           70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
           100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
+        @keyframes climaPinPulse {
+          0% { transform: scale(0.9); opacity: 0.8; }
+          50% { transform: scale(1.6); opacity: 0.2; }
+          100% { transform: scale(2.0); opacity: 0; }
+        }
       `}</style>
 
       {/* ═══ MAP CANVAS ═══ */}
-      <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 1,
+          cursor: isPinningMode ? "crosshair" : "default",
+        }}
+      >
         {MAPBOX_TOKEN ? (
           <Map
             ref={mapRef}
@@ -320,7 +461,7 @@ export default function AdminOverviewCommand({
             attributionControl={false}
             antialias={false}
             onLoad={handleMapLoad}
-            onClick={clearSelection}
+            onClick={handleMapClick}
           >
             {/* Real Palayan City barangay boundaries */}
             <Source id="palayan-barangays-source" type="geojson" data="/palayan-barangays.geojson">
@@ -339,35 +480,6 @@ export default function AdminOverviewCommand({
                 }}
               />
             </Source>
-
-            {/* Real facilities (OpenStreetMap) inside the city limits */}
-            {facilities.items.map((f) => (
-              <Marker key={f.id} longitude={f.lng} latitude={f.lat} anchor="center">
-                <div
-                  title={`${f.name} · ${f.category}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedReport(null);
-                    setInfoPopup({
-                      lng: f.lng,
-                      lat: f.lat,
-                      title: f.name,
-                      subtitle: f.category,
-                      color: f.color,
-                    });
-                  }}
-                  style={{
-                    width: 14,
-                    height: 14,
-                    borderRadius: "50%",
-                    background: f.color,
-                    border: "2px solid #ffffff",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
-                    cursor: "pointer",
-                  }}
-                />
-              </Marker>
-            ))}
 
             {/* KloudTech IoT Weather Stations */}
             {stationLabelPositions.map((s) => {
@@ -448,12 +560,135 @@ export default function AdminOverviewCommand({
                 onClick={(e) => {
                   e.originalEvent.stopPropagation();
                   setInfoPopup(null);
+                  setSelectedPin(null);
                   setSelectedReport(r);
                 }}
               >
                 <PinMarker color={SC[r.status] || SC.pending} icon={r.icon} />
               </Marker>
             ))}
+
+            {/* Custom Admin & Superadmin Pinned Locations (Water facilities, hospitals, fire stations, etc.) */}
+            {filteredPins.map((pin) => (
+              <Marker
+                key={pin.id}
+                longitude={Number(pin.lng)}
+                latitude={Number(pin.lat)}
+                anchor="bottom"
+              >
+                <CustomPinMarker
+                  pin={pin}
+                  isSelected={selectedPin?.id === pin.id}
+                  onClick={() => selectPin(pin)}
+                />
+              </Marker>
+            ))}
+
+            {/* Selected Pinned Location map popup */}
+            {selectedPin && (
+              <Popup
+                longitude={Number(selectedPin.lng)}
+                latitude={Number(selectedPin.lat)}
+                anchor="bottom"
+                offset={44}
+                closeButton={false}
+                closeOnClick={false}
+                maxWidth="280px"
+              >
+                <div style={{ fontFamily: "'Nunito', sans-serif", color: "#09090b", minWidth: 200 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
+                    <span
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 900,
+                        padding: "2px 8px",
+                        borderRadius: 8,
+                        background: PIN_CATEGORIES[selectedPin.category]?.bg || "rgba(2, 132, 199, 0.15)",
+                        color: PIN_CATEGORIES[selectedPin.category]?.color || "#0284c7",
+                      }}
+                    >
+                      {PIN_CATEGORIES[selectedPin.category]?.label || selectedPin.category}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 800,
+                        padding: "2px 6px",
+                        borderRadius: 6,
+                        background: PIN_STATUSES[selectedPin.status]?.bg || "rgba(34, 197, 94, 0.15)",
+                        color: PIN_STATUSES[selectedPin.status]?.color || "#22c55e",
+                      }}
+                    >
+                      {PIN_STATUSES[selectedPin.status]?.label || selectedPin.status}
+                    </span>
+                  </div>
+                  <p style={{ margin: "6px 0 2px", fontSize: 13, fontWeight: 900, color: "#09090b" }}>
+                    {selectedPin.name}
+                  </p>
+                  <p style={{ margin: 0, fontSize: 10, color: "#52525b", fontWeight: 700 }}>
+                    {selectedPin.subType} · Brgy. {selectedPin.barangay}
+                  </p>
+                  {selectedPin.description && (
+                    <p style={{ margin: "6px 0 0", fontSize: 10, color: "#3f3f46", fontWeight: 600, lineHeight: 1.3 }}>
+                      {selectedPin.description}
+                    </p>
+                  )}
+                  {selectedPin.contact && (
+                    <p style={{ margin: "4px 0 0", fontSize: 10, color: "#2563eb", fontWeight: 700 }}>
+                      📞 {selectedPin.contact}
+                    </p>
+                  )}
+                  <div style={{ display: "flex", gap: 6, marginTop: 10, paddingTop: 6, borderTop: "1px solid rgba(0,0,0,0.08)" }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingPin(selectedPin);
+                        setShowPinModal(true);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: "5px 8px",
+                        borderRadius: 8,
+                        border: "1px solid rgba(0,0,0,0.12)",
+                        background: "#ffffff",
+                        color: "#09090b",
+                        fontSize: 10,
+                        fontWeight: 800,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <Edit3 size={11} /> Edit
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletePin(selectedPin.id);
+                      }}
+                      style={{
+                        padding: "5px 8px",
+                        borderRadius: 8,
+                        border: "1px solid rgba(239, 68, 68, 0.2)",
+                        background: "rgba(239, 68, 68, 0.08)",
+                        color: "#ef4444",
+                        fontSize: 10,
+                        fontWeight: 800,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 3,
+                      }}
+                    >
+                      <Trash2 size={11} /> Delete
+                    </button>
+                  </div>
+                </div>
+              </Popup>
+            )}
 
             {selectedReport && hasCoords(selectedReport) && (
               <Popup
@@ -527,6 +762,68 @@ export default function AdminOverviewCommand({
         )}
       </div>
 
+      {/* ═══ PIN MODE FLOATING BANNER ═══ */}
+      <AnimatePresence>
+        {isPinningMode && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: -20, x: "-50%" }}
+            style={{
+              position: "absolute",
+              top: 24,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 45,
+              background: isDark ? "rgba(18, 18, 22, 0.96)" : "rgba(255, 255, 255, 0.98)",
+              border: "1.5px solid #f59e0b",
+              borderRadius: 9999,
+              padding: "8px 18px 8px 14px",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              boxShadow: "0 10px 30px rgba(245, 158, 11, 0.45)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              pointerEvents: "auto",
+            }}
+          >
+            <span
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: "#f59e0b",
+                animation: "climaLivePulse 1.2s infinite",
+              }}
+            />
+            <span style={{ fontSize: 12, fontWeight: 900, color: Z[950] }}>
+              {draftPinData?.name
+                ? `Click anywhere on the map to set location for "${draftPinData.name}"`
+                : "Click anywhere on the map to set pin location"}
+            </span>
+            <button
+              onClick={() => {
+                setIsPinningMode(false);
+                setShowPinModal(true);
+              }}
+              style={{
+                padding: "4px 12px",
+                borderRadius: 9999,
+                border: "none",
+                background: "rgba(239, 68, 68, 0.15)",
+                color: "#ef4444",
+                fontSize: 11,
+                fontWeight: 800,
+                cursor: "pointer",
+              }}
+            >
+              Back to Form
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ═══ MAP STYLE PILL & RECENTER BUTTON (EXACTLY LIKE CLIENT-SIDE MAP) ═══ */}
       <div
         style={{
@@ -541,6 +838,46 @@ export default function AdminOverviewCommand({
           transition: "right 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       >
+        {/* Add Pin Button - Pops up modal directly without selecting location on map */}
+        <button
+          onClick={() => {
+            const center = mapRef.current ? mapRef.current.getCenter() : null;
+            const lng = center ? Number(center.lng.toFixed(6)) : 121.0827;
+            const lat = center ? Number(center.lat.toFixed(6)) : 15.5398;
+            setTempPinCoords([lng, lat]);
+            setEditingPin(null);
+            setDraftPinData(null);
+            setShowPinModal(true);
+            setIsPinningMode(false);
+            setSelectedReport(null);
+            setSelectedPin(null);
+          }}
+          title="Add Pin / Pin Location on Map"
+          aria-label="Add Pin on Map"
+          style={{
+            width: 50,
+            height: 50,
+            borderRadius: 24,
+            border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.08)",
+            background: isDark
+              ? "rgba(18, 18, 20, 0.94)"
+              : "rgba(255, 255, 255, 0.95)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            boxShadow: isDark
+              ? "0 8px 24px rgba(0,0,0,0.5)"
+              : "0 8px 24px rgba(0,0,0,0.12)",
+            color: "#f59e0b",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            transition: "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          }}
+        >
+          <MapPin size={22} strokeWidth={2.4} />
+        </button>
+
         {/* Style Pill */}
         <div
           role="radiogroup"
@@ -859,17 +1196,19 @@ export default function AdminOverviewCommand({
             >
               <div style={{ minWidth: 0 }}>
                 <h2 style={{ margin: 0, fontSize: 15, fontWeight: 900, color: Z[900], letterSpacing: 0.4 }}>
-                  {selectedReport ? `Incident #${String(selectedReport.id).slice(-4)}` : "Palayan City"}
+                  {selectedPin ? selectedPin.name : selectedReport ? `Incident #${String(selectedReport.id).slice(-4)}` : "Palayan City"}
                 </h2>
                 <p style={{ margin: "2px 0 0", fontSize: 10, color: Z[700], fontWeight: 700 }}>
-                  {selectedReport
+                  {selectedPin
+                    ? `${PIN_CATEGORIES[selectedPin.category]?.label || selectedPin.category} · ${selectedPin.subType}`
+                    : selectedReport
                     ? selectedReport.category || "Uncategorized"
                     : `Nueva Ecija · ${isSuperadmin ? "Central Command" : adminDepartment?.name || "Operations"}`}
                 </p>
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                {!selectedReport && (
+                {!selectedReport && !selectedPin && (
                   <div
                     style={{
                       display: "inline-flex",
@@ -914,7 +1253,7 @@ export default function AdminOverviewCommand({
                   </div>
                 )}
 
-                {selectedReport && (
+                {(selectedReport || selectedPin) && (
                   <button
                     onClick={clearSelection}
                     title="Back to citywide view"
@@ -946,6 +1285,101 @@ export default function AdminOverviewCommand({
                 gap: 12,
               }}
             >
+              {/* Selected pinned location card */}
+              {selectedPin && (
+                <div style={card}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 900,
+                        padding: "2px 8px",
+                        borderRadius: 8,
+                        background: PIN_CATEGORIES[selectedPin.category]?.bg || "rgba(2, 132, 199, 0.15)",
+                        color: PIN_CATEGORIES[selectedPin.category]?.color || "#0284c7",
+                      }}
+                    >
+                      {PIN_CATEGORIES[selectedPin.category]?.label || selectedPin.category}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: "2px 8px",
+                        borderRadius: 8,
+                        background: PIN_STATUSES[selectedPin.status]?.bg || "rgba(34, 197, 94, 0.15)",
+                        color: PIN_STATUSES[selectedPin.status]?.color || "#22c55e",
+                      }}
+                    >
+                      {PIN_STATUSES[selectedPin.status]?.label || selectedPin.status}
+                    </span>
+                  </div>
+                  <p style={{ margin: "8px 0 2px", fontSize: 14, fontWeight: 900 }}>{selectedPin.name}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: Z[700], fontWeight: 700 }}>
+                    {selectedPin.subType} · Brgy. {selectedPin.barangay}
+                  </p>
+                  <p style={{ margin: "4px 0 0", fontSize: 10, color: Z[600], fontWeight: 600 }}>
+                    GPS: {Number(selectedPin.lat).toFixed(4)}° N, {Number(selectedPin.lng).toFixed(4)}° E
+                  </p>
+                  {selectedPin.contact && (
+                    <p style={{ margin: "6px 0 0", fontSize: 11, color: "#2563eb", fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+                      <Phone size={12} />
+                      <a href={`tel:${selectedPin.contact}`} style={{ color: "inherit", textDecoration: "none" }}>
+                        {selectedPin.contact}
+                      </a>
+                    </p>
+                  )}
+                  {selectedPin.description && (
+                    <p style={{ margin: "8px 0 0", fontSize: 11, color: Z[800], fontWeight: 600, lineHeight: 1.4 }}>
+                      {selectedPin.description}
+                    </p>
+                  )}
+                  <div style={{ display: "flex", gap: 8, marginTop: 12, paddingTop: 10, borderTop: `1px solid ${Z[300]}` }}>
+                    <button
+                      onClick={() => {
+                        setEditingPin(selectedPin);
+                        setShowPinModal(true);
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: "7px 12px",
+                        borderRadius: 10,
+                        border: `1px solid ${Z[300]}`,
+                        background: Z[200],
+                        color: Z[950],
+                        fontSize: 11,
+                        fontWeight: 800,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 5,
+                      }}
+                    >
+                      <Edit3 size={13} /> Edit Pin
+                    </button>
+                    <button
+                      onClick={() => handleDeletePin(selectedPin.id)}
+                      style={{
+                        padding: "7px 12px",
+                        borderRadius: 10,
+                        border: "1px solid rgba(239, 68, 68, 0.25)",
+                        background: "rgba(239, 68, 68, 0.12)",
+                        color: "#ef4444",
+                        fontSize: 11,
+                        fontWeight: 800,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <Trash2 size={13} /> Delete
+                    </button>
+                  </div>
+                </div>
+              )}
               {/* Selected report card */}
               {selectedReport && (
                 <div style={card}>
@@ -1133,112 +1567,440 @@ export default function AdminOverviewCommand({
                 </div>
               </div>
 
-              {/* Realtime Citizen Incident Reports */}
+              {/* ═══ SECTION SELECTOR: CITIZEN REPORTS vs PINNED FACILITIES ═══ */}
               <div style={{ marginTop: 2 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-                  <h3 style={{ margin: 0, fontSize: 13, fontWeight: 900 }}>Citizen Incident Reports</h3>
-                  <span style={{ fontSize: 9, color: Z[600], fontWeight: 700 }}>
-                    {counts.today} today · {reports.length} total
-                  </span>
-                </div>
-
                 <div
                   role="tablist"
                   style={{
                     display: "flex",
                     background: Z[50],
-                    borderRadius: 10,
-                    padding: 2,
-                    border: `1px solid ${Z[300]}`,
+                    borderRadius: 12,
+                    padding: 3,
+                    border: `1.5px solid ${Z[300]}`,
                     marginBottom: 10,
                   }}
                 >
-                  {[
-                    { id: "active", label: `Active (${activeCount})` },
-                    { id: "resolved", label: `Resolved (${counts.resolved})` },
-                  ].map((t) => (
-                    <button
-                      key={t.id}
-                      role="tab"
-                      aria-selected={taskFilter === t.id}
-                      onClick={() => setTaskFilter(t.id)}
+                  <button
+                    role="tab"
+                    aria-selected={inspectorSection === "reports"}
+                    onClick={() => setInspectorSection("reports")}
+                    style={{
+                      flex: 1,
+                      padding: "6px 8px",
+                      borderRadius: 9,
+                      border: "none",
+                      background: inspectorSection === "reports" ? Z[200] : "transparent",
+                      color: inspectorSection === "reports" ? Z[950] : Z[600],
+                      fontSize: 11,
+                      fontWeight: 900,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      transition: "all 0.15s ease",
+                      boxShadow: inspectorSection === "reports" ? "0 2px 8px rgba(0,0,0,0.1)" : "none",
+                    }}
+                  >
+                    <span>Reports</span>
+                    <span
                       style={{
-                        flex: 1,
-                        padding: "5px 0",
-                        borderRadius: 8,
-                        border: "none",
-                        background: taskFilter === t.id ? Z[200] : "transparent",
-                        color: taskFilter === t.id ? Z[950] : Z[600],
-                        fontSize: 10,
-                        fontWeight: 800,
-                        cursor: "pointer",
-                        transition: "all 0.15s ease",
+                        fontSize: 9,
+                        fontWeight: 900,
+                        padding: "1px 6px",
+                        borderRadius: 9999,
+                        background: inspectorSection === "reports" ? "rgba(245, 158, 11, 0.2)" : Z[100],
+                        color: inspectorSection === "reports" ? "#f59e0b" : Z[700],
                       }}
                     >
-                      {t.label}
-                    </button>
-                  ))}
+                      {reports.length}
+                    </span>
+                  </button>
+
+                  <button
+                    role="tab"
+                    aria-selected={inspectorSection === "pins"}
+                    onClick={() => setInspectorSection("pins")}
+                    style={{
+                      flex: 1,
+                      padding: "6px 8px",
+                      borderRadius: 9,
+                      border: "none",
+                      background: inspectorSection === "pins" ? Z[200] : "transparent",
+                      color: inspectorSection === "pins" ? Z[950] : Z[600],
+                      fontSize: 11,
+                      fontWeight: 900,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      transition: "all 0.15s ease",
+                      boxShadow: inspectorSection === "pins" ? "0 2px 8px rgba(0,0,0,0.1)" : "none",
+                    }}
+                  >
+                    <MapPin size={12} color={inspectorSection === "pins" ? "#f59e0b" : Z[600]} />
+                    <span>Pinned Facilities</span>
+                    <span
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 900,
+                        padding: "1px 6px",
+                        borderRadius: 9999,
+                        background: inspectorSection === "pins" ? "rgba(245, 158, 11, 0.2)" : Z[100],
+                        color: inspectorSection === "pins" ? "#f59e0b" : Z[700],
+                      }}
+                    >
+                      {pinnedLocations.length}
+                    </span>
+                  </button>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {filteredReports.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: 20, color: Z[600], fontSize: 12 }}>
-                      No {taskFilter} reports found.
+                {/* ── SECTION 1: CITIZEN REPORTS ── */}
+                {inspectorSection === "reports" && (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                      <span style={{ fontSize: 11, color: Z[700], fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                        Incident Feeds
+                      </span>
+                      <span style={{ fontSize: 9, color: Z[600], fontWeight: 700 }}>
+                        {counts.today} today · {reports.length} total
+                      </span>
                     </div>
-                  ) : (
-                    filteredReports.slice(0, 30).map((r) => {
-                      const isSel = selectedReport?.id === r.id;
-                      return (
-                        <div
-                          key={r.id}
-                          onClick={() => selectReport(r)}
+
+                    <div
+                      role="tablist"
+                      style={{
+                        display: "flex",
+                        background: Z[50],
+                        borderRadius: 10,
+                        padding: 2,
+                        border: `1px solid ${Z[300]}`,
+                        marginBottom: 10,
+                      }}
+                    >
+                      {[
+                        { id: "active", label: `Active (${activeCount})` },
+                        { id: "resolved", label: `Resolved (${counts.resolved})` },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          role="tab"
+                          aria-selected={taskFilter === t.id}
+                          onClick={() => setTaskFilter(t.id)}
                           style={{
-                            background: Z[50],
-                            border: `1px solid ${isSel ? Z[900] : Z[300]}`,
-                            borderRadius: 12,
-                            padding: "9px 12px",
+                            flex: 1,
+                            padding: "5px 0",
+                            borderRadius: 8,
+                            border: "none",
+                            background: taskFilter === t.id ? Z[200] : "transparent",
+                            color: taskFilter === t.id ? Z[950] : Z[600],
+                            fontSize: 10,
+                            fontWeight: 800,
                             cursor: "pointer",
-                            transition: "border-color 0.15s, transform 0.15s",
+                            transition: "all 0.15s ease",
                           }}
-                          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateX(2px)")}
-                          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateX(0)")}
                         >
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                            <span
-                              style={{
-                                fontSize: 12,
-                                fontWeight: 900,
-                                minWidth: 0,
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {r.title || "Untitled report"}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: 9,
-                                fontWeight: 800,
-                                padding: "2px 7px",
-                                borderRadius: 9999,
-                                flexShrink: 0,
-                                background: SBG[r.status] || SBG.pending,
-                                color: SC[r.status] || SC.pending,
-                              }}
-                            >
-                              {SL[r.status] || r.status}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: 9, color: Z[700], fontWeight: 700, marginTop: 4 }}>
-                            {r.category || "Uncategorized"} · {fmtDateTime(r.created_at)}
-                            {!hasCoords(r) && " · no GPS"}
-                          </div>
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {filteredReports.length === 0 ? (
+                        <div style={{ textAlign: "center", padding: 20, color: Z[600], fontSize: 12 }}>
+                          No {taskFilter} reports found.
                         </div>
-                      );
-                    })
-                  )}
-                </div>
+                      ) : (
+                        filteredReports.slice(0, 30).map((r) => {
+                          const isSel = selectedReport?.id === r.id;
+                          return (
+                            <div
+                              key={r.id}
+                              onClick={() => selectReport(r)}
+                              style={{
+                                background: Z[50],
+                                border: `1px solid ${isSel ? Z[900] : Z[300]}`,
+                                borderRadius: 12,
+                                padding: "9px 12px",
+                                cursor: "pointer",
+                                transition: "border-color 0.15s, transform 0.15s",
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.transform = "translateX(2px)")}
+                              onMouseLeave={(e) => (e.currentTarget.style.transform = "translateX(0)")}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                                <span
+                                  style={{
+                                    fontSize: 12,
+                                    fontWeight: 900,
+                                    minWidth: 0,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {r.title || "Untitled report"}
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: 9,
+                                    fontWeight: 800,
+                                    padding: "2px 7px",
+                                    borderRadius: 9999,
+                                    flexShrink: 0,
+                                    background: SBG[r.status] || SBG.pending,
+                                    color: SC[r.status] || SC.pending,
+                                  }}
+                                >
+                                  {SL[r.status] || r.status}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: 9, color: Z[700], fontWeight: 700, marginTop: 4 }}>
+                                {r.category || "Uncategorized"} · {fmtDateTime(r.created_at)}
+                                {!hasCoords(r) && " · no GPS"}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── SECTION 2: PINNED FACILITIES (WATER, HOSPITALS, FIRE STATIONS, ETC.) ── */}
+                {inspectorSection === "pins" && (
+                  <div>
+                    {/* Action buttons */}
+                    <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                      <button
+                        onClick={() => {
+                          const center = mapRef.current ? mapRef.current.getCenter() : null;
+                          const lng = center ? Number(center.lng.toFixed(6)) : 121.0827;
+                          const lat = center ? Number(center.lat.toFixed(6)) : 15.5398;
+                          setTempPinCoords([lng, lat]);
+                          setEditingPin(null);
+                          setDraftPinData(null);
+                          setShowPinModal(true);
+                          setIsPinningMode(false);
+                          clearSelection();
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: "8px 12px",
+                          borderRadius: 10,
+                          border: "none",
+                          background: "linear-gradient(135deg, #f59e0b, #ea580c)",
+                          color: "#ffffff",
+                          fontSize: 11,
+                          fontWeight: 900,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 6,
+                          boxShadow: "0 2px 10px rgba(245, 158, 11, 0.35)",
+                        }}
+                      >
+                        <MapPin size={14} strokeWidth={2.5} />
+                        <span>Add Pin</span>
+                      </button>
+                    </div>
+
+                    {/* Category Filter Chips */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                        overflowX: "auto",
+                        scrollbarWidth: "none",
+                        paddingBottom: 6,
+                        marginBottom: 10,
+                      }}
+                    >
+                      <button
+                        onClick={() => setPinCategoryFilter("all")}
+                        style={{
+                          padding: "4px 9px",
+                          borderRadius: 9999,
+                          border: pinCategoryFilter === "all" ? "1.5px solid #f59e0b" : `1px solid ${Z[300]}`,
+                          background: pinCategoryFilter === "all" ? "rgba(245, 158, 11, 0.15)" : Z[50],
+                          color: pinCategoryFilter === "all" ? "#f59e0b" : Z[700],
+                          fontSize: 10,
+                          fontWeight: 800,
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                          flexShrink: 0,
+                        }}
+                      >
+                        All ({categoryCounts.all})
+                      </button>
+
+                      {Object.values(PIN_CATEGORIES).map((cat) => {
+                        const count = categoryCounts[cat.id] || 0;
+                        const isSel = pinCategoryFilter === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            onClick={() => setPinCategoryFilter(cat.id)}
+                            style={{
+                              padding: "4px 9px",
+                              borderRadius: 9999,
+                              border: isSel ? `1.5px solid ${cat.color}` : `1px solid ${Z[300]}`,
+                              background: isSel ? cat.bg : Z[50],
+                              color: isSel ? cat.color : Z[700],
+                              fontSize: 10,
+                              fontWeight: 800,
+                              cursor: "pointer",
+                              whiteSpace: "nowrap",
+                              flexShrink: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                            }}
+                          >
+                            <span>{cat.label}</span>
+                            <span style={{ fontSize: 9, opacity: 0.85 }}>({count})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Pinned Locations List */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {filteredPins.length === 0 ? (
+                        <div
+                          style={{
+                            textAlign: "center",
+                            padding: "24px 16px",
+                            color: Z[600],
+                            fontSize: 11,
+                            background: Z[50],
+                            borderRadius: 12,
+                            border: `1px dashed ${Z[300]}`,
+                          }}
+                        >
+                          <MapPin size={24} color={Z[500]} style={{ margin: "0 auto 6px", display: "block" }} />
+                          <p style={{ margin: 0, fontWeight: 700 }}>No facilities pinned in this category.</p>
+                          <p style={{ margin: "4px 0 0", fontSize: 10 }}>
+                            Click "Drop Pin on Map" to pin one now!
+                          </p>
+                        </div>
+                      ) : (
+                        filteredPins.map((pin) => {
+                          const cat = PIN_CATEGORIES[pin.category] || PIN_CATEGORIES.water;
+                          const st = PIN_STATUSES[pin.status] || PIN_STATUSES.operational;
+                          const isSel = selectedPin?.id === pin.id;
+                          return (
+                            <div
+                              key={pin.id}
+                              onClick={() => selectPin(pin)}
+                              style={{
+                                background: Z[50],
+                                border: `1px solid ${isSel ? cat.color : Z[300]}`,
+                                borderRadius: 12,
+                                padding: "10px 12px",
+                                cursor: "pointer",
+                                transition: "all 0.15s ease",
+                                boxShadow: isSel ? `0 4px 14px ${cat.color}25` : "none",
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.transform = "translateX(2px)")}
+                              onMouseLeave={(e) => (e.currentTarget.style.transform = "translateX(0)")}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                                <span
+                                  style={{
+                                    fontSize: 12,
+                                    fontWeight: 900,
+                                    color: Z[950],
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {pin.name}
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: 9,
+                                    fontWeight: 800,
+                                    padding: "2px 6px",
+                                    borderRadius: 6,
+                                    background: st.bg,
+                                    color: st.color,
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {st.label}
+                                </span>
+                              </div>
+
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                                <span
+                                  style={{
+                                    fontSize: 9,
+                                    fontWeight: 900,
+                                    padding: "1px 6px",
+                                    borderRadius: 4,
+                                    background: cat.bg,
+                                    color: cat.color,
+                                  }}
+                                >
+                                  {cat.label}
+                                </span>
+                                <span style={{ fontSize: 9, color: Z[700], fontWeight: 700 }}>
+                                  {pin.subType} · Brgy. {pin.barangay}
+                                </span>
+                              </div>
+
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingTop: 6, borderTop: `1px solid ${Z[300]}` }}>
+                                <span style={{ fontSize: 9, color: Z[600], fontWeight: 600 }}>
+                                  {Number(pin.lat).toFixed(4)}°N, {Number(pin.lng).toFixed(4)}°E
+                                </span>
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingPin(pin);
+                                      setShowPinModal(true);
+                                    }}
+                                    title="Edit Pin"
+                                    style={{
+                                      background: "none",
+                                      border: "none",
+                                      color: Z[700],
+                                      cursor: "pointer",
+                                      padding: 2,
+                                    }}
+                                  >
+                                    <Edit3 size={12} />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeletePin(pin.id);
+                                    }}
+                                    title="Delete Pin"
+                                    style={{
+                                      background: "none",
+                                      border: "none",
+                                      color: "#ef4444",
+                                      cursor: "pointer",
+                                      padding: 2,
+                                    }}
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </motion.aside>
@@ -1273,6 +2035,33 @@ export default function AdminOverviewCommand({
       >
         {isInspectorOpen ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
       </button>
+
+      {/* ═══ PIN LOCATION MODAL ═══ */}
+      <PinLocationModal
+        isOpen={showPinModal}
+        onClose={() => {
+          setShowPinModal(false);
+          setEditingPin(null);
+          setDraftPinData(null);
+          setTempPinCoords(null);
+          setIsPinningMode(false);
+        }}
+        onSave={handleSavePin}
+        onDelete={handleDeletePin}
+        onPickOnMap={(draft) => {
+          setDraftPinData(draft);
+          if (draft?.id) {
+            setEditingPin(draft);
+          }
+          setShowPinModal(false);
+          setIsPinningMode(true);
+        }}
+        initialCoordinates={tempPinCoords}
+        draftData={draftPinData}
+        editingPin={editingPin}
+        isDark={isDark}
+        currentUser={currentUser}
+      />
     </div>
   );
 }

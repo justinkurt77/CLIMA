@@ -70,6 +70,7 @@ export default function AdminMapScreen({
   isSuperadmin,
   adminCategories,
   adminDepartment,
+  currentUser,
 }) {
   const { isDark } = useTheme();
   const Z = useMemo(() => getZTokens(isDark), [isDark]);
@@ -142,6 +143,7 @@ export default function AdminMapScreen({
         isDark={isDark}
         isSuperadmin={isSuperadmin}
         adminDepartment={adminDepartment}
+        currentUser={currentUser}
         leftInset={14}
       />
 

@@ -2437,8 +2437,11 @@ html.dark .desktop-hero-glass-card,
 }
 
 /* 1. Live Conditions Card */
+/* 1. Live Conditions Card */
 .desktop-live-conditions-card {
   padding: 20px 22px;
+  position: relative;
+  overflow: hidden;
 }
 
 .desktop-card-header {
@@ -2468,17 +2471,42 @@ html.dark .desktop-hero-glass-card,
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 12px;
-  margin-bottom: 6px;
+  margin-top: 10px;
+  margin-bottom: 2px;
 }
 
 .desktop-rate-val {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 14px;
+  gap: 7px;
+  font-size: 13.5px;
   font-weight: 800;
   color: var(--text-primary);
+}
+
+.desktop-live-temp-flow {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.desktop-live-temp-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  padding: 1px 6px;
+  border-radius: 6px;
+  text-transform: capitalize;
+}
+
+.desktop-meta-sep {
+  color: var(--border-medium);
+  font-size: 11px;
 }
 
 .desktop-danger-badge {
@@ -2492,12 +2520,40 @@ html.dark .desktop-hero-glass-card,
   box-shadow: 0 2px 8px var(--accent-glow);
 }
 
+.desktop-bklit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  letter-spacing: 0.2px;
+  transition: all 0.25s ease;
+}
+
+.desktop-bklit-badge-pos {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+.desktop-bklit-badge-neg {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.28);
+}
+
 .desktop-wave-container {
+  position: relative;
   width: 100%;
-  height: 70px;
+  height: 72px;
   display: flex;
   align-items: center;
-  margin: 4px 0 10px;
+  justify-content: center;
+  margin: 6px 0 10px;
+  cursor: crosshair;
+  touch-action: pan-y;
 }
 
 .desktop-wave-svg {
@@ -2506,11 +2562,12 @@ html.dark .desktop-hero-glass-card,
   overflow: visible;
 }
 
+
 .desktop-conditions-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  padding-top: 14px;
+  padding-top: 12px;
   border-top: 1px solid var(--border-subtle);
 }
 
@@ -3181,4 +3238,59 @@ html.dark .desktop-wind-direction,
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ── Facebook Advisory Feed (El Niño Tab) ────────────────────────────────── */
+.facebook-feed-scroll {
+  max-height: 560px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(150, 150, 150, 0.3) transparent;
+}
+
+.facebook-feed-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.facebook-feed-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.facebook-feed-scroll::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.35);
+  border-radius: 9999px;
+}
+
+.facebook-feed-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.55);
+}
+
+.fb-post-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  color: var(--text-secondary);
+}
+
+.fb-post-action-btn:hover {
+  background: rgba(150, 150, 150, 0.12);
+}
+
+.fb-post-action-btn.active-liked {
+  color: #1877f2;
+}
+
+.fb-post-action-btn.active-liked:hover {
+  background: rgba(24, 119, 242, 0.12);
 }

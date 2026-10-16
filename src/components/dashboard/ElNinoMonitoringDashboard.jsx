@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import DOMPurify from "dompurify";
 import {
@@ -23,11 +23,24 @@ import {
   DollarSign,
   Wheat,
   ThermometerSun,
+  ThumbsUp,
+  MessageCircle,
+  Share2,
+  CheckCircle2,
+  MoreHorizontal,
+  Globe,
+  Send,
+  Bookmark,
+  ShieldAlert,
+  Check,
+  Copy,
+  Sparkles,
 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
 import { supabase } from "../../lib/supabase";
 import { logger } from "../../lib/logger";
+import { ElNinoTabSkeleton } from "../ui/TabSkeletons";
 
 const COLORS = {
   heatStroke: "#ef4444",
@@ -39,6 +52,82 @@ const COLORS = {
   power: "#f59e0b",
   agriculture: "#10b981",
 };
+
+/**
+ * Build a complete day-by-day series for the last 7 days.
+ * If there aren't records for any day, fills with 0.
+ */
+function buildHospital7DaySeries(records = []) {
+  const recordMap = new Map();
+  records.forEach((r) => {
+    if (r && r.record_date) {
+      const key = String(r.record_date).split("T")[0];
+      recordMap.set(key, r);
+    }
+  });
+
+  const today = new Date();
+  const recordDates = Array.from(recordMap.keys()).sort();
+  const latestRecordDate = recordDates.length > 0
+    ? new Date(recordDates[recordDates.length - 1] + "T00:00:00")
+    : today;
+
+  // Use the later of today or the latest record date as the end anchor
+  const endDate = latestRecordDate > today ? latestRecordDate : today;
+
+  // Base window: past 7 days (endDate minus 6 days)
+  const startDate = new Date(endDate);
+  startDate.setDate(startDate.getDate() - 6);
+
+  // If there is an active record within 1-2 days before startDate (e.g. Oct 9 when today is Oct 16),
+  // extend startDate to include that recorded day so recent data points aren't dropped
+  for (const dateStr of recordDates) {
+    const d = new Date(dateStr + "T00:00:00");
+    const diffDays = Math.round((endDate.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays >= 6 && diffDays <= 8 && d < startDate) {
+      startDate.setTime(d.getTime());
+      break;
+    }
+  }
+
+  // Iterate day-by-day from startDate to endDate
+  // If there aren't datas each day, just put 0!
+  const dailySeries = [];
+  const curr = new Date(startDate);
+  while (curr <= endDate) {
+    const yyyy = curr.getFullYear();
+    const mm = String(curr.getMonth() + 1).padStart(2, "0");
+    const dd = String(curr.getDate()).padStart(2, "0");
+    const dateKey = `${yyyy}-${mm}-${dd}`;
+
+    const existing = recordMap.get(dateKey);
+    dailySeries.push({
+      dateKey,
+      date: curr.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      heatStroke: existing ? (Number(existing.heat_stroke_cases) || 0) : 0,
+      heatExhaustion: existing ? (Number(existing.heat_exhaustion_cases) || 0) : 0,
+      dehydration: existing ? (Number(existing.dehydration_cases) || 0) : 0,
+      respiratory: existing ? (Number(existing.respiratory_cases) || 0) : 0,
+    });
+
+    curr.setDate(curr.getDate() + 1);
+  }
+
+  const totalHeatStroke = dailySeries.reduce((sum, r) => sum + r.heatStroke, 0);
+  const totalHeatExhaustion = dailySeries.reduce((sum, r) => sum + r.heatExhaustion, 0);
+  const totalDehydration = dailySeries.reduce((sum, r) => sum + r.dehydration, 0);
+  const totalRespiratory = dailySeries.reduce((sum, r) => sum + r.respiratory, 0);
+  const totalCases = totalHeatStroke + totalHeatExhaustion + totalDehydration + totalRespiratory;
+
+  return {
+    dailySeries,
+    totalHeatStroke,
+    totalHeatExhaustion,
+    totalDehydration,
+    totalRespiratory,
+    totalCases,
+  };
+}
 
 function ElNinoMonitoringDashboard() {
   const { isDark } = useTheme();
@@ -222,48 +311,12 @@ function ElNinoMonitoringDashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="desktop-view-container">
-        <div className="desktop-main-grid">
-          <div className="desktop-left-column">
-            {[1, 2, 3, 4].map(i => (
-              <div
-                key={i}
-                className="desktop-card"
-                style={{
-                  height: 200,
-                  marginBottom: 20,
-                  animation: 'pulse 1.5s ease-in-out infinite',
-                  background: isDark ? '#27272a' : '#f4f4f5',
-                }}
-              />
-            ))}
-          </div>
-          <div className="desktop-right-column">
-            {[1, 2].map(i => (
-              <div
-                key={i}
-                className="desktop-card"
-                style={{
-                  height: 150,
-                  marginBottom: 20,
-                  animation: 'pulse 1.5s ease-in-out infinite',
-                  background: isDark ? '#27272a' : '#f4f4f5',
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <ElNinoTabSkeleton />;
   }
 
   // Calculate summary stats
-  const last7Days = data.hospitalRecords.slice(-7);
-  const totalHospitalCases = last7Days.reduce((sum, r) => 
-    sum + (r.heat_stroke_cases || 0) + (r.heat_exhaustion_cases || 0) + 
-    (r.dehydration_cases || 0) + (r.respiratory_cases || 0), 0
-  );
+  const hospitalStats = buildHospital7DaySeries(data.hospitalRecords);
+  const totalHospitalCases = hospitalStats.totalCases;
   const activeWildfires = data.bfpOperations.filter(op => 
     op.status !== 'resolved' && op.status !== 'completed'
   ).length;
@@ -733,31 +786,51 @@ function AdvisoriesSection({ advisories, expanded, onToggle, isDark }) {
       <div style={sectionHeaderStyle} onClick={onToggle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
-            width: 40,
-            height: 40,
+            width: 42,
+            height: 42,
             borderRadius: 12,
-            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+            background: 'linear-gradient(135deg, #1877f2 0%, #0d65d9 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(24, 119, 242, 0.35)',
           }}>
             <Megaphone size={20} color="#fff" />
           </div>
           <div>
-            <h2 style={{
-              fontSize: 18,
-              fontWeight: 800,
-              color: 'var(--text-primary)',
-              marginBottom: 2,
-            }}>
-              Official Advisories
-            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h2 style={{
+                fontSize: 18,
+                fontWeight: 800,
+                color: 'var(--text-primary)',
+                margin: 0,
+                letterSpacing: -0.3,
+              }}>
+                Official Advisories
+              </h2>
+              <span style={{
+                fontSize: 10,
+                fontWeight: 800,
+                color: '#1877f2',
+                background: isDark ? 'rgba(24, 119, 242, 0.18)' : 'rgba(24, 119, 242, 0.1)',
+                padding: '2px 8px',
+                borderRadius: 999,
+                border: '1px solid rgba(24, 119, 242, 0.3)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+              }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
+                Live Feed
+              </span>
+            </div>
             <p style={{
               fontSize: 12,
               color: 'var(--text-secondary)',
               fontWeight: 600,
+              margin: '3px 0 0',
             }}>
-              {advisories.length} active advisory{advisories.length !== 1 ? 'ies' : ''}
+              Official LGU announcements, heat alerts, and community response updates
             </p>
           </div>
         </div>
@@ -772,22 +845,7 @@ function AdvisoriesSection({ advisories, expanded, onToggle, isDark }) {
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
-            {advisories.length === 0 ? (
-              <div style={{
-                textAlign: 'center',
-                padding: '40px 20px',
-                color: 'var(--text-muted)',
-              }}>
-                <Megaphone size={48} style={{ opacity: 0.3, marginBottom: 12 }} />
-                <p style={{ fontSize: 14, fontWeight: 600 }}>No active advisories</p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {advisories.map((advisory) => (
-                  <AdvisoryCard key={advisory.id} advisory={advisory} isDark={isDark} />
-                ))}
-              </div>
-            )}
+            <FacebookAdvisoriesFeed rawAdvisories={advisories} isDark={isDark} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -795,105 +853,1041 @@ function AdvisoriesSection({ advisories, expanded, onToggle, isDark }) {
   );
 }
 
-function AdvisoryCard({ advisory, isDark }) {
-  const [expanded, setExpanded] = useState(false);
-  
-  const getUrgencyColor = (category) => {
-    if (category?.toLowerCase().includes('urgent') || category?.toLowerCase().includes('critical')) return '#ef4444';
-    if (category?.toLowerCase().includes('warning')) return '#f59e0b';
-    return '#3b82f6';
+const OFFICIAL_COMMUNITY_ADVISORIES = [
+  {
+    id: "official-heat-alert-47",
+    isOfficialSeed: true,
+    agency: "Palayan City CDRRMO",
+    agencyRole: "Disaster Risk Reduction Office",
+    agencyIcon: "shield",
+    category: "Extreme Heat",
+    urgency: "critical",
+    published_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+    title: "CRITICAL HEAT INDEX ALERT (46.8°C) — Outdoor Activity Restriction & Air-Conditioned Cooling Shelters Activated",
+    content: "The City Disaster Risk Reduction & Management Office (CDRRMO) issues a DANGER LEVEL Heat Index Warning across all 19 Barangays in Palayan City.\n\n⚠️ Public Safety Advisories:\n1. Limit outdoor activities between 10:00 AM and 4:00 PM when solar radiation and ambient heat peak.\n2. Hydrate frequently with clean water; avoid caffeinated or high-sugar drinks.\n3. Public Air-Conditioned Cooling Shelters are OPEN 24/7 at the City Hall Civic Gym and designated Barangay multi-purpose shelters.\n4. Ensure children, pregnant women, and senior citizens stay in shaded, well-ventilated areas.\n\n🚨 For heat exhaustion or heat stroke emergencies, dial 911 or call CDRRMO Palayan Hotline: (044) 958-8888 immediately.",
+    hotlines: ["(044) 958-8888", "911 CDRRMO"],
+    likes: 84,
+    shares: 32,
+    initialComments: [
+      { id: "c1", user: "Maria Santos", role: "Brgy. Singalat Resident", time: "1 hr ago", text: "Are the clean water refill stations open today at the Civic Center?", likes: 4 },
+      { id: "c2", user: "CDRRMO Palayan", isOfficial: true, role: "Official Response", time: "42 min ago", text: "Yes Ma'am Maria, all 4 public water refill hubs at the Civic Center and Singalat Health Post are operating 24/7 with filtered potable water.", likes: 11 },
+      { id: "c3", user: "Ramon Villanueva", role: "Brgy. Caballero", time: "25 min ago", text: "Thank you for the early warning! We have paused all outdoor construction work until 4 PM.", likes: 6 },
+    ],
+  },
+  {
+    id: "official-water-protocol",
+    isOfficialSeed: true,
+    agency: "Palayan City Water District (PCWD)",
+    agencyRole: "Municipal Water Utility",
+    agencyIcon: "water",
+    category: "Water",
+    urgency: "warning",
+    published_at: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
+    title: "WATER CONSERVATION NOTICE: Rotational Supply & Mobile Tanker Dispatch for Western Barangays",
+    content: "Due to sustained high heat and declining reservoir levels at the Aulo Dam basin and Peñaranda River intake, the Palayan City Water District (PCWD) is implementing rotational pressure regulation.\n\n📍 Sectors Under Pressure Regulation: Singalat, Caballero, Popolon, and Atate.\n🕒 Peak Pressure Window: 5:00 AM – 9:00 AM & 5:00 PM – 9:00 PM daily.\n\n💡 Critical Citizen Action:\n• Please store sufficient domestic water during morning high-pressure hours.\n• Refrain from hose-washing vehicles or filling decorative pools.\n• Mobile Water Tanker Rover #2 is en route to elevated puroks today.\n\n📞 Water Tanker Dispatch Requests: (044) 958-1122 or PCWD Hotline 0919-PCWD-PLYN.",
+    hotlines: ["(044) 958-1122", "PCWD Helpdesk"],
+    likes: 65,
+    shares: 21,
+    initialComments: [
+      { id: "c4", user: "Elena Mercado", role: "Brgy. Popolon Resident", time: "3 hrs ago", text: "What time will Tanker Rover #2 arrive in Purok 3?", likes: 3 },
+      { id: "c5", user: "PCWD Dispatch", isOfficial: true, role: "Official Response", time: "2 hrs ago", text: "Rover #2 is scheduled for Popolon Purok 3 between 2:00 PM and 4:00 PM today. Please have clean containers ready.", likes: 8 },
+    ],
+  },
+  {
+    id: "official-health-ors",
+    isOfficialSeed: true,
+    agency: "Palayan City Health Office (CHO)",
+    agencyRole: "Public Health Command",
+    agencyIcon: "health",
+    category: "Health",
+    urgency: "urgent",
+    published_at: new Date(Date.now() - 10 * 3600 * 1000).toISOString(),
+    title: "PUBLIC HEALTH ALERT: Free Oral Rehydration Salt (ORS) Distribution & Heat Stroke First-Aid",
+    content: "The City Health Office (CHO) and Palayan Rural Health Unit (RHU) announce free Oral Rehydration Salts (ORS) and electrolyte packets available at all 19 Barangay Health Stations starting today.\n\n🩺 How to Recognize Heat Illnesses:\n• Heat Cramps: Involuntary muscle spasms, intense thirst.\n• Heat Exhaustion: Heavy sweating, rapid weak pulse, nausea, dizziness.\n• Heat Stroke: Red dry/damp skin, confusion, body temp above 40°C — A MEDICAL EMERGENCY!\n\nIf someone collapses, move them to shade immediately, apply cold damp cloths to neck and armpits, and summon our ambulance crew.",
+    hotlines: ["(044) 958-2000", "Palayan District Hospital"],
+    likes: 112,
+    shares: 49,
+    initialComments: [
+      { id: "c6", user: "Dr. Aris Ramos", isOfficial: true, role: "RHU Medical Officer", time: "7 hrs ago", text: "Please look out for vulnerable elderly neighbors living alone. Stay well hydrated, Palayanos!", likes: 24 },
+    ],
+  },
+  {
+    id: "official-bfp-kaingin-ban",
+    isOfficialSeed: true,
+    agency: "Bureau of Fire Protection (BFP)",
+    agencyRole: "Palayan Central Fire Station",
+    agencyIcon: "fire",
+    category: "Fire Safety",
+    urgency: "critical",
+    published_at: new Date(Date.now() - 16 * 3600 * 1000).toISOString(),
+    title: "TOTAL BAN ON AGRICULTURAL OPEN BURNING (KAINGIN) & GRASSLAND BURNING",
+    content: "Under Republic Act 9003 and the Fire Code of the Philippines, the Bureau of Fire Protection (BFP) strictly prohibits any open burning of agricultural waste, rice hay, or dried foliage across all agricultural sectors of Palayan City.\n\n🔥 Why This is Strictly Enforced:\n• With heat index exceeding 46°C and gusty winds, small fires spread into uncontrollable brush fires within minutes.\n• Violators will be held criminally liable under environmental and fire safety laws.\n\n🚨 Report smoke or brush fires immediately: 958-FIRE (3473) or dial 911.",
+    hotlines: ["958-FIRE (3473)", "BFP Palayan"],
+    likes: 98,
+    shares: 63,
+    initialComments: [
+      { id: "c7", user: "Brgy. Langka Peace & Order", role: "Barangay Volunteer", time: "12 hrs ago", text: "Our barangay roving patrols are strictly monitoring farm borders daily.", likes: 16 },
+    ],
+  },
+];
+
+function FacebookAdvisoriesFeed({ rawAdvisories = [], isDark }) {
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  const [toastMessage, setToastMessage] = useState(null);
+
+  // Combine live Supabase advisories with official Palayan community baseline posts
+  const allPosts = useMemo(() => {
+    const liveMapped = rawAdvisories.map((advisory) => {
+      const cat = advisory.category || "General";
+      let agency = "Palayan City CDRRMO";
+      let agencyRole = "Official City Advisory";
+      let agencyIcon = "shield";
+      let urgency = "normal";
+
+      const catLower = cat.toLowerCase();
+      if (catLower.includes("water")) {
+        agency = "Palayan City Water District";
+        agencyRole = "Municipal Water Utility";
+        agencyIcon = "water";
+        urgency = "warning";
+      } else if (catLower.includes("health") || catLower.includes("medical")) {
+        agency = "Palayan City Health Office";
+        agencyRole = "City Health & Medical Triage";
+        agencyIcon = "health";
+        urgency = "urgent";
+      } else if (catLower.includes("fire") || catLower.includes("burn")) {
+        agency = "Bureau of Fire Protection (BFP)";
+        agencyRole = "Palayan Central Fire Station";
+        agencyIcon = "fire";
+        urgency = "critical";
+      } else if (catLower.includes("heat") || catLower.includes("weather") || catLower.includes("emergency")) {
+        agency = "Palayan City CDRRMO";
+        agencyRole = "Disaster Risk Reduction Office";
+        agencyIcon = "shield";
+        urgency = "critical";
+      }
+
+      return {
+        id: advisory.id,
+        isLiveDB: true,
+        agency,
+        agencyRole,
+        agencyIcon,
+        category: cat,
+        urgency,
+        published_at: advisory.published_at || advisory.created_at || new Date().toISOString(),
+        title: advisory.title,
+        content: advisory.content,
+        image_url: advisory.image_url,
+        hotlines: ["(044) 958-8888", "911"],
+        likes: 38,
+        shares: 14,
+        initialComments: [
+          {
+            id: `c-live-${advisory.id}-1`,
+            user: "CDRRMO Information Desk",
+            isOfficial: true,
+            role: "Verified Desk",
+            time: "Recently",
+            text: "Official public advisory published for Palayan City citizens. Please share with your barangay group chats.",
+            likes: 5,
+          },
+        ],
+      };
+    });
+
+    // Merge live DB posts first, then official baseline community posts
+    return [...liveMapped, ...OFFICIAL_COMMUNITY_ADVISORIES];
+  }, [rawAdvisories]);
+
+  // Filter posts based on selected category pill
+  const filteredPosts = useMemo(() => {
+    if (selectedFilter === "all") return allPosts;
+    return allPosts.filter((p) => {
+      const cat = p.category?.toLowerCase() || "";
+      if (selectedFilter === "heat") return cat.includes("heat") || cat.includes("weather");
+      if (selectedFilter === "water") return cat.includes("water");
+      if (selectedFilter === "health") return cat.includes("health");
+      if (selectedFilter === "fire") return cat.includes("fire");
+      return true;
+    });
+  }, [allPosts, selectedFilter]);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 2400);
   };
 
-  const urgencyColor = getUrgencyColor(advisory.category);
+  const categories = [
+    { id: "all", label: `All Posts (${allPosts.length})` },
+    { id: "heat", label: "Extreme Heat" },
+    { id: "water", label: "Water Supply" },
+    { id: "health", label: "Public Health" },
+    { id: "fire", label: "Fire Safety" },
+  ];
 
   return (
-    <div style={{
-      background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-      border: `1px solid var(--border-subtle)`,
-      borderLeft: `4px solid ${urgencyColor}`,
-      borderRadius: 12,
-      padding: 16,
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 8 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <span style={{
-              fontSize: 10,
+    <div style={{ display: "flex", flexDirection: "column", gap: 14, position: "relative" }}>
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 50,
+              background: "#1877f2",
+              color: "#ffffff",
+              padding: "8px 16px",
+              borderRadius: 999,
+              fontSize: 12,
               fontWeight: 800,
-              color: urgencyColor,
-              background: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-              padding: '2px 8px',
-              borderRadius: 6,
-              textTransform: 'uppercase',
-            }}>
-              {advisory.category || 'General'}
-            </span>
-            <span style={{
-              fontSize: 11,
-              color: 'var(--text-muted)',
-              fontWeight: 600,
-            }}>
-              <Calendar size={12} style={{ display: 'inline', marginRight: 4 }} />
-              {new Date(advisory.published_at).toLocaleDateString()}
-            </span>
-          </div>
-          <h3 style={{
-            fontSize: 15,
-            fontWeight: 800,
-            color: 'var(--text-primary)',
-            marginBottom: 8,
-          }}>
-            {advisory.title}
-          </h3>
-          <p style={{
-            fontSize: 13,
-            color: 'var(--text-secondary)',
-            lineHeight: 1.5,
-            maxHeight: expanded ? 'none' : 60,
-            overflow: 'hidden',
-          }}>
-            {/* Sanitize advisory content to prevent XSS */}
-            {DOMPurify.sanitize(advisory.content)}
-          </p>
-        </div>
+              boxShadow: "0 8px 24px rgba(24, 119, 242, 0.4)",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              pointerEvents: "none",
+            }}
+          >
+            <Check size={14} strokeWidth={3} />
+            <span>{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Category Filter Chips (Facebook Feed style) */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          overflowX: "auto",
+          scrollbarWidth: "none",
+          paddingBottom: 4,
+        }}
+      >
+        {categories.map((tab) => {
+          const isSel = selectedFilter === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setSelectedFilter(tab.id)}
+              style={{
+                padding: "6px 14px",
+                borderRadius: 999,
+                border: isSel
+                  ? "1.5px solid #1877f2"
+                  : `1px solid ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"}`,
+                background: isSel
+                  ? isDark ? "rgba(24, 119, 242, 0.22)" : "rgba(24, 119, 242, 0.12)"
+                  : isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.03)",
+                color: isSel ? "#1877f2" : "var(--text-secondary)",
+                fontSize: 12,
+                fontWeight: isSel ? 800 : 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+                transition: "all 0.15s ease",
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
-      {advisory.content.length > 150 && (
-        <button
-          onClick={() => setExpanded(!expanded)}
+
+      {/* Scrollable Facebook Feed Container */}
+      <div
+        className="facebook-feed-scroll"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
+        {filteredPosts.length === 0 ? (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "48px 20px",
+              color: "var(--text-muted)",
+              background: isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.02)",
+              borderRadius: 16,
+              border: `1px dashed ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)"}`,
+            }}
+          >
+            <Megaphone size={40} style={{ opacity: 0.35, margin: "0 auto 12px", display: "block" }} />
+            <p style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>No advisories in this category</p>
+            <p style={{ fontSize: 12, margin: "4px 0 0", color: "var(--text-secondary)" }}>
+              Switch to "All Posts" to see other active advisories.
+            </p>
+          </div>
+        ) : (
+          filteredPosts.map((post) => (
+            <FacebookAdvisoryCard
+              key={post.id}
+              post={post}
+              isDark={isDark}
+              onShareToast={() => showToast("Advisory link copied to clipboard!")}
+            />
+          ))
+        )}
+
+        <div
           style={{
-            marginTop: 8,
-            fontSize: 12,
+            textAlign: "center",
+            padding: "16px 12px 6px",
+            color: "var(--text-muted)",
+            fontSize: 11,
             fontWeight: 700,
-            color: urgencyColor,
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
           }}
         >
-          {expanded ? 'Show less' : 'Read more'}
-        </button>
-      )}
+          <Sparkles size={13} color="#1877f2" />
+          <span>You're all caught up with official Palayan City advisories</span>
+        </div>
+      </div>
     </div>
   );
 }
 
-function HospitalMonitoringSection({ records, expanded, onToggle, isDark }) {
-  // Calculate stats
-  const last7Days = records.slice(-7);
-  const totalHeatStroke = last7Days.reduce((sum, r) => sum + (r.heat_stroke_cases || 0), 0);
-  const totalHeatExhaustion = last7Days.reduce((sum, r) => sum + (r.heat_exhaustion_cases || 0), 0);
-  const totalDehydration = last7Days.reduce((sum, r) => sum + (r.dehydration_cases || 0), 0);
-  const totalRespiratory = last7Days.reduce((sum, r) => sum + (r.respiratory_cases || 0), 0);
+function FacebookAdvisoryCard({ post, isDark, onShareToast }) {
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(post.likes || 42);
+  const [comments, setComments] = useState(post.initialComments || []);
+  const [showComments, setShowComments] = useState(false);
+  const [newCommentText, setNewCommentText] = useState("");
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
-  // Prepare chart data
-  const chartData = last7Days.map(r => ({
-    date: new Date(r.record_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    heatStroke: r.heat_stroke_cases || 0,
-    heatExhaustion: r.heat_exhaustion_cases || 0,
-    dehydration: r.dehydration_cases || 0,
-    respiratory: r.respiratory_cases || 0,
-  }));
+  const toggleLike = () => {
+    if (isLiked) {
+      setIsLiked(false);
+      setLikesCount((prev) => Math.max(0, prev - 1));
+    } else {
+      setIsLiked(true);
+      setLikesCount((prev) => prev + 1);
+    }
+  };
+
+  const handleAddComment = (e) => {
+    e.preventDefault();
+    if (!newCommentText.trim()) return;
+
+    const newComment = {
+      id: `comm-${Date.now()}`,
+      user: "Citizen (You)",
+      role: "Palayan Resident",
+      time: "Just now",
+      text: newCommentText.trim(),
+      likes: 0,
+    };
+
+    setComments((prev) => [newComment, ...prev]);
+    setNewCommentText("");
+    setShowComments(true);
+  };
+
+  const handleShare = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(
+        `[Official Advisory] ${post.title}\n\n${post.content}\n\nVia Palayan City CLIMA: ${window.location.href}`
+      );
+    }
+    if (onShareToast) onShareToast();
+  };
+
+  // Determine Agency styling & icons
+  const getAgencyDetails = () => {
+    if (post.agencyIcon === "water") {
+      return {
+        bg: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+        icon: <Droplet size={20} color="#fff" />,
+        badgeColor: "#0284c7",
+        badgeBg: isDark ? "rgba(2, 132, 199, 0.2)" : "rgba(2, 132, 199, 0.12)",
+      };
+    }
+    if (post.agencyIcon === "health") {
+      return {
+        bg: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+        icon: <HeartPulse size={20} color="#fff" />,
+        badgeColor: "#ef4444",
+        badgeBg: isDark ? "rgba(239, 68, 68, 0.2)" : "rgba(239, 68, 68, 0.12)",
+      };
+    }
+    if (post.agencyIcon === "fire") {
+      return {
+        bg: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+        icon: <Flame size={20} color="#fff" />,
+        badgeColor: "#f97316",
+        badgeBg: isDark ? "rgba(249, 115, 22, 0.2)" : "rgba(249, 115, 22, 0.12)",
+      };
+    }
+    // Default CDRRMO / Shield
+    return {
+      bg: "linear-gradient(135deg, #1877f2 0%, #0d65d9 100%)",
+      icon: <ShieldAlert size={20} color="#fff" />,
+      badgeColor: "#1877f2",
+      badgeBg: isDark ? "rgba(24, 119, 242, 0.2)" : "rgba(24, 119, 242, 0.12)",
+    };
+  };
+
+  const agencyStyle = getAgencyDetails();
+
+  // Urgency tag colors
+  const getUrgencyBadge = () => {
+    if (post.urgency === "critical") {
+      return { label: "CRITICAL ALERT", color: "#ef4444", bg: "rgba(239, 68, 68, 0.15)" };
+    }
+    if (post.urgency === "urgent") {
+      return { label: "HEALTH WARNING", color: "#f97316", bg: "rgba(249, 115, 22, 0.15)" };
+    }
+    if (post.urgency === "warning") {
+      return { label: "UTILITY ADVISORY", color: "#0284c7", bg: "rgba(2, 132, 199, 0.15)" };
+    }
+    return { label: "PUBLIC NOTICE", color: "#10b981", bg: "rgba(16, 185, 129, 0.15)" };
+  };
+
+  const urgencyBadge = getUrgencyBadge();
+
+  // Format relative timestamp
+  const formatPostTime = (dateStr) => {
+    try {
+      const d = new Date(dateStr);
+      const diffMs = Date.now() - d.getTime();
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      if (diffHours < 1) return "Just now";
+      if (diffHours < 24) return `${diffHours}h ago`;
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    } catch {
+      return "Recent";
+    }
+  };
+
+  return (
+    <div
+      style={{
+        background: isDark ? "#18191a" : "#ffffff",
+        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
+        borderRadius: 18,
+        padding: "16px 18px",
+        boxShadow: isDark
+          ? "0 4px 20px rgba(0, 0, 0, 0.4)"
+          : "0 2px 14px rgba(0, 0, 0, 0.06)",
+        position: "relative",
+      }}
+    >
+      {/* ── 1. FACEBOOK POST HEADER ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {/* Agency Avatar with Icon */}
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              background: agencyStyle.bg,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+              flexShrink: 0,
+              position: "relative",
+            }}
+          >
+            {agencyStyle.icon}
+            <span
+              style={{
+                position: "absolute",
+                bottom: -1,
+                right: -1,
+                width: 12,
+                height: 12,
+                borderRadius: "50%",
+                background: "#22c55e",
+                border: `2px solid ${isDark ? "#18191a" : "#ffffff"}`,
+              }}
+            />
+          </div>
+
+          {/* Agency Name & Post Meta */}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <span
+                style={{
+                  fontSize: 14,
+                  fontWeight: 800,
+                  color: "var(--text-primary)",
+                  letterSpacing: -0.2,
+                }}
+              >
+                {post.agency}
+              </span>
+              <CheckCircle2 size={15} color="#1877f2" fill="#1877f2" style={{ color: "#fff" }} />
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  padding: "1px 6px",
+                  borderRadius: 6,
+                  background: agencyStyle.badgeBg,
+                  color: agencyStyle.badgeColor,
+                }}
+              >
+                LGU Official
+              </span>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+              <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600 }}>
+                {formatPostTime(post.published_at)}
+              </span>
+              <span style={{ fontSize: 10, color: "var(--text-muted)" }}>•</span>
+              <span
+                title="Public Advisory"
+                style={{ display: "inline-flex", alignItems: "center", color: "var(--text-muted)" }}
+              >
+                <Globe size={11} />
+              </span>
+              <span style={{ fontSize: 10, color: "var(--text-muted)" }}>•</span>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  color: urgencyBadge.color,
+                  background: urgencyBadge.bg,
+                  padding: "1px 6px",
+                  borderRadius: 4,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.3,
+                }}
+              >
+                {urgencyBadge.label}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Options / More Button */}
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            style={{
+              background: "none",
+              border: "none",
+              padding: "6px",
+              borderRadius: "50%",
+              cursor: "pointer",
+              color: "var(--text-muted)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <MoreHorizontal size={18} />
+          </button>
+
+          {showMenu && (
+            <div
+              style={{
+                position: "absolute",
+                top: 30,
+                right: 0,
+                background: isDark ? "#242526" : "#ffffff",
+                border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.1)"}`,
+                borderRadius: 12,
+                boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)",
+                padding: "6px",
+                width: 170,
+                zIndex: 30,
+              }}
+            >
+              <button
+                onClick={() => {
+                  handleShare();
+                  setShowMenu(false);
+                }}
+                style={{
+                  width: "100%",
+                  padding: "8px 10px",
+                  background: "none",
+                  border: "none",
+                  borderRadius: 8,
+                  textAlign: "left",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "var(--text-primary)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <Copy size={13} />
+                <span>Copy Advisory Link</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── 2. FACEBOOK POST BODY ── */}
+      <div style={{ marginBottom: 14 }}>
+        <h3
+          style={{
+            fontSize: 15,
+            fontWeight: 800,
+            color: "var(--text-primary)",
+            lineHeight: 1.4,
+            margin: "0 0 8px",
+          }}
+        >
+          {post.title}
+        </h3>
+
+        <div
+          style={{
+            fontSize: 13.5,
+            color: "var(--text-secondary)",
+            lineHeight: 1.6,
+            whiteSpace: "pre-line",
+            maxHeight: isExpanded ? "none" : 120,
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          {DOMPurify.sanitize(post.content)}
+        </div>
+
+        {post.content && post.content.length > 200 && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              marginTop: 6,
+              fontSize: 12.5,
+              fontWeight: 800,
+              color: "#1877f2",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            {isExpanded ? "See less" : "See more..."}
+          </button>
+        )}
+
+        {/* Facebook-style Hashtags */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+          {["#PalayanCity", "#ElNinoAdvisory", "#LGUResponse", "#PublicSafety"].map((tag) => (
+            <span
+              key={tag}
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#1877f2",
+                cursor: "pointer",
+              }}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 3. FACEBOOK-STYLE EMERGENCY INFOGRAPHIC NOTICE BANNER ── */}
+      {post.image_url ? (
+        <div style={{ borderRadius: 12, overflow: "hidden", marginBottom: 12 }}>
+          <img
+            src={post.image_url}
+            alt={post.title}
+            style={{ width: "100%", height: "auto", display: "block" }}
+          />
+        </div>
+      ) : (
+        <div
+          style={{
+            borderRadius: 14,
+            padding: "16px 18px",
+            background: isDark
+              ? "linear-gradient(135deg, rgba(24, 119, 242, 0.12) 0%, rgba(239, 68, 68, 0.08) 100%)"
+              : "linear-gradient(135deg, rgba(24, 119, 242, 0.08) 0%, rgba(249, 115, 22, 0.08) 100%)",
+            border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)"}`,
+            marginBottom: 12,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <ShieldAlert size={16} color={urgencyBadge.color} />
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 900,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: urgencyBadge.color,
+                }}
+              >
+                OFFICIAL CITIZEN NOTICE
+              </span>
+            </div>
+            <span
+              style={{
+                fontSize: 9,
+                fontWeight: 800,
+                color: "var(--text-muted)",
+                letterSpacing: "0.04em",
+              }}
+            >
+              CITY OF PALAYAN
+            </span>
+          </div>
+
+          <div
+            style={{
+              fontSize: 12.5,
+              fontWeight: 800,
+              color: "var(--text-primary)",
+              marginBottom: 10,
+            }}
+          >
+            {post.title}
+          </div>
+
+          {/* Hotline Footer Bar */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 8,
+              paddingTop: 8,
+              borderTop: `1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)"}`,
+            }}
+          >
+            <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-secondary)" }}>
+              Emergency Operations Center: <strong>(044) 958-8888</strong> · <strong>911</strong>
+            </span>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                color: "#1877f2",
+                background: isDark ? "rgba(24, 119, 242, 0.2)" : "rgba(24, 119, 242, 0.1)",
+                padding: "2px 8px",
+                borderRadius: 999,
+              }}
+            >
+              Verified LGU Release
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ── 4. SOCIAL COUNTS BAR (Facebook Style) ── */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          paddingBottom: 8,
+          marginBottom: 6,
+          fontSize: 12,
+          color: "var(--text-muted)",
+          fontWeight: 600,
+        }}
+      >
+        {/* Stacked Facebook Reaction Icons */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <span
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: "50%",
+                background: "#1877f2",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 10,
+                color: "#fff",
+                zIndex: 3,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+              }}
+            >
+              👍
+            </span>
+            <span
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: "50%",
+                background: "#ef4444",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 10,
+                color: "#fff",
+                marginLeft: -5,
+                zIndex: 2,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+              }}
+            >
+              ❤️
+            </span>
+            <span
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: "50%",
+                background: "#f59e0b",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 10,
+                color: "#fff",
+                marginLeft: -5,
+                zIndex: 1,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+              }}
+            >
+              ⚠️
+            </span>
+          </div>
+          <span>
+            {isLiked ? `You and ${likesCount - 1} others acknowledged` : `${likesCount} citizens acknowledged`}
+          </span>
+        </div>
+
+        {/* Comments and Shares count */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span
+            onClick={() => setShowComments(!showComments)}
+            style={{ cursor: "pointer" }}
+          >
+            {comments.length} comments
+          </span>
+          <span>•</span>
+          <span>{post.shares} shares</span>
+        </div>
+      </div>
+
+      {/* ── 5. FACEBOOK ACTION BUTTONS (Like, Comment, Share) ── */}
+      <div
+        style={{
+          display: "flex",
+          borderTop: `1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)"}`,
+          paddingTop: 4,
+          marginBottom: showComments ? 12 : 0,
+        }}
+      >
+        <button
+          onClick={toggleLike}
+          className={`fb-post-action-btn ${isLiked ? "active-liked" : ""}`}
+        >
+          <ThumbsUp
+            size={16}
+            color={isLiked ? "#1877f2" : "var(--text-secondary)"}
+            fill={isLiked ? "#1877f2" : "none"}
+          />
+          <span>{isLiked ? "Acknowledged" : "Acknowledge"}</span>
+        </button>
+
+        <button
+          onClick={() => setShowComments(!showComments)}
+          className="fb-post-action-btn"
+        >
+          <MessageCircle size={16} color="var(--text-secondary)" />
+          <span>Comment</span>
+        </button>
+
+        <button
+          onClick={handleShare}
+          className="fb-post-action-btn"
+        >
+          <Share2 size={16} color="var(--text-secondary)" />
+          <span>Share</span>
+        </button>
+      </div>
+
+      {/* ── 6. INLINE COMMENTS SECTION (Facebook style) ── */}
+      <AnimatePresence>
+        {showComments && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            style={{
+              borderTop: `1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)"}`,
+              paddingTop: 12,
+            }}
+          >
+            {/* Comment Input */}
+            <form onSubmit={handleAddComment} style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  background: "#1877f2",
+                  color: "#ffffff",
+                  fontSize: 12,
+                  fontWeight: 900,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                C
+              </div>
+
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  background: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)",
+                  borderRadius: 20,
+                  padding: "4px 12px",
+                  border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
+                }}
+              >
+                <input
+                  type="text"
+                  placeholder="Write a comment or ask CDRRMO..."
+                  value={newCommentText}
+                  onChange={(e) => setNewCommentText(e.target.value)}
+                  style={{
+                    flex: 1,
+                    background: "none",
+                    border: "none",
+                    outline: "none",
+                    fontSize: 12,
+                    color: "var(--text-primary)",
+                    padding: "4px 0",
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={!newCommentText.trim()}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: newCommentText.trim() ? "#1877f2" : "var(--text-muted)",
+                    cursor: newCommentText.trim() ? "pointer" : "default",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: 4,
+                  }}
+                >
+                  <Send size={14} />
+                </button>
+              </div>
+            </form>
+
+            {/* Comments List */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {comments.map((c) => (
+                <div key={c.id} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: "50%",
+                      background: c.isOfficial ? "#1877f2" : isDark ? "#3a3b3c" : "#e4e6eb",
+                      color: c.isOfficial ? "#ffffff" : "var(--text-primary)",
+                      fontSize: 10,
+                      fontWeight: 800,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      marginTop: 2,
+                    }}
+                  >
+                    {c.isOfficial ? "🛡️" : c.user[0]}
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        background: isDark ? "#242526" : "#f0f2f5",
+                        borderRadius: 14,
+                        padding: "8px 12px",
+                        display: "inline-block",
+                        maxWidth: "100%",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 800, color: "var(--text-primary)" }}>
+                          {c.user}
+                        </span>
+                        {c.isOfficial && (
+                          <CheckCircle2 size={11} color="#1877f2" fill="#1877f2" style={{ color: "#fff" }} />
+                        )}
+                        <span style={{ fontSize: 10, color: "var(--text-muted)" }}>• {c.role}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.4 }}>
+                        {c.text}
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 12, marginLeft: 10, marginTop: 3 }}>
+                      <span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700 }}>
+                        {c.time}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: "var(--text-muted)",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Like {c.likes > 0 && `(${c.likes})`}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: "var(--text-muted)",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Reply
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function HospitalMonitoringSection({ records = [], expanded, onToggle, isDark }) {
+  // Build continuous 7-day series. If there aren't datas each day, just put 0!
+  const {
+    dailySeries,
+    totalHeatStroke,
+    totalHeatExhaustion,
+    totalDehydration,
+    totalRespiratory,
+  } = useMemo(() => buildHospital7DaySeries(records), [records]);
 
   const sectionHeaderStyle = {
     display: 'flex',
@@ -948,82 +1942,69 @@ function HospitalMonitoringSection({ records, expanded, onToggle, isDark }) {
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
-            {records.length === 0 ? (
-              <div style={{
-                textAlign: 'center',
-                padding: '40px 20px',
-                color: 'var(--text-muted)',
-              }}>
-                <Activity size={48} style={{ opacity: 0.3, marginBottom: 12 }} />
-                <p style={{ fontSize: 14, fontWeight: 600 }}>No hospital data available</p>
-              </div>
-            ) : (
-              <>
-                {/* Stats Grid */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                  gap: 12,
-                  marginBottom: 20,
-                }}>
-                  <StatCard
-                    label="Heat Stroke"
-                    value={totalHeatStroke}
-                    color={COLORS.heatStroke}
-                    isDark={isDark}
-                  />
-                  <StatCard
-                    label="Heat Exhaustion"
-                    value={totalHeatExhaustion}
-                    color={COLORS.heatExhaustion}
-                    isDark={isDark}
-                  />
-                  <StatCard
-                    label="Dehydration"
-                    value={totalDehydration}
-                    color={COLORS.dehydration}
-                    isDark={isDark}
-                  />
-                  <StatCard
-                    label="Respiratory"
-                    value={totalRespiratory}
-                    color={COLORS.respiratory}
-                    isDark={isDark}
-                  />
-                </div>
+            {/* Stats Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: 12,
+              marginBottom: 20,
+            }}>
+              <StatCard
+                label="Heat Stroke"
+                value={totalHeatStroke}
+                color={COLORS.heatStroke}
+                isDark={isDark}
+              />
+              <StatCard
+                label="Heat Exhaustion"
+                value={totalHeatExhaustion}
+                color={COLORS.heatExhaustion}
+                isDark={isDark}
+              />
+              <StatCard
+                label="Dehydration"
+                value={totalDehydration}
+                color={COLORS.dehydration}
+                isDark={isDark}
+              />
+              <StatCard
+                label="Respiratory"
+                value={totalRespiratory}
+                color={COLORS.respiratory}
+                isDark={isDark}
+              />
+            </div>
 
-                {/* Trend Chart */}
-                <div style={{ marginTop: 20 }}>
-                  <h3 style={{
-                    fontSize: 14,
-                    fontWeight: 800,
-                    color: 'var(--text-primary)',
-                    marginBottom: 12,
-                  }}>
-                    7-Day Trend
-                  </h3>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#27272a' : '#e5e7eb'} />
-                      <XAxis dataKey="date" tick={{ fontSize: 11, fill: isDark ? '#a1a1aa' : '#71717a' }} />
-                      <YAxis tick={{ fontSize: 11, fill: isDark ? '#a1a1aa' : '#71717a' }} />
-                      <Tooltip
-                        contentStyle={{
-                          background: isDark ? '#18181b' : '#fff',
-                          border: `1px solid ${isDark ? '#27272a' : '#e5e7eb'}`,
-                          borderRadius: 8,
-                          fontSize: 12,
-                        }}
-                      />
-                      <Line type="monotone" dataKey="heatStroke" stroke={COLORS.heatStroke} strokeWidth={2} dot={{ r: 4 }} />
-                      <Line type="monotone" dataKey="heatExhaustion" stroke={COLORS.heatExhaustion} strokeWidth={2} dot={{ r: 4 }} />
-                      <Line type="monotone" dataKey="dehydration" stroke={COLORS.dehydration} strokeWidth={2} dot={{ r: 4 }} />
-                      <Line type="monotone" dataKey="respiratory" stroke={COLORS.respiratory} strokeWidth={2} dot={{ r: 4 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </>
-            )}
+            {/* Trend Chart */}
+            <div style={{ marginTop: 20 }}>
+              <h3 style={{
+                fontSize: 14,
+                fontWeight: 800,
+                color: 'var(--text-primary)',
+                marginBottom: 12,
+              }}>
+                7-Day Trend
+              </h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={dailySeries}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#27272a' : '#e5e7eb'} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: isDark ? '#a1a1aa' : '#71717a' }} />
+                  <YAxis tick={{ fontSize: 11, fill: isDark ? '#a1a1aa' : '#71717a' }} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{
+                      background: isDark ? '#18181b' : '#fff',
+                      border: `1px solid ${isDark ? '#27272a' : '#e5e7eb'}`,
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Line type="monotone" dataKey="heatStroke" stroke={COLORS.heatStroke} strokeWidth={2} dot={{ r: 4 }} name="Heat Stroke" />
+                  <Line type="monotone" dataKey="heatExhaustion" stroke={COLORS.heatExhaustion} strokeWidth={2} dot={{ r: 4 }} name="Heat Exhaustion" />
+                  <Line type="monotone" dataKey="dehydration" stroke={COLORS.dehydration} strokeWidth={2} dot={{ r: 4 }} name="Dehydration" />
+                  <Line type="monotone" dataKey="respiratory" stroke={COLORS.respiratory} strokeWidth={2} dot={{ r: 4 }} name="Respiratory" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

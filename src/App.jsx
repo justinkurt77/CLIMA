@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import CitizenNav from "./components/layout/CitizenNav";
 import HomeScreen from "./screens/HomeScreen";
 import ProfileScreen from "./screens/ProfileScreen";
@@ -8,6 +8,14 @@ import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import ElNinoMonitoringDashboard from "./components/dashboard/ElNinoMonitoringDashboard";
 import { logger } from "./lib/logger";
 import { Map as MapIcon } from "lucide-react";
+import TabSkeleton, {
+  HomeTabSkeleton,
+  MapTabSkeleton,
+  ElNinoTabSkeleton,
+  AboutTabSkeleton,
+  ProfileTabSkeleton,
+  LegalTabSkeleton,
+} from "./components/ui/TabSkeletons";
 
 // New production components
 import ScrollProgressBar from "./components/ui/ScrollProgressBar";
@@ -36,9 +44,15 @@ function Toast({ message, onDone }) {
 import { motion, AnimatePresence } from "framer-motion";
 
 function App() {
-  const [activeScreen, setActiveScreen] = useState(
-    window.location.pathname === "/admin" ? "admin" : "home",
-  );
+  const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const forcedSkeleton = urlParams?.get("skeleton");
+
+  const [activeScreen, setActiveScreen] = useState(() => {
+    if (forcedSkeleton && ["home", "about", "maps", "profile", "elnino"].includes(forcedSkeleton)) {
+      return forcedSkeleton;
+    }
+    return window.location.pathname === "/admin" ? "admin" : "home";
+  });
   const isAdminView = activeScreen === "admin" || activeScreen === "admin-map";
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -53,6 +67,22 @@ function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [adminUser, setAdminUser] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [tabLoading, setTabLoading] = useState(false);
+  const [loadingTab, setLoadingTab] = useState(null);
+
+  const handleTabChange = useCallback((newScreen) => {
+    if (newScreen === activeScreen && !tabLoading) return;
+    setLoadingTab(newScreen);
+    setTabLoading(true);
+    setActiveScreen(newScreen);
+
+    // Micro-transition window showing the matching tab skeleton
+    const timer = setTimeout(() => {
+      setTabLoading(false);
+      setLoadingTab(null);
+    }, 420);
+    return () => clearTimeout(timer);
+  }, [activeScreen, tabLoading]);
 
   // Capturing original pushState outside of effect to avoid double overrides
   useEffect(() => {
@@ -232,8 +262,8 @@ function App() {
   const openModal = () => {
     // Check if user is authenticated before opening modal
     if (!session || !session.user?.user_metadata?.first_name) {
-      // User not logged in or profile incomplete â†’ redirect to profile/auth
-      setActiveScreen('profile');
+      // User not logged in or profile incomplete -> redirect to profile/auth
+      handleTabChange('profile');
       return;
     }
     setModalOpen(true);
@@ -275,14 +305,18 @@ function App() {
             }}
             id="main-content"
           >
-            <HomeScreen
-              onOpenModal={openModal}
-              userReports={userReports}
-              session={session}
-              userLocation={userLocation}
-              setActiveScreen={setActiveScreen}
-              refreshTrigger={refreshTrigger}
-            />
+            {(tabLoading && (loadingTab === "home" || !loadingTab)) || forcedSkeleton === "home" ? (
+              <HomeTabSkeleton />
+            ) : (
+              <HomeScreen
+                onOpenModal={openModal}
+                userReports={userReports}
+                session={session}
+                userLocation={userLocation}
+                setActiveScreen={handleTabChange}
+                refreshTrigger={refreshTrigger}
+              />
+            )}
           </motion.div>
         )}
 
@@ -297,7 +331,11 @@ function App() {
             className="screen active citizen-screen-view"
             style={{ zIndex: 10, background: "transparent" }}
           >
-            <AboutScreen />
+            {(tabLoading && loadingTab === "about") || forcedSkeleton === "about" ? (
+              <AboutTabSkeleton />
+            ) : (
+              <AboutScreen />
+            )}
           </motion.div>
         )}
 
@@ -314,29 +352,24 @@ function App() {
             }}
           >
             <ErrorBoundary>
-              <Suspense
-                fallback={
-                  <div className="map-loading" style={{ position: "relative", flex: 1 }}>
-                    <div style={{ display: "flex", justifyContent: "center", marginBottom: 8, color: "var(--accent)" }}>
-                      <MapIcon size={34} style={{ opacity: 0.7 }} />
-                    </div>
-                    <div className="map-loading-text">Loading map...</div>
-                  </div>
-                }
-              >
-                <MapScreen
-                  onOpenModal={openModal}
-                  userReports={userReports}
-                  showMapUI={true}
-                  userLocation={userLocation}
-                  isMapFullView={true}
-                  onMapDoubleClick={() => {}}
-                  onPinClick={() => {}}
-                  isNavMinimized={false}
-                  isAdmin={false}
-                  activeScreen={activeScreen}
-                  refreshTrigger={refreshTrigger}
-                />
+              <Suspense fallback={<MapTabSkeleton />}>
+                {(tabLoading && loadingTab === "maps") || forcedSkeleton === "maps" ? (
+                  <MapTabSkeleton />
+                ) : (
+                  <MapScreen
+                    onOpenModal={openModal}
+                    userReports={userReports}
+                    showMapUI={true}
+                    userLocation={userLocation}
+                    isMapFullView={true}
+                    onMapDoubleClick={() => {}}
+                    onPinClick={() => {}}
+                    isNavMinimized={false}
+                    isAdmin={false}
+                    activeScreen={activeScreen}
+                    refreshTrigger={refreshTrigger}
+                  />
+                )}
               </Suspense>
             </ErrorBoundary>
           </motion.div>
@@ -356,12 +389,17 @@ function App() {
               background: "transparent",
             }}
           >
-            <ProfileScreen
-              onOpenModal={openModal}
-              userReports={userReports}
-              session={session}
-              setActiveScreen={setActiveScreen}
-            />
+            {(tabLoading && loadingTab === "profile") || forcedSkeleton === "profile" ? (
+              <ProfileTabSkeleton />
+            ) : (
+              <ProfileScreen
+                onOpenModal={openModal}
+                userReports={userReports}
+                session={session}
+                setActiveScreen={handleTabChange}
+                isLoadingReports={isLoadingReports}
+              />
+            )}
           </motion.div>
         )}
 
@@ -379,7 +417,11 @@ function App() {
               background: "transparent",
             }}
           >
-            <ElNinoMonitoringDashboard />
+            {(tabLoading && loadingTab === "elnino") || forcedSkeleton === "elnino" ? (
+              <ElNinoTabSkeleton />
+            ) : (
+              <ElNinoMonitoringDashboard />
+            )}
           </motion.div>
         )}
 
@@ -397,14 +439,7 @@ function App() {
               background: "transparent",
             }}
           >
-            <Suspense fallback={<div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              minHeight: '100vh',
-              fontSize: '1.2rem',
-              color: '#666'
-            }}>Loading legal documents...</div>}>
+            <Suspense fallback={<LegalTabSkeleton />}>
               <LegalScreen />
             </Suspense>
           </motion.div>
@@ -433,7 +468,7 @@ function App() {
               fontSize: '1.2rem',
               color: '#666'
             }}>Loading...</div>}>
-              <NotFoundScreen onNavigate={setActiveScreen} />
+              <NotFoundScreen onNavigate={handleTabChange} />
             </Suspense>
           </motion.div>
         )}
@@ -541,6 +576,7 @@ function App() {
                     isSuperadmin={adminUser?.isSuperadmin}
                     adminCategories={adminUser?.adminCategories}
                     adminDepartment={adminUser?.adminDepartment}
+                    currentUser={adminUser}
                   />
                 )}
               </Suspense>
@@ -718,10 +754,18 @@ function App() {
       {!isAdminView && (
         <CitizenNav
           activeScreen={activeScreen}
-          setActiveScreen={setActiveScreen}
+          setActiveScreen={handleTabChange}
           session={session}
           onOpenModal={openModal}
-          onRefresh={() => setRefreshTrigger((prev) => prev + 1)}
+          onRefresh={() => {
+            setLoadingTab(activeScreen);
+            setTabLoading(true);
+            setRefreshTrigger((prev) => prev + 1);
+            setTimeout(() => {
+              setTabLoading(false);
+              setLoadingTab(null);
+            }, 550);
+          }}
         />
       )}
 

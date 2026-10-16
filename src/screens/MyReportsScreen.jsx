@@ -2,10 +2,16 @@ import { useState } from "react";
 import { ClipboardList, Inbox, Plus } from "lucide-react";
 import ReportCard from "../components/ui/ReportCard";
 import { useTheme } from "../context/ThemeContext";
+import { MyReportsTabSkeleton } from "../components/ui/TabSkeletons";
 
-function MyReportsScreen({ onOpenModal, userReports = [] }) {
+function MyReportsScreen({ onOpenModal, userReports = [], isLoading = false }) {
   const { isDark } = useTheme();
   const [filter, setFilter] = useState("all");
+
+  if (isLoading) {
+    return <MyReportsTabSkeleton />;
+  }
+
   const allReports = [...userReports];
 
   const filteredReports = allReports.filter(

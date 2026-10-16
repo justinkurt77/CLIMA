@@ -667,58 +667,6 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
           </span>
         </div>
 
-        {/* Center: Dribbble-Style Horizontal Capsule Navigation */}
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            transform: "translateX(-50%)",
-            pointerEvents: "auto",
-            display: "flex",
-            alignItems: "center",
-            background: isDark ? "rgba(18, 18, 20, 0.92)" : "rgba(255, 255, 255, 0.92)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            borderRadius: 9999,
-            padding: "3px 4px",
-            border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
-            boxShadow: isDark ? "0 10px 30px rgba(0, 0, 0, 0.5)" : "0 8px 24px rgba(0, 0, 0, 0.06)",
-            gap: 2,
-          }}
-        >
-          {[
-            { id: "overview", label: "Overview" },
-            { id: "reports", label: "Citizen Reports" },
-            { id: "advisories", label: "Advisories" },
-            { id: "operations", label: "Operations" },
-            { id: "hospitals", label: "Hospitals" },
-          ]
-            .filter(t => isSuperadmin || canViewModule(t.id === "overview" ? "dashboard" : t.id))
-            .map((pill) => {
-              const isAct = activeTab === pill.id;
-              return (
-                <button
-                  key={pill.id}
-                  onClick={() => setActiveTab(pill.id)}
-                  style={{
-                    padding: "5px 14px",
-                    borderRadius: 9999,
-                    border: "none",
-                    background: isAct ? "linear-gradient(135deg, #f59e0b, #f97316)" : "transparent",
-                    color: isAct ? "#ffffff" : isDark ? "#a1a1aa" : "#71717a",
-                    fontWeight: isAct ? 800 : 700,
-                    fontSize: 12,
-                    cursor: "pointer",
-                    fontFamily: S.font,
-                    boxShadow: isAct ? "0 2px 10px rgba(245, 158, 11, 0.35)" : "none",
-                    transition: "all 0.18s ease",
-                  }}
-                >
-                  {pill.label}
-                </button>
-              );
-            })}
-        </div>
 
         {/* Right: Search, Notifications, Avatar Pill (hidden on overview since it is integrated beside Palayan City in inspector) */}
         {activeTab !== "overview" ? (

@@ -68,208 +68,7 @@ const STATUS_BG = {
   health: "rgba(220, 38, 38, 0.18)",
 };
 
-const CLIMA_COMMUNITY_FACILITIES = [
-  // ── Rivers & Water Areas ──
-  {
-    id: "fac-water-1",
-    title: "Peñaranda River Monitoring Point",
-    category: "Rivers & Water Areas",
-    filterType: "water",
-    status: "water",
-    statusLabel: "Rivers & Water Areas",
-    description: "Key river basin observation point. Monitored for water levels, flow rate, and seasonal flood mitigation.",
-    lat: 15.5280,
-    lng: 121.0740,
-    icon: "TreePine",
-    pinColor: "#0284c7",
-  },
-  {
-    id: "fac-water-2",
-    title: "Aulo Dam & Reservoir Basin",
-    category: "Rivers & Water Areas",
-    filterType: "water",
-    status: "water",
-    statusLabel: "Rivers & Water Areas",
-    description: "Major irrigation dam and water reservoir supplying Palayan agricultural fields.",
-    lat: 15.5760,
-    lng: 121.1120,
-    icon: "TreePine",
-    pinColor: "#0284c7",
-  },
-  {
-    id: "fac-water-3",
-    title: "Bacao River & Irrigation Canal",
-    category: "Rivers & Water Areas",
-    filterType: "water",
-    status: "water",
-    statusLabel: "Rivers & Water Areas",
-    description: "Agricultural waterway canal regulating freshwater flow across western Palayan barangays.",
-    lat: 15.5480,
-    lng: 121.0620,
-    icon: "TreePine",
-    pinColor: "#0284c7",
-  },
-  {
-    id: "fac-water-4",
-    title: "Caimito Creek & Waterways",
-    category: "Rivers & Water Areas",
-    filterType: "water",
-    status: "water",
-    statusLabel: "Rivers & Water Areas",
-    description: "Natural stream catchment and tributary connecting to regional drainage basin.",
-    lat: 15.5390,
-    lng: 121.0920,
-    icon: "TreePine",
-    pinColor: "#0284c7",
-  },
-  {
-    id: "fac-water-5",
-    title: "Singalat River Observation Post",
-    category: "Rivers & Water Areas",
-    filterType: "water",
-    status: "water",
-    statusLabel: "Rivers & Water Areas",
-    description: "Community river level station for early rainfall warnings and irrigation management.",
-    lat: 15.5210,
-    lng: 121.0850,
-    icon: "TreePine",
-    pinColor: "#0284c7",
-  },
-
-  // ── Resorts & Recreation Areas ──
-  {
-    id: "fac-rec-1",
-    title: "Palayan City Plaza & Sports Complex",
-    category: "Resorts & Recreation Areas",
-    filterType: "recreation",
-    status: "recreation",
-    statusLabel: "Resorts & Recreation Areas",
-    description: "Central civic plaza, athletic track, basketball complex, and community event grounds.",
-    lat: 15.5410,
-    lng: 121.0845,
-    icon: "Landmark",
-    pinColor: "#16a34a",
-  },
-  {
-    id: "fac-rec-2",
-    title: "Aulo Eco-Park & Lakeside Recreation",
-    category: "Resorts & Recreation Areas",
-    filterType: "recreation",
-    status: "recreation",
-    statusLabel: "Resorts & Recreation Areas",
-    description: "Scenic lakeside eco-park with picnic areas, hiking paths, and sunset viewpoints.",
-    lat: 15.5740,
-    lng: 121.1150,
-    icon: "TreePine",
-    pinColor: "#16a34a",
-  },
-  {
-    id: "fac-rec-3",
-    title: "Singalat Nature Resort & Spring",
-    category: "Resorts & Recreation Areas",
-    filterType: "recreation",
-    status: "recreation",
-    statusLabel: "Resorts & Recreation Areas",
-    description: "Popular recreation resort featuring freshwater spring pools and open cottages.",
-    lat: 15.5180,
-    lng: 121.0890,
-    icon: "Landmark",
-    pinColor: "#16a34a",
-  },
-  {
-    id: "fac-rec-4",
-    title: "Freedom Park & City Greens",
-    category: "Resorts & Recreation Areas",
-    filterType: "recreation",
-    status: "recreation",
-    statusLabel: "Resorts & Recreation Areas",
-    description: "Open garden park, walking promenades, and cultural recreation facilities at the capitol complex.",
-    lat: 15.5630,
-    lng: 121.1005,
-    icon: "Landmark",
-    pinColor: "#16a34a",
-  },
-  {
-    id: "fac-rec-5",
-    title: "Fort Magsaysay Mountain & Eco-Camp",
-    category: "Resorts & Recreation Areas",
-    filterType: "recreation",
-    status: "recreation",
-    statusLabel: "Resorts & Recreation Areas",
-    description: "Expansive pine-lined mountain trails, camping grounds, and outdoor adventure park.",
-    lat: 15.5020,
-    lng: 121.0650,
-    icon: "TreePine",
-    pinColor: "#16a34a",
-  },
-
-  // ── Health & Emergency Facilities ──
-  {
-    id: "fac-health-1",
-    title: "Palayan City District Hospital",
-    category: "Health & Emergency Facilities",
-    filterType: "health",
-    status: "health",
-    statusLabel: "Health & Emergency Facilities",
-    description: "24/7 Government hospital, emergency medicine, inpatient care, and surgical ward.",
-    lat: 15.5435,
-    lng: 121.0830,
-    icon: "ShieldAlert",
-    pinColor: "#dc2626",
-  },
-  {
-    id: "fac-health-2",
-    title: "CDRRMO Palayan Disaster Operations Center",
-    category: "Health & Emergency Facilities",
-    filterType: "health",
-    status: "health",
-    statusLabel: "Health & Emergency Facilities",
-    description: "City Disaster Risk Reduction Management Office & 911 Emergency Command Center.",
-    lat: 15.5628,
-    lng: 121.1010,
-    icon: "ShieldAlert",
-    pinColor: "#dc2626",
-  },
-  {
-    id: "fac-health-3",
-    title: "Palayan City Rural Health Unit (RHU)",
-    category: "Health & Emergency Facilities",
-    filterType: "health",
-    status: "health",
-    statusLabel: "Health & Emergency Facilities",
-    description: "Comprehensive public health center offering triage, vaccination, and maternal care.",
-    lat: 15.5402,
-    lng: 121.0860,
-    icon: "ShieldAlert",
-    pinColor: "#dc2626",
-  },
-  {
-    id: "fac-health-4",
-    title: "BFP Palayan City Central Fire & Rescue",
-    category: "Health & Emergency Facilities",
-    filterType: "health",
-    status: "health",
-    statusLabel: "Health & Emergency Facilities",
-    description: "Bureau of Fire Protection station equipped with emergency rescue trucks and ambulances.",
-    lat: 15.5615,
-    lng: 121.0995,
-    icon: "ShieldAlert",
-    pinColor: "#dc2626",
-  },
-  {
-    id: "fac-health-5",
-    title: "Singalat Barangay Health & Emergency Station",
-    category: "Health & Emergency Facilities",
-    filterType: "health",
-    status: "health",
-    statusLabel: "Health & Emergency Facilities",
-    description: "Local community first-responder outpost and primary health clinic.",
-    lat: 15.5225,
-    lng: 121.0835,
-    icon: "ShieldAlert",
-    pinColor: "#dc2626",
-  },
-];
+const CLIMA_COMMUNITY_FACILITIES = [];
 
 const buildingsLayer = {
   id: "3d-buildings",
@@ -302,6 +101,11 @@ import { PALAYAN_KLOUDTECH_STATIONS, fetchKloudtechDashboard } from "../services
 import { KloudtrackStationMarker } from "../components/map/KloudtrackStationMarker";
 import { KloudtrackStationPopup } from "../components/map/KloudtrackStationPopup";
 import { KloudtrackMapControls, IOT_METRIC_CONFIG } from "../components/map/KloudtrackMapControls";
+import {
+  PIN_CATEGORIES,
+  getPinnedLocations,
+  subscribePinnedLocations,
+} from "../lib/pinnedLocationsStorage";
 
 function createGeoJSONCircle(center, radiusInKm, points = 64) {
   const [lng, lat] = center;
@@ -366,6 +170,32 @@ function MapScreen({
   const popupContentRef = useRef(null);
   const mapRef = useRef(null);
   const hasJumped = useRef(false);
+
+  const [customPins, setCustomPins] = useState(() => getPinnedLocations());
+  useEffect(() => {
+    return subscribePinnedLocations((pins) => {
+      setCustomPins(pins);
+    });
+  }, []);
+
+  const mappedCustomFacilities = useMemo(() => {
+    return customPins.map((p) => {
+      const cat = PIN_CATEGORIES[p.category] || PIN_CATEGORIES.water;
+      return {
+        id: p.id,
+        title: p.name,
+        category: cat.label,
+        filterType: p.category === "water" ? "water" : p.category === "hospital" || p.category === "fire" ? "health" : "recreation",
+        status: p.status,
+        statusLabel: `${cat.label} · ${p.subType || "Facility"}`,
+        description: p.description || `${p.name} - Brgy. ${p.barangay}`,
+        lat: Number(p.lat),
+        lng: Number(p.lng),
+        icon: cat.icon || "MapPin",
+        pinColor: cat.color,
+      };
+    });
+  }, [customPins]);
 
   // Layer Management States
   const [activeLayers, setActiveLayers] = useState({
@@ -657,9 +487,10 @@ function MapScreen({
     return "health";
   };
 
-  const visibleFacilities = CLIMA_COMMUNITY_FACILITIES.filter((f) =>
-    activeFilters.includes(f.filterType)
-  );
+  const visibleFacilities = useMemo(() => {
+    const combined = [...CLIMA_COMMUNITY_FACILITIES, ...mappedCustomFacilities];
+    return combined.filter((f) => activeFilters.includes(f.filterType));
+  }, [mappedCustomFacilities, activeFilters]);
 
   const allReports = userReports.filter((r) => {
     const hasCoords = r.lat && r.lng;

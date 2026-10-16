@@ -34,6 +34,7 @@ import {
   KLOUDTECH_BASE_URL,
 } from "../services/kloudtechService";
 import KloudtechStationView from "../components/KloudtechStationView";
+import LiveConditionsCard from "../components/dashboard/LiveConditionsCard";
 
 const WEATHER_ICONS = {
   Sun,
@@ -388,42 +389,6 @@ export default function HomeScreen({
       setSearchQuery("");
     }
   };
-
-  // Compute smooth temperature wave curve matching hourly forecast
-  const waveInfo = useMemo(() => {
-    const temps = hourlyForecast.map((h) => h.temp);
-    if (!temps || temps.length < 2) {
-      return {
-        d: "M 6 62 C 60 62, 100 24, 160 30 C 215 36, 245 42, 275 22 C 290 12, 305 24, 316 28",
-        markerPt: { x: 275, y: 22 },
-      };
-    }
-    const min = Math.min(...temps);
-    const max = Math.max(...temps);
-    const range = max - min || 2;
-    const pts = temps.map((t, i) => {
-      const x = 12 + i * (296 / (temps.length - 1));
-      const y = 62 - ((t - min) / range) * 44;
-      return { x: Math.round(x), y: Math.round(y) };
-    });
-
-    let d = `M ${pts[0].x} ${pts[0].y}`;
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i];
-      const p1 = pts[i + 1];
-      const cpX1 = Math.round(p0.x + (p1.x - p0.x) / 2);
-      const cpY1 = p0.y;
-      const cpX2 = Math.round(p0.x + (p1.x - p0.x) / 2);
-      const cpY2 = p1.y;
-      d += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${p1.x} ${p1.y}`;
-    }
-
-    const lastPt = pts[pts.length - 1];
-    const areaD = `${d} L ${lastPt.x} 76 L ${pts[0].x} 76 Z`;
-
-    const maxPt = pts.reduce((prev, cur) => (cur.y < prev.y ? cur : prev), pts[0]);
-    return { d, areaD, markerPt: maxPt };
-  }, [hourlyForecast]);
 
   useEffect(() => {
     const lat = activeCoords?.lat || userLocation?.lat || 15.5490;
@@ -963,113 +928,17 @@ export default function HomeScreen({
           {/* ──── RIGHT COLUMN (~38%) ──── */}
           <div className="desktop-right-column">
             {/* 1. LIVE CONDITIONS CARD */}
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-              className="desktop-card desktop-live-conditions-card"
-            >
-              <div className="desktop-card-header">
-                <div className="desktop-card-title-row">
-                  <span className="desktop-card-title">Live Conditions</span>
-                  <ChevronRight size={17} className="desktop-chevron" />
-                </div>
-              </div>
-
-              {/* Sub header: Rate & Dangerous Tag */}
-              <div className="desktop-conditions-meta">
-                <div className="desktop-rate-val" title="Chance of Precipitation">
-                  <CloudRain size={14} strokeWidth={2.4} />
-                  <span>{rainChance}% Rain</span>
-                </div>
-                <div className="desktop-danger-badge">{heatIndex}</div>
-              </div>
-
-              {/* Smooth Gradient Wave with Glowing Marker */}
-              <div className="desktop-wave-container">
-                <svg
-                  viewBox="0 0 320 80"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="desktop-wave-svg"
-                >
-                  <defs>
-                    <linearGradient id="liveWaveGrad" x1="0" y1="0" x2="320" y2="0" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor="#38bdf8" />
-                      <stop offset="50%" stopColor="#a855f7" />
-                      <stop offset="85%" stopColor="#f97316" />
-                      <stop offset="100%" stopColor="#ef4444" />
-                    </linearGradient>
-                    <linearGradient id="liveAreaGrad" x1="0" y1="0" x2="0" y2="80" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor="#f97316" stopOpacity="0.22" />
-                      <stop offset="100%" stopColor="#f97316" stopOpacity="0.0" />
-                    </linearGradient>
-                    <filter id="glowFilter" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="3" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-
-                  {/* Gradient area under temperature curve */}
-                  {waveInfo.areaD && (
-                    <path
-                      d={waveInfo.areaD}
-                      fill="url(#liveAreaGrad)"
-                    />
-                  )}
-
-                  {/* Flowing curve line based on real hourly forecast */}
-                  <path
-                    d={waveInfo.d}
-                    stroke="url(#liveWaveGrad)"
-                    strokeWidth="3.2"
-                    strokeLinecap="round"
-                  />
-
-                  {/* Highlight marker dot on the wave */}
-                  <circle
-                    cx={waveInfo.markerPt.x}
-                    cy={waveInfo.markerPt.y}
-                    r="5.5"
-                    fill="#ffffff"
-                    stroke="#1e1e24"
-                    strokeWidth="2.5"
-                    filter="url(#glowFilter)"
-                  />
-                </svg>
-              </div>
-
-              {/* Bottom Sensor Stats (Humidity, Wind, Pressure) */}
-              <div className="desktop-conditions-stats">
-                <div className="desktop-stat-item">
-                  <div className="desktop-stat-label">
-                    <Droplets size={14} />
-                    <span>{humidity}%</span>
-                  </div>
-                  <div className="desktop-stat-sub">Humidity</div>
-                </div>
-
-                <div className="desktop-stat-item">
-                  <div className="desktop-stat-label">
-                    <Compass size={14} />
-                    <span>{windSpeed} km/h</span>
-                  </div>
-                  <div className="desktop-stat-sub">Wind</div>
-                </div>
-
-                <div className="desktop-stat-item">
-                  <div className="desktop-stat-label">
-                    <Gauge size={14} />
-                    <span>{pressure}</span>
-                  </div>
-                  <div className="desktop-stat-sub">Pressure</div>
-                </div>
-              </div>
-            </motion.div>
+            <LiveConditionsCard
+              hourlyForecast={hourlyForecast}
+              currentTemp={currentTemp}
+              currentHeatIndex={currentHeatIndex}
+              heatIndex={heatIndex}
+              rainChance={rainChance}
+              humidity={humidity}
+              windSpeed={windSpeed}
+              pressure={pressure}
+              onOpenModal={onOpenModal}
+            />
 
             {/* 2. PALAYAN BARANGAYS CARD */}
             <motion.div

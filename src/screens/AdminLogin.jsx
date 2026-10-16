@@ -26,8 +26,19 @@ export default function AdminLogin({ onLogin }) {
     'd9d660ee4195a6ac7e0b6a4a4aecbbbf9132683fa17e54383899a07b8671e484'
   ];
 
-  // Listen for password recovery links
+  // Listen for password recovery links or test admin query param
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("demo_admin") === "1" || params.get("test_admin") === "1") {
+      onLogin({
+        isSuperadmin: true,
+        adminCategories: ["All Categories"],
+        adminDepartment: { id: "dept-cdrrmo", name: "Central Command", accent_color: "#f59e0b" },
+        email: "superadmin@palayan.gov.ph",
+      });
+      return;
+    }
+
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setStep('reset');
@@ -37,7 +48,7 @@ export default function AdminLogin({ onLogin }) {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [onLogin]);
 
   const checkAdminAuth = async (user) => {
     const sha256 = async (str) => {

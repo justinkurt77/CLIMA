@@ -1,16 +1,514 @@
-﻿/* AboutScreen Isolation - prevents any external overlays */
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@500;700;800&display=swap');
+
+/* ───────────────────────────────────────────────────────────── */
+/* MAIN SCREEN WRAPPER - BLACK IN DARK MODE, WHITE IN LIGHT MODE */
+/* ───────────────────────────────────────────────────────────── */
+
+/* Default / Dark Mode: PURE BLACK */
 .about-screen-wrapper {
   position: absolute !important;
   inset: 0 !important;
   z-index: 10 !important;
-  isolation: isolate !important;
+  overflow: hidden !important;
+  background: #000000 !important;
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #ffffff;
+  isolation: isolate;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-.about-screen-wrapper * {
+/* Light Mode: PURE WHITE */
+html.light .about-screen-wrapper,
+[data-theme="light"] .about-screen-wrapper {
+  background: #ffffff !important;
+  color: #09090b !important;
+}
+
+/* Scroll Viewport */
+.about-scroll-viewport {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar styling */
+.about-scroll-viewport::-webkit-scrollbar {
+  width: 6px;
+}
+.about-scroll-viewport::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.4);
+}
+.about-scroll-viewport::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+}
+.about-scroll-viewport::-webkit-scrollbar-thumb:hover {
+  background: rgba(249, 115, 22, 0.85);
+}
+
+html.light .about-scroll-viewport::-webkit-scrollbar-track,
+[data-theme="light"] .about-scroll-viewport::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+html.light .about-scroll-viewport::-webkit-scrollbar-thumb,
+[data-theme="light"] .about-scroll-viewport::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Parallax Page */
+.parallax-page {
+  width: 100%;
   position: relative;
 }
 
-.about-screen-wrapper::before,
-.about-screen-wrapper::after {
-  display: none !important;
+/* Parallax Section */
+.parallax-section {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px 96px;
+  box-sizing: border-box;
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+  transition: background-color 0.25s ease;
+}
+
+/* Non-image sections - PURE BLACK in dark mode, PURE WHITE in light mode */
+.parallax-section.parallax-section-dark {
+  background: #000000 !important;
+}
+
+html.light .parallax-section.parallax-section-dark,
+[data-theme="light"] .parallax-section.parallax-section-dark {
+  background: #ffffff !important;
+}
+
+/* Parallax Background for Slide 1 */
+.parallax-bg {
+  position: absolute !important;
+  left: 0;
+  right: 0;
+  top: -18%;
+  height: 136%;
+  width: 100%;
+  will-change: transform;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.parallax-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  filter: brightness(0.8) contrast(1.08);
+}
+
+html.light .parallax-bg img,
+[data-theme="light"] .parallax-bg img {
+  filter: brightness(0.92) contrast(1.02);
+}
+
+/* Parallax Overlay Gradient - Dark mode: fades into #000000 */
+.parallax-overlay {
+  position: absolute !important;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.75) 100%),
+              linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.15) 35%, rgba(0, 0, 0, 0.25) 65%, #000000 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Parallax Overlay - Light mode: fades into #ffffff */
+html.light .parallax-overlay,
+[data-theme="light"] .parallax-overlay {
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.7) 100%),
+              linear-gradient(to bottom, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.25) 35%, rgba(255, 255, 255, 0.45) 65%, #ffffff 100%) !important;
+}
+
+/* Parallax Foreground Content */
+.parallax-content {
+  position: relative !important;
+  z-index: 2;
+  text-align: center;
+  max-width: 940px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  will-change: transform, opacity;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* Giant Typography */
+.impact {
+  font-family: 'Anton', 'Oswald', 'Impact', -apple-system, sans-serif;
+  letter-spacing: 0.03em;
+}
+
+/* Dark Mode Title */
+.parallax-title {
+  font-size: clamp(48px, 11vw, 130px);
+  color: #ffffff;
+  text-transform: uppercase;
+  text-shadow: 0 4px 40px rgba(0, 0, 0, 0.9), 0 2px 12px rgba(0, 0, 0, 0.95);
+  margin: 0;
+  line-height: 0.92;
+  font-weight: 900;
+  user-select: none;
+  text-align: center;
+  transition: color 0.25s ease, text-shadow 0.25s ease;
+}
+
+/* Light Mode Title */
+html.light .parallax-title,
+[data-theme="light"] .parallax-title {
+  color: #09090b !important;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Dark Mode Subtitle */
+.parallax-subtitle {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: clamp(11px, 2.2vw, 15px);
+  margin-top: 12px;
+  margin-bottom: 24px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 800;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85);
+  text-align: center;
+  transition: color 0.25s ease;
+}
+
+/* Light Mode Subtitle */
+html.light .parallax-subtitle,
+[data-theme="light"] .parallax-subtitle {
+  color: #52525b !important;
+  text-shadow: none !important;
+}
+
+/* Glassmorphism Cards */
+/* Dark Mode */
+.parallax-glass-card {
+  background: rgba(18, 18, 18, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+  padding: 26px 30px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  width: 100%;
+  max-width: 820px;
+  box-sizing: border-box;
+  color: #ffffff;
+  transition: all 0.25s ease;
+}
+
+/* Light Mode Glass Card */
+html.light .parallax-glass-card,
+[data-theme="light"] .parallax-glass-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  color: #09090b !important;
+}
+
+/* Hero Logos Connected Badge */
+.parallax-logos-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 20px;
+  background: #ffffff;
+  padding: 14px 26px;
+  border-radius: 60px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  margin-bottom: 22px;
+  transition: transform 0.25s ease;
+}
+
+.parallax-logos-pill:hover {
+  transform: scale(1.03);
+}
+
+/* Feature Grid */
+.parallax-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  width: 100%;
+  max-width: 840px;
+}
+
+/* Dark Mode Feature Chip */
+.parallax-feature-chip {
+  background: rgba(18, 18, 18, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  text-align: left;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.parallax-feature-chip:hover {
+  transform: translateY(-3px) scale(1.01);
+  border-color: rgba(249, 115, 22, 0.65);
+  background: rgba(28, 28, 30, 0.95);
+  box-shadow: 0 10px 24px rgba(249, 115, 22, 0.18);
+}
+
+/* Light Mode Feature Chip */
+html.light .parallax-feature-chip,
+[data-theme="light"] .parallax-feature-chip {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.09) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04) !important;
+}
+
+html.light .parallax-feature-chip:hover,
+[data-theme="light"] .parallax-feature-chip:hover {
+  background: #ffffff !important;
+  border-color: #f97316 !important;
+  box-shadow: 0 8px 24px rgba(249, 115, 22, 0.16) !important;
+}
+
+/* KloudTech Glow Card */
+.parallax-kloudtech-card {
+  background: linear-gradient(135deg, rgba(67, 56, 202, 0.85) 0%, rgba(109, 40, 217, 0.85) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 24px;
+  padding: 30px 34px;
+  box-shadow: 0 25px 65px rgba(79, 70, 229, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  width: 100%;
+  max-width: 820px;
+  box-sizing: border-box;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  color: #ffffff;
+}
+
+html.light .parallax-kloudtech-card,
+[data-theme="light"] .parallax-kloudtech-card {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  box-shadow: 0 20px 50px rgba(79, 70, 229, 0.28) !important;
+  color: #ffffff !important;
+}
+
+.parallax-glow-circle {
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  filter: blur(45px);
+  pointer-events: none;
+}
+
+/* Tech Stack Grid */
+.parallax-tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  width: 100%;
+  max-width: 820px;
+}
+
+/* Dark Mode Tech Card */
+.parallax-tech-card {
+  background: rgba(18, 18, 18, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.parallax-tech-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(28, 28, 30, 0.95);
+}
+
+/* Light Mode Tech Card */
+html.light .parallax-tech-card,
+[data-theme="light"] .parallax-tech-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.09) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04) !important;
+}
+
+html.light .parallax-tech-card:hover,
+[data-theme="light"] .parallax-tech-card:hover {
+  border-color: rgba(0, 0, 0, 0.25) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Partner Agencies Chips */
+.parallax-agencies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+/* Dark Mode Agency Chip */
+.parallax-agency-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.parallax-agency-chip:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Light Mode Agency Chip */
+html.light .parallax-agency-chip,
+[data-theme="light"] .parallax-agency-chip {
+  background: #f4f4f5 !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: #09090b !important;
+}
+
+html.light .parallax-agency-chip:hover,
+[data-theme="light"] .parallax-agency-chip:hover {
+  background: #e4e4e7 !important;
+  border-color: rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Scroll Indicator */
+.parallax-scroll-indicator {
+  margin-top: 26px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.parallax-scroll-indicator:hover {
+  color: #ffffff;
+}
+
+html.light .parallax-scroll-indicator,
+[data-theme="light"] .parallax-scroll-indicator {
+  color: #71717a;
+}
+html.light .parallax-scroll-indicator:hover,
+[data-theme="light"] .parallax-scroll-indicator:hover {
+  color: #09090b;
+}
+
+/* Vertical Dot Navigation (Desktop/Tablet) */
+.parallax-dot-nav {
+  position: absolute;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 60;
+  background: rgba(18, 18, 18, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 12px 8px;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  transition: all 0.25s ease;
+}
+
+.parallax-dot-btn {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.25s ease;
+}
+
+.parallax-dot-btn:hover {
+  background: #ffffff;
+  transform: scale(1.3);
+}
+
+.parallax-dot-btn.active {
+  background: #f97316;
+  height: 24px;
+  border-radius: 12px;
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.8);
+}
+
+/* Light Mode Dot Nav */
+html.light .parallax-dot-nav,
+[data-theme="light"] .parallax-dot-nav {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+html.light .parallax-dot-btn,
+[data-theme="light"] .parallax-dot-btn {
+  background: rgba(0, 0, 0, 0.25) !important;
+}
+
+html.light .parallax-dot-btn:hover,
+[data-theme="light"] .parallax-dot-btn:hover {
+  background: #09090b !important;
+}
+
+@media (max-width: 900px) {
+  .parallax-dot-nav {
+    display: none;
+  }
+  .parallax-section {
+    padding: 36px 16px 80px;
+  }
+  .parallax-glass-card,
+  .parallax-kloudtech-card {
+    padding: 22px 20px;
+  }
 }

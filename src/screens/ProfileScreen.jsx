@@ -27,7 +27,7 @@ const menuItems = [
   { id: "support", Icon: HelpCircle, label: "Help & Support" },
 ];
 
-function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiveScreen }) {
+function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiveScreen, isLoadingReports = false }) {
   const { theme, toggleTheme, isDark } = useTheme();
   // Filter for the user's personal reports to show in "My Reports" and stats
   const userReports = (allReports || []).filter((r) => {
@@ -242,6 +242,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                 <MyReportsScreen
                   userReports={userReports}
                   onOpenModal={onOpenModal}
+                  isLoading={isLoadingReports}
                 />
               </div>
             </motion.div>

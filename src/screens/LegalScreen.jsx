@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ArrowLeft, FileText, Shield, FileCheck, DollarSign, FileSignature } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { LegalTabSkeleton } from "../components/ui/TabSkeletons";
 
 const tabs = [
   { id: "terms", label: "Terms of Service", icon: FileText, file: "terms-of-service.md" },
@@ -543,23 +544,7 @@ function LegalScreen() {
       >
         <AnimatePresence mode="wait">
           {loading ? (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: 200,
-                color: "var(--text-secondary)",
-                fontSize: 14,
-                fontWeight: 600,
-              }}
-            >
-              Loading document...
-            </motion.div>
+            <LegalTabSkeleton />
           ) : error ? (
             <motion.div
               key="error"
