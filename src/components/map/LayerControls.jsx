@@ -52,6 +52,10 @@ const LAYER_CATEGORIES = [
       { id: "hotels", name: "Hotels & Resorts", color: "#8B5CF6" },
       { id: "restaurants", name: "Restaurants", color: "#EC4899" },
       { id: "attractions", name: "Attractions", color: "#10B981" },
+      { id: "waterPlaces", name: "Water Places", color: "#3B82F6" },
+      { id: "utilityServices", name: "Utility Services", color: "#F59E0B" },
+      { id: "publicServices", name: "Public Services", color: "#EF4444" },
+      { id: "landmarks", name: "Landmarks", color: "#A855F7" },
     ],
   },
 ];

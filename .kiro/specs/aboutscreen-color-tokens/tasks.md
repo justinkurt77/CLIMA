@@ -37,27 +37,27 @@ Fix the AboutScreen component to use CSS design tokens (`var(--bg-app)`) instead
   - Ensure code compiles without errors
   - Files: src/screens/AboutScreen.jsx
 
-- [~] 7. Manual test - Light mode background
+- [ ] 7. Manual test - Light mode background
   - Dependencies: [6]
   - Open app in light mode, navigate to About tab
   - Verify background is light gray (#f8f9fa)
   - DevTools: check `var(--bg-app)` resolves correctly
   - Compare with Home screen background
 
-- [~] 8. Manual test - Dark mode background
+- [ ] 8. Manual test - Dark mode background
   - Dependencies: [6]
   - Toggle to dark mode on About tab
   - Verify background is pure black (#000000)
   - DevTools: check `var(--bg-app)` resolves correctly
   - Compare with Home screen background
 
-- [~] 9. Manual test - Theme toggle transition
+- [ ] 9. Manual test - Theme toggle transition
   - Dependencies: [7, 8]
   - Stay on About tab and toggle theme multiple times
   - Verify smooth background color transition
   - Check for visual glitches or console errors
 
-- [~] 10. Visual regression check - Verify card styling preserved
+- [ ] 10. Visual regression check - Verify card styling preserved
   - Dependencies: [9]
   - Verify all cards still use `var(--bg-card)` backgrounds
   - Check text colors, borders, padding, margins unchanged
