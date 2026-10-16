@@ -230,9 +230,41 @@ export function mergeStationsWithRegistry(apiStations = []) {
       barangays: known?.station?.barangays || st.barangays || ["Palayan City"],
     };
 
+    const liveTel = liveEntry.telemetry || {};
+    const normalizedLiveTelemetry = {
+      ...liveTel,
+      ...(liveTel.temperature != null && {
+        temperature: Math.round(Number(liveTel.temperature) * 10) / 10,
+      }),
+      ...(liveTel.heatIndex != null && {
+        heatIndex: Math.round(Number(liveTel.heatIndex) * 10) / 10,
+      }),
+      ...(liveTel.humidity != null && {
+        humidity: Math.round(Number(liveTel.humidity)),
+      }),
+      ...(liveTel.pressure != null && {
+        pressure: Math.round(Number(liveTel.pressure) * 10) / 10,
+      }),
+      ...(liveTel.lightIntensity != null && {
+        lightIntensity: Math.round(Number(liveTel.lightIntensity) * 10) / 10,
+      }),
+      ...(liveTel.uvIndex != null && {
+        uvIndex: Math.round(Number(liveTel.uvIndex) * 10) / 10,
+      }),
+      ...(liveTel.wind && {
+        wind: {
+          ...liveTel.wind,
+          speed:
+            liveTel.wind.speed != null
+              ? Math.round(Number(liveTel.wind.speed) * 10) / 10
+              : 0,
+        },
+      }),
+    };
+
     const mergedTelemetry = {
       ...(known?.telemetry || {}),
-      ...(liveEntry.telemetry || {}),
+      ...normalizedLiveTelemetry,
     };
 
     const mergedHistory =
@@ -442,13 +474,50 @@ export function adaptKloudtechTelemetry(telemetry, isDay = true) {
 
   const temp =
     telemetry.temperature !== null && telemetry.temperature !== undefined
-      ? Math.round(telemetry.temperature)
+      ? Math.round(Number(telemetry.temperature))
       : null;
 
-  const precip = telemetry.precipitation || telemetry.hourlyPrecip || 0;
-  const windSpeed = telemetry.wind?.speed !== undefined ? telemetry.wind.speed : 0;
-  const windDir = telemetry.wind?.direction || "Variable";
-  const light = telemetry.lightIntensity || 0;
+  const precip =
+    telemetry.precipitation != null
+      ? Math.round(Number(telemetry.precipitation) * 10) / 10
+      : telemetry.hourlyPrecip != null
+      ? Math.round(Number(telemetry.hourlyPrecip) * 10) / 10
+      : 0;
+
+  const rawWindSpeed =
+    telemetry.wind?.speed !== undefined
+      ? Number(telemetry.wind.speed)
+      : telemetry.windSpeed !== undefined
+      ? Number(telemetry.windSpeed)
+      : 0;
+  const windSpeed = Number.isFinite(rawWindSpeed)
+    ? Math.round(rawWindSpeed * 10) / 10
+    : 0;
+
+  const windDir =
+    typeof telemetry.wind?.direction === "number"
+      ? `${Math.round(telemetry.wind.direction)}°`
+      : telemetry.wind?.direction || "Variable";
+
+  const light =
+    telemetry.lightIntensity != null
+      ? Math.round(Number(telemetry.lightIntensity) * 10) / 10
+      : 0;
+
+  const humidity =
+    telemetry.humidity != null
+      ? Math.round(Number(telemetry.humidity))
+      : null;
+
+  const heatIndex =
+    telemetry.heatIndex != null
+      ? Math.round(Number(telemetry.heatIndex) * 10) / 10
+      : null;
+
+  const rawPressure =
+    telemetry.pressure != null
+      ? Math.round(Number(telemetry.pressure) * 10) / 10
+      : null;
 
   let condition = "Sunny & Clear";
   let icon = isDay ? "Sun" : "Moon";
@@ -462,10 +531,10 @@ export function adaptKloudtechTelemetry(telemetry, isDay = true) {
   } else if (light > 25000) {
     condition = "Bright Sunshine";
     icon = "Sun";
-  } else if (telemetry.humidity && telemetry.humidity > 85) {
+  } else if (humidity && humidity > 85) {
     condition = "Overcast";
     icon = "Cloud";
-  } else if (telemetry.humidity && telemetry.humidity > 70) {
+  } else if (humidity && humidity > 70) {
     condition = "Partly cloudy";
     icon = isDay ? "CloudSun" : "Moon";
   } else {
@@ -475,18 +544,18 @@ export function adaptKloudtechTelemetry(telemetry, isDay = true) {
 
   return {
     temp,
-    rawTemp: telemetry.temperature,
+    rawTemp: telemetry.temperature != null ? Math.round(Number(telemetry.temperature) * 10) / 10 : null,
     condition,
     icon,
-    humidity: telemetry.humidity !== undefined ? telemetry.humidity : null,
-    heatIndex: telemetry.heatIndex !== undefined ? telemetry.heatIndex : null,
-    pressure: telemetry.pressure ? `${telemetry.pressure} hPa` : null,
-    rawPressure: telemetry.pressure,
+    humidity,
+    heatIndex,
+    pressure: rawPressure != null ? `${rawPressure.toFixed(1)} hPa` : null,
+    rawPressure,
     windSpeed,
     windDirection: windDir,
     lightIntensity: light,
     precip,
-    uvIndex: telemetry.uvIndex || null,
+    uvIndex: telemetry.uvIndex != null ? Math.round(Number(telemetry.uvIndex) * 10) / 10 : null,
     recordedAt: telemetry.recordedAt || "October 9, 2026 11:12",
   };
 }

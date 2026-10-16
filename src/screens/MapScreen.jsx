@@ -158,7 +158,6 @@ function MapScreen({
     "recreation",
     "health",
   ]);
-  const [filterOpen, setFilterOpen] = useState(false);
   const [mapStyleId, setMapStyleId] = useState(isDark ? "dark-v11" : "streets-v12");
   const [isExiting, setIsExiting] = useState(false);
   const [barangayMarkers, setBarangayMarkers] = useState([]);
@@ -610,15 +609,26 @@ function MapScreen({
       <MapOverlayActions
         isMapFullView={isMapFullView}
         onOpenModal={onOpenModal}
-        activeFilters={activeFilters}
-        setActiveFilters={setActiveFilters}
-        filterOpen={filterOpen}
-        setFilterOpen={setFilterOpen}
         setSearchPin={setSearchPin}
         userLocation={userLocation}
         mapRef={mapRef}
         activeLayers={activeLayers}
         onToggleLayer={toggleLayer}
+        activeMetric={activeMetric}
+        onSelectMetric={setActiveMetric}
+        weatherStations={weatherStations}
+        selectedStation={selectedKloudtrackStation}
+        onSelectStation={(st) => {
+          setSelectedKloudtrackStation(st);
+          if (st?.station?.location && Array.isArray(st.station.location) && mapRef.current) {
+            mapRef.current.flyTo({
+              center: [st.station.location[0], st.station.location[1]],
+              zoom: 16.5,
+              pitch: 45,
+              duration: 1200,
+            });
+          }
+        }}
       />
 
       <div className="map-container" style={{ position: "absolute", inset: 0 }}>
@@ -1256,27 +1266,7 @@ function MapScreen({
         selectedReport={selectedReport}
       />
 
-      {/* KloudTrack Native IoT Weather Controls: Metric Switcher Bar & Advisory Scale Legend */}
-      {activeLayers.kloudtrackStations && (
-        <KloudtrackMapControls
-          activeMetric={activeMetric}
-          onSelectMetric={setActiveMetric}
-          isMapFullView={isMapFullView}
-          stations={weatherStations}
-          selectedStation={selectedKloudtrackStation}
-          onSelectStation={(st) => {
-            setSelectedKloudtrackStation(st);
-            if (st?.station?.location && Array.isArray(st.station.location) && mapRef.current) {
-              mapRef.current.flyTo({
-                center: [st.station.location[0], st.station.location[1]],
-                zoom: 16.5,
-                pitch: 45,
-                duration: 1200,
-              });
-            }
-          }}
-        />
-      )}
+
     </div>
   );
 }

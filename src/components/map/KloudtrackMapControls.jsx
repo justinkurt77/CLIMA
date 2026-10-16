@@ -10,8 +10,7 @@ import {
   Shield,
   ChevronDown,
   ChevronUp,
-  Radio,
-  Info,
+  Check,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -224,19 +223,29 @@ export function getDynamicMetricConfig(telemetry = {}, stationName = "Popolon AW
 
 export const IOT_METRIC_CONFIG = getDynamicMetricConfig();
 
+/**
+ * Beside-Search Top Bar IoT Weather Controls
+ * Renders two sleek pills:
+ * 1. Metric Switcher Pill (Circle Icon, "Heat Index", "51.4°C", Chevron)
+ * 2. Scale Legend Pill (Square Icon, "Heat Index Scale", Station Status, Chevron)
+ * Both are minimized as default and toggle elegant popover dropdowns.
+ */
 export function KloudtrackMapControls({
-  activeMetric,
+  activeMetric = "heatIndex",
   onSelectMetric,
-  isMapFullView,
+  isMapFullView = true,
   stations = [],
   selectedStation = null,
   onSelectStation = null,
+  openDropdown: externalOpenDropdown,
+  setOpenDropdown: externalSetOpenDropdown,
 }) {
   const { isDark } = useTheme();
-  const [legendCollapsed, setLegendCollapsed] = useState(false);
-  const [barMinimized, setBarMinimized] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(null);
+  const openDropdown = externalOpenDropdown !== undefined ? externalOpenDropdown : internalOpen;
+  const setOpenDropdown = externalSetOpenDropdown || setInternalOpen;
 
-  if (!isMapFullView) return null;
+  if (isMapFullView === false) return null;
 
   const currentStation =
     selectedStation ||
@@ -250,331 +259,318 @@ export function KloudtrackMapControls({
   const currentConfig = dynamicConfig[activeMetric] || dynamicConfig.heatIndex;
   const MetricIcon = currentConfig.Icon;
 
+  const isMetricOpen = openDropdown === "metric";
+  const isScaleOpen = openDropdown === "scale";
+
   return (
-    <>
-      {/* ── 1. Bottom Horizontal Parameter Switcher Pill Bar ── */}
-      <AnimatePresence mode="wait">
-        {barMinimized ? (
-          /* Minimized Compact Single Pill - Exact matching size with collapsed legend */
-          <motion.button
-            key="minimized-pill"
-            initial={{ opacity: 0, scale: 0.95, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 12 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            onClick={() => setBarMinimized(false)}
-            style={{
-              position: "absolute",
-              bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
-              left: 16,
-              zIndex: 10,
-              width: 270,
-              height: 44,
-              boxSizing: "border-box",
-              borderRadius: 22,
-              padding: "0 14px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              border: `2px solid ${currentConfig.color}`,
-              background: isDark
-                ? "rgba(18, 20, 26, 0.96)"
-                : "rgba(255, 255, 255, 0.98)",
-              backdropFilter: "blur(16px)",
-              WebkitBackdropFilter: "blur(16px)",
-              boxShadow: `0 6px 20px ${currentConfig.glowColor}`,
-              cursor: "pointer",
-              pointerEvents: "auto",
-              fontFamily: "Nunito, sans-serif",
-            }}
-            title="Expand IoT Weather Metrics"
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <div
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: "50%",
-                  background: currentConfig.color,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#ffffff",
-                  flexShrink: 0,
-                }}
-              >
-                <MetricIcon size={13} strokeWidth={2.4} />
-              </div>
-
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 800,
-                  color: isDark ? "#ffffff" : "#09090b",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {currentConfig.label}
-              </span>
-
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 800,
-                  color: currentConfig.color,
-                  background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
-                  padding: "1px 7px",
-                  borderRadius: 10,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {currentConfig.value}
-              </span>
-            </div>
-
-            <ChevronUp size={15} color={isDark ? "#ffffff" : "#09090b"} style={{ opacity: 0.7, flexShrink: 0 }} />
-          </motion.button>
-        ) : (
-          /* Expanded Full Horizontal Metrics Strip */
-          <motion.div
-            key="expanded-bar"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 15 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            style={{
-              position: "absolute",
-              bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
-              left: 16,
-              right: 16,
-              zIndex: 10,
-              display: "flex",
-              gap: 10,
-              overflowX: "auto",
-              padding: "8px 12px",
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-              WebkitOverflowScrolling: "touch",
-              pointerEvents: "auto",
-            }}
-          >
-            {/* Collapse / Minimize Button at Front */}
-            <button
-              onClick={() => setBarMinimized(true)}
-              style={{
-                height: 42,
-                borderRadius: 24,
-                padding: "0 12px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 5,
-                border: isDark
-                  ? "1px solid rgba(255, 255, 255, 0.16)"
-                  : "1px solid rgba(0, 0, 0, 0.12)",
-                background: isDark
-                  ? "rgba(18, 20, 26, 0.88)"
-                  : "rgba(255, 255, 255, 0.92)",
-                backdropFilter: "blur(16px)",
-                WebkitBackdropFilter: "blur(16px)",
-                boxShadow: isDark
-                  ? "0 4px 14px rgba(0,0,0,0.35)"
-                  : "0 4px 14px rgba(0,0,0,0.08)",
-                cursor: "pointer",
-                color: isDark ? "#ffffff" : "#09090b",
-                fontSize: 11,
-                fontWeight: 700,
-                fontFamily: "Nunito, sans-serif",
-                flexShrink: 0,
-                transition: "transform 0.15s ease",
-              }}
-              title="Minimize metrics bar"
-            >
-              <ChevronDown size={15} />
-              <span>Hide</span>
-            </button>
-
-            {Object.values(dynamicConfig).map((metric) => {
-              const isActive = activeMetric === metric.id;
-              const Icon = metric.Icon;
-
-              return (
-                <button
-                  key={metric.id}
-                  onClick={() => onSelectMetric(metric.id)}
-                  style={{
-                    height: 42,
-                    borderRadius: 24,
-                    padding: "0 14px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    whiteSpace: "nowrap",
-                    border: isActive
-                      ? `2px solid ${metric.color}`
-                      : isDark
-                      ? "1px solid rgba(255, 255, 255, 0.14)"
-                      : "1px solid rgba(0, 0, 0, 0.1)",
-                    background: isActive
-                      ? isDark
-                        ? "rgba(18, 20, 26, 0.96)"
-                        : "rgba(255, 255, 255, 0.98)"
-                      : isDark
-                      ? "rgba(18, 20, 26, 0.82)"
-                      : "rgba(255, 255, 255, 0.88)",
-                    backdropFilter: "blur(16px)",
-                    WebkitBackdropFilter: "blur(16px)",
-                    boxShadow: isActive
-                      ? `0 6px 20px ${metric.glowColor}`
-                      : isDark
-                      ? "0 4px 14px rgba(0,0,0,0.35)"
-                      : "0 4px 14px rgba(0,0,0,0.08)",
-                    cursor: "pointer",
-                    transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                    transform: isActive ? "scale(1.03)" : "scale(1)",
-                    flexShrink: 0,
-                  }}
-                  title={`Switch map view to ${metric.label}`}
-                >
-                  <div
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: "50%",
-                      background: isActive ? metric.color : "transparent",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: isActive ? "#ffffff" : metric.color,
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    <Icon size={13} strokeWidth={2.4} />
-                  </div>
-
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontWeight: isActive ? 800 : 700,
-                      color: isActive
-                        ? isDark
-                          ? "#ffffff"
-                          : "#09090b"
-                        : isDark
-                        ? "#a1a1aa"
-                        : "#71717a",
-                    }}
-                  >
-                    {metric.shortLabel}
-                  </span>
-
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 800,
-                      color: metric.color,
-                      background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
-                      padding: "1px 7px",
-                      borderRadius: 10,
-                    }}
-                  >
-                    {metric.value}
-                  </span>
-                </button>
-              );
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── 2. Bottom-Left Metric Advisory Scale Legend ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: 0.1 }}
-        style={{
-          position: "absolute",
-          bottom: barMinimized
-            ? "calc(16px + env(safe-area-inset-bottom, 0px) + 44px + 8px)"
-            : "calc(16px + env(safe-area-inset-bottom, 0px) + 58px + 10px)",
-          left: 16,
-          zIndex: 8,
-          width: 270,
-          height: legendCollapsed ? 44 : "auto",
-          boxSizing: "border-box",
-          background: isDark
-            ? "rgba(18, 20, 26, 0.94)"
-            : "rgba(255, 255, 255, 0.96)",
-          backdropFilter: "blur(18px)",
-          WebkitBackdropFilter: "blur(18px)",
-          border: isDark
-            ? "1px solid rgba(255, 255, 255, 0.14)"
-            : "1px solid rgba(0, 0, 0, 0.1)",
-          borderRadius: legendCollapsed ? 22 : 20,
-          padding: legendCollapsed ? "0 14px" : "12px 14px",
-          boxShadow: isDark
-            ? "0 12px 30px rgba(0,0,0,0.5)"
-            : "0 12px 30px rgba(0,0,0,0.12)",
-          fontFamily: "Nunito, sans-serif",
-          pointerEvents: "auto",
-          transition: "bottom 0.25s ease, border-radius 0.2s ease, padding 0.2s ease",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: legendCollapsed ? "center" : "flex-start",
-        }}
-      >
-        {/* Legend Header */}
-        <div
-          onClick={() => setLegendCollapsed((c) => !c)}
+    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+      {/* ── 1. IoT Metric Switcher Pill (Heat Index, 51.4°C) ── */}
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        <button
+          onClick={() => setOpenDropdown(isMetricOpen ? null : "metric")}
           style={{
+            height: 56,
+            borderRadius: 40,
+            padding: "0 16px 0 12px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            gap: 9,
+            border: `2px solid ${currentConfig.color}`,
+            background: isDark
+              ? "rgba(18, 18, 20, 0.96)"
+              : "rgba(255, 255, 255, 0.98)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            boxShadow: `0 6px 20px ${currentConfig.glowColor}`,
             cursor: "pointer",
-            gap: 10,
-            width: "100%",
-            height: legendCollapsed ? "100%" : "auto",
+            fontFamily: "Nunito, sans-serif",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}
+          title="Select IoT Weather Metric"
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div
               style={{
-                width: 22,
-                height: 22,
-                borderRadius: 7,
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
                 background: currentConfig.color,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 color: "#ffffff",
                 flexShrink: 0,
+                boxShadow: `0 2px 8px ${currentConfig.glowColor}`,
               }}
             >
-              <MetricIcon size={13} strokeWidth={2.4} />
+              <MetricIcon size={14} strokeWidth={2.4} />
             </div>
-            <div style={{ minWidth: 0 }}>
+
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 800,
+                color: isDark ? "#ffffff" : "#09090b",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {currentConfig.label}
+            </span>
+
+            <span
+              style={{
+                fontSize: 11.5,
+                fontWeight: 800,
+                color: currentConfig.color,
+                background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
+                padding: "2px 8px",
+                borderRadius: 12,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {currentConfig.value}
+            </span>
+          </div>
+
+          {isMetricOpen ? (
+            <ChevronUp
+              size={16}
+              color={isDark ? "#ffffff" : "#09090b"}
+              style={{ opacity: 0.7, marginLeft: 4, flexShrink: 0 }}
+            />
+          ) : (
+            <ChevronDown
+              size={16}
+              color={isDark ? "#ffffff" : "#09090b"}
+              style={{ opacity: 0.7, marginLeft: 4, flexShrink: 0 }}
+            />
+          )}
+        </button>
+
+        {/* Metric Switcher Dropdown */}
+        <AnimatePresence>
+          {isMetricOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.96 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              style={{
+                position: "absolute",
+                top: "calc(100% + 8px)",
+                left: 0,
+                zIndex: 100,
+                background: isDark
+                  ? "rgba(18, 18, 20, 0.96)"
+                  : "rgba(255, 255, 255, 0.98)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                border: isDark
+                  ? "1px solid rgba(255, 255, 255, 0.12)"
+                  : "1px solid rgba(0, 0, 0, 0.08)",
+                borderRadius: 18,
+                padding: "10px",
+                boxShadow: isDark
+                  ? "0 16px 40px rgba(0,0,0,0.6)"
+                  : "0 16px 40px rgba(0,0,0,0.15)",
+                width: 270,
+                fontFamily: "Nunito, sans-serif",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 800,
+                  color: isDark ? "#a1a1aa" : "#71717a",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  padding: "4px 8px 8px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span>IoT Weather Metric</span>
+                <span style={{ fontSize: 10, color: currentConfig.color, fontWeight: 700 }}>
+                  Live Telemetry
+                </span>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {Object.values(dynamicConfig).map((metric) => {
+                  const isActive = activeMetric === metric.id;
+                  const Icon = metric.Icon;
+
+                  return (
+                    <button
+                      key={metric.id}
+                      onClick={() => {
+                        if (onSelectMetric) onSelectMetric(metric.id);
+                        setOpenDropdown(null);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "8px 10px",
+                        borderRadius: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 8,
+                        background: isActive
+                          ? isDark
+                            ? "rgba(255, 255, 255, 0.1)"
+                            : "rgba(0, 0, 0, 0.06)"
+                          : "transparent",
+                        border: isActive
+                          ? `1.5px solid ${metric.color}`
+                          : "1.5px solid transparent",
+                        cursor: "pointer",
+                        transition: "all 0.18s ease",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                        <div
+                          style={{
+                            width: 26,
+                            height: 26,
+                            borderRadius: "50%",
+                            background: isActive
+                              ? metric.color
+                              : isDark
+                              ? "rgba(255,255,255,0.06)"
+                              : "rgba(0,0,0,0.05)",
+                            color: isActive ? "#ffffff" : metric.color,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            transition: "all 0.18s ease",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Icon size={13} strokeWidth={2.4} />
+                        </div>
+                        <div style={{ textAlign: "left" }}>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              fontWeight: isActive ? 800 : 700,
+                              color: isDark ? "#ffffff" : "#09090b",
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {metric.label}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              color: metric.color,
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {metric.status}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 800,
+                            color: metric.color,
+                            background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
+                            padding: "2px 7px",
+                            borderRadius: 10,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {metric.value}
+                        </span>
+                        {isActive && <Check size={14} color={metric.color} strokeWidth={3} />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ── 2. Advisory Scale Legend Pill (Heat Index Scale) ── */}
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        <button
+          onClick={() => setOpenDropdown(isScaleOpen ? null : "scale")}
+          style={{
+            height: 56,
+            borderRadius: 40,
+            padding: "0 16px 0 12px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+            background: isDark
+              ? "rgba(18, 18, 20, 0.94)"
+              : "rgba(255, 255, 255, 0.96)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            border: isDark
+              ? isScaleOpen
+                ? "1px solid rgba(255, 255, 255, 0.3)"
+                : "1px solid rgba(255, 255, 255, 0.12)"
+              : isScaleOpen
+              ? "1px solid rgba(0, 0, 0, 0.2)"
+              : "1px solid rgba(0, 0, 0, 0.08)",
+            boxShadow: isDark
+              ? "0 6px 20px rgba(0,0,0,0.5)"
+              : "0 6px 20px rgba(0,0,0,0.08)",
+            cursor: "pointer",
+            fontFamily: "Nunito, sans-serif",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          }}
+          title="Toggle Scale Advisory Legend"
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 8,
+                background: currentConfig.color,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#ffffff",
+                flexShrink: 0,
+                boxShadow: `0 2px 8px ${currentConfig.glowColor || "rgba(239,68,68,0.4)"}`,
+              }}
+            >
+              <MetricIcon size={14} strokeWidth={2.4} />
+            </div>
+
+            <div style={{ textAlign: "left", lineHeight: 1.2 }}>
               <div
                 style={{
                   fontSize: 12,
                   fontWeight: 800,
                   color: isDark ? "#ffffff" : "#09090b",
-                  lineHeight: 1.15,
                   whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
                 }}
               >
                 {currentConfig.label} Scale
               </div>
               <div
                 style={{
-                  fontSize: 10,
+                  fontSize: 10.5,
                   fontWeight: 700,
                   color: currentConfig.statusColor,
-                  lineHeight: 1.15,
                   whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
                 }}
               >
                 {stationName.replace(" - Palayan City", "")}: {currentConfig.value} ({currentConfig.status})
@@ -582,41 +578,58 @@ export function KloudtrackMapControls({
             </div>
           </div>
 
-          <button
-            style={{
-              background: "transparent",
-              border: "none",
-              color: isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.6)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              padding: 0,
-              flexShrink: 0,
-            }}
-          >
-            {legendCollapsed ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-          </button>
-        </div>
+          {isScaleOpen ? (
+            <ChevronUp
+              size={16}
+              color={isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)"}
+              style={{ marginLeft: 4, flexShrink: 0 }}
+            />
+          ) : (
+            <ChevronDown
+              size={16}
+              color={isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)"}
+              style={{ marginLeft: 4, flexShrink: 0 }}
+            />
+          )}
+        </button>
 
-        {/* Legend Body (Collapsible) */}
+        {/* Scale Legend Dropdown */}
         <AnimatePresence>
-          {!legendCollapsed && (
+          {isScaleOpen && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              style={{ overflow: "hidden" }}
+              initial={{ opacity: 0, y: -8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.96 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              style={{
+                position: "absolute",
+                top: "calc(100% + 8px)",
+                left: 0,
+                zIndex: 100,
+                background: isDark
+                  ? "rgba(18, 18, 20, 0.96)"
+                  : "rgba(255, 255, 255, 0.98)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                border: isDark
+                  ? "1px solid rgba(255, 255, 255, 0.12)"
+                  : "1px solid rgba(0, 0, 0, 0.08)",
+                borderRadius: 18,
+                padding: 14,
+                boxShadow: isDark
+                  ? "0 16px 40px rgba(0,0,0,0.6)"
+                  : "0 16px 40px rgba(0,0,0,0.15)",
+                width: 290,
+                fontFamily: "Nunito, sans-serif",
+              }}
             >
-              {/* Station Switcher Pill Bar (Popolon AWS vs Sapang Buho AWS) */}
+              {/* Station Switcher (if > 1 station) */}
               {Array.isArray(stations) && stations.length > 1 && (
                 <div
                   style={{
                     display: "flex",
                     gap: 6,
-                    marginTop: 8,
-                    marginBottom: 8,
+                    marginBottom: 10,
                     background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
                     padding: 3,
                     borderRadius: 10,
@@ -629,7 +642,7 @@ export function KloudtrackMapControls({
                       .replace(" Palayan City", "");
                     const isSelected =
                       (currentStation?.station?.id && currentStation?.station?.id === id) ||
-                      (currentStation?.station?.stationName === st.station?.stationName);
+                      currentStation?.station?.stationName === st.station?.stationName;
                     return (
                       <button
                         key={id || name}
@@ -640,7 +653,7 @@ export function KloudtrackMapControls({
                         style={{
                           flex: 1,
                           padding: "5px 8px",
-                          fontSize: 10,
+                          fontSize: 10.5,
                           fontWeight: isSelected ? 800 : 600,
                           borderRadius: 7,
                           border: isSelected
@@ -682,14 +695,46 @@ export function KloudtrackMapControls({
                 </div>
               )}
 
+              {/* Status Header */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 6,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 12.5,
+                    fontWeight: 800,
+                    color: isDark ? "#ffffff" : "#09090b",
+                  }}
+                >
+                  {currentConfig.label} Advisory
+                </span>
+                <span
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 800,
+                    color: currentConfig.statusColor,
+                    background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
+                    padding: "2px 7px",
+                    borderRadius: 10,
+                  }}
+                >
+                  {currentConfig.status} ({currentConfig.value})
+                </span>
+              </div>
+
               {/* Color Ramp Bar */}
               <div
                 style={{
                   display: "flex",
                   borderRadius: 6,
                   overflow: "hidden",
-                  height: 8,
-                  marginTop: 10,
+                  height: 9,
+                  marginTop: 8,
                   marginBottom: 6,
                 }}
               >
@@ -715,7 +760,7 @@ export function KloudtrackMapControls({
                   fontSize: 9,
                   fontWeight: 700,
                   color: isDark ? "#a1a1aa" : "#71717a",
-                  marginBottom: 6,
+                  marginBottom: 8,
                 }}
               >
                 {currentConfig.scale.map((lvl, idx) => (
@@ -731,10 +776,10 @@ export function KloudtrackMapControls({
                 ))}
               </div>
 
-              {/* Explanatory summary */}
+              {/* Summary note */}
               <div
                 style={{
-                  fontSize: 10,
+                  fontSize: 10.5,
                   color: isDark ? "#d4d4d8" : "#52525b",
                   fontWeight: 600,
                   lineHeight: 1.35,
@@ -749,7 +794,8 @@ export function KloudtrackMapControls({
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
-    </>
+      </div>
+    </div>
   );
 }
+
