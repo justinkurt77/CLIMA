@@ -143,11 +143,11 @@ function ElNinoMonitoringDashboard() {
   });
   const [expandedSections, setExpandedSections] = useState({
     advisories: true,
-    hospital: true,
-    bfp: true,
-    cdrrmo: true,
-    agriculture: true,
-    interruptions: true,
+    hospital: false,
+    bfp: false,
+    cdrrmo: false,
+    agriculture: false,
+    interruptions: false,
   });
   const [isMobile, setIsMobile] = useState(false);
 
@@ -327,141 +327,142 @@ function ElNinoMonitoringDashboard() {
     sum + (parseFloat(d.estimated_loss_value) || 0), 0
   );
 
-  const heroBgUrl = isDark ? "/sunny_dark.webp" : "/sunny.webp";
-
   return (
     <>
       {/* Desktop View (>= 1024px) */}
-      <div className="desktop-view-container" style={{ paddingTop: 28, paddingBottom: 40 }}>
-        {/* Hero Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 28, scale: 0.985 }}
-          whileInView={{ opacity: 1, y: 0, scale: 1 }}
-          viewport={{ once: true, margin: "-30px" }}
-          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          className="desktop-hero-card"
+      <div className="desktop-view-container" style={{ paddingTop: 18, paddingBottom: 40 }}>
+        {/* Minimized Header Bar */}
+        <motion.header
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           style={{
-            position: "relative",
-            overflow: "hidden",
-            backgroundColor: isDark ? "#161922" : "#f8fafc",
-            marginBottom: 22,
-            borderRadius: 24,
-            border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.08)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 16,
+            padding: "14px 22px",
+            marginBottom: 20,
+            borderRadius: 18,
+            backgroundColor: isDark ? "rgba(22, 25, 34, 0.85)" : "#ffffff",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
+            border: isDark ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid var(--border-subtle)",
             boxShadow: isDark
-              ? "0 24px 48px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08)"
-              : "0 20px 40px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)",
+              ? "0 4px 20px -4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
+              : "0 2px 12px -2px rgba(0, 0, 0, 0.06)",
           }}
         >
-          {/* Dynamic Animated Background Transition */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              overflow: "hidden",
-              zIndex: 0,
-              pointerEvents: "none",
-            }}
-          >
-            <AnimatePresence initial={false}>
-              <motion.div
-                key={heroBgUrl}
-                initial={{ opacity: 0, scale: 1.03 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backgroundImage: `url('${heroBgUrl}')`,
-                  backgroundPosition: "center",
-                  backgroundSize: "cover",
-                  backgroundRepeat: "no-repeat",
-                }}
-              />
-            </AnimatePresence>
-          </div>
+          {/* Left: Icon + Title + Pulse Badge + Subtitle */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <div
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 12,
+                background: "linear-gradient(135deg, rgba(239, 68, 68, 0.85) 0%, rgba(249, 115, 22, 0.85) 100%)",
+                boxShadow: "0 4px 14px rgba(239, 68, 68, 0.35)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#ffffff",
+                flexShrink: 0,
+              }}
+            >
+              <ThermometerSun size={22} strokeWidth={2.4} />
+            </div>
 
-          {/* Hero Content Left */}
-          <div className="desktop-hero-info">
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <div
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 16,
-                  background: "linear-gradient(135deg, rgba(239, 68, 68, 0.45) 0%, rgba(249, 115, 22, 0.3) 100%)",
-                  backdropFilter: "blur(14px)",
-                  WebkitBackdropFilter: "blur(14px)",
-                  border: "1px solid rgba(255, 255, 255, 0.28)",
-                  boxShadow: "0 10px 28px rgba(239, 68, 68, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.4)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#ffffff",
-                  flexShrink: 0,
-                }}
-              >
-                <ThermometerSun size={28} strokeWidth={2.4} style={{ filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.4))" }} />
-              </div>
-
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "6px 14px",
-                  borderRadius: 999,
-                  background: "rgba(15, 18, 24, 0.65)",
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)",
-                  border: "1px solid rgba(255, 255, 255, 0.16)",
-                  boxShadow: "0 4px 14px rgba(0, 0, 0, 0.25)",
-                }}
-              >
-                <span
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <h1
                   style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: "#ef4444",
-                    boxShadow: "0 0 10px #ef4444",
-                    animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: 11,
+                    fontSize: 20,
                     fontWeight: 800,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    color: "#fca5a5",
+                    color: "var(--text-primary)",
+                    margin: 0,
+                    letterSpacing: -0.4,
+                    lineHeight: 1.2,
                   }}
                 >
-                  Extreme Heat & Drought Advisory
-                </span>
+                  El Niño Impact Dashboard
+                </h1>
+
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "3px 10px",
+                    borderRadius: 999,
+                    background: isDark ? "rgba(239, 68, 68, 0.18)" : "rgba(239, 68, 68, 0.1)",
+                    border: isDark ? "1px solid rgba(239, 68, 68, 0.35)" : "1px solid rgba(239, 68, 68, 0.25)",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: "#ef4444",
+                      boxShadow: "0 0 8px #ef4444",
+                      animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 800,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      color: isDark ? "#fca5a5" : "#dc2626",
+                    }}
+                  >
+                    Extreme Heat & Drought Advisory
+                  </span>
+                </div>
               </div>
+
+              <p
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "var(--text-secondary)",
+                  margin: "3px 0 0",
+                  lineHeight: 1.4,
+                }}
+              >
+                Real-time climate monitoring and coordinated agency response across Palayan City
+              </p>
             </div>
-            <h1 className="desktop-hero-temp" style={{ fontSize: 48, letterSpacing: -1.5 }}>
-              El Niño Impact Dashboard
-            </h1>
-            <p className="desktop-hero-condition" style={{ fontSize: 18 }}>
-              Real-time monitoring of Super El Niño effects
-            </p>
           </div>
 
-          {/* Hero Glass Card Right */}
-          <div className="desktop-hero-glass-card">
-            <p>
-              Real-time monitoring of Super El Niño effects across Palayan City with live sensor data and coordinated agency response tracking.
-            </p>
+          {/* Right: Live Telemetry Indicator */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 14px",
+              borderRadius: 12,
+              background: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.03)",
+              border: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid var(--border-subtle)",
+              fontSize: 12,
+              fontWeight: 700,
+              color: "var(--text-secondary)",
+              flexShrink: 0,
+            }}
+          >
+            <Activity size={14} color="#f97316" />
+            <span>Live Telemetry & Agency Operations</span>
           </div>
-        </motion.div>
+        </motion.header>
 
         {/* Two-column grid */}
         <main className="desktop-main-grid">
-          {/* Left Column */}
+          {/* Left Column - Dedicated Newsfeed Tab */}
           <div className="desktop-left-column">
-            {/* Official Advisories */}
+            {/* Official Advisories (Live Newsfeed) */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -475,13 +476,16 @@ function ElNinoMonitoringDashboard() {
                 isDark={isDark}
               />
             </motion.div>
+          </div>
 
+          {/* Right Column - Monitoring & Agency Operations */}
+          <div className="desktop-right-column">
             {/* Hospital Monitoring */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.5, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.5, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
             >
               <HospitalMonitoringSection
                 records={data.hospitalRecords}
@@ -496,7 +500,7 @@ function ElNinoMonitoringDashboard() {
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.5, delay: 0.24, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.5, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
             >
               <BFPOperationsSection
                 operations={data.bfpOperations}
@@ -511,7 +515,7 @@ function ElNinoMonitoringDashboard() {
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.5, delay: 0.32, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.5, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
             >
               <AgricultureDamagesSection
                 damages={data.agricultureDamages}
@@ -520,16 +524,13 @@ function ElNinoMonitoringDashboard() {
                 isDark={isDark}
               />
             </motion.div>
-          </div>
 
-          {/* Right Column */}
-          <div className="desktop-right-column">
             {/* CDRRMO Operations */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.5, delay: 0.24, ease: [0.16, 1, 0.3, 1] }}
             >
               <CDRRMOOperationsSection
                 operations={data.cdrrmoOperations}
@@ -544,7 +545,7 @@ function ElNinoMonitoringDashboard() {
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.5, delay: 0.13, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.5, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
             >
               <InterruptionsSection
                 waterInterruptions={data.waterInterruptions}
@@ -614,117 +615,68 @@ function ElNinoMonitoringDashboard() {
         display: isMobile ? 'block' : 'none',
         padding: 'max(20px, env(safe-area-inset-top, 20px)) 16px 96px',
       }}>
-        {/* Mobile Hero */}
+        {/* Mobile Header Bar */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="desktop-hero-card"
+          transition={{ duration: 0.35 }}
           style={{
-            position: "relative",
-            overflow: "hidden",
-            backgroundColor: isDark ? "#161922" : "#f8fafc",
-            minHeight: 220,
-            display: 'flex',
-            flexDirection: 'column',
-            marginBottom: 16,
-            borderRadius: 22,
-            border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.08)",
-            boxShadow: isDark
-              ? "0 16px 36px -10px rgba(0, 0, 0, 0.7)"
-              : "0 14px 30px -10px rgba(0, 0, 0, 0.15)",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "12px 16px",
+            marginBottom: 14,
+            borderRadius: 16,
+            backgroundColor: isDark ? "rgba(22, 25, 34, 0.9)" : "#ffffff",
+            border: isDark ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid var(--border-subtle)",
+            boxShadow: isDark ? "0 4px 16px rgba(0, 0, 0, 0.4)" : "0 2px 10px rgba(0, 0, 0, 0.05)",
           }}
         >
-          {/* Dynamic Animated Background Transition */}
           <div
             style={{
-              position: "absolute",
-              inset: 0,
-              overflow: "hidden",
-              zIndex: 0,
-              pointerEvents: "none",
+              width: 38,
+              height: 38,
+              borderRadius: 10,
+              background: "linear-gradient(135deg, rgba(239, 68, 68, 0.85) 0%, rgba(249, 115, 22, 0.85) 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#ffffff",
+              flexShrink: 0,
             }}
           >
-            <AnimatePresence initial={false}>
-              <motion.div
-                key={heroBgUrl}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.65 }}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backgroundImage: `url('${heroBgUrl}')`,
-                  backgroundPosition: "center",
-                  backgroundSize: "cover",
-                  backgroundRepeat: "no-repeat",
-                }}
-              />
-            </AnimatePresence>
+            <ThermometerSun size={20} strokeWidth={2.4} />
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 14,
-                background: "linear-gradient(135deg, rgba(239, 68, 68, 0.45) 0%, rgba(249, 115, 22, 0.3) 100%)",
-                backdropFilter: "blur(14px)",
-                WebkitBackdropFilter: "blur(14px)",
-                border: "1px solid rgba(255, 255, 255, 0.28)",
-                boxShadow: "0 8px 20px rgba(239, 68, 68, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#ffffff",
-                flexShrink: 0,
-              }}
-            >
-              <ThermometerSun size={24} strokeWidth={2.4} style={{ filter: "drop-shadow(0 2px 5px rgba(0,0,0,0.4))" }} />
-            </div>
-
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "4px 10px",
-                borderRadius: 999,
-                background: "rgba(15, 18, 24, 0.65)",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-                border: "1px solid rgba(255, 255, 255, 0.16)",
-              }}
-            >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <h1 style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>
+                El Niño Impact
+              </h1>
               <span
                 style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: "50%",
-                  background: "#ef4444",
-                  boxShadow: "0 0 8px #ef4444",
-                }}
-              />
-              <span
-                style={{
-                  fontSize: 10,
+                  fontSize: 9,
                   fontWeight: 800,
-                  letterSpacing: "0.08em",
+                  letterSpacing: "0.06em",
                   textTransform: "uppercase",
-                  color: "#fca5a5",
+                  color: isDark ? "#fca5a5" : "#dc2626",
+                  background: isDark ? "rgba(239, 68, 68, 0.18)" : "rgba(239, 68, 68, 0.1)",
+                  padding: "2px 6px",
+                  borderRadius: 999,
+                  border: isDark ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid rgba(239, 68, 68, 0.2)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
                 }}
               >
-                Extreme Heat Advisory
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#ef4444" }} />
+                Heat Advisory
               </span>
             </div>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", margin: "2px 0 0" }}>
+              Real-time monitoring in Palayan City
+            </p>
           </div>
-          <h1 className="desktop-hero-temp" style={{ fontSize: 32, letterSpacing: -1 }}>
-            El Niño Impact
-          </h1>
-          <p className="desktop-hero-condition" style={{ fontSize: 14, marginTop: 8 }}>
-            Real-time monitoring in Palayan City
-          </p>
         </motion.div>
 
         {/* Stacked sections */}

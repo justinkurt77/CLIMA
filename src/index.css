@@ -2224,6 +2224,10 @@ html.dark .desktop-hero-card::before,
   );
 }
 
+.elnino-hero-card::before {
+  display: none !important;
+}
+
 .desktop-hero-info {
   position: relative;
   z-index: 2;
