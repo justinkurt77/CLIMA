@@ -81,9 +81,9 @@ export function MapOverlayActions({
             }}
           >
             {/* Top Row: Search Bar and Controls */}
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", width: "100%" }}>
               {/* 1. Left Side: Search Bar */}
-              <div style={{ flex: 1, minWidth: 160 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <SearchBar
                   mapRef={mapRef}
                   onSearchSelect={setSearchPin}
@@ -122,7 +122,7 @@ export function MapOverlayActions({
             </div>
 
             {/* Bottom Row: Category Shortcuts */}
-            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "nowrap", overflowX: "auto", paddingBottom: 2 }}>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "nowrap", overflowX: "auto", paddingBottom: 2, width: "100%" }}>
               {[
                 { id: "water", label: "Water", color: "#3B82F6", emoji: "💧" },
                 { id: "recreation", label: "Recreation", color: "#16a34a", emoji: "🏖️" },
