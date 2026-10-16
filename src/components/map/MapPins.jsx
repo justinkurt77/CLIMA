@@ -25,7 +25,10 @@ const ICON_MAP = {
 };
 
 export function PinMarker({ color, icon }) {
-  const IssueIcon = (icon && ICON_MAP[icon]) || AlertCircle;
+  // Check if icon is an emoji (not in ICON_MAP) or a component name
+  const isEmoji = icon && typeof icon === 'string' && !ICON_MAP[icon];
+  const IssueIcon = (icon && ICON_MAP[icon]) || (!isEmoji ? AlertCircle : null);
+  
   return (
     <div
       style={{
@@ -42,11 +45,11 @@ export function PinMarker({ color, icon }) {
       {/* Colored outer pin */}
       <MapPinIcon size={38} fill={color} color={color} />
 
-      {/* White issue icon inside the bulb */}
+      {/* Icon inside the bulb - either emoji or lucide icon */}
       <div
         style={{
           position: "absolute",
-          top: 9,
+          top: isEmoji ? 6 : 9,
           left: "50%",
           transform: "translateX(-50%)",
           display: "flex",
@@ -54,7 +57,25 @@ export function PinMarker({ color, icon }) {
           justifyContent: "center",
         }}
       >
-        <IssueIcon size={14} color="white" strokeWidth={2.5} />
+        {isEmoji ? (
+          // All emojis with white circle background
+          <div
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              background: "white",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+            }}
+          >
+            <span style={{ fontSize: 13, lineHeight: 1 }}>{icon}</span>
+          </div>
+        ) : (
+          <IssueIcon size={14} color="white" strokeWidth={2.5} />
+        )}
       </div>
     </div>
   );

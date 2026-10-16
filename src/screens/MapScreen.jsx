@@ -58,6 +58,7 @@ const STATUS_COLORS = {
   water: "#0284c7",
   recreation: "#16a34a",
   health: "#dc2626",
+  government: "#71717a",
 };
 const STATUS_BG = {
   pending: "rgba(255, 255, 255, 0.2)",
@@ -66,9 +67,51 @@ const STATUS_BG = {
   water: "rgba(2, 132, 199, 0.18)",
   recreation: "rgba(22, 163, 74, 0.18)",
   health: "rgba(220, 38, 38, 0.18)",
+  government: "rgba(113, 113, 122, 0.18)",
 };
 
-const CLIMA_COMMUNITY_FACILITIES = [];
+const CLIMA_COMMUNITY_FACILITIES = [
+  // Water Places
+  { id: "wp1", name: "Aulo Dam", lat: 15.517876609612005, lng: 121.1165842455089, icon: "💧", pinColor: "#3B82F6", filterType: "water", contact: "09208125946", desc: "Tourist attraction" },
+  { id: "wp2", name: "The Nest Resort & Campground", lat: 15.489973584331299, lng: 121.10963951359219, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "09171364116", desc: "Resort hotel" },
+  { id: "wp3", name: "Fort Magsaysay Reservoir", lat: 15.413111, lng: 121.109845, icon: "💧", pinColor: "#3B82F6", filterType: "water", contact: "N/A", desc: "Reservoir" },
+  { id: "wp4", name: "Villa Esmeralda Bryan's Resort Hotel and Restaurant", lat: 15.586414689864885, lng: 121.11623903883321, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Hotel" },
+  { id: "wp5", name: "Carl Matthew's Resort", lat: 15.574579510490553, lng: 121.09566459318246, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "09688505624", desc: "Resort hotel" },
+  { id: "wp6", name: "Nature Escape Farm and Resort", lat: 15.57867695647252, lng: 121.1255242506916, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "09284009629", desc: "Hotel" },
+  { id: "wp7", name: "Binhi Nature Farm", lat: 15.584092161875324, lng: 121.13578154478633, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "09559220120", desc: "Farmstay" },
+  { id: "wp8", name: "SUMMER VILLE FARM AND RESORT", lat: 15.592286705457264, lng: 121.12781604765748, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Hotel" },
+  { id: "wp9", name: "Damian's Farm and Pool", lat: 15.590737, lng: 121.128343, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Resort hotel" },
+  { id: "wp10", name: "Doña Josefa Bridge and River Park", lat: 15.428691067045309, lng: 121.14962575277522, icon: "💧", pinColor: "#3B82F6", filterType: "water", contact: "N/A", desc: "Tourist attraction" },
+  { id: "wp11", name: "Fishing Spot", lat: 15.567804894232617, lng: 121.08898899761066, icon: "💧", pinColor: "#3B82F6", filterType: "water", contact: "N/A", desc: "Tourist attraction" },
+  { id: "wp12", name: "R&S Abeleda's Private Resort", lat: 15.541400639670405, lng: 121.05464063799428, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "09230847749", desc: "Swimming pool" },
+  { id: "wp13", name: "Rustic River Resort", lat: 15.578890432686926, lng: 121.09222089890493, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Villa" },
+  { id: "wp14", name: "Villa Mikaella Private Resort", lat: 15.576062475813234, lng: 121.12068749754528, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "09171472741", desc: "Villa" },
+  { id: "wp15", name: "Chloe Summer Resort", lat: 15.551626642367127, lng: 121.11347977096071, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Villa" },
+  { id: "wp16", name: "Aves Resort", lat: 15.413869109977222, lng: 121.08296888922769, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Tourist attraction" },
+  { id: "wp17", name: "Gato's Crib - The Lake House", lat: 15.569618776309095, lng: 121.09399552658115, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "0444638460", desc: "Resort hotel" },
+  { id: "wp18", name: "Blue Sky Private Resort", lat: 15.530054707422712, lng: 121.05818567083095, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Ski resort" },
+  { id: "wp19", name: "VELA Private Pool", lat: 14.362079864132907, lng: 121.3370099705361, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Homestay" },
+  
+  // Utility Services
+  { id: "us1", name: "NEECO II Area 2 Palayan City Branch Office", lat: 15.54354600100982, lng: 121.08609465767155, icon: "⚡", pinColor: "#f59e0b", filterType: "utility", contact: "N/A", desc: "Electric utility company branch office" },
+  { id: "us2", name: "Palayan City Water District", lat: 15.543611484504744, lng: 121.08411454397788, icon: "⚡", pinColor: "#f59e0b", filterType: "utility", contact: "09188074263", desc: "Water utility company" },
+  { id: "us3", name: "Balibago Waterworks", lat: 15.563667717107219, lng: 121.10125996097958, icon: "⚡", pinColor: "#f59e0b", filterType: "utility", contact: "N/A", desc: "Water utility facility" },
+  
+  // Public Services & Government Offices
+  { id: "ps1", name: "CDRRMO", lat: 15.559702386051606, lng: 121.09986385339798, icon: "🏛️", pinColor: "#71717a", filterType: "government", contact: "09669109674", desc: "City Disaster Risk Reduction and Management Office" },
+  { id: "ps2", name: "PCH", lat: 15.546288564337402, lng: 121.08874087581593, icon: "🏥", pinColor: "#dc2626", filterType: "health", contact: "N/A", desc: "Palayan City Hospital" },
+  { id: "ps3", name: "BFP", lat: 15.559549289187666, lng: 121.09959214158702, icon: "🏛️", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Bureau of Fire Protection" },
+  
+  // Landmarks (gray dots, always visible - not filterable)
+  { id: "lm1", name: "Bulwagan ng mga Katutubo, Bacao Reforestation", lat: 15.445006790219457, lng: 121.12659487316665, icon: "⚫", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Catholic church" },
+  { id: "lm2", name: "Palayan City Mini-Park", lat: 15.540634807647502, lng: 121.07980971763624, icon: "⚫", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Park" },
+  { id: "lm3", name: "Palayan City Plaza Conception", lat: 15.542007621587873, lng: 121.08566821450574, icon: "⚫", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Park" },
+  { id: "lm4", name: "Palayan City Park", lat: 15.559201854690505, lng: 121.09869796044576, icon: "⚫", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Park" },
+  { id: "lm5", name: "Provincial Government of Nueva Ecija", lat: 15.556540176741274, lng: 121.09516861659826, icon: "🏛️", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Local government office" },
+  { id: "lm6", name: "Central Business Hub", lat: 15.565424067232565, lng: 121.09771234275384, icon: "⚫", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Land planning authority" },
+  { id: "lm7", name: "Nueva Ecija Convention Center", lat: 15.558247241224999, lng: 121.0979418073124, icon: "⚫", pinColor: "#71717a", filterType: "government", contact: "09633680185", desc: "Convention center" },
+  { id: "lm8", name: "Sta. Cecilia Parish Church", lat: 15.542201550931459, lng: 121.08456810805654, icon: "⚫", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Catholic church" },
+];
 
 const buildingsLayer = {
   id: "3d-buildings",
@@ -91,6 +134,7 @@ import SearchBar from "../components/map/SearchBar";
 import { PinMarker, SearchPin } from "../components/map/MapPins";
 import { reverseGeocode } from "../components/ui/report/reportConstants";
 import { MapOverlayActions } from "../components/map/MapOverlayActions";
+import { CategoryListPanel } from "../components/map/CategoryListPanel";
 import { MapPopupContent } from "../components/map/MapPopupContent";
 import { PhotoLightbox } from "../components/map/PhotoLightbox";
 import { DescriptionModal } from "../components/map/DescriptionModal";
@@ -151,14 +195,16 @@ function MapScreen({
   const [searchPin, setSearchPin] = useState(null);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [descModalOpen, setDescModalOpen] = useState(false);
+  const [categoryListOpen, setCategoryListOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [popupGeo, setPopupGeo] = useState(null);
   const [descExpanded, setDescExpanded] = useState(false);
   const [activeFilters, setActiveFilters] = useState([
     "water",
     "recreation",
     "health",
+    "utility",
   ]);
-  const [filterOpen, setFilterOpen] = useState(false);
   const [mapStyleId, setMapStyleId] = useState(isDark ? "dark-v11" : "streets-v12");
   const [isExiting, setIsExiting] = useState(false);
   const [barangayMarkers, setBarangayMarkers] = useState([]);
@@ -213,6 +259,10 @@ function MapScreen({
     hotels: false,
     restaurants: false,
     attractions: false,
+    waterPlaces: false,
+    utilityServices: false,
+    publicServices: false,
+    landmarks: false,
   });
 
   // Coverage GeoJSON for all deployed KloudTech stations (Popolon, Sapang Buho, etc.)
@@ -240,6 +290,10 @@ function MapScreen({
     hotels: [],
     restaurants: [],
     attractions: [],
+    waterPlaces: [],
+    utilityServices: [],
+    publicServices: [],
+    landmarks: [],
   });
 
   useEffect(() => {
@@ -304,16 +358,32 @@ function MapScreen({
   useEffect(() => {
     const loadTourismData = async () => {
       try {
-        const [hotelsRes, restaurantsRes, attractionsRes] = await Promise.all([
+        const [
+          hotelsRes,
+          restaurantsRes,
+          attractionsRes,
+          waterPlacesRes,
+          utilityServicesRes,
+          publicServicesRes,
+          landmarksRes
+        ] = await Promise.all([
           fetch("/tourism-data/Hotels_14.json").then(r => r.json()).catch(() => ({ features: [] })),
           fetch("/tourism-data/Resto_8.json").then(r => r.json()).catch(() => ({ features: [] })),
           fetch("/tourism-data/Attraction_12.json").then(r => r.json()).catch(() => ({ features: [] })),
+          fetch("/tourism-data/WaterPlaces_15.json").then(r => r.json()).catch(() => ({ features: [] })),
+          fetch("/tourism-data/UtilityServices_16.json").then(r => r.json()).catch(() => ({ features: [] })),
+          fetch("/tourism-data/PublicServices_17.json").then(r => r.json()).catch(() => ({ features: [] })),
+          fetch("/tourism-data/Landmarks_18.json").then(r => r.json()).catch(() => ({ features: [] })),
         ]);
 
         setTourismData({
           hotels: hotelsRes.features || [],
           restaurants: restaurantsRes.features || [],
           attractions: attractionsRes.features || [],
+          waterPlaces: waterPlacesRes.features || [],
+          utilityServices: utilityServicesRes.features || [],
+          publicServices: publicServicesRes.features || [],
+          landmarks: landmarksRes.features || [],
         });
       } catch (err) {
         logger.error("Failed to load tourism data:", err);
@@ -489,7 +559,8 @@ function MapScreen({
 
   const visibleFacilities = useMemo(() => {
     const combined = [...CLIMA_COMMUNITY_FACILITIES, ...mappedCustomFacilities];
-    return combined.filter((f) => activeFilters.includes(f.filterType));
+    // Show government facilities always (not filterable), filter the rest
+    return combined.filter((f) => f.filterType === "government" || activeFilters.includes(f.filterType));
   }, [mappedCustomFacilities, activeFilters]);
 
   const allReports = userReports.filter((r) => {
@@ -612,13 +683,65 @@ function MapScreen({
         onOpenModal={onOpenModal}
         activeFilters={activeFilters}
         setActiveFilters={setActiveFilters}
-        filterOpen={filterOpen}
-        setFilterOpen={setFilterOpen}
         setSearchPin={setSearchPin}
         userLocation={userLocation}
         mapRef={mapRef}
         activeLayers={activeLayers}
         onToggleLayer={toggleLayer}
+        onCategoryClick={(categoryId) => {
+          // Set only this category as active
+          setActiveFilters([categoryId]);
+          setSelectedCategory(categoryId);
+          setCategoryListOpen(true);
+        }}
+      />
+
+      {/* Category List Panel */}
+      <CategoryListPanel
+        isOpen={categoryListOpen}
+        onClose={() => {
+          setCategoryListOpen(false);
+          setSelectedCategory(null);
+          // Restore all filters when closing
+          setActiveFilters(["water", "recreation", "health", "utility"]);
+        }}
+        category={selectedCategory}
+        facilities={CLIMA_COMMUNITY_FACILITIES.filter(
+          (f) => f.filterType === selectedCategory
+        )}
+        onSelectFacility={(facility) => {
+          // Transform and show popup
+          const categoryLabels = {
+            water: "Water Place",
+            recreation: "Recreation",
+            health: "Health",
+            government: "Government Office",
+            utility: "Utility Service",
+          };
+          const facilityAsReport = {
+            ...facility,
+            title: facility.name,
+            status: facility.filterType,
+            statusLabel: categoryLabels[facility.filterType] || facility.filterType,
+            description: null,
+            isFacility: true,
+            facilityDesc: facility.desc,
+            facilityContact: facility.contact !== "N/A" ? facility.contact : null,
+          };
+          setSelectedReport(facilityAsReport);
+          setIsExiting(false);
+          // Fly to facility
+          if (mapRef.current) {
+            mapRef.current.flyTo({
+              center: [facility.lng, facility.lat],
+              zoom: 18.2,
+              pitch: 45,
+              duration: 1200,
+              essential: true,
+            });
+          }
+        }}
+        selectedFacilityId={selectedReport?.id}
       />
 
       <div className="map-container" style={{ position: "absolute", inset: 0 }}>
@@ -854,6 +977,102 @@ function MapScreen({
             </Source>
           )}
 
+          {/* Tourism: Water Places Layer */}
+          {activeLayers.waterPlaces && tourismData.waterPlaces.length > 0 && (
+            <Source
+              id="tourism-water-places"
+              type="geojson"
+              data={{
+                type: "FeatureCollection",
+                features: tourismData.waterPlaces,
+              }}
+            >
+              <Layer
+                id="water-places-layer"
+                type="circle"
+                paint={{
+                  "circle-radius": 8,
+                  "circle-color": "#3B82F6",
+                  "circle-stroke-width": 2,
+                  "circle-stroke-color": "#ffffff",
+                  "circle-opacity": 0.8,
+                }}
+              />
+            </Source>
+          )}
+
+          {/* Tourism: Utility Services Layer */}
+          {activeLayers.utilityServices && tourismData.utilityServices.length > 0 && (
+            <Source
+              id="tourism-utility-services"
+              type="geojson"
+              data={{
+                type: "FeatureCollection",
+                features: tourismData.utilityServices,
+              }}
+            >
+              <Layer
+                id="utility-services-layer"
+                type="circle"
+                paint={{
+                  "circle-radius": 8,
+                  "circle-color": "#F59E0B",
+                  "circle-stroke-width": 2,
+                  "circle-stroke-color": "#ffffff",
+                  "circle-opacity": 0.8,
+                }}
+              />
+            </Source>
+          )}
+
+          {/* Tourism: Public Services Layer */}
+          {activeLayers.publicServices && tourismData.publicServices.length > 0 && (
+            <Source
+              id="tourism-public-services"
+              type="geojson"
+              data={{
+                type: "FeatureCollection",
+                features: tourismData.publicServices,
+              }}
+            >
+              <Layer
+                id="public-services-layer"
+                type="circle"
+                paint={{
+                  "circle-radius": 8,
+                  "circle-color": "#EF4444",
+                  "circle-stroke-width": 2,
+                  "circle-stroke-color": "#ffffff",
+                  "circle-opacity": 0.8,
+                }}
+              />
+            </Source>
+          )}
+
+          {/* Tourism: Landmarks Layer */}
+          {activeLayers.landmarks && tourismData.landmarks.length > 0 && (
+            <Source
+              id="tourism-landmarks"
+              type="geojson"
+              data={{
+                type: "FeatureCollection",
+                features: tourismData.landmarks,
+              }}
+            >
+              <Layer
+                id="landmarks-layer"
+                type="circle"
+                paint={{
+                  "circle-radius": 8,
+                  "circle-color": "#A855F7",
+                  "circle-stroke-width": 2,
+                  "circle-stroke-color": "#ffffff",
+                  "circle-opacity": 0.8,
+                }}
+              />
+            </Source>
+          )}
+
           {userLocation && (
             <Marker
               longitude={userLocation.lng}
@@ -885,7 +1104,27 @@ function MapScreen({
                 if (selectedReport?.id === fac.id) {
                   closePopup();
                 } else {
-                  setSelectedReport(fac);
+                  // Transform facility data to match report structure for popup display
+                  const categoryLabels = {
+                    water: "Water Place",
+                    recreation: "Recreation",
+                    health: "Health",
+                    government: "Government Office",
+                    utility: "Utility Service",
+                  };
+                  const facilityAsReport = {
+                    ...fac,
+                    title: fac.name,
+                    status: fac.filterType,
+                    statusLabel: categoryLabels[fac.filterType] || fac.filterType,
+                    // Don't use description field - facilities will show details differently
+                    description: null,
+                    // Add facility-specific fields
+                    isFacility: true,
+                    facilityDesc: fac.desc,
+                    facilityContact: fac.contact !== "N/A" ? fac.contact : null,
+                  };
+                  setSelectedReport(facilityAsReport);
                   setIsExiting(false);
                   if (onPinClick) onPinClick();
                 }

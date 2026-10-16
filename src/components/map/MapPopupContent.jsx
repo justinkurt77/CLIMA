@@ -17,6 +17,7 @@ import {
   TreePine,
   CarFront,
   ClipboardList,
+  Phone,
 } from "lucide-react";
 
 const ICON_MAP = {
@@ -154,6 +155,32 @@ export function MapPopupContent({
             {popupGeo ? popupGeo.barangay || "N/A" : "Loading…"}
           </span>
         </div>
+        {/* For facilities: show description directly */}
+        {selectedReport.isFacility && selectedReport.facilityDesc && (
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 5 }}>
+            <FileText
+              size={11}
+              color="#f59e0b"
+              style={{ flexShrink: 0, marginTop: 2 }}
+            />
+            <span style={{ fontSize: 10, color: "#555", lineHeight: 1.4 }}>
+              {selectedReport.facilityDesc}
+            </span>
+          </div>
+        )}
+        {/* For facilities: show contact directly */}
+        {selectedReport.isFacility && selectedReport.facilityContact && (
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 5 }}>
+            <Phone
+              size={11}
+              color="#2d8119"
+              style={{ flexShrink: 0, marginTop: 2 }}
+            />
+            <span style={{ fontSize: 10, color: "#555", lineHeight: 1.4, fontWeight: 600 }}>
+              {selectedReport.facilityContact}
+            </span>
+          </div>
+        )}
         {selectedReport.createdAt && (
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <Calendar size={11} color="#888" style={{ flexShrink: 0 }} />
@@ -165,8 +192,8 @@ export function MapPopupContent({
             </span>
           </div>
         )}
-        {/* Description expandable row */}
-        {selectedReport.description && (
+        {/* Description expandable row - only for reports, not facilities */}
+        {!selectedReport.isFacility && selectedReport.description && (
           <div>
             <button
               onClick={() => setDescExpanded((v) => !v)}
