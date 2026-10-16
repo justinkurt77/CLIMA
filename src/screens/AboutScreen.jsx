@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-=======
-import { motion, AnimatePresence } from 'framer-motion';
->>>>>>> 09d1b26de69ea9879ec6e7c865890a199ff45dca
 import {
   Info,
   Shield,
@@ -216,7 +212,6 @@ export default function AboutScreen() {
     },
   ];
 
-<<<<<<< HEAD
   const techStack = [
     { icon: Code, label: 'Frontend', value: 'React 18 & Vite', color: '#61dafb' },
     { icon: Database, label: 'Database', value: 'Supabase PostgreSQL', color: '#3ecf8e' },
@@ -225,8 +220,6 @@ export default function AboutScreen() {
     { icon: Shield, label: 'Security', value: 'Row-Level Security & JWT', color: '#ef4444' },
     { icon: Zap, label: 'Animation', value: 'Framer Motion 12', color: '#a855f7' },
   ];
-=======
->>>>>>> 09d1b26de69ea9879ec6e7c865890a199ff45dca
 
   const agencies = [
     'CDRRMO Palayan',
@@ -417,7 +410,6 @@ export default function AboutScreen() {
                 and after climate emergencies.
               </p>
 
-<<<<<<< HEAD
               {/* Stat Highlights */}
               <div
                 style={{
@@ -441,8 +433,6 @@ export default function AboutScreen() {
                     19 Barangays
                   </div>
                 </div>
-=======
->>>>>>> 09d1b26de69ea9879ec6e7c865890a199ff45dca
 
                 <div
                   style={{
@@ -667,7 +657,6 @@ export default function AboutScreen() {
                         flexShrink: 0,
                       }}
                     >
-<<<<<<< HEAD
                       <Icon size={22} color={tech.color} strokeWidth={2.4} />
                     </div>
                     <div>
@@ -696,94 +685,9 @@ export default function AboutScreen() {
                   </div>
                 );
               })}
-=======
-                      ×
-                    </button>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <a
-                href="#legal"
-                onClick={(e) => { e.preventDefault(); setShowPrivacyPolicy(true); }}
-                style={{
-                  flex: 1,
-                  minWidth: 140,
-                  background: 'var(--bg-card-subtle)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 10,
-                  padding: '10px 14px',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: '#2563eb',
-                  textDecoration: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-              >
-                Privacy Policy <ExternalLink size={12} />
-              </a>
-              <a
-                href="#legal"
-                onClick={(e) => { e.preventDefault(); setShowTermsOfService(true); }}
-                style={{
-                  flex: 1,
-                  minWidth: 140,
-                  background: 'var(--bg-card-subtle)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 10,
-                  padding: '10px 14px',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: '#2563eb',
-                  textDecoration: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-              >
-                Terms of Service <ExternalLink size={12} />
-              </a>
->>>>>>> 09d1b26de69ea9879ec6e7c865890a199ff45dca
             </div>
 
-<<<<<<< HEAD
             {/* Open Source Acknowledgement Pill */}
-=======
-          {/* Contact Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.4 }}
-            style={{
-              background: 'var(--bg-card)',
-              borderRadius: 16,
-              padding: 20,
-              border: '1px solid var(--border-subtle)',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <Info size={20} strokeWidth={2.5} color="var(--text-primary)" />
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                Contact & Support
-              </h2>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <ContactRow label="ICT Division" value="Palayan City Government" />
-              <ContactRow label="Address" value="2nd Floor, City Hall, Brgy. Singalat" />
-              <ContactRow label="Email" value="ict@palayancity.gov.ph" />
-              <ContactRow label="Phone" value="09288038973" />
-            </div>
->>>>>>> 09d1b26de69ea9879ec6e7c865890a199ff45dca
             <div
               style={{
                 marginTop: 20,
@@ -1170,132 +1074,8 @@ export default function AboutScreen() {
               </button>
             </motion.div>
           </motion.div>
-<<<<<<< HEAD
         )}
       </AnimatePresence>
     </div>
   );
 }
-=======
-        </div>
-      </div>
-
-      {/* Legal Modals */}
-      <LegalModal
-        isOpen={showPrivacyPolicy}
-        onClose={() => setShowPrivacyPolicy(false)}
-        title="Privacy Policy"
-        contentUrl="/legal/privacy-policy.md"
-      />
-      <LegalModal
-        isOpen={showTermsOfService}
-        onClose={() => setShowTermsOfService(false)}
-        title="Terms of Service"
-        contentUrl="/legal/terms-of-service.md"
-      />
-    </div>
-  );
-}
-
-// Helper Components
-function FeatureCard({ icon: Icon, label, desc, delay }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3, delay }}
-      whileHover={{ scale: 1.02, y: -2 }}
-      style={{
-        background: 'var(--bg-card)',
-        borderRadius: 16,
-        padding: 16,
-        border: '1px solid var(--border-subtle)',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-        cursor: 'default',
-        transition: 'all 0.2s',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-      }}
-    >
-      <div
-        style={{
-          width: 42,
-          height: 42,
-          borderRadius: 12,
-          background: 'var(--bg-card-subtle)',
-          border: '1px solid var(--border-subtle)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Icon size={20} strokeWidth={2.5} color="var(--text-primary)" />
-      </div>
-      <div>
-        <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 2 }}>
-          {label}
-        </div>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-          {desc}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-
-function InfoPill({ label, value }) {
-  return (
-    <div
-      style={{
-        background: 'var(--bg-card-subtle)',
-        border: '1px solid var(--border-subtle)',
-        borderRadius: 10,
-        padding: '8px 14px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-      }}
-    >
-      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
-        {label}:
-      </span>
-      <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function ContactRow({ label, value }) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '10px 14px',
-        background: 'var(--bg-card-subtle)',
-        border: '1px solid var(--border-subtle)',
-        borderRadius: 10,
-      }}
-    >
-      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>
-        {label}
-      </span>
-      <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', textAlign: 'right', flex: 1, marginLeft: 16 }}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-const textStyle = {
-  fontSize: 14,
-  fontWeight: 600,
-  color: 'var(--text-primary)',
-  lineHeight: 1.6,
-  margin: 0,
-};
->>>>>>> 09d1b26de69ea9879ec6e7c865890a199ff45dca
