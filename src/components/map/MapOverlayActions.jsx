@@ -75,7 +75,7 @@ export function MapOverlayActions({
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: 8,
+              gap: 12,
               alignItems: "stretch",
               width: "100%",
             }}
@@ -122,7 +122,19 @@ export function MapOverlayActions({
             </div>
 
             {/* Bottom Row: Category Shortcuts */}
-            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "nowrap", overflowX: "auto", paddingBottom: 2, width: "100%" }}>
+            <div style={{ 
+              display: "flex", 
+              gap: 6, 
+              alignItems: "center", 
+              flexWrap: "nowrap", 
+              overflowX: "auto", 
+              overflowY: "visible",
+              paddingBottom: 2, 
+              paddingTop: 4,
+              width: "100%",
+              WebkitOverflowScrolling: "touch",
+              marginTop: 4,
+            }}>
               {[
                 { id: "water", label: "Water", color: "#3B82F6", emoji: "💧" },
                 { id: "recreation", label: "Recreation", color: "#16a34a", emoji: "🏖️" },
@@ -143,7 +155,7 @@ export function MapOverlayActions({
                       display: "flex",
                       alignItems: "center",
                       gap: 6,
-                      padding: "6px 12px",
+                      padding: "8px 12px",
                       borderRadius: 16,
                       background: isActive
                         ? isDark
