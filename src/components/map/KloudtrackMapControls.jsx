@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Flame,
@@ -245,6 +245,19 @@ export function KloudtrackMapControls({
   const openDropdown = externalOpenDropdown !== undefined ? externalOpenDropdown : internalOpen;
   const setOpenDropdown = externalSetOpenDropdown || setInternalOpen;
 
+  // Mobile detection for compact controls (< 1024px matches CLIMA mobile view)
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 1024 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   if (isMapFullView === false) return null;
 
   const currentStation =
@@ -268,14 +281,15 @@ export function KloudtrackMapControls({
       <div style={{ position: "relative", flexShrink: 0 }}>
         <button
           onClick={() => setOpenDropdown(isMetricOpen ? null : "metric")}
+          className="kloud-metric-btn"
           style={{
-            height: 56,
+            height: isMobile ? 42 : 56,
             borderRadius: 40,
-            padding: "0 16px 0 12px",
+            padding: isMobile ? "0 10px 0 8px" : "0 16px 0 12px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            gap: 9,
+            gap: isMobile ? 6 : 9,
             border: `2px solid ${currentConfig.color}`,
             background: isDark
               ? "rgba(18, 18, 20, 0.96)"
@@ -289,13 +303,13 @@ export function KloudtrackMapControls({
             flexShrink: 0,
             transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}
-          title="Select IoT Weather Metric"
+          title={`IoT Weather Metric: ${currentConfig.label} (${currentConfig.value})`}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 8 }}>
             <div
               style={{
-                width: 28,
-                height: 28,
+                width: isMobile ? 24 : 28,
+                height: isMobile ? 24 : 28,
                 borderRadius: "50%",
                 background: currentConfig.color,
                 display: "flex",
@@ -306,23 +320,26 @@ export function KloudtrackMapControls({
                 boxShadow: `0 2px 8px ${currentConfig.glowColor}`,
               }}
             >
-              <MetricIcon size={14} strokeWidth={2.4} />
+              <MetricIcon size={isMobile ? 13 : 14} strokeWidth={2.4} />
             </div>
 
-            <span
-              style={{
-                fontSize: 13,
-                fontWeight: 800,
-                color: isDark ? "#ffffff" : "#09090b",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {currentConfig.label}
-            </span>
+            {!isMobile && (
+              <span
+                className="kloud-metric-label"
+                style={{
+                  fontSize: 13,
+                  fontWeight: 800,
+                  color: isDark ? "#ffffff" : "#09090b",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {currentConfig.label}
+              </span>
+            )}
 
             <span
               style={{
-                fontSize: 11.5,
+                fontSize: isMobile ? 11 : 11.5,
                 fontWeight: 800,
                 color: currentConfig.color,
                 background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
@@ -505,14 +522,15 @@ export function KloudtrackMapControls({
       <div style={{ position: "relative", flexShrink: 0 }}>
         <button
           onClick={() => setOpenDropdown(isScaleOpen ? null : "scale")}
+          className="kloud-scale-btn"
           style={{
-            height: 56,
+            height: isMobile ? 42 : 56,
             borderRadius: 40,
-            padding: "0 16px 0 12px",
+            padding: isMobile ? "0 10px" : "0 16px 0 12px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            gap: 10,
+            gap: isMobile ? 6 : 10,
             background: isDark
               ? "rgba(18, 18, 20, 0.94)"
               : "rgba(255, 255, 255, 0.96)",
@@ -534,14 +552,14 @@ export function KloudtrackMapControls({
             flexShrink: 0,
             transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}
-          title="Toggle Scale Advisory Legend"
+          title={`Advisory Scale: ${currentConfig.label} (${currentConfig.value} - ${currentConfig.status})`}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 9 }}>
             <div
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
+                width: isMobile ? 24 : 28,
+                height: isMobile ? 24 : 28,
+                borderRadius: isMobile ? 6 : 8,
                 background: currentConfig.color,
                 display: "flex",
                 alignItems: "center",
@@ -551,44 +569,46 @@ export function KloudtrackMapControls({
                 boxShadow: `0 2px 8px ${currentConfig.glowColor || "rgba(239,68,68,0.4)"}`,
               }}
             >
-              <MetricIcon size={14} strokeWidth={2.4} />
+              <MetricIcon size={isMobile ? 13 : 14} strokeWidth={2.4} />
             </div>
 
-            <div style={{ textAlign: "left", lineHeight: 1.2 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 800,
-                  color: isDark ? "#ffffff" : "#09090b",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {currentConfig.label} Scale
+            {!isMobile && (
+              <div className="kloud-scale-text-block" style={{ textAlign: "left", lineHeight: 1.2 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: isDark ? "#ffffff" : "#09090b",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {currentConfig.label} Scale
+                </div>
+                <div
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    color: currentConfig.statusColor,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {stationName.replace(" - Palayan City", "")}: {currentConfig.value} ({currentConfig.status})
+                </div>
               </div>
-              <div
-                style={{
-                  fontSize: 10.5,
-                  fontWeight: 700,
-                  color: currentConfig.statusColor,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {stationName.replace(" - Palayan City", "")}: {currentConfig.value} ({currentConfig.status})
-              </div>
-            </div>
+            )}
           </div>
 
           {isScaleOpen ? (
             <ChevronUp
-              size={16}
+              size={isMobile ? 14 : 16}
               color={isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)"}
-              style={{ marginLeft: 4, flexShrink: 0 }}
+              style={{ marginLeft: isMobile ? 2 : 4, flexShrink: 0 }}
             />
           ) : (
             <ChevronDown
-              size={16}
+              size={isMobile ? 14 : 16}
               color={isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)"}
-              style={{ marginLeft: 4, flexShrink: 0 }}
+              style={{ marginLeft: isMobile ? 2 : 4, flexShrink: 0 }}
             />
           )}
         </button>

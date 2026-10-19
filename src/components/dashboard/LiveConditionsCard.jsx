@@ -37,7 +37,7 @@ function getWeatherIconComponent(iconName, size = 14) {
   }
 }
 
-export default function LiveConditionsCard({
+function LiveConditionsCard({
   hourlyForecast = [],
   currentTemp = 28,
   currentHeatIndex,
@@ -185,10 +185,10 @@ export default function LiveConditionsCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-30px" }}
-      transition={{ duration: 0.5, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+      viewport={{ once: true, margin: "-20px" }}
+      transition={{ duration: 0.35, delay: 0.04, ease: [0.16, 1, 0.3, 1] }}
       className="desktop-card desktop-live-conditions-card"
     >
       {/* ── CARD HEADER ── */}
@@ -521,3 +521,6 @@ export default function LiveConditionsCard({
     </motion.div>
   );
 }
+
+const MemoizedLiveConditionsCard = React.memo(LiveConditionsCard);
+export default MemoizedLiveConditionsCard;

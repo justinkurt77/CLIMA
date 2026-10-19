@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import DOMPurify from "dompurify";
 import {
@@ -58,6 +58,21 @@ function getWeatherIcon(code, isDay = true) {
   if ([95, 96, 99].includes(code)) return "CloudLightning";
   return isDay ? "Sun" : "Moon";
 }
+
+const slideVariants = {
+  enter: (direction) => ({
+    opacity: 0,
+    y: direction === "down" ? 28 : -28,
+  }),
+  center: {
+    opacity: 1,
+    y: 0,
+  },
+  exit: (direction) => ({
+    opacity: 0,
+    y: direction === "down" ? -28 : 28,
+  }),
+};
 
 function getWeatherIconColor(iconName) {
   if (iconName === "Sun") return "#eab308";
@@ -200,8 +215,16 @@ export default function HomeScreen({
     const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
     if (!el) return;
 
+    let ticking = false;
     const handleScroll = () => {
-      setIsScrolled(el.scrollTop > 15);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrolled = el.scrollTop > 18;
+          setIsScrolled((prev) => (prev !== scrolled ? scrolled : prev));
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     handleScroll();
@@ -217,6 +240,118 @@ export default function HomeScreen({
   });
   const [humidity, setHumidity] = useState(85);
   const [homePage, setHomePage] = useState(1); // 1 = Weather Overview, 2 = Telemetry Dashboard
+  const [slideDirection, setSlideDirection] = useState("down");
+
+  const navigateToSlide = useCallback((targetPage, direction = null) => {
+    if (targetPage === homePage) return;
+    const dir = direction || (targetPage > homePage ? "down" : "up");
+    setSlideDirection(dir);
+    setHomePage(targetPage);
+    const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+    if (el) {
+      el.scrollTo({ top: 0, behavior: "instant" });
+    }
+  }, [homePage]);
+
+  // Auto-slide transition when scrolling further past boundary
+  useEffect(() => {
+    const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+    if (!el) return;
+
+    let isTransitioning = false;
+    let accumulatedDelta = 0;
+    let resetTimer = null;
+
+    const handleWheel = (e) => {
+      if (isTransitioning) return;
+
+      // When on Slide 1 and user scrolls down further at the bottom
+      if (homePage === 1 && e.deltaY > 0) {
+        const isAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 35;
+        if (isAtBottom) {
+          accumulatedDelta += e.deltaY;
+          clearTimeout(resetTimer);
+          resetTimer = setTimeout(() => { accumulatedDelta = 0; }, 300);
+
+          if (accumulatedDelta >= 40) {
+            isTransitioning = true;
+            accumulatedDelta = 0;
+            setSlideDirection("down");
+            setHomePage(2);
+            el.scrollTo({ top: 0, behavior: "instant" });
+            setTimeout(() => { isTransitioning = false; }, 600);
+          }
+        }
+      }
+      // When on Slide 2 and user scrolls up at the top
+      else if (homePage === 2 && e.deltaY < 0) {
+        const isAtTop = el.scrollTop <= 5;
+        if (isAtTop) {
+          accumulatedDelta += Math.abs(e.deltaY);
+          clearTimeout(resetTimer);
+          resetTimer = setTimeout(() => { accumulatedDelta = 0; }, 300);
+
+          if (accumulatedDelta >= 40) {
+            isTransitioning = true;
+            accumulatedDelta = 0;
+            setSlideDirection("up");
+            setHomePage(1);
+            setTimeout(() => {
+              el.scrollTo({ top: el.scrollHeight, behavior: "instant" });
+            }, 60);
+            setTimeout(() => { isTransitioning = false; }, 600);
+          }
+        }
+      }
+    };
+
+    let touchStartY = 0;
+    const handleTouchStart = (e) => {
+      if (e.touches && e.touches[0]) {
+        touchStartY = e.touches[0].clientY;
+      }
+    };
+
+    const handleTouchEnd = (e) => {
+      if (isTransitioning || !e.changedTouches || !e.changedTouches[0]) return;
+      const touchEndY = e.changedTouches[0].clientY;
+      const diffY = touchStartY - touchEndY; // positive = swiped up (scrolling down)
+
+      if (homePage === 1 && diffY > 50) {
+        const isAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 35;
+        if (isAtBottom) {
+          isTransitioning = true;
+          setSlideDirection("down");
+          setHomePage(2);
+          el.scrollTo({ top: 0, behavior: "instant" });
+          setTimeout(() => { isTransitioning = false; }, 600);
+        }
+      } else if (homePage === 2 && diffY < -50) {
+        const isAtTop = el.scrollTop <= 5;
+        if (isAtTop) {
+          isTransitioning = true;
+          setSlideDirection("up");
+          setHomePage(1);
+          setTimeout(() => {
+            el.scrollTo({ top: el.scrollHeight, behavior: "instant" });
+          }, 60);
+          setTimeout(() => { isTransitioning = false; }, 600);
+        }
+      }
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: true });
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchend", handleTouchEnd);
+      clearTimeout(resetTimer);
+    };
+  }, [homePage]);
+
   const [windSpeed, setWindSpeed] = useState(1.2);
   const [windDirection, setWindDirection] = useState("North");
   const [rainChance, setRainChance] = useState(0);
@@ -755,36 +890,6 @@ export default function HomeScreen({
             <div className="desktop-loc-date">{formattedDate}</div>
           </div>
 
-          {/* Center: Page 1 / Page 2 Switcher */}
-          <div className="desktop-page-switcher">
-            <button
-              type="button"
-              onClick={() => {
-                setHomePage(1);
-                const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
-                el?.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className={`desktop-page-tab ${homePage === 1 ? "active" : ""}`}
-              title="View Weather Overview"
-            >
-              <Sun size={14} strokeWidth={2.4} />
-              <span>Page 1: Weather</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setHomePage(2);
-                const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
-                el?.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className={`desktop-page-tab ${homePage === 2 ? "active" : ""}`}
-              title="View Live Station Telemetry Dashboard"
-            >
-              <Activity size={14} strokeWidth={2.4} />
-              <span>Page 2: Dashboard</span>
-            </button>
-          </div>
-
           {/* Right: Search, Report Button, and Theme Toggle */}
           <div className="desktop-header-actions">
             {/* Search Button & Expandable Input */}
@@ -850,18 +955,27 @@ export default function HomeScreen({
           </div>
         </header>
 
-        {homePage === 1 ? (
-          <>
-            {/* 2-COLUMN MAIN DASHBOARD GRID */}
-            <main className="desktop-main-grid">
+        <AnimatePresence mode="wait" custom={slideDirection}>
+          {homePage === 1 ? (
+            <motion.div
+              key="desktop-slide-1"
+              custom={slideDirection}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
+              {/* 2-COLUMN MAIN DASHBOARD GRID */}
+              <main className="desktop-main-grid">
           {/* ──── LEFT COLUMN (~62%) ──── */}
           <div className="desktop-left-column">
             {/* 1. HERO WEATHER CARD */}
             <motion.div 
-              initial={{ opacity: 0, y: 28, scale: 0.985 }}
-              whileInView={{ opacity: 1, y: 0, scale: 1 }}
-              viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-20px" }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               className="desktop-hero-card"
               style={{
                 backgroundColor: "#161922",
@@ -912,7 +1026,7 @@ export default function HomeScreen({
                             position: "absolute",
                             inset: 0,
                             backgroundImage: `url('${heroBgUrl}')`,
-                            backgroundPosition: "center",
+                            backgroundPosition: "center 22%",
                             backgroundSize: "cover",
                             backgroundRepeat: "no-repeat",
                           }}
@@ -944,10 +1058,10 @@ export default function HomeScreen({
 
             {/* 2. HOURLY FORECAST ROW */}
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.5, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+              viewport={{ once: true, margin: "-20px" }}
+              transition={{ duration: 0.35, delay: 0.04, ease: [0.16, 1, 0.3, 1] }}
               className="desktop-hourly-card"
             >
               <div className="desktop-hourly-grid">
@@ -974,10 +1088,10 @@ export default function HomeScreen({
 
             {/* 3. 7-DAY FORECAST GRID */}
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.5, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+              viewport={{ once: true, margin: "-20px" }}
+              transition={{ duration: 0.35, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
               className="desktop-weekly-card"
             >
               <div className="desktop-weekly-grid">
@@ -1022,10 +1136,10 @@ export default function HomeScreen({
 
             {/* 2. PALAYAN BARANGAYS CARD */}
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.5, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+              viewport={{ once: true, margin: "-20px" }}
+              transition={{ duration: 0.35, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
               className="desktop-card desktop-recent-card"
             >
               <div className="desktop-card-header">
@@ -1130,10 +1244,10 @@ export default function HomeScreen({
 
             {/* 3. WIND MAP / RADAR CARD */}
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-30px" }}
-              transition={{ duration: 0.5, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+              viewport={{ once: true, margin: "-20px" }}
+              transition={{ duration: 0.35, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
               className="desktop-card desktop-wind-card"
               onClick={() => setActiveScreen("maps")}
               title="Click to open interactive map"
@@ -1183,57 +1297,45 @@ export default function HomeScreen({
           </div>
         </main>
 
-        {/* Page 2 Telemetry Callout Card */}
-        <div className="home-page-transition-card">
-          <div className="transition-card-content">
-            <div className="transition-badge">
-              <Activity size={13} strokeWidth={2.4} />
-              <span>PAGE 2: LIVE TELEMETRY</span>
-            </div>
-            <div className="transition-title">Live Station Telemetry & Historical Charts</div>
-            <div className="transition-desc">
-              Explore 24-hour heat index trends, barometric curves, wind logs, and microclimate analytics from Palayan physical AWS ground stations.
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setHomePage(2);
-              const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
-              el?.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className="transition-btn"
-          >
-            <span>Open Page 2 Dashboard</span>
-            <ArrowRight size={16} strokeWidth={2.4} />
-          </button>
-        </div>
-      </>
-    ) : (
-      /* Page 2: Dedicated Station Telemetry Dashboard */
-      <div className="desktop-page-two-container">
-        <div className="page-two-top-bar">
-          <button
-            type="button"
-            onClick={() => {
-              setHomePage(1);
-              const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
-              el?.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className="page-two-back-btn"
-          >
-            <ArrowLeft size={16} strokeWidth={2.4} />
-            <span>← Back to Page 1: Weather Overview</span>
-          </button>
-          <div className="page-two-tag">
-            <span className="live-dot" />
-            <span>PAGE 2: IOT STATION TELEMETRY</span>
-          </div>
-        </div>
-
-        <LazyKloudtechDashboard isDark={isDark} liveData={liveStationData} />
-      </div>
-    )}
+              {/* Minimal Slide Indicator */}
+              <div
+                className="slide-scroll-indicator"
+                onClick={() => navigateToSlide(2, "down")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: "20px 0 28px",
+                  color: "var(--text-muted)",
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "color 0.2s ease",
+                  userSelect: "none",
+                }}
+              >
+                <Activity size={14} color="var(--accent-orange)" strokeWidth={2.4} />
+                <span>Scroll down for Slide 2: Station Telemetry</span>
+                <ChevronDown size={14} strokeWidth={2.4} />
+              </div>
+            </motion.div>
+          ) : (
+            /* Page 2: Dedicated Station Telemetry Dashboard */
+            <motion.div
+              key="desktop-slide-2"
+              custom={slideDirection}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              className="desktop-page-two-container"
+            >
+              <LazyKloudtechDashboard isDark={isDark} liveData={liveStationData} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Floating Scroll-to-Top Command Button */}
         <AnimatePresence>
@@ -1346,38 +1448,17 @@ export default function HomeScreen({
           </div>
         </div>
 
-        {/* Mobile Page 1 / Page 2 Switcher */}
-        <div className="mobile-page-switcher">
-          <button
-            type="button"
-            onClick={() => {
-              setHomePage(1);
-              const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
-              el?.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className={`mobile-page-tab ${homePage === 1 ? "active" : ""}`}
-            title="View Weather Overview"
-          >
-            <Sun size={14} strokeWidth={2.4} />
-            <span>Page 1: Weather</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setHomePage(2);
-              const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
-              el?.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className={`mobile-page-tab ${homePage === 2 ? "active" : ""}`}
-            title="View Live Station Telemetry Dashboard"
-          >
-            <Activity size={14} strokeWidth={2.4} />
-            <span>Page 2: Dashboard</span>
-          </button>
-        </div>
-
-        {homePage === 1 ? (
-          <>
+        <AnimatePresence mode="wait" custom={slideDirection}>
+          {homePage === 1 ? (
+            <motion.div
+              key="mobile-slide-1"
+              custom={slideDirection}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
         {/* ── OFFICIAL ADVISORIES SECTION ── */}
         {advisories.length > 0 && (
           <div style={{ padding: "14px 16px 0" }}>
@@ -1687,7 +1768,7 @@ export default function HomeScreen({
                           position: "absolute",
                           inset: 0,
                           backgroundImage: `url('${heroBgUrl}')`,
-                          backgroundPosition: "center",
+                          backgroundPosition: "center 22%",
                           backgroundSize: "cover",
                           backgroundRepeat: "no-repeat",
                         }}
@@ -2190,85 +2271,44 @@ export default function HomeScreen({
           </div>
         </div>
 
-        {/* Mobile Page 1 Transition Card to Page 2 */}
-        <div
-          style={{
-            margin: "20px 16px 24px",
-            padding: "20px 20px",
-            borderRadius: 22,
-            background: "var(--bg-card)",
-            border: "1px solid var(--border-subtle)",
-            boxShadow: "var(--shadow-card)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 14,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span className="transition-badge">
-              <span className="live-dot" /> Page 2 Available
-            </span>
-            <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700 }}>5 Live Sensor Charts</span>
-          </div>
-          <div>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>
-              IoT Station Telemetry & Historical Charts
-            </h3>
-            <p style={{ margin: "5px 0 0", fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.45 }}>
-              Detailed sensor telemetry and historical trends from Kloudtech Palayan AWS are located on Page 2 for smooth, zero-lag browsing.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setHomePage(2);
-              const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
-              el?.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className="transition-btn"
-            style={{ width: "100%", justifyContent: "center" }}
-          >
-            <span>Open Page 2: Station Telemetry</span>
-            <ArrowRight size={16} strokeWidth={2.4} />
-          </button>
-        </div>
-      </>
-    ) : (
-      /* Mobile Page 2 View */
-      <div style={{ padding: "16px 16px 40px", display: "flex", flexDirection: "column", gap: 16 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "12px 16px",
-            borderRadius: 18,
-            background: "var(--bg-card)",
-            border: "1px solid var(--border-subtle)",
-            boxShadow: "var(--shadow-card)",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => {
-              setHomePage(1);
-              const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
-              el?.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className="page-two-back-btn"
-          >
-            <ArrowLeft size={15} strokeWidth={2.4} />
-            <span>← Back to Page 1</span>
-          </button>
-          <div className="page-two-tag">
-            <span className="live-dot" />
-            <span>PAGE 2: TELEMETRY</span>
-          </div>
-        </div>
-
-        <LazyKloudtechDashboard isDark={isDark} liveData={liveStationData} />
-      </div>
-    )}
+              {/* Minimal Slide Indicator */}
+              <div
+                className="slide-scroll-indicator"
+                onClick={() => navigateToSlide(2, "down")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: "16px 0 24px",
+                  color: "var(--text-muted)",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+              >
+                <Activity size={14} color="var(--accent-orange)" strokeWidth={2.4} />
+                <span>Scroll down for Slide 2: Station Telemetry</span>
+                <ChevronDown size={14} strokeWidth={2.4} />
+              </div>
+            </motion.div>
+          ) : (
+            /* Mobile Page 2 View */
+            <motion.div
+              key="mobile-slide-2"
+              custom={slideDirection}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              style={{ padding: "16px 16px 40px", display: "flex", flexDirection: "column", gap: 16 }}
+            >
+              <LazyKloudtechDashboard isDark={isDark} liveData={liveStationData} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

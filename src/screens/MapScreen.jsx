@@ -36,6 +36,7 @@ import {
   Moon,
   Sun,
   Map as MapIcon,
+  HeartPulse,
 } from "lucide-react";
 
 const ICON_MAP = {
@@ -55,62 +56,64 @@ const STATUS_COLORS = {
   pending: "#ffffff",
   inprogress: "#e4e4e7",
   resolved: "#a1a1aa",
-  water: "#0284c7",
-  recreation: "#16a34a",
-  health: "#dc2626",
-  government: "#71717a",
+  water: "#38bdf8",
+  recreation: "#22c55e",
+  health: "#ef4444",
+  utility: "#f59e0b",
+  government: "#a1a1aa",
 };
 const STATUS_BG = {
   pending: "rgba(255, 255, 255, 0.2)",
   inprogress: "rgba(255, 255, 255, 0.12)",
   resolved: "rgba(255, 255, 255, 0.08)",
-  water: "rgba(2, 132, 199, 0.18)",
-  recreation: "rgba(22, 163, 74, 0.18)",
-  health: "rgba(220, 38, 38, 0.18)",
-  government: "rgba(113, 113, 122, 0.18)",
+  water: "rgba(56, 189, 248, 0.18)",
+  recreation: "rgba(34, 197, 94, 0.18)",
+  health: "rgba(239, 68, 68, 0.18)",
+  utility: "rgba(245, 158, 11, 0.18)",
+  government: "rgba(161, 161, 170, 0.18)",
 };
 
 const CLIMA_COMMUNITY_FACILITIES = [
   // Water Places
-  { id: "wp1", name: "Aulo Dam", lat: 15.517876609612005, lng: 121.1165842455089, icon: "💧", pinColor: "#3B82F6", filterType: "water", contact: "09208125946", desc: "Tourist attraction" },
-  { id: "wp2", name: "The Nest Resort & Campground", lat: 15.489973584331299, lng: 121.10963951359219, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "09171364116", desc: "Resort hotel" },
-  { id: "wp3", name: "Fort Magsaysay Reservoir", lat: 15.413111, lng: 121.109845, icon: "💧", pinColor: "#3B82F6", filterType: "water", contact: "N/A", desc: "Reservoir" },
-  { id: "wp4", name: "Villa Esmeralda Bryan's Resort Hotel and Restaurant", lat: 15.586414689864885, lng: 121.11623903883321, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Hotel" },
-  { id: "wp5", name: "Carl Matthew's Resort", lat: 15.574579510490553, lng: 121.09566459318246, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "09688505624", desc: "Resort hotel" },
-  { id: "wp6", name: "Nature Escape Farm and Resort", lat: 15.57867695647252, lng: 121.1255242506916, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "09284009629", desc: "Hotel" },
-  { id: "wp7", name: "Binhi Nature Farm", lat: 15.584092161875324, lng: 121.13578154478633, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "09559220120", desc: "Farmstay" },
-  { id: "wp8", name: "SUMMER VILLE FARM AND RESORT", lat: 15.592286705457264, lng: 121.12781604765748, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Hotel" },
-  { id: "wp9", name: "Damian's Farm and Pool", lat: 15.590737, lng: 121.128343, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Resort hotel" },
-  { id: "wp10", name: "Doña Josefa Bridge and River Park", lat: 15.428691067045309, lng: 121.14962575277522, icon: "💧", pinColor: "#3B82F6", filterType: "water", contact: "N/A", desc: "Tourist attraction" },
-  { id: "wp11", name: "Fishing Spot", lat: 15.567804894232617, lng: 121.08898899761066, icon: "💧", pinColor: "#3B82F6", filterType: "water", contact: "N/A", desc: "Tourist attraction" },
-  { id: "wp12", name: "R&S Abeleda's Private Resort", lat: 15.541400639670405, lng: 121.05464063799428, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "09230847749", desc: "Swimming pool" },
-  { id: "wp13", name: "Rustic River Resort", lat: 15.578890432686926, lng: 121.09222089890493, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Villa" },
-  { id: "wp14", name: "Villa Mikaella Private Resort", lat: 15.576062475813234, lng: 121.12068749754528, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "09171472741", desc: "Villa" },
-  { id: "wp15", name: "Chloe Summer Resort", lat: 15.551626642367127, lng: 121.11347977096071, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Villa" },
-  { id: "wp16", name: "Aves Resort", lat: 15.413869109977222, lng: 121.08296888922769, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Tourist attraction" },
-  { id: "wp17", name: "Gato's Crib - The Lake House", lat: 15.569618776309095, lng: 121.09399552658115, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "0444638460", desc: "Resort hotel" },
-  { id: "wp18", name: "Blue Sky Private Resort", lat: 15.530054707422712, lng: 121.05818567083095, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Ski resort" },
-  { id: "wp19", name: "VELA Private Pool", lat: 14.362079864132907, lng: 121.3370099705361, icon: "🏖️", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Homestay" },
+  { id: "wp1", name: "Aulo Dam", lat: 15.517876609612005, lng: 121.1165842455089, icon: "Droplet", pinColor: "#3B82F6", filterType: "water", contact: "09208125946", desc: "Tourist attraction" },
+  { id: "wp2", name: "The Nest Resort & Campground", lat: 15.489973584331299, lng: 121.10963951359219, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "09171364116", desc: "Resort hotel" },
+  { id: "wp3", name: "Fort Magsaysay Reservoir", lat: 15.413111, lng: 121.109845, icon: "Droplet", pinColor: "#3B82F6", filterType: "water", contact: "N/A", desc: "Reservoir" },
+  { id: "wp4", name: "Villa Esmeralda Bryan's Resort Hotel and Restaurant", lat: 15.586414689864885, lng: 121.11623903883321, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Hotel" },
+  { id: "wp5", name: "Carl Matthew's Resort", lat: 15.574579510490553, lng: 121.09566459318246, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "09688505624", desc: "Resort hotel" },
+  { id: "wp6", name: "Nature Escape Farm and Resort", lat: 15.57867695647252, lng: 121.1255242506916, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "09284009629", desc: "Hotel" },
+  { id: "wp7", name: "Binhi Nature Farm", lat: 15.584092161875324, lng: 121.13578154478633, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "09559220120", desc: "Farmstay" },
+  { id: "wp8", name: "SUMMER VILLE FARM AND RESORT", lat: 15.592286705457264, lng: 121.12781604765748, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Hotel" },
+  { id: "wp9", name: "Damian's Farm and Pool", lat: 15.590737, lng: 121.128343, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Resort hotel" },
+  { id: "wp10", name: "Doña Josefa Bridge and River Park", lat: 15.428691067045309, lng: 121.14962575277522, icon: "Droplet", pinColor: "#3B82F6", filterType: "water", contact: "N/A", desc: "Tourist attraction" },
+  { id: "wp11", name: "Fishing Spot", lat: 15.567804894232617, lng: 121.08898899761066, icon: "Droplet", pinColor: "#3B82F6", filterType: "water", contact: "N/A", desc: "Tourist attraction" },
+  { id: "wp12", name: "R&S Abeleda's Private Resort", lat: 15.541400639670405, lng: 121.05464063799428, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "09230847749", desc: "Swimming pool" },
+  { id: "wp13", name: "Rustic River Resort", lat: 15.578890432686926, lng: 121.09222089890493, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Villa" },
+  { id: "wp14", name: "Villa Mikaella Private Resort", lat: 15.576062475813234, lng: 121.12068749754528, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "09171472741", desc: "Villa" },
+  { id: "wp15", name: "Chloe Summer Resort", lat: 15.551626642367127, lng: 121.11347977096071, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Villa" },
+  { id: "wp16", name: "Aves Resort", lat: 15.413869109977222, lng: 121.08296888922769, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Tourist attraction" },
+  { id: "wp17", name: "Gato's Crib - The Lake House", lat: 15.569618776309095, lng: 121.09399552658115, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "0444638460", desc: "Resort hotel" },
+  { id: "wp18", name: "Blue Sky Private Resort", lat: 15.530054707422712, lng: 121.05818567083095, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Ski resort" },
+  { id: "wp19", name: "VELA Private Pool", lat: 14.362079864132907, lng: 121.3370099705361, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Homestay" },
   
   // Utility Services
-  { id: "us1", name: "NEECO II Area 2 Palayan City Branch Office", lat: 15.54354600100982, lng: 121.08609465767155, icon: "⚡", pinColor: "#f59e0b", filterType: "utility", contact: "N/A", desc: "Electric utility company branch office" },
-  { id: "us2", name: "Palayan City Water District", lat: 15.543611484504744, lng: 121.08411454397788, icon: "⚡", pinColor: "#f59e0b", filterType: "utility", contact: "09188074263", desc: "Water utility company" },
-  { id: "us3", name: "Balibago Waterworks", lat: 15.563667717107219, lng: 121.10125996097958, icon: "⚡", pinColor: "#f59e0b", filterType: "utility", contact: "N/A", desc: "Water utility facility" },
+  { id: "us1", name: "NEECO II Area 2 Palayan City Branch Office", lat: 15.54354600100982, lng: 121.08609465767155, icon: "Zap", pinColor: "#f59e0b", filterType: "utility", contact: "N/A", desc: "Electric utility company branch office" },
+  { id: "us2", name: "Palayan City Water District", lat: 15.543611484504744, lng: 121.08411454397788, icon: "Droplet", pinColor: "#0284c7", filterType: "water", statusLabel: "Water District", contact: "09188074263", desc: "Water utility company" },
+  { id: "us3", name: "Balibago Waterworks", lat: 15.563667717107219, lng: 121.10125996097958, icon: "Droplet", pinColor: "#0284c7", filterType: "water", statusLabel: "Water Service", contact: "N/A", desc: "Water utility facility" },
   
   // Public Services & Government Offices
-  { id: "ps1", name: "CDRRMO", lat: 15.559702386051606, lng: 121.09986385339798, icon: "🏛️", pinColor: "#71717a", filterType: "government", contact: "09669109674", desc: "City Disaster Risk Reduction and Management Office" },
-  { id: "ps2", name: "PCH", lat: 15.546288564337402, lng: 121.08874087581593, icon: "🏥", pinColor: "#dc2626", filterType: "health", contact: "N/A", desc: "Palayan City Hospital" },
-  { id: "ps3", name: "BFP", lat: 15.559549289187666, lng: 121.09959214158702, icon: "🏛️", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Bureau of Fire Protection" },
+  { id: "ps1", name: "CDRRMO", lat: 15.559702386051606, lng: 121.09986385339798, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "09669109674", desc: "City Disaster Risk Reduction and Management Office" },
+  { id: "ps2", name: "PCH", lat: 15.546288564337402, lng: 121.08874087581593, icon: "HeartPulse", pinColor: "#dc2626", filterType: "health", contact: "N/A", desc: "Palayan City Hospital" },
+  { id: "ps3", name: "BFP", lat: 15.559549289187666, lng: 121.09959214158702, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Bureau of Fire Protection" },
   
   // Landmarks (gray dots, always visible - not filterable)
-  { id: "lm1", name: "Bulwagan ng mga Katutubo, Bacao Reforestation", lat: 15.445006790219457, lng: 121.12659487316665, icon: "⚫", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Catholic church" },
-  { id: "lm2", name: "Palayan City Mini-Park", lat: 15.540634807647502, lng: 121.07980971763624, icon: "⚫", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Park" },
-  { id: "lm3", name: "Palayan City Plaza Conception", lat: 15.542007621587873, lng: 121.08566821450574, icon: "⚫", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Park" },
-  { id: "lm4", name: "Palayan City Park", lat: 15.559201854690505, lng: 121.09869796044576, icon: "⚫", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Park" },
-  { id: "lm5", name: "Provincial Government of Nueva Ecija", lat: 15.556540176741274, lng: 121.09516861659826, icon: "🏛️", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Local government office" },
-  { id: "lm6", name: "Central Business Hub", lat: 15.565424067232565, lng: 121.09771234275384, icon: "⚫", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Land planning authority" },
-  { id: "lm7", name: "Nueva Ecija Convention Center", lat: 15.558247241224999, lng: 121.0979418073124, icon: "⚫", pinColor: "#71717a", filterType: "government", contact: "09633680185", desc: "Convention center" },
-  { id: "lm8", name: "Sta. Cecilia Parish Church", lat: 15.542201550931459, lng: 121.08456810805654, icon: "⚫", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Catholic church" },
+  { id: "lm1", name: "Bulwagan ng mga Katutubo, Bacao Reforestation", lat: 15.445006790219457, lng: 121.12659487316665, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Catholic church" },
+  { id: "lm2", name: "Palayan City Mini-Park", lat: 15.540634807647502, lng: 121.07980971763624, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Park" },
+  { id: "lm3", name: "Palayan City Plaza Conception", lat: 15.542007621587873, lng: 121.08566821450574, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Park" },
+  { id: "lm4", name: "Palayan City Park", lat: 15.559201854690505, lng: 121.09869796044576, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Park" },
+  { id: "lm5", name: "Provincial Government of Nueva Ecija", lat: 15.556540176741274, lng: 121.09516861659826, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Local government office" },
+  { id: "lm6", name: "Central Business Hub", lat: 15.565424067232565, lng: 121.09771234275384, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Land planning authority" },
+  { id: "lm7", name: "Nueva Ecija Convention Center", lat: 15.558247241224999, lng: 121.0979418073124, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "09633680185", desc: "Convention center" },
+  { id: "lm8", name: "Sta. Cecilia Parish Church", lat: 15.542201550931459, lng: 121.08456810805654, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Catholic church" },
 ];
 
 const buildingsLayer = {
@@ -144,7 +147,7 @@ import { logger } from "../lib/logger";
 import { PALAYAN_KLOUDTECH_STATIONS, fetchKloudtechDashboard } from "../services/kloudtechService";
 import { KloudtrackStationMarker } from "../components/map/KloudtrackStationMarker";
 import { KloudtrackStationPopup } from "../components/map/KloudtrackStationPopup";
-import { KloudtrackMapControls, IOT_METRIC_CONFIG } from "../components/map/KloudtrackMapControls";
+import { IOT_METRIC_CONFIG } from "../components/map/KloudtrackMapControls";
 import {
   PIN_CATEGORIES,
   getPinnedLocations,
@@ -560,7 +563,13 @@ function MapScreen({
   const visibleFacilities = useMemo(() => {
     const combined = [...CLIMA_COMMUNITY_FACILITIES, ...mappedCustomFacilities];
     // Show government facilities always (not filterable), filter the rest
-    return combined.filter((f) => f.filterType === "government" || activeFilters.includes(f.filterType));
+    return combined.filter(
+      (f) =>
+        f.filterType === "government" ||
+        activeFilters.includes(f.filterType) ||
+        (f.icon === "Droplet" && activeFilters.includes("water")) ||
+        (f.id.startsWith("us") && activeFilters.includes("utility"))
+    );
   }, [mappedCustomFacilities, activeFilters]);
 
   const allReports = userReports.filter((r) => {
@@ -695,6 +704,14 @@ function MapScreen({
         onSelectStation={(st) => {
           closePopup();
           setSelectedKloudtrackStation(st);
+          if (st?.station?.location && Array.isArray(st.station.location) && mapRef.current) {
+            mapRef.current.flyTo({
+              center: [st.station.location[0], st.station.location[1]],
+              zoom: 16.5,
+              pitch: 45,
+              duration: 1200,
+            });
+          }
         }}
         onCategoryClick={(categoryId) => {
           // Set only this category as active
@@ -730,7 +747,7 @@ function MapScreen({
             ...facility,
             title: facility.name,
             status: facility.filterType,
-            statusLabel: categoryLabels[facility.filterType] || facility.filterType,
+            statusLabel: facility.statusLabel || categoryLabels[facility.filterType] || facility.filterType,
             description: null,
             isFacility: true,
             facilityDesc: facility.desc,
@@ -1124,7 +1141,7 @@ function MapScreen({
                     ...fac,
                     title: fac.name,
                     status: fac.filterType,
-                    statusLabel: categoryLabels[fac.filterType] || fac.filterType,
+                    statusLabel: fac.statusLabel || categoryLabels[fac.filterType] || fac.filterType,
                     // Don't use description field - facilities will show details differently
                     description: null,
                     // Add facility-specific fields
@@ -1198,10 +1215,9 @@ function MapScreen({
                     justifyContent: "center",
                     border: "3px solid #ffffff",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-                    fontSize: 18,
-                  }}
+                    }}
                 >
-                  🏥
+                  <HeartPulse size={16} color="#ffffff" strokeWidth={2.4} />
                 </div>
                 <div
                   style={{
@@ -1334,7 +1350,7 @@ function MapScreen({
               onClose={closePopup}
               className={isExiting ? "popup-exiting" : ""}
               style={{ fontFamily: "Nunito, sans-serif" }}
-              maxWidth="280px"
+              maxWidth="320px"
             >
               <MapPopupContent
                 selectedReport={selectedReport}
@@ -1503,27 +1519,6 @@ function MapScreen({
         selectedReport={selectedReport}
       />
 
-      {/* KloudTrack Native IoT Weather Controls: Metric Switcher Bar & Advisory Scale Legend */}
-      {activeLayers.kloudtrackStations && (
-        <KloudtrackMapControls
-          activeMetric={activeMetric}
-          onSelectMetric={setActiveMetric}
-          isMapFullView={isMapFullView}
-          stations={weatherStations}
-          selectedStation={selectedKloudtrackStation}
-          onSelectStation={(st) => {
-            setSelectedKloudtrackStation(st);
-            if (st?.station?.location && Array.isArray(st.station.location) && mapRef.current) {
-              mapRef.current.flyTo({
-                center: [st.station.location[0], st.station.location[1]],
-                zoom: 16.5,
-                pitch: 45,
-                duration: 1200,
-              });
-            }
-          }}
-        />
-      )}
     </div>
   );
 }
