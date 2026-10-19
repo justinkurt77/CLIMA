@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import DOMPurify from "dompurify";
 import {
@@ -45,7 +45,12 @@ import {
   Plus,
   X,
   AlertCircle,
+  Image as ImageIcon,
+  Trash2,
+  Camera,
+  UploadCloud,
 } from "lucide-react";
+import imageCompression from "browser-image-compression";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
 import { supabase } from "../../lib/supabase";
@@ -167,6 +172,11 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
     content: "",
     hotlines: "(044) 958-8888, 911",
   });
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const fileInputRef = useRef(null);
+
   const [isSubmittingPost, setIsSubmittingPost] = useState(false);
   const [postSubmitError, setPostSubmitError] = useState(null);
   const [dashboardToast, setDashboardToast] = useState(null);
@@ -191,6 +201,50 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
     }
   };
 
+  const handlePhotoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setPostSubmitError("Please select a valid image file (PNG, JPG, WebP).");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setPostSubmitError("Image file size must be less than 10MB.");
+      return;
+    }
+
+    setPostSubmitError(null);
+    setSelectedPhoto(file);
+    const objectUrl = URL.createObjectURL(file);
+    setPhotoPreview(objectUrl);
+  };
+
+  const handleRemovePhoto = () => {
+    setSelectedPhoto(null);
+    if (photoPreview) {
+      try { URL.revokeObjectURL(photoPreview); } catch (_) {}
+    }
+    setPhotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const resetPostForm = () => {
+    setPostForm({
+      title: "",
+      category: "Extreme Heat",
+      urgency: "urgent",
+      agency: "Palayan City CDRRMO",
+      content: "",
+      hotlines: "(044) 958-8888, 911",
+    });
+    handleRemovePhoto();
+    setPostSubmitError(null);
+  };
+
   const handlePostSubmit = async (e) => {
     e.preventDefault();
     if (!postForm.title.trim() || !postForm.content.trim()) return;
@@ -209,9 +263,68 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
     try {
       const { data: userData } = await supabase.auth.getUser();
 
+      let uploadedImageUrl = null;
+      if (selectedPhoto) {
+        setIsUploadingPhoto(true);
+        try {
+          let fileToUpload = selectedPhoto;
+          try {
+            fileToUpload = await imageCompression(selectedPhoto, {
+              maxSizeMB: 0.5,
+              maxWidthOrHeight: 1400,
+              useWebWorker: true,
+            });
+          } catch (compErr) {
+            logger.warn("Image compression fallback to original file", compErr);
+          }
+
+          const ext = fileToUpload.name?.split(".").pop() || "jpg";
+          const fileName = `advisory-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
+          const filePath = `${fileName}`;
+
+          // Try uploading to 'advisories' bucket first
+          const { error: uploadError } = await supabase.storage
+            .from("advisories")
+            .upload(filePath, fileToUpload, { cacheControl: "3600", upsert: true });
+
+          if (!uploadError) {
+            const { data: publicUrlData } = supabase.storage
+              .from("advisories")
+              .getPublicUrl(filePath);
+            uploadedImageUrl = publicUrlData?.publicUrl || null;
+          } else {
+            // Fallback to 'reports' bucket
+            const { error: reportsUploadError } = await supabase.storage
+              .from("reports")
+              .upload(filePath, fileToUpload, { cacheControl: "3600", upsert: true });
+
+            if (!reportsUploadError) {
+              const { data: publicUrlData } = supabase.storage
+                .from("reports")
+                .getPublicUrl(filePath);
+              uploadedImageUrl = publicUrlData?.publicUrl || null;
+            } else {
+              // Base64 data URL fallback
+              uploadedImageUrl = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(fileToUpload);
+              });
+            }
+          }
+        } catch (uploadErr) {
+          logger.error("Failed to upload advisory photo:", uploadErr);
+        } finally {
+          setIsUploadingPhoto(false);
+        }
+      }
+
+      const formattedContent = postForm.content.trim() + (uploadedImageUrl ? `\n\n[IMAGE_URL:${uploadedImageUrl}]` : "");
+
       const insertData = {
         title: postForm.title.trim(),
-        content: postForm.content.trim(),
+        content: formattedContent,
         category: postForm.category,
         status: "Published",
         published_at: new Date().toISOString(),
@@ -224,6 +337,8 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
           const optimisticPost = {
             id: `adv-${Date.now()}`,
             ...insertData,
+            content: postForm.content.trim(),
+            image_url: uploadedImageUrl,
             created_at: new Date().toISOString(),
           };
           setData((prev) => ({
@@ -231,14 +346,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
             advisories: [optimisticPost, ...prev.advisories],
           }));
           setShowPostModal(false);
-          setPostForm({
-            title: "",
-            category: "Extreme Heat",
-            urgency: "urgent",
-            agency: "Palayan City CDRRMO",
-            content: "",
-            hotlines: "(044) 958-8888, 911",
-          });
+          resetPostForm();
           showDashboardToast("Official announcement published and broadcasted live!");
           return;
         }
@@ -246,14 +354,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
       }
 
       setShowPostModal(false);
-      setPostForm({
-        title: "",
-        category: "Extreme Heat",
-        urgency: "urgent",
-        agency: "Palayan City CDRRMO",
-        content: "",
-        hotlines: "(044) 958-8888, 911",
-      });
+      resetPostForm();
 
       await fetchAdvisories();
       showDashboardToast("Official announcement published and broadcasted live!");
@@ -262,6 +363,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
       setPostSubmitError(err.message || "Failed to post announcement. Please check database permissions.");
     } finally {
       setIsSubmittingPost(false);
+      setIsUploadingPhoto(false);
     }
   };
 
@@ -463,7 +565,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
   return (
     <>
       {/* Desktop View (>= 1024px) */}
-      <div className="desktop-view-container" style={{ paddingTop: 18, paddingBottom: 40 }}>
+      <div className="desktop-view-container hide-scroll" style={{ paddingTop: 18, paddingBottom: 40, scrollbarWidth: "none", msOverflowStyle: "none" }}>
         {/* Minimized Header Bar */}
         <motion.header
           initial={{ opacity: 0, y: 16 }}
@@ -626,7 +728,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
                 isDark={isDark}
                 session={session}
                 onNavigateToAuth={onNavigateToAuth}
-                canPost={true}
+                canPost={Boolean(isAdmin)}
                 onOpenPostModal={handleOpenPostModal}
               />
             </motion.div>
@@ -842,7 +944,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
           isDark={isDark}
           session={session}
           onNavigateToAuth={onNavigateToAuth}
-          canPost={true}
+          canPost={Boolean(isAdmin)}
           onOpenPostModal={handleOpenPostModal}
         />
         <HospitalMonitoringSection
@@ -1121,6 +1223,185 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
                   />
                 </div>
 
+                {/* Attach Advisory Photo / Infographic */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                    <label style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: isDark ? "#a1a1aa" : "#64748b" }}>
+                      Advisory Photo / Infographic
+                    </label>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: isDark ? "#71717a" : "#94a3b8" }}>
+                      Optional
+                    </span>
+                  </div>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png, image/jpeg, image/jpg, image/webp"
+                    onChange={handlePhotoSelect}
+                    style={{ display: "none" }}
+                  />
+
+                  {!photoPreview ? (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const file = e.dataTransfer.files?.[0];
+                        if (file) {
+                          const fakeEvent = { target: { files: [file] } };
+                          handlePhotoSelect(fakeEvent);
+                        }
+                      }}
+                      style={{
+                        border: `1.5px dashed ${isDark ? "rgba(255, 255, 255, 0.16)" : "rgba(0, 0, 0, 0.16)"}`,
+                        borderRadius: 14,
+                        padding: "16px 18px",
+                        background: isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.015)",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 14,
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = "#f97316";
+                        e.currentTarget.style.background = isDark ? "rgba(249, 115, 22, 0.05)" : "rgba(249, 115, 22, 0.03)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = isDark ? "rgba(255, 255, 255, 0.16)" : "rgba(0, 0, 0, 0.16)";
+                        e.currentTarget.style.background = isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.015)";
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 12,
+                          background: "rgba(249, 115, 22, 0.12)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <ImageIcon size={20} color="#f97316" strokeWidth={2.2} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: isDark ? "#ffffff" : "#0f172a" }}>
+                          Upload advisory photo or infographic
+                        </div>
+                        <div style={{ fontSize: 11.5, color: isDark ? "#a1a1aa" : "#64748b", marginTop: 2 }}>
+                          PNG, JPG, or WebP up to 10MB • Drag & drop or click to browse
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        style={{
+                          padding: "6px 14px",
+                          borderRadius: 8,
+                          border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.14)" : "rgba(0, 0, 0, 0.12)"}`,
+                          background: isDark ? "rgba(255, 255, 255, 0.06)" : "#f8fafc",
+                          color: isDark ? "#ffffff" : "#0f172a",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          pointerEvents: "none",
+                        }}
+                      >
+                        Browse
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        borderRadius: 14,
+                        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.14)" : "rgba(0, 0, 0, 0.12)"}`,
+                        background: isDark ? "rgba(255, 255, 255, 0.03)" : "#f8fafc",
+                        padding: 10,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 72,
+                          height: 72,
+                          borderRadius: 10,
+                          overflow: "hidden",
+                          border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
+                          flexShrink: 0,
+                          background: "#000",
+                        }}
+                      >
+                        <img
+                          src={photoPreview}
+                          alt="Advisory preview"
+                          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                        />
+                      </div>
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: isDark ? "#ffffff" : "#0f172a",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {selectedPhoto?.name || "Advisory image selected"}
+                        </div>
+                        <div style={{ fontSize: 11.5, color: isDark ? "#a1a1aa" : "#64748b", marginTop: 2 }}>
+                          {selectedPhoto?.size ? `${(selectedPhoto.size / (1024 * 1024)).toFixed(2)} MB` : "Ready to broadcast"}
+                        </div>
+                        <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              padding: 0,
+                              fontSize: 11.5,
+                              fontWeight: 700,
+                              color: "#f97316",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Change photo
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleRemovePhoto}
+                        title="Remove photo"
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 8,
+                          border: `1px solid ${isDark ? "rgba(239, 68, 68, 0.3)" : "rgba(239, 68, 68, 0.2)"}`,
+                          background: "rgba(239, 68, 68, 0.1)",
+                          color: "#ef4444",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: "pointer",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 {/* Emergency Hotlines & Schedule row */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div>
@@ -1175,8 +1456,8 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 10, paddingTop: 14, borderTop: `1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)"}` }}>
                   <button
                     type="button"
-                    disabled={isSubmittingPost}
-                    onClick={() => setShowPostModal(false)}
+                    disabled={isSubmittingPost || isUploadingPhoto}
+                    onClick={() => { resetPostForm(); setShowPostModal(false); }}
                     style={{
                       padding: "10px 18px",
                       borderRadius: 12,
@@ -1193,7 +1474,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
 
                   <button
                     type="submit"
-                    disabled={isSubmittingPost}
+                    disabled={isSubmittingPost || isUploadingPhoto}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -1205,13 +1486,19 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
                       color: "#ffffff",
                       fontSize: 13,
                       fontWeight: 800,
-                      cursor: isSubmittingPost ? "not-allowed" : "pointer",
-                      opacity: isSubmittingPost ? 0.7 : 1,
+                      cursor: (isSubmittingPost || isUploadingPhoto) ? "not-allowed" : "pointer",
+                      opacity: (isSubmittingPost || isUploadingPhoto) ? 0.7 : 1,
                       boxShadow: "0 4px 16px rgba(249, 115, 22, 0.4)",
                     }}
                   >
                     <Send size={15} />
-                    <span>{isSubmittingPost ? "Broadcasting..." : "Broadcast Announcement"}</span>
+                    <span>
+                      {isUploadingPhoto
+                        ? "Uploading Photo..."
+                        : isSubmittingPost
+                        ? "Broadcasting..."
+                        : "Broadcast Announcement"}
+                    </span>
                   </button>
                 </div>
               </form>
@@ -1541,6 +1828,16 @@ function CivicAdvisoriesFeed({
         urgency = "critical";
       }
 
+      let extractedImageUrl = advisory.image_url || null;
+      let cleanContent = advisory.content || "";
+      if (cleanContent) {
+        const imgMatch = cleanContent.match(/\[IMAGE_URL:\s*([^\s\]]+)\s*\]/i);
+        if (imgMatch) {
+          if (!extractedImageUrl) extractedImageUrl = imgMatch[1];
+          cleanContent = cleanContent.replace(/\[IMAGE_URL:\s*([^\s\]]+)\s*\]/gi, "").trim();
+        }
+      }
+
       return {
         id: advisory.id,
         isLiveDB: true,
@@ -1551,8 +1848,8 @@ function CivicAdvisoriesFeed({
         urgency,
         published_at: advisory.published_at || advisory.created_at || new Date().toISOString(),
         title: advisory.title,
-        content: advisory.content,
-        image_url: advisory.image_url || null,
+        content: cleanContent,
+        image_url: extractedImageUrl,
         hotlines: advisory.hotlines || ["(044) 958-8888", "911"],
         likes: Number(advisory.likes) || 0,
         shares: Number(advisory.shares) || 0,
@@ -1692,10 +1989,12 @@ function CivicAdvisoriesFeed({
 
       {/* Feed List Container - Fills remaining height with smooth scroll */}
       <div
-        className="civic-feed-scroll"
+        className="civic-feed-scroll hide-scroll"
         style={{
           flex: 1,
           overflowY: "auto",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
           paddingRight: 6,
           display: "flex",
           flexDirection: "column",

@@ -169,17 +169,29 @@ body {
 
 /* Utility: hide scrollbars */
 .hide-scroll,
+.hide-scrollbar,
+.no-scrollbar,
 .home-screen-view,
-.citizen-screen-view.home-screen-view,
-.home-screen-root {
+.citizen-screen-view,
+.home-screen-root,
+.desktop-view-container,
+.civic-feed-scroll,
+.about-scroll-viewport,
+.admin-tab-content {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
 
 .hide-scroll::-webkit-scrollbar,
+.hide-scrollbar::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar,
 .home-screen-view::-webkit-scrollbar,
-.citizen-screen-view.home-screen-view::-webkit-scrollbar,
-.home-screen-root::-webkit-scrollbar {
+.citizen-screen-view::-webkit-scrollbar,
+.home-screen-root::-webkit-scrollbar,
+.desktop-view-container::-webkit-scrollbar,
+.civic-feed-scroll::-webkit-scrollbar,
+.about-scroll-viewport::-webkit-scrollbar,
+.admin-tab-content::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
@@ -1331,9 +1343,10 @@ html.light body:has(.app-shell.admin-mode),
 
 .mapboxgl-popup-content {
   border-radius: 18px !important;
-  padding: 14px !important;
+  padding: 14px 15px !important;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14) !important;
   transition: background-color 0.2s ease, border-color 0.2s ease !important;
+  box-sizing: border-box !important;
 }
 
 /* Dark mode popup styling */
@@ -1703,7 +1716,7 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
    DESKTOP RESPONSIVE LAYOUT & SIDEBAR (PC USERS)
    ========================================================================== */
 
-/* ── Screen Wrapper Positioning ── */
+/* ── Screen Wrapper Positioning (Zero Scrollbars) ── */
 @media (min-width: 1024px) {
   .citizen-screen-view {
     position: absolute !important;
@@ -1715,57 +1728,11 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
-  }
-
-  html.dark .citizen-screen-view,
-  [data-theme="dark"] .citizen-screen-view {
-    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
   }
 
   .citizen-screen-view::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .citizen-screen-view::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .citizen-screen-view::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.18);
-    border-radius: 999px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-  }
-
-  .citizen-screen-view::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-orange);
-    background-clip: padding-box;
-  }
-
-  html.dark .citizen-screen-view::-webkit-scrollbar-thumb,
-  [data-theme="dark"] .citizen-screen-view::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.22);
-    border-radius: 999px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-  }
-
-  html.dark .citizen-screen-view::-webkit-scrollbar-thumb:hover,
-  [data-theme="dark"] .citizen-screen-view::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-orange);
-    background-clip: padding-box;
-  }
-
-  /* Home screen invisible scrollbar override for desktop */
-  .citizen-screen-view.home-screen-view,
-  .citizen-screen-view.hide-scroll {
-    scrollbar-width: none !important;
-  }
-
-  .citizen-screen-view.home-screen-view::-webkit-scrollbar,
-  .citizen-screen-view.hide-scroll::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
@@ -1779,17 +1746,11 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
-  }
-
-  /* Home screen invisible scrollbar override for mobile */
-  .citizen-screen-view.home-screen-view,
-  .citizen-screen-view.hide-scroll {
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
   }
 
-  .citizen-screen-view.home-screen-view::-webkit-scrollbar,
-  .citizen-screen-view.hide-scroll::-webkit-scrollbar {
+  .citizen-screen-view::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
@@ -1863,7 +1824,13 @@ input[type="color"].dept-color-picker::-moz-color-swatch {
   }
 
   .floating-contact-btn {
-    bottom: calc(72px + 12px + 24px + env(safe-area-inset-bottom, 0px)) !important;
+    bottom: calc(72px + 12px + 14px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 18px !important;
+    right: auto !important;
+  }
+
+  .scroll-to-top-btn {
+    bottom: calc(72px + 12px + 14px + env(safe-area-inset-bottom, 0px)) !important;
     right: 18px !important;
   }
 }
@@ -3307,35 +3274,21 @@ html.dark .desktop-wind-direction,
   max-height: 560px;
   overflow-y: auto;
   padding-right: 4px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(150, 150, 150, 0.3) transparent;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
 .facebook-feed-scroll,
 .civic-feed-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(150, 150, 150, 0.3) transparent;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
 .facebook-feed-scroll::-webkit-scrollbar,
 .civic-feed-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-
-.facebook-feed-scroll::-webkit-scrollbar-track,
-.civic-feed-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.facebook-feed-scroll::-webkit-scrollbar-thumb,
-.civic-feed-scroll::-webkit-scrollbar-thumb {
-  background: rgba(150, 150, 150, 0.35);
-  border-radius: 9999px;
-}
-
-.facebook-feed-scroll::-webkit-scrollbar-thumb:hover,
-.civic-feed-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(150, 150, 150, 0.55);
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .civic-action-pill {
@@ -3584,3 +3537,66 @@ html:not(.dark) .skeleton-box,
   position: relative;
   z-index: 2;
 }
+
+/* ==========================================================================
+   MOBILE MAP OVERLAY CONTROLS & SHORTCUTS (ICON-ONLY COLLAPSE)
+   ========================================================================== */
+@media (max-width: 1023px) {
+  /* Category filter buttons collapsed to icons */
+  .map-category-shortcut-btn {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    border-radius: 12px !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  .map-category-shortcut-label {
+    display: none !important;
+  }
+
+  /* IoT Weather Metric pill collapsed */
+  .kloud-metric-btn {
+    height: 42px !important;
+    padding: 0 10px 0 8px !important;
+  }
+
+  .kloud-metric-label {
+    display: none !important;
+  }
+
+  /* Scale legend pill collapsed to icon */
+  .kloud-scale-btn {
+    height: 42px !important;
+    padding: 0 10px !important;
+  }
+
+  .kloud-scale-text-block {
+    display: none !important;
+  }
+
+  /* Layers toggle button collapsed */
+  .layer-controls-btn {
+    height: 42px !important;
+    padding: 0 10px !important;
+  }
+
+  /* Search icon button on mobile */
+  .map-search-icon-btn {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+  }
+}
+
+.map-search-icon-btn:hover {
+  transform: scale(1.05);
+}
+
+.map-search-icon-btn:active {
+  transform: scale(0.95);
+}
+

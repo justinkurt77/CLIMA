@@ -339,7 +339,7 @@ function App() {
             animate="animate"
             exit="exit"
             transition={screenVariants.transition}
-            className="screen active citizen-screen-view"
+            className="screen active citizen-screen-view hide-scroll"
             style={{ zIndex: 10, background: "transparent" }}
           >
             {(tabLoading && loadingTab === "about") || forcedSkeleton === "about" ? (
@@ -357,7 +357,7 @@ function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="citizen-screen-view"
+            className="citizen-screen-view hide-scroll"
             style={{
               zIndex: 10,
             }}
@@ -394,7 +394,7 @@ function App() {
             animate="animate"
             exit="exit"
             transition={screenVariants.transition}
-            className="screen active citizen-screen-view"
+            className="screen active citizen-screen-view hide-scroll"
             style={{
               zIndex: 10,
               background: "transparent",
@@ -422,7 +422,7 @@ function App() {
             animate="animate"
             exit="exit"
             transition={screenVariants.transition}
-            className="screen active citizen-screen-view"
+            className="screen active citizen-screen-view hide-scroll"
             style={{
               zIndex: 10,
               background: "transparent",
@@ -447,7 +447,7 @@ function App() {
             animate="animate"
             exit="exit"
             transition={screenVariants.transition}
-            className="screen active citizen-screen-view"
+            className="screen active citizen-screen-view hide-scroll"
             style={{
               zIndex: 10,
               background: "transparent",
@@ -468,7 +468,7 @@ function App() {
             animate="animate"
             exit="exit"
             transition={screenVariants.transition}
-            className="screen active citizen-screen-view"
+            className="screen active citizen-screen-view hide-scroll"
             style={{
               zIndex: 10,
               background: "transparent",

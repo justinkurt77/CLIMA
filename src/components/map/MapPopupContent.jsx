@@ -67,10 +67,15 @@ export function MapPopupContent({
 }) {
   const { isDark } = useTheme();
 
-  // Dynamic color palette matching CLIMA's design system tokens
   const categoryColor = useMemo(() => {
     const fType = selectedReport.filterType || selectedReport.status;
-    if (fType === "water" || selectedReport.icon === "Droplet" || selectedReport.icon === "💧") {
+    const isWater =
+      fType === "water" ||
+      selectedReport.icon === "Droplet" ||
+      selectedReport.icon === "💧" ||
+      selectedReport.title?.toLowerCase().includes("water district") ||
+      selectedReport.title?.toLowerCase().includes("waterworks");
+    if (isWater) {
       return {
         color: "#38bdf8",
         bg: "rgba(56, 189, 248, 0.16)",
@@ -128,6 +133,13 @@ export function MapPopupContent({
   }, [selectedReport, STATUS_COLORS, STATUS_BG, isDark]);
 
   const HeaderIcon = useMemo(() => {
+    if (
+      selectedReport.icon === "Droplet" ||
+      selectedReport.title?.toLowerCase().includes("water district") ||
+      selectedReport.title?.toLowerCase().includes("waterworks")
+    ) {
+      return Droplet;
+    }
     return (
       ICON_MAP[selectedReport.icon] ||
       ICON_MAP[selectedReport.filterType] ||
@@ -142,7 +154,10 @@ export function MapPopupContent({
     <div
       ref={popupContentRef}
       style={{
-        width: 268,
+        width: "100%",
+        minWidth: 260,
+        maxWidth: 292,
+        boxSizing: "border-box",
         padding: "2px 0 0",
         fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
@@ -249,6 +264,8 @@ export function MapPopupContent({
           border: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.06)",
           borderRadius: 12,
           padding: "9px 11px",
+          width: "100%",
+          boxSizing: "border-box",
         }}
       >
         {/* Road / Location row */}
@@ -394,7 +411,7 @@ export function MapPopupContent({
       </div>
 
       {/* Action Buttons */}
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", gap: 8, width: "100%", boxSizing: "border-box" }}>
         {/* Get Directions */}
         <a
           href={`https://www.google.com/maps/dir/?api=1&destination=${selectedReport.lat},${selectedReport.lng}`}
@@ -416,6 +433,9 @@ export function MapPopupContent({
             fontWeight: 700,
             boxShadow: `0 3px 12px ${categoryColor.color}40`,
             transition: "all 0.2s ease",
+            boxSizing: "border-box",
+            minWidth: 0,
+            whiteSpace: "nowrap",
           }}
         >
           <Navigation size={13} strokeWidth={2.4} />
@@ -456,6 +476,9 @@ export function MapPopupContent({
             fontWeight: 700,
             cursor: hasPhotos ? "pointer" : "not-allowed",
             transition: "all 0.2s ease",
+            boxSizing: "border-box",
+            minWidth: 0,
+            whiteSpace: "nowrap",
           }}
         >
           <Image size={13} strokeWidth={2.2} />

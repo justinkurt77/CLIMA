@@ -35,28 +35,15 @@ html.light .about-screen-wrapper,
   -webkit-overflow-scrolling: touch;
 }
 
-/* Scrollbar styling */
+/* Scrollbar hidden */
+.about-scroll-viewport {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
 .about-scroll-viewport::-webkit-scrollbar {
-  width: 6px;
-}
-.about-scroll-viewport::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.4);
-}
-.about-scroll-viewport::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 999px;
-}
-.about-scroll-viewport::-webkit-scrollbar-thumb:hover {
-  background: rgba(249, 115, 22, 0.85);
-}
-
-html.light .about-scroll-viewport::-webkit-scrollbar-track,
-[data-theme="light"] .about-scroll-viewport::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-}
-html.light .about-scroll-viewport::-webkit-scrollbar-thumb,
-[data-theme="light"] .about-scroll-viewport::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* Parallax Page */

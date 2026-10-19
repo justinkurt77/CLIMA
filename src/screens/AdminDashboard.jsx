@@ -7,7 +7,8 @@ import {
   Plus, Trash2, Building, CheckCircle, CheckCircle2, Clock, TrendingUp, Search, X, Edit2, Check, Download,
   MapPin, Calendar, Phone, AlertCircle, AlertTriangle, ChevronRight, ChevronDown, ChevronUp, Navigation,
   ShieldAlert, Activity, Megaphone, HeartPulse, Tent, Truck, Flame, Droplet, Zap, Sprout, Wifi,
-  Sun, Moon, Bell, Menu, Layers, ThermometerSun
+  Sun, Moon, Bell, Menu, Layers, ThermometerSun, DollarSign, LifeBuoy,
+  Home, Wrench, TrendingDown
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect from "../components/ui/CustomSelect";
@@ -151,6 +152,8 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
     border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
     boxShadow: isDark ? "0 25px 60px rgba(0, 0, 0, 0.65)" : "0 20px 50px rgba(0, 0, 0, 0.08)",
     overflowY: "auto",
+    scrollbarWidth: "none",
+    msOverflowStyle: "none",
     padding: "24px 28px",
     boxSizing: "border-box",
     zIndex: 35,
@@ -4077,6 +4080,10 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                 const isDraft = adv.status === "Draft";
                 const author = usersMap[adv.author_id] || "Unknown User";
                 
+                const imgMatch = (adv.content || "").match(/\[IMAGE_URL:\s*([^\s\]]+)\s*\]/i);
+                const displayContent = (adv.content || "").replace(/\[IMAGE_URL:\s*([^\s\]]+)\s*\]/gi, "").trim();
+                const attachedImage = adv.image_url || (imgMatch ? imgMatch[1] : null);
+
                 return (
                   <div key={adv.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: S.cardSubtle }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
@@ -4094,7 +4101,12 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                         {adv.status}
                       </span>
                     </div>
-                    <p style={{ margin: "0 0 12px", fontSize: 13, color: S.text, lineHeight: 1.5, opacity: 0.9 }}>{adv.content}</p>
+                    <p style={{ margin: "0 0 12px", fontSize: 13, color: S.text, lineHeight: 1.5, opacity: 0.9 }}>{displayContent}</p>
+                    {attachedImage && (
+                      <div style={{ marginBottom: 12, borderRadius: 10, overflow: "hidden", maxHeight: 200, maxWidth: 360, border: `1px solid ${S.border}` }}>
+                        <img src={attachedImage} alt="Advisory attachment" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      </div>
+                    )}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: S.muted, fontWeight: 600 }}>
                       <span>Author: {author} • Created: {new Date(adv.created_at).toLocaleDateString()}</span>
                       <div style={{ display: "flex", gap: 8 }}>
@@ -4986,75 +4998,200 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
 
   const operationTypeBadge = (type) => {
     const colors = {
-      evacuation: { bg: "#dbeafe", color: "#1e40af" },
-      rescue: { bg: "#fef3c7", color: "#92400e" },
-      relief_distribution: { bg: "#dcfce7", color: "#166534" },
-      damage_assessment: { bg: "#f3e8ff", color: "#6b21a8" },
-      ambulance_dispatch: { bg: "#fef08a", color: "#854d0e" },
-      emergency_response: { bg: "#fce7f3", color: "#9f1239" }
+      evacuation: {
+        bg: S.isDark ? "rgba(56, 189, 248, 0.14)" : "#eff6ff",
+        color: S.isDark ? "#38bdf8" : "#0284c7",
+        border: S.isDark ? "rgba(56, 189, 248, 0.28)" : "#bfdbfe",
+      },
+      rescue: {
+        bg: S.isDark ? "rgba(245, 158, 11, 0.14)" : "#fef3c7",
+        color: S.isDark ? "#f59e0b" : "#d97706",
+        border: S.isDark ? "rgba(245, 158, 11, 0.28)" : "#fde68a",
+      },
+      relief_distribution: {
+        bg: S.isDark ? "rgba(34, 197, 94, 0.14)" : "#f0fdf4",
+        color: S.isDark ? "#22c55e" : "#16a34a",
+        border: S.isDark ? "rgba(34, 197, 94, 0.28)" : "#bbf7d0",
+      },
+      damage_assessment: {
+        bg: S.isDark ? "rgba(168, 85, 247, 0.14)" : "#faf5ff",
+        color: S.isDark ? "#a855f7" : "#9333ea",
+        border: S.isDark ? "rgba(168, 85, 247, 0.28)" : "#e9d5ff",
+      },
+      ambulance_dispatch: {
+        bg: S.isDark ? "rgba(239, 68, 68, 0.14)" : "#fef2f2",
+        color: S.isDark ? "#ef4444" : "#dc2626",
+        border: S.isDark ? "rgba(239, 68, 68, 0.28)" : "#fecaca",
+      },
+      emergency_response: {
+        bg: S.isDark ? "rgba(244, 63, 94, 0.14)" : "#fff1f2",
+        color: S.isDark ? "#f43f5e" : "#e11d48",
+        border: S.isDark ? "rgba(244, 63, 94, 0.28)" : "#fecdd3",
+      },
     };
-    const style = colors[type] || { bg: "#f3f4f6", color: "#6b7280" };
+    const style = colors[type] || {
+      bg: S.isDark ? "rgba(255, 255, 255, 0.08)" : "#f3f4f6",
+      color: S.muted,
+      border: S.border,
+    };
     return (
-      <span style={{
-        padding: "4px 10px",
-        borderRadius: 6,
-        fontSize: 11,
-        fontWeight: 800,
-        background: style.bg,
-        color: style.color,
-        textTransform: "uppercase"
-      }}>
-        {operationTypeLabels[type]}
+      <span
+        style={{
+          padding: "2px 8px",
+          borderRadius: 6,
+          fontSize: 10.5,
+          fontWeight: 700,
+          background: style.bg,
+          color: style.color,
+          border: `1px solid ${style.border}`,
+          textTransform: "uppercase",
+          letterSpacing: 0.3,
+        }}
+      >
+        {operationTypeLabels[type] || type}
       </span>
     );
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <div>
-        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>Palayan City CDRRMO Operations</h3>
-        <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>Track individual operations for Super El Niño response</p>
+        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: S.text, letterSpacing: -0.3 }}>
+          Palayan City CDRRMO Operations
+        </h3>
+        <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>
+          Track individual operations for Super El Niño response
+        </p>
       </div>
 
-      {/* Analytics Cards - Last 7 Days */}
+      {/* Analytics Cards - Minimalist, modern palette */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-        <div style={{ ...cardStyle, background: "#dbeafe", borderColor: "#93c5fd", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#1e40af", textTransform: "uppercase" }}>Evacuations</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#1e3a8a" }}>{evacuations}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#fef3c7", borderColor: "#fcd34d", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#92400e", textTransform: "uppercase" }}>Rescues</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#78350f" }}>{rescues}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#dcfce7", borderColor: "#86efac", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#166534", textTransform: "uppercase" }}>Relief Dist.</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#14532d" }}>{reliefDist}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#f3e8ff", borderColor: "#d8b4fe", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#6b21a8", textTransform: "uppercase" }}>Assessments</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#581c87" }}>{damageAssess}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#fef08a", borderColor: "#fde047", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#854d0e", textTransform: "uppercase" }}>Ambulances</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#713f12" }}>{ambulances}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#fce7f3", borderColor: "#f9a8d4", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#9f1239", textTransform: "uppercase" }}>Emergencies</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#831843" }}>{emergencies}</p>
-        </div>
+        {[
+          { label: "Evacuations", count: evacuations, icon: Tent, color: "#38bdf8", bg: "rgba(56, 189, 248, 0.12)" },
+          { label: "Rescues", count: rescues, icon: Activity, color: "#f59e0b", bg: "rgba(245, 158, 11, 0.12)" },
+          { label: "Relief Dist.", count: reliefDist, icon: HeartPulse, color: "#22c55e", bg: "rgba(34, 197, 94, 0.12)" },
+          { label: "Assessments", count: damageAssess, icon: FileText, color: "#a855f7", bg: "rgba(168, 85, 247, 0.12)" },
+          { label: "Ambulances", count: ambulances, icon: Truck, color: "#ef4444", bg: "rgba(239, 68, 68, 0.12)" },
+          { label: "Emergencies", count: emergencies, icon: AlertTriangle, color: "#f43f5e", bg: "rgba(244, 63, 94, 0.12)" },
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.label}
+              style={{
+                background: S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
+                border: `1px solid ${S.border}`,
+                borderRadius: 14,
+                padding: "14px 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                transition: "all 0.2s ease",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  {item.label}
+                </span>
+                <div
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 8,
+                    background: item.bg,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon size={13} color={item.color} strokeWidth={2.4} />
+                </div>
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: S.text, letterSpacing: -0.5, lineHeight: 1 }}>
+                {item.count}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Sub-tabs */}
-      <div style={cardStyle}>
-        <div style={{ display: "flex", gap: 12, paddingBottom: 12, marginBottom: 16, borderBottom: `1px solid ${S.border}` }}>
-          <button onClick={() => { setActiveSubTab("add"); setIsExpanded(true); }} style={{ ...btnPrimary, background: activeSubTab === "add" ? S.accent : "transparent", color: activeSubTab === "add" ? "#fff" : S.text, boxShadow: "none", padding: "8px 16px", fontSize: 13 }}>
-            <Plus size={14} /> Add Record
-          </button>
-          <button onClick={() => { setActiveSubTab("view"); setIsExpanded(true); }} style={{ ...btnPrimary, background: activeSubTab === "view" ? S.accent : "transparent", color: activeSubTab === "view" ? "#fff" : S.text, boxShadow: "none", padding: "8px 16px", fontSize: 13 }}>
-            <FileText size={14} /> View Records
-          </button>
-          <button onClick={() => setIsExpanded(!isExpanded)} style={{ marginLeft: "auto", background: "none", border: `1px solid ${S.border}`, padding: "8px", borderRadius: 8, cursor: "pointer", color: S.text, display: "flex", alignItems: "center" }}>
-            <ChevronDown size={16} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
+      {/* Sub-tabs & Records Card */}
+      <div style={{ ...cardStyle, background: S.isDark ? "rgba(255, 255, 255, 0.02)" : S.card, padding: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          {/* Segmented Control */}
+          <div
+            style={{
+              display: "inline-flex",
+              padding: 3,
+              background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
+              borderRadius: 10,
+              border: `1px solid ${S.border}`,
+              gap: 4,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => { setActiveSubTab("add"); setIsExpanded(true); }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "7px 14px",
+                borderRadius: 8,
+                border: "none",
+                background: activeSubTab === "add" ? (S.isDark ? "rgba(255, 255, 255, 0.12)" : "#ffffff") : "transparent",
+                color: activeSubTab === "add" ? S.text : S.muted,
+                fontWeight: activeSubTab === "add" ? 700 : 600,
+                fontSize: 12.5,
+                cursor: "pointer",
+                boxShadow: activeSubTab === "add" ? "0 2px 8px rgba(0,0,0,0.15)" : "none",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <Plus size={13} strokeWidth={2.4} /> Add Record
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveSubTab("view"); setIsExpanded(true); }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "7px 14px",
+                borderRadius: 8,
+                border: "none",
+                background: activeSubTab === "view" ? (S.isDark ? "rgba(255, 255, 255, 0.12)" : "#ffffff") : "transparent",
+                color: activeSubTab === "view" ? S.text : S.muted,
+                fontWeight: activeSubTab === "view" ? 700 : 600,
+                fontSize: 12.5,
+                cursor: "pointer",
+                boxShadow: activeSubTab === "view" ? "0 2px 8px rgba(0,0,0,0.15)" : "none",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <FileText size={13} strokeWidth={2.2} /> View Records
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              background: "transparent",
+              border: `1px solid ${S.border}`,
+              padding: "7px 10px",
+              borderRadius: 8,
+              cursor: "pointer",
+              color: S.muted,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            <span>{isExpanded ? "Collapse" : "Expand"}</span>
+            <ChevronDown size={14} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
           </button>
         </div>
 
@@ -5114,7 +5251,7 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
               )}
 
               {activeSubTab === "view" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {loading ? (
                     <p style={{ color: S.muted, textAlign: "center", padding: 20 }}>Loading records...</p>
                   ) : Object.keys(groupedByDate).length === 0 ? (
@@ -5125,37 +5262,112 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                       const isExpanded = expandedDays[date];
                       return (
                         <div key={date} style={{ border: `1px solid ${S.border}`, borderRadius: 12, overflow: "hidden" }}>
-                          <button onClick={() => setExpandedDays(prev => ({ ...prev, [date]: !prev[date] }))} style={{ width: "100%", padding: 16, border: "none", background: S.accentBg, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, fontWeight: 800, color: S.text }}>
-                            <span>📅 {new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · {dayRecords.length} operation{dayRecords.length > 1 ? 's' : ''}</span>
-                            <ChevronDown size={18} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
+                          <button
+                            onClick={() => setExpandedDays(prev => ({ ...prev, [date]: !prev[date] }))}
+                            style={{
+                              width: "100%",
+                              padding: "12px 16px",
+                              border: "none",
+                              background: S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
+                              cursor: "pointer",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              fontSize: 13,
+                              fontWeight: 700,
+                              color: S.text,
+                              transition: "background 0.15s ease",
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = S.isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)"}
+                            onMouseLeave={e => e.currentTarget.style.background = S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)"}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <Calendar size={14} color={S.muted} strokeWidth={2} />
+                              <span>{new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  color: S.muted,
+                                  background: S.isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.05)",
+                                  padding: "2px 8px",
+                                  borderRadius: 12,
+                                }}
+                              >
+                                {dayRecords.length} {dayRecords.length === 1 ? 'operation' : 'operations'}
+                              </span>
+                            </div>
+                            <ChevronDown size={15} color={S.muted} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
                           </button>
                           <AnimatePresence>
                             {isExpanded && (
                               <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} transition={{ duration: 0.2 }} style={{ overflow: "hidden", background: S.card }}>
-                                <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                                <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
                                   {dayRecords.map(record => (
-                                    <div key={record.id} style={{ padding: 12, border: `1px solid ${S.border}`, borderRadius: 8, display: "flex", flexDirection: "column", gap: 8 }}>
-                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                        <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
-                                          <span style={{ fontSize: 13, fontWeight: 800, color: S.text }}>{record.operation_time || "N/A"}</span>
+                                    <div
+                                      key={record.id}
+                                      style={{
+                                        padding: 12,
+                                        background: S.isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.015)",
+                                        border: `1px solid ${S.border}`,
+                                        borderRadius: 10,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 8,
+                                      }}
+                                    >
+                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                          <span style={{ fontSize: 12.5, fontWeight: 700, color: S.text, fontFamily: "monospace" }}>
+                                            {record.operation_time || "N/A"}
+                                          </span>
                                           {operationTypeBadge(record.operation_type)}
-                                          <span style={{ fontSize: 12, color: S.muted }}>📍 {record.location}</span>
+                                          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: S.muted }}>
+                                            <MapPin size={12} strokeWidth={2} />
+                                            <span>{record.location}</span>
+                                          </div>
                                         </div>
                                         <div style={{ display: "flex", gap: 6 }}>
-                                          <button onClick={() => editRecord(record)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${S.border}`, background: S.cardSubtle, color: S.text, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                                            <Edit2 size={12} /> Edit
+                                          <button
+                                            onClick={() => editRecord(record)}
+                                            style={{
+                                              padding: "4px 8px",
+                                              borderRadius: 6,
+                                              border: `1px solid ${S.border}`,
+                                              background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "#ffffff",
+                                              color: S.text,
+                                              fontSize: 11,
+                                              fontWeight: 600,
+                                              cursor: "pointer",
+                                              display: "flex",
+                                              alignItems: "center",
+                                              gap: 4,
+                                            }}
+                                          >
+                                            <Edit2 size={11} /> Edit
                                           </button>
-                                          <button onClick={() => deleteRecord(record.id)} style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}>
+                                          <button
+                                            onClick={() => deleteRecord(record.id)}
+                                            style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}
+                                          >
                                             <Trash2 size={12} />
                                           </button>
                                         </div>
                                       </div>
                                       {record.description && (
-                                        <p style={{ margin: 0, fontSize: 12, color: S.text, lineHeight: 1.5 }}>{record.description}</p>
+                                        <p style={{ margin: 0, fontSize: 12, color: S.isDark ? "#d4d4d8" : "#3f3f46", lineHeight: 1.5 }}>
+                                          {record.description}
+                                        </p>
                                       )}
-                                      <div style={{ display: "flex", gap: 16, fontSize: 11, color: S.muted }}>
-                                        <span>👷 {record.personnel_deployed} personnel</span>
-                                        <span>👥 {record.beneficiaries} beneficiaries</span>
+                                      <div style={{ display: "flex", gap: 16, fontSize: 11.5, color: S.muted }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                          <Users size={12} strokeWidth={2} />
+                                          <span>{record.personnel_deployed} personnel</span>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                          <HeartPulse size={12} strokeWidth={2} />
+                                          <span>{record.beneficiaries} beneficiaries</span>
+                                        </div>
                                       </div>
                                     </div>
                                   ))}
@@ -5346,83 +5558,202 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
 
   const operationTypeBadge = (type) => {
     const colors = {
-      fire_incident: { bg: "#fef2f2", color: "#991b1b" },
-      fire_prevention_inspection: { bg: "#fff7ed", color: "#9a3412" },
-      fire_safety_seminar: { bg: "#fef3c7", color: "#92400e" },
-      rescue_operation: { bg: "#eff6ff", color: "#1e3a8a" },
-      medical_assist: { bg: "#f0fdf4", color: "#14532d" },
-      emergency_response: { bg: "#faf5ff", color: "#581c87" }
+      fire_incident: {
+        bg: S.isDark ? "rgba(239, 68, 68, 0.14)" : "#fef2f2",
+        color: S.isDark ? "#ef4444" : "#dc2626",
+        border: S.isDark ? "rgba(239, 68, 68, 0.28)" : "#fecaca",
+      },
+      fire_prevention_inspection: {
+        bg: S.isDark ? "rgba(245, 158, 11, 0.14)" : "#fff7ed",
+        color: S.isDark ? "#f59e0b" : "#c2410c",
+        border: S.isDark ? "rgba(245, 158, 11, 0.28)" : "#fed7aa",
+      },
+      fire_safety_seminar: {
+        bg: S.isDark ? "rgba(56, 189, 248, 0.14)" : "#f0f9ff",
+        color: S.isDark ? "#38bdf8" : "#0284c7",
+        border: S.isDark ? "rgba(56, 189, 248, 0.28)" : "#bae6fd",
+      },
+      rescue_operation: {
+        bg: S.isDark ? "rgba(16, 185, 129, 0.14)" : "#ecfdf5",
+        color: S.isDark ? "#10b981" : "#047857",
+        border: S.isDark ? "rgba(16, 185, 129, 0.28)" : "#a7f3d0",
+      },
+      medical_assist: {
+        bg: S.isDark ? "rgba(34, 197, 94, 0.14)" : "#f0fdf4",
+        color: S.isDark ? "#22c55e" : "#16a34a",
+        border: S.isDark ? "rgba(34, 197, 94, 0.28)" : "#bbf7d0",
+      },
+      emergency_response: {
+        bg: S.isDark ? "rgba(168, 85, 247, 0.14)" : "#faf5ff",
+        color: S.isDark ? "#a855f7" : "#7e22ce",
+        border: S.isDark ? "rgba(168, 85, 247, 0.28)" : "#e9d5ff",
+      },
     };
-    const style = colors[type] || { bg: "#f3f4f6", color: "#6b7280" };
+    const style = colors[type] || {
+      bg: S.isDark ? "rgba(255, 255, 255, 0.08)" : "#f3f4f6",
+      color: S.muted,
+      border: S.border,
+    };
     return (
-      <span style={{
-        padding: "4px 10px",
-        borderRadius: 6,
-        fontSize: 11,
-        fontWeight: 800,
-        background: style.bg,
-        color: style.color,
-        textTransform: "uppercase"
-      }}>
-        {operationTypeLabels[type]}
+      <span
+        style={{
+          padding: "2px 8px",
+          borderRadius: 6,
+          fontSize: 10.5,
+          fontWeight: 700,
+          background: style.bg,
+          color: style.color,
+          border: `1px solid ${style.border}`,
+          textTransform: "uppercase",
+          letterSpacing: 0.3,
+        }}
+      >
+        {operationTypeLabels[type] || type}
       </span>
     );
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <div>
-        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900 }}>Palayan City BFP Operations</h3>
-        <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>Track individual fire and emergency response operations</p>
+        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: S.text, letterSpacing: -0.3 }}>
+          Palayan City BFP Operations
+        </h3>
+        <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>
+          Track individual fire and emergency response operations
+        </p>
       </div>
 
-      {/* Analytics Cards - Last 7 Days */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-        <div style={{ ...cardStyle, background: "#fef2f2", borderColor: "#fca5a5", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#991b1b", textTransform: "uppercase" }}>Fire Incidents</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#7f1d1d" }}>{fireIncidents}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#9a3412", textTransform: "uppercase" }}>Inspections</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#7c2d12" }}>{inspections}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#fef3c7", borderColor: "#fcd34d", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#92400e", textTransform: "uppercase" }}>Seminars</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#78350f" }}>{seminars}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#eff6ff", borderColor: "#93c5fd", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#1e3a8a", textTransform: "uppercase" }}>Rescues</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#1e40af" }}>{rescues}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#f0fdf4", borderColor: "#86efac", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#14532d", textTransform: "uppercase" }}>Medical</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#166534" }}>{medicalAssists}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#faf5ff", borderColor: "#d8b4fe", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#581c87", textTransform: "uppercase" }}>Emergencies</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#6b21a8" }}>{emergencies}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#fce7f3", borderColor: "#f9a8d4", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#9f1239", textTransform: "uppercase" }}>Casualties</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#881337" }}>{totalCasualties}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#e0f2fe", borderColor: "#7dd3fc", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#0c4a6e", textTransform: "uppercase" }}>Trucks Dispatched</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#075985" }}>{totalTrucks}</p>
-        </div>
+      {/* Analytics Cards - Minimalist, modern palette */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12 }}>
+        {[
+          { label: "Fire Incidents", count: fireIncidents, icon: Flame, color: "#ef4444", bg: "rgba(239, 68, 68, 0.12)" },
+          { label: "Inspections", count: inspections, icon: FileText, color: "#f59e0b", bg: "rgba(245, 158, 11, 0.12)" },
+          { label: "Seminars", count: seminars, icon: Users, color: "#38bdf8", bg: "rgba(56, 189, 248, 0.12)" },
+          { label: "Rescues", count: rescues, icon: LifeBuoy, color: "#10b981", bg: "rgba(16, 185, 129, 0.12)" },
+          { label: "Medical", count: medicalAssists, icon: HeartPulse, color: "#22c55e", bg: "rgba(34, 197, 94, 0.12)" },
+          { label: "Emergencies", count: emergencies, icon: AlertTriangle, color: "#a855f7", bg: "rgba(168, 85, 247, 0.12)" },
+          { label: "Casualties", count: totalCasualties, icon: AlertCircle, color: "#dc2626", bg: "rgba(220, 38, 38, 0.12)" },
+          { label: "Trucks Sent", count: totalTrucks, icon: Truck, color: "#0284c7", bg: "rgba(2, 132, 199, 0.12)" },
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.label}
+              style={{
+                background: S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
+                border: `1px solid ${S.border}`,
+                borderRadius: 14,
+                padding: "14px 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                transition: "all 0.2s ease",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  {item.label}
+                </span>
+                <div
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 8,
+                    background: item.bg,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon size={13} color={item.color} strokeWidth={2.4} />
+                </div>
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: S.text, letterSpacing: -0.5, lineHeight: 1 }}>
+                {item.count}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Sub-tabs */}
-      <div style={cardStyle}>
-        <div style={{ display: "flex", gap: 12, paddingBottom: 12, marginBottom: 16, borderBottom: `1px solid ${S.border}` }}>
-          <button onClick={() => { setActiveSubTab("add"); setIsExpanded(true); }} style={{ ...btnPrimary, background: activeSubTab === "add" ? S.accent : "transparent", color: activeSubTab === "add" ? "#fff" : S.text, boxShadow: "none", padding: "8px 16px", fontSize: 13 }}>
-            <Plus size={14} /> Add Record
-          </button>
-          <button onClick={() => { setActiveSubTab("view"); setIsExpanded(true); }} style={{ ...btnPrimary, background: activeSubTab === "view" ? S.accent : "transparent", color: activeSubTab === "view" ? "#fff" : S.text, boxShadow: "none", padding: "8px 16px", fontSize: 13 }}>
-            <FileText size={14} /> View Records
-          </button>
-          <button onClick={() => setIsExpanded(!isExpanded)} style={{ marginLeft: "auto", background: "none", border: `1px solid ${S.border}`, padding: "8px", borderRadius: 8, cursor: "pointer", color: S.text, display: "flex", alignItems: "center" }}>
-            <ChevronDown size={16} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
+      {/* Sub-tabs & Records Card */}
+      <div style={{ ...cardStyle, background: S.isDark ? "rgba(255, 255, 255, 0.02)" : S.card, padding: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          {/* Segmented Control */}
+          <div
+            style={{
+              display: "inline-flex",
+              padding: 3,
+              background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
+              borderRadius: 10,
+              border: `1px solid ${S.border}`,
+              gap: 4,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => { setActiveSubTab("add"); setIsExpanded(true); }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "7px 14px",
+                borderRadius: 8,
+                border: "none",
+                background: activeSubTab === "add" ? (S.isDark ? "rgba(255, 255, 255, 0.12)" : "#ffffff") : "transparent",
+                color: activeSubTab === "add" ? S.text : S.muted,
+                fontWeight: activeSubTab === "add" ? 700 : 600,
+                fontSize: 12.5,
+                cursor: "pointer",
+                boxShadow: activeSubTab === "add" ? "0 2px 8px rgba(0,0,0,0.15)" : "none",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <Plus size={13} strokeWidth={2.4} /> Add Record
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveSubTab("view"); setIsExpanded(true); }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "7px 14px",
+                borderRadius: 8,
+                border: "none",
+                background: activeSubTab === "view" ? (S.isDark ? "rgba(255, 255, 255, 0.12)" : "#ffffff") : "transparent",
+                color: activeSubTab === "view" ? S.text : S.muted,
+                fontWeight: activeSubTab === "view" ? 700 : 600,
+                fontSize: 12.5,
+                cursor: "pointer",
+                boxShadow: activeSubTab === "view" ? "0 2px 8px rgba(0,0,0,0.15)" : "none",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <FileText size={13} strokeWidth={2.2} /> View Records
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              background: "transparent",
+              border: `1px solid ${S.border}`,
+              padding: "7px 10px",
+              borderRadius: 8,
+              cursor: "pointer",
+              color: S.muted,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            <span>{isExpanded ? "Collapse" : "Expand"}</span>
+            <ChevronDown size={14} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
           </button>
         </div>
 
@@ -5501,39 +5832,124 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
                       const isExpanded = expandedDays[date];
                       return (
                         <div key={date} style={{ border: `1px solid ${S.border}`, borderRadius: 12, overflow: "hidden" }}>
-                          <button onClick={() => setExpandedDays(prev => ({ ...prev, [date]: !prev[date] }))} style={{ width: "100%", padding: 16, border: "none", background: S.accentBg, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, fontWeight: 800, color: S.text }}>
-                            <span>📅 {new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · {dayRecords.length} operation{dayRecords.length > 1 ? 's' : ''}</span>
-                            <ChevronDown size={18} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
+                          <button
+                            onClick={() => setExpandedDays(prev => ({ ...prev, [date]: !prev[date] }))}
+                            style={{
+                              width: "100%",
+                              padding: "12px 16px",
+                              border: "none",
+                              background: S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
+                              cursor: "pointer",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              fontSize: 13,
+                              fontWeight: 700,
+                              color: S.text,
+                              transition: "background 0.15s ease",
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = S.isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)"}
+                            onMouseLeave={e => e.currentTarget.style.background = S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)"}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <Calendar size={14} color={S.muted} strokeWidth={2} />
+                              <span>{new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  color: S.muted,
+                                  background: S.isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.05)",
+                                  padding: "2px 8px",
+                                  borderRadius: 12,
+                                }}
+                              >
+                                {dayRecords.length} {dayRecords.length === 1 ? 'operation' : 'operations'}
+                              </span>
+                            </div>
+                            <ChevronDown size={15} color={S.muted} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
                           </button>
                           <AnimatePresence>
                             {isExpanded && (
                               <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} transition={{ duration: 0.2 }} style={{ overflow: "hidden", background: S.card }}>
-                                <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                                <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
                                   {dayRecords.map(record => (
-                                    <div key={record.id} style={{ padding: 12, border: `1px solid ${S.border}`, borderRadius: 8, display: "flex", flexDirection: "column", gap: 8 }}>
-                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                        <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1 }}>
-                                          <span style={{ fontSize: 13, fontWeight: 800, color: S.text }}>{record.operation_time || "N/A"}</span>
+                                    <div
+                                      key={record.id}
+                                      style={{
+                                        padding: 12,
+                                        background: S.isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.015)",
+                                        border: `1px solid ${S.border}`,
+                                        borderRadius: 10,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 8,
+                                      }}
+                                    >
+                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                          <span style={{ fontSize: 12.5, fontWeight: 700, color: S.text, fontFamily: "monospace" }}>
+                                            {record.operation_time || "N/A"}
+                                          </span>
                                           {operationTypeBadge(record.operation_type)}
-                                          <span style={{ fontSize: 12, color: S.muted }}>📍 {record.location}</span>
+                                          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: S.muted }}>
+                                            <MapPin size={12} strokeWidth={2} />
+                                            <span>{record.location}</span>
+                                          </div>
                                         </div>
                                         <div style={{ display: "flex", gap: 6 }}>
-                                          <button onClick={() => editRecord(record)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${S.border}`, background: S.cardSubtle, color: S.text, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                                            <Edit2 size={12} /> Edit
+                                          <button
+                                            onClick={() => editRecord(record)}
+                                            style={{
+                                              padding: "4px 8px",
+                                              borderRadius: 6,
+                                              border: `1px solid ${S.border}`,
+                                              background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "#ffffff",
+                                              color: S.text,
+                                              fontSize: 11,
+                                              fontWeight: 600,
+                                              cursor: "pointer",
+                                              display: "flex",
+                                              alignItems: "center",
+                                              gap: 4,
+                                            }}
+                                          >
+                                            <Edit2 size={11} /> Edit
                                           </button>
-                                          <button onClick={() => deleteRecord(record.id)} style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}>
+                                          <button
+                                            onClick={() => deleteRecord(record.id)}
+                                            style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}
+                                          >
                                             <Trash2 size={12} />
                                           </button>
                                         </div>
                                       </div>
                                       {record.description && (
-                                        <p style={{ margin: 0, fontSize: 12, color: S.text, lineHeight: 1.5 }}>{record.description}</p>
+                                        <p style={{ margin: 0, fontSize: 12, color: S.isDark ? "#d4d4d8" : "#3f3f46", lineHeight: 1.5 }}>
+                                          {record.description}
+                                        </p>
                                       )}
-                                      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 11, color: S.muted }}>
-                                        <span>👷 {record.personnel_deployed} personnel</span>
-                                        <span>🚒 {record.fire_trucks_dispatched} trucks</span>
-                                        {record.casualties > 0 && <span style={{ color: "#dc2626", fontWeight: 700 }}>⚠️ {record.casualties} casualties</span>}
-                                        {record.property_damage_estimate > 0 && <span>💰 ₱{record.property_damage_estimate.toLocaleString()}</span>}
+                                      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 11.5, color: S.muted }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                          <Users size={12} strokeWidth={2} />
+                                          <span>{record.personnel_deployed} personnel</span>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                          <Truck size={12} strokeWidth={2} />
+                                          <span>{record.fire_trucks_dispatched} trucks</span>
+                                        </div>
+                                        {record.casualties > 0 && (
+                                          <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#ef4444", fontWeight: 700 }}>
+                                            <AlertCircle size={12} strokeWidth={2.2} />
+                                            <span>{record.casualties} casualties</span>
+                                          </div>
+                                        )}
+                                        {record.property_damage_estimate > 0 && (
+                                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                            <DollarSign size={12} strokeWidth={2} />
+                                            <span>₱{Number(record.property_damage_estimate).toLocaleString()} damage</span>
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   ))}
@@ -5812,44 +6228,133 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
       </div>
 
       {/* Analytics Cards - Last 30 Days */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-        <div style={{ ...cardStyle, background: "#f0fdf4", borderColor: "#86efac", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#14532d", textTransform: "uppercase" }}>Total Reports</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#166534" }}>{totalReports}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#f0fdf4", borderColor: "#86efac", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#14532d", textTransform: "uppercase" }}>Total Hectares</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#166534" }}>{totalHectares.toFixed(2)}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#fef3c7", borderColor: "#fcd34d", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#92400e", textTransform: "uppercase" }}>Total Loss (PHP)</p>
-          <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 900, color: "#78350f" }}>₱{totalLoss.toLocaleString()}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#9a3412", textTransform: "uppercase" }}>Avg Damage %</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#7c2d12" }}>{avgDamagePercent}%</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#fef3c7", borderColor: "#fcd34d", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#92400e", textTransform: "uppercase" }}>Most Affected</p>
-          <p style={{ margin: "4px 0 0", fontSize: 16, fontWeight: 900, color: "#78350f" }}>{cropTypeLabels[mostAffectedCrop] || mostAffectedCrop}</p>
-        </div>
-        <div style={{ ...cardStyle, background: "#fef2f2", borderColor: "#fca5a5", padding: 16 }}>
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#991b1b", textTransform: "uppercase" }}>Pending</p>
-          <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900, color: "#7f1d1d" }}>{pendingAssessments}</p>
-        </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12 }}>
+        {[
+          { label: "Total Reports", value: totalReports, icon: FileText, color: "#22c55e", bg: "rgba(34, 197, 94, 0.12)" },
+          { label: "Total Hectares", value: `${totalHectares.toFixed(1)} ha`, icon: Layers, color: "#38bdf8", bg: "rgba(56, 189, 248, 0.12)" },
+          { label: "Total Loss", value: `₱${totalLoss >= 1000000 ? (totalLoss/1000000).toFixed(1) + 'M' : totalLoss.toLocaleString()}`, icon: DollarSign, color: "#f59e0b", bg: "rgba(245, 158, 11, 0.12)" },
+          { label: "Avg Damage", value: `${avgDamagePercent}%`, icon: TrendingDown, color: "#ef4444", bg: "rgba(239, 68, 68, 0.12)" },
+          { label: "Most Affected", value: cropTypeLabels[mostAffectedCrop] || mostAffectedCrop, icon: Sprout, color: "#a855f7", bg: "rgba(168, 85, 247, 0.12)" },
+          { label: "Pending", value: pendingAssessments, icon: AlertCircle, color: "#dc2626", bg: "rgba(220, 38, 38, 0.12)" },
+        ].map(item => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.label}
+              style={{
+                background: S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
+                border: `1px solid ${S.border}`,
+                borderRadius: 14,
+                padding: "14px 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                transition: "all 0.2s ease",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  {item.label}
+                </span>
+                <div
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 8,
+                    background: item.bg,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon size={13} color={item.color} strokeWidth={2.4} />
+                </div>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: S.text, letterSpacing: -0.5, lineHeight: 1 }}>
+                {item.value}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Sub-tabs */}
-      <div style={cardStyle}>
-        <div style={{ display: "flex", gap: 12, paddingBottom: 12, marginBottom: 16, borderBottom: `1px solid ${S.border}` }}>
-          <button onClick={() => { setActiveSubTab("add"); setIsExpanded(true); }} style={{ ...btnPrimary, background: activeSubTab === "add" ? S.accent : "transparent", color: activeSubTab === "add" ? "#fff" : S.text, boxShadow: "none", padding: "8px 16px", fontSize: 13 }}>
-            <Plus size={14} /> Add Record
-          </button>
-          <button onClick={() => { setActiveSubTab("view"); setIsExpanded(true); }} style={{ ...btnPrimary, background: activeSubTab === "view" ? S.accent : "transparent", color: activeSubTab === "view" ? "#fff" : S.text, boxShadow: "none", padding: "8px 16px", fontSize: 13 }}>
-            <FileText size={14} /> View Records
-          </button>
-          <button onClick={() => setIsExpanded(!isExpanded)} style={{ marginLeft: "auto", background: "none", border: `1px solid ${S.border}`, padding: "8px", borderRadius: 8, cursor: "pointer", color: S.text, display: "flex", alignItems: "center" }}>
-            <ChevronDown size={16} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
+      {/* Sub-tabs & Records Card */}
+      <div style={{ ...cardStyle, background: S.isDark ? "rgba(255, 255, 255, 0.02)" : S.card, padding: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          {/* Segmented Control */}
+          <div
+            style={{
+              display: "inline-flex",
+              padding: 3,
+              background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
+              borderRadius: 10,
+              border: `1px solid ${S.border}`,
+              gap: 4,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => { setActiveSubTab("add"); setIsExpanded(true); }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "7px 14px",
+                borderRadius: 8,
+                border: "none",
+                background: activeSubTab === "add" ? (S.isDark ? "rgba(255, 255, 255, 0.12)" : "#ffffff") : "transparent",
+                color: activeSubTab === "add" ? S.text : S.muted,
+                fontWeight: activeSubTab === "add" ? 700 : 600,
+                fontSize: 12.5,
+                cursor: "pointer",
+                boxShadow: activeSubTab === "add" ? "0 2px 8px rgba(0,0,0,0.15)" : "none",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <Plus size={13} strokeWidth={2.4} /> Add Record
+            </button>
+            <button
+              type="button"
+              onClick={() => { setActiveSubTab("view"); setIsExpanded(true); }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "7px 14px",
+                borderRadius: 8,
+                border: "none",
+                background: activeSubTab === "view" ? (S.isDark ? "rgba(255, 255, 255, 0.12)" : "#ffffff") : "transparent",
+                color: activeSubTab === "view" ? S.text : S.muted,
+                fontWeight: activeSubTab === "view" ? 700 : 600,
+                fontSize: 12.5,
+                cursor: "pointer",
+                boxShadow: activeSubTab === "view" ? "0 2px 8px rgba(0,0,0,0.15)" : "none",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <FileText size={13} strokeWidth={2.2} /> View Records
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              background: "transparent",
+              border: `1px solid ${S.border}`,
+              padding: "7px 10px",
+              borderRadius: 8,
+              cursor: "pointer",
+              color: S.muted,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            <span>{isExpanded ? "Collapse" : "Expand"}</span>
+            <ChevronDown size={14} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
           </button>
         </div>
 
@@ -5867,10 +6372,10 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
                           onClick={() => setFormData({ ...formData, category: "farm", crop_type: "rice" })}
                           style={{
                             flex: 1,
-                            padding: "16px 24px",
+                            padding: "16px 20px",
                             borderRadius: 12,
-                            border: formData.category === "farm" ? `2px solid ${S.accent}` : `2px solid ${S.border}`,
-                            background: formData.category === "farm" ? S.accentBg : "#fff",
+                            border: formData.category === "farm" ? `1.5px solid ${S.accent}` : `1px solid ${S.border}`,
+                            background: formData.category === "farm" ? S.accentBg : (S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)"),
                             color: formData.category === "farm" ? S.accent : S.text,
                             fontWeight: 800,
                             fontSize: 14,
@@ -5883,7 +6388,7 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
                             transition: "all 0.2s"
                           }}
                         >
-                          <span style={{ fontSize: 28 }}>🌾</span>
+                          <Sprout size={22} color={formData.category === "farm" ? S.accent : S.muted} />
                           <span>Farm</span>
                           <span style={{ fontSize: 11, fontWeight: 600, color: S.muted }}>Crops & Plants</span>
                         </button>
@@ -5892,10 +6397,10 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
                           onClick={() => setFormData({ ...formData, category: "livestock", crop_type: "livestock" })}
                           style={{
                             flex: 1,
-                            padding: "16px 24px",
+                            padding: "16px 20px",
                             borderRadius: 12,
-                            border: formData.category === "livestock" ? `2px solid ${S.accent}` : `2px solid ${S.border}`,
-                            background: formData.category === "livestock" ? S.accentBg : "#fff",
+                            border: formData.category === "livestock" ? `1.5px solid ${S.accent}` : `1px solid ${S.border}`,
+                            background: formData.category === "livestock" ? S.accentBg : (S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)"),
                             color: formData.category === "livestock" ? S.accent : S.text,
                             fontWeight: 800,
                             fontSize: 14,
@@ -5908,7 +6413,7 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
                             transition: "all 0.2s"
                           }}
                         >
-                          <span style={{ fontSize: 28 }}>🐄</span>
+                          <Users size={22} color={formData.category === "livestock" ? S.accent : S.muted} />
                           <span>Livestock</span>
                           <span style={{ fontSize: 11, fontWeight: 600, color: S.muted }}>Animals & Poultry</span>
                         </button>
@@ -6080,43 +6585,163 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
                       const dayTotalLoss = dayRecords.reduce((sum, r) => sum + (parseFloat(r.estimated_loss_value) || 0), 0);
                       return (
                         <div key={date} style={{ border: `1px solid ${S.border}`, borderRadius: 12, overflow: "hidden" }}>
-                          <button onClick={() => setExpandedDays(prev => ({ ...prev, [date]: !prev[date] }))} style={{ width: "100%", padding: 16, border: "none", background: S.accentBg, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, fontWeight: 800, color: S.text }}>
-                            <span>📅 {new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · {dayRecords.length} report{dayRecords.length > 1 ? 's' : ''} · ₱{dayTotalLoss.toLocaleString()}</span>
-                            <ChevronDown size={18} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
+                          <button
+                            onClick={() => setExpandedDays(prev => ({ ...prev, [date]: !prev[date] }))}
+                            style={{
+                              width: "100%",
+                              padding: "12px 16px",
+                              border: "none",
+                              background: S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
+                              cursor: "pointer",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              fontSize: 13,
+                              fontWeight: 700,
+                              color: S.text,
+                              transition: "background 0.15s ease",
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = S.isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)"}
+                            onMouseLeave={e => e.currentTarget.style.background = S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)"}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                              <Calendar size={14} color={S.muted} strokeWidth={2} />
+                              <span>{new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  color: S.muted,
+                                  background: S.isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.05)",
+                                  padding: "2px 8px",
+                                  borderRadius: 12,
+                                }}
+                              >
+                                {dayRecords.length} {dayRecords.length === 1 ? 'report' : 'reports'}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  color: "#f59e0b",
+                                  background: "rgba(245, 158, 11, 0.12)",
+                                  padding: "2px 8px",
+                                  borderRadius: 12,
+                                }}
+                              >
+                                ₱{dayTotalLoss.toLocaleString()}
+                              </span>
+                            </div>
+                            <ChevronDown size={15} color={S.muted} style={{ transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.2s" }} />
                           </button>
                           <AnimatePresence>
                             {isExpanded && (
                               <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} transition={{ duration: 0.2 }} style={{ overflow: "hidden", background: S.card }}>
-                                <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+                                <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
                                   {dayRecords.map(record => (
-                                    <div key={record.id} style={{ padding: 12, border: `1px solid ${S.border}`, borderRadius: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                                    <div
+                                      key={record.id}
+                                      style={{
+                                        padding: 12,
+                                        background: S.isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.015)",
+                                        border: `1px solid ${S.border}`,
+                                        borderRadius: 10,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 8,
+                                      }}
+                                    >
                                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                                         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", flex: 1 }}>
-                                          {record.report_time && <span style={{ fontSize: 13, fontWeight: 800, color: S.text }}>{record.report_time}</span>}
+                                          {record.report_time && (
+                                            <span style={{ fontSize: 12.5, fontWeight: 700, color: S.text, fontFamily: "monospace" }}>
+                                              {record.report_time}
+                                            </span>
+                                          )}
                                           <span style={{ fontSize: 13, fontWeight: 800, color: S.text }}>{record.farmer_name}</span>
-                                          <span style={{ fontSize: 12, color: S.muted }}>📍 {record.barangay}</span>
-                                          <span style={{ fontSize: 11, color: S.muted, background: S.isDark ? "rgba(22, 163, 74, 0.15)" : "#f0fdf4", padding: "2px 8px", borderRadius: 4 }}>{cropTypeLabels[record.crop_type]}</span>
+                                          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: S.muted }}>
+                                            <MapPin size={12} strokeWidth={2} />
+                                            <span>{record.barangay}</span>
+                                          </div>
+                                          <span
+                                            style={{
+                                              fontSize: 10.5,
+                                              fontWeight: 700,
+                                              color: S.isDark ? "#4ade80" : "#15803d",
+                                              background: S.isDark ? "rgba(34, 197, 94, 0.12)" : "#f0fdf4",
+                                              border: `1px solid ${S.isDark ? "rgba(34, 197, 94, 0.25)" : "#bbf7d0"}`,
+                                              padding: "2px 8px",
+                                              borderRadius: 6,
+                                              textTransform: "uppercase",
+                                            }}
+                                          >
+                                            {cropTypeLabels[record.crop_type]}
+                                          </span>
                                           {statusBadge(record.status)}
                                         </div>
                                         <div style={{ display: "flex", gap: 6 }}>
-                                          <button onClick={() => editRecord(record)} style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${S.border}`, background: S.cardSubtle, color: S.text, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                                            <Edit2 size={12} /> Edit
+                                          <button
+                                            onClick={() => editRecord(record)}
+                                            style={{
+                                              padding: "4px 8px",
+                                              borderRadius: 6,
+                                              border: `1px solid ${S.border}`,
+                                              background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "#ffffff",
+                                              color: S.text,
+                                              fontSize: 11,
+                                              fontWeight: 600,
+                                              cursor: "pointer",
+                                              display: "flex",
+                                              alignItems: "center",
+                                              gap: 4,
+                                            }}
+                                          >
+                                            <Edit2 size={11} /> Edit
                                           </button>
-                                          <button onClick={() => deleteRecord(record.id)} style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}>
+                                          <button
+                                            onClick={() => deleteRecord(record.id)}
+                                            style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}
+                                          >
                                             <Trash2 size={12} />
                                           </button>
                                         </div>
                                       </div>
                                       {record.description && (
-                                        <p style={{ margin: 0, fontSize: 12, color: S.text, lineHeight: 1.5 }}>{record.description}</p>
+                                        <p style={{ margin: 0, fontSize: 12, color: S.isDark ? "#d4d4d8" : "#3f3f46", lineHeight: 1.5 }}>
+                                          {record.description}
+                                        </p>
                                       )}
-                                      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 11, color: S.muted }}>
-                                        <span>🌾 {parseFloat(record.area_affected_hectares).toFixed(2)} ha</span>
-                                        <span style={{ color: "#dc2626", fontWeight: 700 }}>📉 {record.damage_percentage}% damage</span>
-                                        <span>💰 ₱{parseFloat(record.estimated_loss_value).toLocaleString()}</span>
-                                        <span>⚠️ {causeLabels[record.cause]}</span>
-                                        {record.assistance_needed && <span>🤝 {record.assistance_needed}</span>}
-                                        {record.assessed_by && <span>✓ Assessed by {record.assessed_by}</span>}
+                                      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 11.5, color: S.muted }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                          <Sprout size={12} strokeWidth={2} />
+                                          <span>{parseFloat(record.area_affected_hectares).toFixed(2)} ha</span>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#ef4444", fontWeight: 700 }}>
+                                          <TrendingDown size={12} strokeWidth={2.2} />
+                                          <span>{record.damage_percentage}% damage</span>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                          <DollarSign size={12} strokeWidth={2} />
+                                          <span>₱{parseFloat(record.estimated_loss_value).toLocaleString()}</span>
+                                        </div>
+                                        {record.cause && (
+                                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                            <AlertTriangle size={12} strokeWidth={2} />
+                                            <span>{causeLabels[record.cause] || record.cause}</span>
+                                          </div>
+                                        )}
+                                        {record.assistance_needed && (
+                                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                            <HeartPulse size={12} strokeWidth={2} />
+                                            <span>{record.assistance_needed}</span>
+                                          </div>
+                                        )}
+                                        {record.assessed_by && (
+                                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                            <Check size={12} strokeWidth={2} />
+                                            <span>Assessed by {record.assessed_by}</span>
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   ))}
@@ -6295,47 +6920,127 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   });
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 20}}>
-      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12}}>
-        <div style={{...cardStyle, background: '#f0f9ff', borderColor: '#bae6fd'}}>
-          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#0284c7', textTransform: 'uppercase'}}>Total Interruptions</p>
-          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#075985'}}>{totalInterruptions}</p>
-          <p style={{margin: '2px 0 0', fontSize: 11, color: '#0369a1'}}>Last 30 days</p>
-        </div>
-        <div style={{...cardStyle, background: '#fff7ed', borderColor: '#fed7aa'}}>
-          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#ea580c', textTransform: 'uppercase'}}>Total Duration</p>
-          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#9a3412'}}>{totalDuration.toFixed(1)}</p>
-          <p style={{margin: '2px 0 0', fontSize: 11, color: '#c2410c'}}>Hours</p>
-        </div>
-        <div style={{...cardStyle, background: '#faf5ff', borderColor: '#d8b4fe'}}>
-          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase'}}>Households Affected</p>
-          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#5b21b6'}}>{totalHouseholds.toLocaleString()}</p>
-          <p style={{margin: '2px 0 0', fontSize: 11, color: '#6d28d9'}}>Last 30 days</p>
-        </div>
-        <div style={{...cardStyle, background: '#fef2f2', borderColor: '#fca5a5'}}>
-          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase'}}>Ongoing</p>
-          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#991b1b'}}>{ongoingCount}</p>
-          <p style={{margin: '2px 0 0', fontSize: 11, color: '#b91c1c'}}>Active interruptions</p>
-        </div>
-        <div style={{...cardStyle, background: '#f0fdf4', borderColor: '#86efac'}}>
-          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#16a34a', textTransform: 'uppercase'}}>PCWD</p>
-          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#14532d'}}>{pcwdCount}</p>
-          <p style={{margin: '2px 0 0', fontSize: 11, color: '#15803d'}}>vs Balibago: {balibagoCount}</p>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <div>
+        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: S.text, letterSpacing: -0.3 }}>
+          Water Interruption Management
+        </h3>
+        <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>
+          Track and manage PCWD and Balibago water supply interruptions
+        </p>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, borderBottom: `2px solid ${S.border}`, paddingBottom: 4 }}>
-        <button style={tabBtnStyle(activeTab === 'add')} onClick={() => { resetForm(); setActiveTab('add'); }}>
-          + Add Interruption
-        </button>
-        <button style={tabBtnStyle(activeTab === 'view')} onClick={() => setActiveTab('view')}>
-          View Records
-        </button>
+      {/* Analytics Cards - Minimalist, modern palette */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+        {[
+          { label: "Total Interruptions", value: totalInterruptions, sub: "Last 30 days", icon: Droplet, color: "#38bdf8", bg: "rgba(56, 189, 248, 0.12)" },
+          { label: "Total Duration", value: `${totalDuration.toFixed(1)}h`, sub: "Hours cumulative", icon: Clock, color: "#f59e0b", bg: "rgba(245, 158, 11, 0.12)" },
+          { label: "Households", value: totalHouseholds.toLocaleString(), sub: "Affected", icon: Home, color: "#a855f7", bg: "rgba(168, 85, 247, 0.12)" },
+          { label: "Ongoing", value: ongoingCount, sub: "Active interruptions", icon: AlertTriangle, color: "#ef4444", bg: "rgba(239, 68, 68, 0.12)" },
+          { label: "PCWD / Balibago", value: `${pcwdCount} / ${balibagoCount}`, sub: "Provider split", icon: Activity, color: "#22c55e", bg: "rgba(34, 197, 94, 0.12)" },
+        ].map(item => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.label}
+              style={{
+                background: S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
+                border: `1px solid ${S.border}`,
+                borderRadius: 14,
+                padding: "14px 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                transition: "all 0.2s ease",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  {item.label}
+                </span>
+                <div
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 8,
+                    background: item.bg,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon size={13} color={item.color} strokeWidth={2.4} />
+                </div>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: S.text, letterSpacing: -0.5, lineHeight: 1 }}>
+                {item.value}
+              </div>
+              <span style={{ fontSize: 11, color: S.muted }}>{item.sub}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Segmented Control */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div
+          style={{
+            display: "inline-flex",
+            padding: 3,
+            background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
+            borderRadius: 10,
+            border: `1px solid ${S.border}`,
+            gap: 4,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => { resetForm(); setActiveTab('add'); }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 14px",
+              borderRadius: 8,
+              border: "none",
+              background: activeTab === "add" ? (S.isDark ? "rgba(255, 255, 255, 0.12)" : "#ffffff") : "transparent",
+              color: activeTab === "add" ? S.text : S.muted,
+              fontWeight: activeTab === "add" ? 700 : 600,
+              fontSize: 12.5,
+              cursor: "pointer",
+              boxShadow: activeTab === "add" ? "0 2px 8px rgba(0,0,0,0.15)" : "none",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <Plus size={13} strokeWidth={2.4} /> Add Interruption
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('view')}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 14px",
+              borderRadius: 8,
+              border: "none",
+              background: activeTab === "view" ? (S.isDark ? "rgba(255, 255, 255, 0.12)" : "#ffffff") : "transparent",
+              color: activeTab === "view" ? S.text : S.muted,
+              fontWeight: activeTab === "view" ? 700 : 600,
+              fontSize: 12.5,
+              cursor: "pointer",
+              boxShadow: activeTab === "view" ? "0 2px 8px rgba(0,0,0,0.15)" : "none",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <FileText size={13} strokeWidth={2.2} /> View Records
+          </button>
+        </div>
       </div>
 
       {activeTab === 'add' && (
-        <div style={cardStyle}>
-          <h3 style={{margin: '0 0 16px', fontSize: 16, fontWeight: 900}}>{editId ? 'Edit Interruption' : 'Add Water Interruption'}</h3>
+        <div style={{ ...cardStyle, background: S.isDark ? "rgba(255, 255, 255, 0.02)" : S.card, padding: 18 }}>
+          <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 800, color: S.text }}>{editId ? 'Edit Interruption' : 'Add Water Interruption'}</h3>
           <form onSubmit={handleSave} style={{display: 'flex', flexDirection: 'column', gap: 14}}>
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
               <div>
@@ -6402,8 +7107,8 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                 <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{...inputStyle, resize: 'vertical'}} />
               </div>
             </div>
-            <div style={{display: 'flex', justifyContent: 'flex-end', gap: 10}}>
-              <button type='button' onClick={() => { resetForm(); setActiveTab('view'); }} style={{...btnPrimary, background: S.muted}}>Cancel</button>
+            <div style={{display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 12, borderTop: `1px solid ${S.border}`}}>
+              <button type='button' onClick={() => { resetForm(); setActiveTab('view'); }} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${S.border}`, background: S.cardSubtle, color: S.text, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
               <button type='submit' style={btnPrimary}><Check size={16} /> {editId ? 'Update' : 'Save'}</button>
             </div>
           </form>
@@ -6411,17 +7116,17 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
       )}
 
       {activeTab === 'view' && (
-        <div style={cardStyle}>
+        <div style={{ ...cardStyle, background: S.isDark ? "rgba(255, 255, 255, 0.02)" : S.card, padding: 18 }}>
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16}}>
-            <h3 style={{margin: 0, fontSize: 16, fontWeight: 900}}>Water Interruption Records</h3>
-            <p style={{margin: 0, fontSize: 13, color: S.muted}}>{records.length} total record{records.length !== 1 ? 's' : ''}</p>
+            <h3 style={{margin: 0, fontSize: 16, fontWeight: 800, color: S.text}}>Water Interruption Records</h3>
+            <span style={{fontSize: 12, fontWeight: 600, color: S.muted}}>{records.length} total record{records.length !== 1 ? 's' : ''}</span>
           </div>
           {loading ? (
-            <p style={{color: S.muted, textAlign: 'center', padding: 20}}>Loading...</p>
+            <p style={{color: S.muted, textAlign: 'center', padding: 20}}>Loading records...</p>
           ) : records.length === 0 ? (
             <p style={{color: S.muted, textAlign: 'center', padding: 20}}>No interruption records yet. Add one above.</p>
           ) : (
-            <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+            <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
               {sortedDays.map(day => {
                 const dayRecords = grouped[day];
                 const isOpen = expandedDays[day] === true; // default collapsed
@@ -6429,38 +7134,90 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                 const label = d.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 return (
                   <div key={day} style={{ border: `1px solid ${S.border}`, borderRadius: 12, overflow: 'hidden' }}>
-                    <button onClick={() => toggleDay(day)} style={{width: '100%', background: '#f8fafc', border: 'none', padding: '12px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <button
+                      onClick={() => toggleDay(day)}
+                      style={{
+                        width: '100%',
+                        background: S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
+                        border: 'none',
+                        padding: '12px 16px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        transition: 'background 0.15s ease'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = S.isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)"}
+                      onMouseLeave={e => e.currentTarget.style.background = S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)"}
+                    >
                       <div style={{display: 'flex', alignItems: 'center', gap: 10}}>
-                        <Droplet size={16} color='#0284c7' />
-                        <span style={{fontWeight: 900, fontSize: 14, color: S.text}}>{label}</span>
-                        <span style={{background: '#dbeafe', color: '#1d4ed8', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 800}}>{dayRecords.length} record{dayRecords.length !== 1 ? 's' : ''}</span>
+                        <Calendar size={14} color={S.muted} strokeWidth={2} />
+                        <span style={{fontWeight: 700, fontSize: 13, color: S.text}}>{label}</span>
+                        <span style={{
+                          background: S.isDark ? "rgba(56, 189, 248, 0.14)" : "#e0f2fe",
+                          color: S.isDark ? "#38bdf8" : "#0369a1",
+                          border: `1px solid ${S.isDark ? "rgba(56, 189, 248, 0.28)" : "#bae6fd"}`,
+                          borderRadius: 12,
+                          padding: '2px 8px',
+                          fontSize: 11,
+                          fontWeight: 700
+                        }}>
+                          {dayRecords.length} record{dayRecords.length !== 1 ? 's' : ''}
+                        </span>
                       </div>
-                      <ChevronDown size={16} color={S.muted} style={{transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s'}} />
+                      <ChevronDown size={15} color={S.muted} style={{transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s'}} />
                     </button>
                     {isOpen && (
-                      <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10, borderTop: `1px solid ${S.border}`, paddingTop: 12 }}>
+                      <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8, borderTop: `1px solid ${S.border}`, background: S.card }}>
                         {dayRecords.map(r => (
-                          <div key={r.id} style={{ background: '#fafcff', border: `1px solid ${S.border}`, borderRadius: 10, padding: 14 }}>
+                          <div key={r.id} style={{ background: S.isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.015)", border: `1px solid ${S.border}`, borderRadius: 10, padding: 12 }}>
                             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
                               <div style={{flex: 1}}>
-                                <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6}}>
-                                  <span style={{fontWeight: 900, fontSize: 14, color: S.text}}>{r.provider}</span>
-                                  <span style={{ padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 800, background: (statusColors[r.status] || { bg: '#f1f5f9' }).bg, color: (statusColors[r.status] || { color: S.muted }).color }}>
+                                <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap'}}>
+                                  <span style={{fontWeight: 800, fontSize: 13.5, color: S.text}}>{r.provider}</span>
+                                  <span style={{
+                                    padding: '2px 8px',
+                                    borderRadius: 6,
+                                    fontSize: 10.5,
+                                    fontWeight: 700,
+                                    textTransform: 'uppercase',
+                                    background: r.status === 'ongoing' ? (S.isDark ? "rgba(239, 68, 68, 0.14)" : "#fef2f2") : (S.isDark ? "rgba(34, 197, 94, 0.14)" : "#f0fdf4"),
+                                    color: r.status === 'ongoing' ? (S.isDark ? "#ef4444" : "#dc2626") : (S.isDark ? "#22c55e" : "#16a34a"),
+                                    border: `1px solid ${r.status === 'ongoing' ? (S.isDark ? "rgba(239, 68, 68, 0.28)" : "#fecaca") : (S.isDark ? "rgba(34, 197, 94, 0.28)" : "#bbf7d0")}`
+                                  }}>
                                     {r.status === 'ongoing' ? 'Ongoing' : 'Restored'}
                                   </span>
-                                  {r.interruption_time && <span style={{fontSize: 12, color: S.muted}}>@ {r.interruption_time.slice(0, 5)}</span>}
+                                  {r.interruption_time && <span style={{fontSize: 12, fontFamily: 'monospace', color: S.muted}}>@ {r.interruption_time.slice(0, 5)}</span>}
                                 </div>
-                                <div style={{display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 12, color: S.muted}}>
-                                  {r.affected_barangays && <span>📍 {r.affected_barangays}</span>}
-                                  <span>⏱ {r.duration_hours || 0} hrs</span>
-                                  <span>🏠 {(r.households_affected || 0).toLocaleString()} households</span>
-                                  {r.cause && <span>🔧 {causeLabels[r.cause] || r.cause}</span>}
+                                <div style={{display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: 11.5, color: S.muted}}>
+                                  {r.affected_barangays && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      <MapPin size={12} strokeWidth={2} />
+                                      <span>{r.affected_barangays}</span>
+                                    </div>
+                                  )}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <Clock size={12} strokeWidth={2} />
+                                    <span>{r.duration_hours || 0} hrs</span>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <Home size={12} strokeWidth={2} />
+                                    <span>{(r.households_affected || 0).toLocaleString()} households</span>
+                                  </div>
+                                  {r.cause && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      <Wrench size={12} strokeWidth={2} />
+                                      <span>{causeLabels[r.cause] || r.cause}</span>
+                                    </div>
+                                  )}
                                 </div>
-                                {r.description && <p style={{margin: '6px 0 0', fontSize: 12, color: S.text}}>{r.description}</p>}
+                                {r.description && <p style={{margin: '6px 0 0', fontSize: 12, color: S.isDark ? "#d4d4d8" : "#3f3f46"}}>{r.description}</p>}
                               </div>
                               <div style={{display: 'flex', gap: 6, marginLeft: 12}}>
-                                <button onClick={() => handleEdit(r)} style={{ background: 'none', border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: 'pointer', color: S.text }}><Edit2 size={14} /></button>
-                                <button onClick={() => handleDelete(r.id)} style={btnDanger}><Trash2 size={14} /></button>
+                                <button onClick={() => handleEdit(r)} style={{ background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "#ffffff", border: `1px solid ${S.border}`, borderRadius: 6, padding: "4px 8px", cursor: 'pointer', color: S.text, fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <Edit2 size={11} /> Edit
+                                </button>
+                                <button onClick={() => handleDelete(r.id)} style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}><Trash2 size={12} /></button>
                               </div>
                             </div>
                           </div>
@@ -6624,47 +7381,127 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   });
 
   return (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 20}}>
-      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12}}>
-        <div style={{...cardStyle, background: '#fefce8', borderColor: '#fef08a'}}>
-          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#a16207', textTransform: 'uppercase'}}>Days with Outages</p>
-          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#854d0e'}}>{daysWithOutages}</p>
-          <p style={{margin: '2px 0 0', fontSize: 11, color: '#92400e'}}>Last 30 days</p>
-        </div>
-        <div style={{...cardStyle, background: '#fef2f2', borderColor: '#fca5a5'}}>
-          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#dc2626', textTransform: 'uppercase'}}>Total Outages</p>
-          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#991b1b'}}>{totalOutages}</p>
-          <p style={{margin: '2px 0 0', fontSize: 11, color: '#b91c1c'}}>Incidents</p>
-        </div>
-        <div style={{...cardStyle, background: '#faf5ff', borderColor: '#d8b4fe'}}>
-          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase'}}>Households Affected</p>
-          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#5b21b6'}}>{totalHouseholds.toLocaleString()}</p>
-          <p style={{margin: '2px 0 0', fontSize: 11, color: '#6d28d9'}}>Last 30 days</p>
-        </div>
-        <div style={{...cardStyle, background: '#fff7ed', borderColor: '#fed7aa'}}>
-          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#ea580c', textTransform: 'uppercase'}}>Total Duration</p>
-          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#9a3412'}}>{(totalDurationMins / 60).toFixed(1)}</p>
-          <p style={{margin: '2px 0 0', fontSize: 11, color: '#c2410c'}}>Hours cumulative</p>
-        </div>
-        <div style={{...cardStyle, background: '#f0f9ff', borderColor: '#bae6fd'}}>
-          <p style={{margin: 0, fontSize: 11, fontWeight: 800, color: '#0284c7', textTransform: 'uppercase'}}>Avg Outages/Day</p>
-          <p style={{margin: '4px 0 0', fontSize: 28, fontWeight: 900, color: '#075985'}}>{avgOutages}</p>
-          <p style={{margin: '2px 0 0', fontSize: 11, color: '#0369a1'}}>Per day with outage</p>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <div>
+        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: S.text, letterSpacing: -0.3 }}>
+          NEECO Power Interruption Management
+        </h3>
+        <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>
+          Track electricity outage incidents, duration, and restoration status
+        </p>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, borderBottom: `2px solid ${S.border}`, paddingBottom: 4 }}>
-        <button style={tabBtnStyle(activeTab === 'add')} onClick={() => { resetForm(); setActiveTab('add'); }}>
-          + Add Record
-        </button>
-        <button style={tabBtnStyle(activeTab === 'view')} onClick={() => setActiveTab('view')}>
-          View Records
-        </button>
+      {/* Analytics Cards - Minimalist, modern palette */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+        {[
+          { label: "Outage Days", value: daysWithOutages, sub: "Last 30 days", icon: Calendar, color: "#eab308", bg: "rgba(234, 179, 8, 0.12)" },
+          { label: "Total Outages", value: totalOutages, sub: "Incidents", icon: Zap, color: "#ef4444", bg: "rgba(239, 68, 68, 0.12)" },
+          { label: "Households", value: totalHouseholds.toLocaleString(), sub: "Affected", icon: Home, color: "#a855f7", bg: "rgba(168, 85, 247, 0.12)" },
+          { label: "Total Duration", value: `${(totalDurationMins / 60).toFixed(1)}h`, sub: "Hours cumulative", icon: Clock, color: "#f97316", bg: "rgba(249, 115, 22, 0.12)" },
+          { label: "Avg Outages/Day", value: avgOutages, sub: "Active days", icon: Activity, color: "#38bdf8", bg: "rgba(56, 189, 248, 0.12)" },
+        ].map(item => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.label}
+              style={{
+                background: S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
+                border: `1px solid ${S.border}`,
+                borderRadius: 14,
+                padding: "14px 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                transition: "all 0.2s ease",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  {item.label}
+                </span>
+                <div
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 8,
+                    background: item.bg,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon size={13} color={item.color} strokeWidth={2.4} />
+                </div>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: S.text, letterSpacing: -0.5, lineHeight: 1 }}>
+                {item.value}
+              </div>
+              <span style={{ fontSize: 11, color: S.muted }}>{item.sub}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Segmented Control */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div
+          style={{
+            display: "inline-flex",
+            padding: 3,
+            background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
+            borderRadius: 10,
+            border: `1px solid ${S.border}`,
+            gap: 4,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => { resetForm(); setActiveTab('add'); }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 14px",
+              borderRadius: 8,
+              border: "none",
+              background: activeTab === "add" ? (S.isDark ? "rgba(255, 255, 255, 0.12)" : "#ffffff") : "transparent",
+              color: activeTab === "add" ? S.text : S.muted,
+              fontWeight: activeTab === "add" ? 700 : 600,
+              fontSize: 12.5,
+              cursor: "pointer",
+              boxShadow: activeTab === "add" ? "0 2px 8px rgba(0,0,0,0.15)" : "none",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <Plus size={13} strokeWidth={2.4} /> Add Record
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('view')}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 14px",
+              borderRadius: 8,
+              border: "none",
+              background: activeTab === "view" ? (S.isDark ? "rgba(255, 255, 255, 0.12)" : "#ffffff") : "transparent",
+              color: activeTab === "view" ? S.text : S.muted,
+              fontWeight: activeTab === "view" ? 700 : 600,
+              fontSize: 12.5,
+              cursor: "pointer",
+              boxShadow: activeTab === "view" ? "0 2px 8px rgba(0,0,0,0.15)" : "none",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <FileText size={13} strokeWidth={2.2} /> View Records
+          </button>
+        </div>
       </div>
 
       {activeTab === 'add' && (
-        <div style={cardStyle}>
-          <h3 style={{margin: '0 0 16px', fontSize: 16, fontWeight: 900}}>{editId ? 'Edit Power Record' : 'Add NEECO Power Interruption'}</h3>
+        <div style={{ ...cardStyle, background: S.isDark ? "rgba(255, 255, 255, 0.02)" : S.card, padding: 18 }}>
+          <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 800, color: S.text }}>{editId ? 'Edit Power Record' : 'Add NEECO Power Interruption'}</h3>
           <form onSubmit={handleSave} style={{display: 'flex', flexDirection: 'column', gap: 14}}>
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
               <div>
@@ -6725,8 +7562,8 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                 <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{...inputStyle, resize: 'vertical'}} />
               </div>
             </div>
-            <div style={{display: 'flex', justifyContent: 'flex-end', gap: 10}}>
-              <button type='button' onClick={() => { resetForm(); setActiveTab('view'); }} style={{...btnPrimary, background: S.muted}}>Cancel</button>
+            <div style={{display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 12, borderTop: `1px solid ${S.border}`}}>
+              <button type='button' onClick={() => { resetForm(); setActiveTab('view'); }} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${S.border}`, background: S.cardSubtle, color: S.text, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
               <button type='submit' style={btnPrimary}><Check size={16} /> {editId ? 'Update' : 'Save'}</button>
             </div>
           </form>
@@ -6734,13 +7571,13 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
       )}
 
       {activeTab === 'view' && (
-        <div style={cardStyle}>
+        <div style={{ ...cardStyle, background: S.isDark ? "rgba(255, 255, 255, 0.02)" : S.card, padding: 18 }}>
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16}}>
-            <h3 style={{margin: 0, fontSize: 16, fontWeight: 900}}>NEECO Power Interruption Records</h3>
-            <p style={{margin: 0, fontSize: 13, color: S.muted}}>{records.length} total record{records.length !== 1 ? 's' : ''}</p>
+            <h3 style={{margin: 0, fontSize: 16, fontWeight: 800, color: S.text}}>NEECO Power Interruption Records</h3>
+            <span style={{fontSize: 12, fontWeight: 600, color: S.muted}}>{records.length} total record{records.length !== 1 ? 's' : ''}</span>
           </div>
           {loading ? (
-            <p style={{color: S.muted, textAlign: 'center', padding: 20}}>Loading...</p>
+            <p style={{color: S.muted, textAlign: 'center', padding: 20}}>Loading records...</p>
           ) : records.length === 0 ? (
             <p style={{color: S.muted, textAlign: 'center', padding: 20}}>No power interruption records yet. Add one above.</p>
           ) : (
@@ -6750,29 +7587,57 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                 const label = d.toLocaleDateString('en-PH', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
                 const sc = statusColors[r.restoration_status] || { bg: '#f1f5f9', color: S.muted };
                 return (
-                  <div key={r.id} style={{ border: `1px solid ${S.border}`, borderRadius: 12, padding: 16, background: '#fafcf9' }}>
+                  <div key={r.id} style={{ border: `1px solid ${S.border}`, borderRadius: 10, padding: 14, background: S.isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.015)" }}>
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
                       <div style={{flex: 1}}>
-                        <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6}}>
-                          <Zap size={16} color='#eab308' />
-                          <span style={{fontWeight: 900, fontSize: 15, color: S.text}}>{label}</span>
-                          <span style={{padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 800, background: sc.bg, color: sc.color}}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap'}}>
+                          <Zap size={15} color='#eab308' strokeWidth={2.2} />
+                          <span style={{fontWeight: 800, fontSize: 14, color: S.text}}>{label}</span>
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: 6,
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            background: r.restoration_status === 'ongoing' ? (S.isDark ? "rgba(239, 68, 68, 0.14)" : "#fef2f2") : r.restoration_status === 'partial' ? (S.isDark ? "rgba(249, 115, 22, 0.14)" : "#fff7ed") : (S.isDark ? "rgba(34, 197, 94, 0.14)" : "#f0fdf4"),
+                            color: r.restoration_status === 'ongoing' ? (S.isDark ? "#ef4444" : "#dc2626") : r.restoration_status === 'partial' ? (S.isDark ? "#f97316" : "#ea580c") : (S.isDark ? "#22c55e" : "#16a34a"),
+                            border: `1px solid ${r.restoration_status === 'ongoing' ? (S.isDark ? "rgba(239, 68, 68, 0.28)" : "#fecaca") : r.restoration_status === 'partial' ? (S.isDark ? "rgba(249, 115, 22, 0.28)" : "#fed7aa") : (S.isDark ? "rgba(34, 197, 94, 0.28)" : "#bbf7d0")}`
+                          }}>
                             {r.restoration_status === 'ongoing' ? 'Ongoing' : r.restoration_status === 'partial' ? 'Partial' : 'Restored'}
                           </span>
                         </div>
-                        <div style={{display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: 12, color: S.muted}}>
-                          <span>⚡ {r.total_outages || 0} outage{(r.total_outages || 0) !== 1 ? 's' : ''}</span>
-                          <span>🏠 {(r.total_affected_households || 0).toLocaleString()} households</span>
-                          <span>⏱ {Math.floor((r.total_duration_minutes || 0) / 60)}h {(r.total_duration_minutes || 0) % 60}m</span>
-                          {r.peak_outage_time && <span>🕐 Peak: {r.peak_outage_time.slice(0, 5)}</span>}
-                          {r.cause && <span>🔧 {causeLabels[r.cause] || r.cause}</span>}
+                        <div style={{display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: 11.5, color: S.muted}}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Zap size={12} strokeWidth={2} />
+                            <span>{r.total_outages || 0} outage{(r.total_outages || 0) !== 1 ? 's' : ''}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Home size={12} strokeWidth={2} />
+                            <span>{(r.total_affected_households || 0).toLocaleString()} households</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Clock size={12} strokeWidth={2} />
+                            <span>{Math.floor((r.total_duration_minutes || 0) / 60)}h {(r.total_duration_minutes || 0) % 60}m</span>
+                          </div>
+                          {r.peak_outage_time && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Clock size={12} strokeWidth={2} />
+                              <span>Peak: {r.peak_outage_time.slice(0, 5)}</span>
+                            </div>
+                          )}
+                          {r.cause && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Wrench size={12} strokeWidth={2} />
+                              <span>{causeLabels[r.cause] || r.cause}</span>
+                            </div>
+                          )}
                         </div>
                         {r.feeders_affected && <p style={{margin: '6px 0 0', fontSize: 12, color: S.text}}>Feeders: {r.feeders_affected}</p>}
                         {r.description && <p style={{margin: '4px 0 0', fontSize: 12, color: S.muted}}>{r.description}</p>}
                       </div>
                       <div style={{display: 'flex', gap: 6, marginLeft: 12}}>
-                        <button onClick={() => handleEdit(r)} style={{ background: 'none', border: `1px solid ${S.border}`, borderRadius: 8, padding: 6, cursor: 'pointer', color: S.text }}><Edit2 size={14} /></button>
-                        <button onClick={() => handleDelete(r.id)} style={btnDanger}><Trash2 size={14} /></button>
+                        <button onClick={() => handleEdit(r)} style={{ background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "#ffffff", border: `1px solid ${S.border}`, borderRadius: 6, padding: "4px 8px", cursor: 'pointer', color: S.text, fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}><Edit2 size={11} /> Edit</button>
+                        <button onClick={() => handleDelete(r.id)} style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}><Trash2 size={12} /></button>
                       </div>
                     </div>
                   </div>

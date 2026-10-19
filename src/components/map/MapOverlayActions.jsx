@@ -28,6 +28,19 @@ export function MapOverlayActions({
   const [openDropdown, setOpenDropdown] = useState(null);
   const containerRef = useRef(null);
 
+  // Mobile detection for compact controls & icon-only category pills (< 1024px matches CLIMA mobile view)
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 1024 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // Close dropdowns on outside click or touch
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -82,16 +95,15 @@ export function MapOverlayActions({
             }}
           >
             {/* Top Row: Search Bar and Controls */}
-            <div style={{ display: "flex", gap: 8, alignItems: "center", width: "100%" }}>
-              {/* 1. Left Side: Search Bar */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <SearchBar
-                  mapRef={mapRef}
-                  onSearchSelect={setSearchPin}
-                  userLocation={userLocation}
-                  isPill={false}
-                />
-              </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", width: "100%", position: "relative" }}>
+              {/* 1. Left Side: Search Bar Icon / Overlay */}
+              <SearchBar
+                mapRef={mapRef}
+                onSearchSelect={setSearchPin}
+                userLocation={userLocation}
+                isOpen={openDropdown === "search"}
+                onToggleOpen={(open) => setOpenDropdown(open ? "search" : null)}
+              />
 
               {/* 2. Beside Search Bar: IoT Weather Metric & Scale Legend Pills */}
               {activeLayers?.kloudtrackStations && (
@@ -147,6 +159,9 @@ export function MapOverlayActions({
                 return (
                   <button
                     key={cat.id}
+                    className="map-category-shortcut-btn"
+                    title={cat.label}
+                    aria-label={cat.label}
                     onClick={() => {
                       // When clicked, open the category list panel
                       if (onCategoryClick) {
@@ -156,9 +171,13 @@ export function MapOverlayActions({
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 7,
-                      padding: "8px 14px",
-                      borderRadius: 16,
+                      justifyContent: isMobile ? "center" : "flex-start",
+                      gap: isMobile ? 0 : 7,
+                      padding: isMobile ? "0" : "8px 14px",
+                      width: isMobile ? 38 : "auto",
+                      height: isMobile ? 38 : "auto",
+                      minWidth: isMobile ? 38 : "auto",
+                      borderRadius: isMobile ? 12 : 16,
                       background: isActive
                         ? isDark
                           ? "rgba(255, 255, 255, 0.15)"
@@ -175,21 +194,24 @@ export function MapOverlayActions({
                         ? "0 2px 8px rgba(0,0,0,0.3)"
                         : "0 2px 8px rgba(0,0,0,0.05)",
                       cursor: "pointer",
-                      transition: "all 0.2s",
+                      transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
                       whiteSpace: "nowrap",
                       flexShrink: 0,
                     }}
                   >
-                    <IconComponent size={14} color={cat.color} strokeWidth={2.4} />
-                    <span
-                      style={{
-                        fontSize: 11.5,
-                        fontWeight: 700,
-                        color: isDark ? "#ffffff" : "#09090b",
-                      }}
-                    >
-                      {cat.label}
-                    </span>
+                    <IconComponent size={isMobile ? 18 : 14} color={cat.color} strokeWidth={2.4} />
+                    {!isMobile && (
+                      <span
+                        className="map-category-shortcut-label"
+                        style={{
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          color: isDark ? "#ffffff" : "#09090b",
+                        }}
+                      >
+                        {cat.label}
+                      </span>
+                    )}
                   </button>
                 );
               })}

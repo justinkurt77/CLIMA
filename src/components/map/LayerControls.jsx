@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layers, ChevronDown, ChevronUp, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
@@ -80,6 +80,16 @@ export function LayerControls({
   const [expandedCategories, setExpandedCategories] = useState(["kloudtrack", "boundaries", "incidents"]);
   const { isDark } = useTheme();
 
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 1024 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const toggleCategory = (categoryId) => {
     setExpandedCategories((prev) =>
       prev.includes(categoryId)
@@ -111,8 +121,10 @@ export function LayerControls({
       {/* Toggle Button */}
       <button
         onClick={handleToggle}
+        className="layer-controls-btn"
+        title={`Map Layers (${visibleLayersCount} active)`}
         style={{
-          height: 56,
+          height: isMobile ? 42 : 56,
           background: isDark
             ? "rgba(18, 18, 20, 0.94)"
             : "rgba(255, 255, 255, 0.96)",
@@ -122,10 +134,10 @@ export function LayerControls({
             ? "1px solid rgba(255, 255, 255, 0.12)"
             : "1px solid rgba(0, 0, 0, 0.08)",
           borderRadius: 40,
-          padding: "0 18px",
+          padding: isMobile ? "0 10px" : "0 18px",
           display: "flex",
           alignItems: "center",
-          gap: 8,
+          gap: isMobile ? 5 : 8,
           cursor: "pointer",
           boxShadow: isDark
             ? "0 6px 20px rgba(0,0,0,0.5)"
@@ -137,9 +149,9 @@ export function LayerControls({
           whiteSpace: "nowrap",
         }}
       >
-        <Layers size={18} />
-        <span>Layers ({visibleLayersCount})</span>
-        {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        <Layers size={isMobile ? 16 : 18} />
+        {!isMobile && <span className="layer-controls-label">Layers ({visibleLayersCount})</span>}
+        {isOpen ? <ChevronUp size={isMobile ? 14 : 16} /> : <ChevronDown size={isMobile ? 14 : 16} />}
       </button>
 
       {/* Layer Panel */}

@@ -97,8 +97,8 @@ const CLIMA_COMMUNITY_FACILITIES = [
   
   // Utility Services
   { id: "us1", name: "NEECO II Area 2 Palayan City Branch Office", lat: 15.54354600100982, lng: 121.08609465767155, icon: "Zap", pinColor: "#f59e0b", filterType: "utility", contact: "N/A", desc: "Electric utility company branch office" },
-  { id: "us2", name: "Palayan City Water District", lat: 15.543611484504744, lng: 121.08411454397788, icon: "Zap", pinColor: "#f59e0b", filterType: "utility", contact: "09188074263", desc: "Water utility company" },
-  { id: "us3", name: "Balibago Waterworks", lat: 15.563667717107219, lng: 121.10125996097958, icon: "Zap", pinColor: "#f59e0b", filterType: "utility", contact: "N/A", desc: "Water utility facility" },
+  { id: "us2", name: "Palayan City Water District", lat: 15.543611484504744, lng: 121.08411454397788, icon: "Droplet", pinColor: "#0284c7", filterType: "water", statusLabel: "Water District", contact: "09188074263", desc: "Water utility company" },
+  { id: "us3", name: "Balibago Waterworks", lat: 15.563667717107219, lng: 121.10125996097958, icon: "Droplet", pinColor: "#0284c7", filterType: "water", statusLabel: "Water Service", contact: "N/A", desc: "Water utility facility" },
   
   // Public Services & Government Offices
   { id: "ps1", name: "CDRRMO", lat: 15.559702386051606, lng: 121.09986385339798, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "09669109674", desc: "City Disaster Risk Reduction and Management Office" },
@@ -563,7 +563,13 @@ function MapScreen({
   const visibleFacilities = useMemo(() => {
     const combined = [...CLIMA_COMMUNITY_FACILITIES, ...mappedCustomFacilities];
     // Show government facilities always (not filterable), filter the rest
-    return combined.filter((f) => f.filterType === "government" || activeFilters.includes(f.filterType));
+    return combined.filter(
+      (f) =>
+        f.filterType === "government" ||
+        activeFilters.includes(f.filterType) ||
+        (f.icon === "Droplet" && activeFilters.includes("water")) ||
+        (f.id.startsWith("us") && activeFilters.includes("utility"))
+    );
   }, [mappedCustomFacilities, activeFilters]);
 
   const allReports = userReports.filter((r) => {
@@ -741,7 +747,7 @@ function MapScreen({
             ...facility,
             title: facility.name,
             status: facility.filterType,
-            statusLabel: categoryLabels[facility.filterType] || facility.filterType,
+            statusLabel: facility.statusLabel || categoryLabels[facility.filterType] || facility.filterType,
             description: null,
             isFacility: true,
             facilityDesc: facility.desc,
@@ -1135,7 +1141,7 @@ function MapScreen({
                     ...fac,
                     title: fac.name,
                     status: fac.filterType,
-                    statusLabel: categoryLabels[fac.filterType] || fac.filterType,
+                    statusLabel: fac.statusLabel || categoryLabels[fac.filterType] || fac.filterType,
                     // Don't use description field - facilities will show details differently
                     description: null,
                     // Add facility-specific fields
@@ -1344,7 +1350,7 @@ function MapScreen({
               onClose={closePopup}
               className={isExiting ? "popup-exiting" : ""}
               style={{ fontFamily: "Nunito, sans-serif" }}
-              maxWidth="280px"
+              maxWidth="320px"
             >
               <MapPopupContent
                 selectedReport={selectedReport}
