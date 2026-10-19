@@ -12,6 +12,7 @@ import {
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import { logger } from "../../lib/logger";
+import { getUserProfile } from "../../lib/authHelpers";
 
 const MOBILE_NAV_ITEMS = [
   { id: "home", label: "Home", icon: Home },
@@ -53,8 +54,9 @@ export default function CitizenNav({
     }, 800);
   };
 
-  const userAvatar = session?.user?.user_metadata?.avatar_url;
-  const firstName = session?.user?.user_metadata?.first_name || "Palayano";
+  const userProfile = getUserProfile(session?.user);
+  const userAvatar = userProfile?.avatarUrl;
+  const firstName = userProfile?.firstName || "Palayano";
   const userInitial = firstName.charAt(0).toUpperCase();
 
   return (

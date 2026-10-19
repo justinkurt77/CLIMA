@@ -20,6 +20,7 @@ import imageCompression from "browser-image-compression";
 import { useTheme } from "../context/ThemeContext";
 import { logger } from "../lib/logger";
 import { validateImageFile } from "../lib/fileValidator";
+import { getUserProfile } from "../lib/authHelpers";
 
 const menuItems = [
   { id: "reports", Icon: ClipboardList, label: "My Reports" },
@@ -29,20 +30,18 @@ const menuItems = [
 
 function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiveScreen, isLoadingReports = false }) {
   const { theme, toggleTheme, isDark } = useTheme();
+  const userProfile = getUserProfile(session?.user);
+
   // Filter for the user's personal reports to show in "My Reports" and stats
   const userReports = (allReports || []).filter((r) => {
     if (!session?.user) return false;
     const uid = session.user.id;
-    const meta = session.user.user_metadata;
-    const firstName = meta?.first_name || "";
-    const lastName = meta?.last_name || "";
-    const fullName = meta?.full_name || `${firstName} ${lastName}`.trim();
-    
+    const fullName = userProfile?.fullName || "";
     return r.user_id === uid || (fullName && r.full_name === fullName);
   });
   const [view, setView] = useState("menu"); // "menu" | "reports" | "customize"
   const [showAuth, setShowAuth] = useState(
-    !session || !session?.user?.user_metadata?.first_name,
+    !session || !userProfile?.isComplete,
   );
 
   // Form states for profile customization
@@ -60,20 +59,25 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
 
   // Sync session metadata
   useEffect(() => {
-    if (session?.user?.user_metadata) {
-      const meta = session.user.user_metadata;
-      setFirstName(meta.first_name || "");
-      setLastName(meta.last_name || "");
-      setPhone(meta.phone || "");
-      setAvatarPreview(meta.avatar_url || "");
-      setAvatarFile(null);
+    if (session?.user) {
+      const p = getUserProfile(session.user);
+      if (p) {
+        setFirstName(p.firstName || "");
+        setLastName(p.lastName || "");
+        setPhone(session.user.user_metadata?.phone || "");
+        setAvatarPreview(p.avatarUrl || "");
+        setAvatarFile(null);
+      }
     }
   }, [session, view]);
 
   // Require users to complete setup (set first name) before seeing their profile
   useEffect(() => {
-    if (!session || !session.user?.user_metadata?.first_name) {
+    const p = getUserProfile(session?.user);
+    if (!session || !p?.isComplete) {
       setShowAuth(true);
+    } else {
+      setShowAuth(false);
     }
   }, [session]);
 
@@ -781,9 +785,9 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
               <div className="profile-header-card">
                 {/* Monochrome pill: avatar + name */}
                 <div className="profile-pill">
-                  {session?.user?.user_metadata?.avatar_url ? (
+                  {userProfile?.avatarUrl ? (
                     <img
-                      src={session.user.user_metadata.avatar_url}
+                      src={userProfile.avatarUrl}
                       alt="Profile"
                       className="profile-avatar-green"
                       style={{
@@ -804,11 +808,11 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                         background: "#27272a",
                       }}
                     >
-                      {session?.user?.user_metadata?.first_name?.charAt(0).toUpperCase() || "P"}
+                      {userProfile?.firstName?.charAt(0).toUpperCase() || "P"}
                     </div>
                   )}
                   <span className="profile-name-green">
-                    {session?.user?.user_metadata?.full_name || "Palayano User"}
+                    {userProfile?.fullName || "Palayano User"}
                   </span>
                 </div>
 

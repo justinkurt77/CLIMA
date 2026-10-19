@@ -5,6 +5,7 @@ import compression from 'compression';
 import bodyParser from 'body-parser';
 import rateLimit from 'express-rate-limit';
 import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
@@ -31,6 +32,30 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Citizen registration limiter: allows adequate attempts while preventing brute force
+const citizenAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: 'Too many requests, please try again in a few minutes.',
+  skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// In-memory pending registrations (DO NOT add users to auth.users until OTP verified & form submitted)
+// email -> { otp, expiresAt, attempts, verified, verificationToken }
+const pendingRegistrations = new Map();
+
+// Periodic cleanup of expired pending registrations every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [emailKey, record] of pendingRegistrations.entries()) {
+    if (record.expiresAt < now) {
+      pendingRegistrations.delete(emailKey);
+    }
+  }
+}, 5 * 60 * 1000);
 
 // Security Middleware
 // Helmet with custom CSP configuration
@@ -239,6 +264,311 @@ app.post('/api/admin/create', authLimiter, async (req, res) => {
     res.status(500).json({ 
       error: 'Internal server error', 
       details: error.message 
+    });
+  }
+});
+
+// Citizen Registration & Forgot Password OTP endpoint via Nodemailer
+app.post('/api/auth/send-user-otp', authLimiter, async (req, res) => {
+  try {
+    const { email, type = 'signup' } = req.body;
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'A valid email address is required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Check if user already exists
+    const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    if (listError) {
+      console.error('List users error:', listError);
+      return res.status(500).json({ error: 'Failed to verify account status' });
+    }
+
+    const existingUser = usersData.users.find(
+      (u) => u.email?.toLowerCase() === cleanEmail
+    );
+
+    const linkType = type === 'recovery' ? 'recovery' : 'signup';
+    let otpCode;
+    const isSignup = linkType === 'signup';
+
+    if (isSignup) {
+      if (existingUser && existingUser.email_confirmed_at) {
+        return res.status(400).json({
+          error: 'This email is already registered! Please go back and Login.'
+        });
+      }
+      // If user exists but was an abandoned unconfirmed record, delete it so auth.users stays clean
+      if (existingUser && !existingUser.email_confirmed_at) {
+        try {
+          await supabaseAdmin.auth.admin.deleteUser(existingUser.id);
+        } catch (e) {
+          console.warn('Could not delete unconfirmed user:', e.message);
+        }
+      }
+
+      // Generate a 6-digit OTP code directly in Node.js
+      // CRITICAL: DO NOT create a user in Supabase auth.users at this stage!
+      // This ensures that if the user closes the modal or never enters the OTP, NO user or email is added to Supabase.
+      otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      pendingRegistrations.set(cleanEmail, {
+        otp: otpCode,
+        expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+        attempts: 0,
+        verified: false,
+      });
+    } else {
+      // linkType === 'recovery'
+      if (!existingUser) {
+        return res.status(404).json({
+          error: 'No account found with this email address.'
+        });
+      }
+
+      const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'recovery',
+        email: cleanEmail,
+      });
+
+      if (linkError || !linkData?.properties?.email_otp) {
+        console.error('generateLink recovery error:', linkError);
+        return res.status(500).json({
+          error: linkError?.message || 'Failed to generate reset code'
+        });
+      }
+
+      otpCode = linkData.properties.email_otp;
+    }
+
+    // Send the email using Nodemailer with Gmail SMTP
+    const mailOptions = {
+      from: `"CLIMA Palayan City" <${process.env.SMTP_USER}>`,
+      to: cleanEmail,
+      subject: isSignup
+        ? `Your CLIMA Verification Code: ${otpCode}`
+        : `Your CLIMA Password Reset Code: ${otpCode}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0c0a09; color: #f4f4f5; margin: 0; padding: 20px; }
+            .card { max-width: 520px; margin: 0 auto; background: #18181b; border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 20px; padding: 32px 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+            .header { text-align: center; margin-bottom: 24px; }
+            .brand { color: #f97316; font-size: 28px; font-weight: 900; letter-spacing: 2px; margin: 0; }
+            .subtitle { color: #a1a1aa; font-size: 13px; margin-top: 4px; }
+            .title { font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px; text-align: center; }
+            .desc { font-size: 14px; color: #d4d4d8; text-align: center; margin-bottom: 24px; line-height: 1.5; }
+            .otp-container { background: #27272a; border: 1px dashed #f97316; border-radius: 14px; padding: 18px 24px; text-align: center; margin: 24px 0; }
+            .otp-code { font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #f97316; font-family: 'Courier New', Courier, monospace; }
+            .otp-label { font-size: 11px; text-transform: uppercase; color: #a1a1aa; letter-spacing: 1.5px; margin-top: 6px; }
+            .footer { font-size: 12px; color: #71717a; text-align: center; margin-top: 28px; line-height: 1.6; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="header">
+              <div class="brand">CLIMA</div>
+              <div class="subtitle">Palayan City Disaster Monitoring & Awareness</div>
+            </div>
+            
+            <div class="title">${isSignup ? 'Verify Your Account' : 'Password Reset Code'}</div>
+            <div class="desc">
+              ${isSignup
+                ? 'Please use the verification code below to complete your registration in CLIMA.'
+                : 'You requested to reset your password. Use the verification code below to proceed.'}
+            </div>
+
+            <div class="otp-container">
+              <div class="otp-code">${otpCode}</div>
+              <div class="otp-label">Verification Code (Valid for 10 minutes)</div>
+            </div>
+
+            <div style="font-size: 13px; color: #a1a1aa; text-align: center; line-height: 1.5;">
+              Never share this code with anyone. If you did not request this, please safely ignore this email.
+            </div>
+
+            <div class="footer">
+              &copy; ${new Date().getFullYear()} City of Palayan &bull; Climate Information Monitoring & Awareness
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({
+      success: true,
+      message: 'Verification code sent to your email',
+      type: linkType
+    });
+
+  } catch (error) {
+    console.error('Send user OTP error:', error);
+    res.status(500).json({
+      error: 'Failed to send verification code',
+      details: error.message
+    });
+  }
+});
+
+// Verify citizen registration OTP (Validates against in-memory map without touching Supabase auth.users yet)
+app.post('/api/auth/verify-registration-otp', citizenAuthLimiter, async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ error: 'Email and verification code are required.' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const pending = pendingRegistrations.get(cleanEmail);
+
+    if (!pending || pending.expiresAt < Date.now()) {
+      return res.status(400).json({
+        error: 'Verification code expired or not requested. Please request a new code.'
+      });
+    }
+
+    if (pending.attempts >= 5) {
+      pendingRegistrations.delete(cleanEmail);
+      return res.status(400).json({
+        error: 'Too many incorrect attempts. Please request a new verification code.'
+      });
+    }
+
+    if (pending.otp !== otp.trim()) {
+      pending.attempts += 1;
+      return res.status(400).json({
+        error: 'Invalid verification code. Please check your email and try again.'
+      });
+    }
+
+    // Code is valid! Generate a verification session token for profile completion
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    pendingRegistrations.set(cleanEmail, {
+      verified: true,
+      verificationToken,
+      expiresAt: Date.now() + 15 * 60 * 1000 // 15 minutes to finish profile details
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Code verified successfully.',
+      verificationToken
+    });
+  } catch (error) {
+    console.error('Verify registration OTP error:', error);
+    res.status(500).json({
+      error: 'Failed to verify code',
+      details: error.message
+    });
+  }
+});
+
+// Complete citizen registration - ONLY HERE is the user actually added to Supabase auth.users
+app.post('/api/auth/complete-registration', citizenAuthLimiter, async (req, res) => {
+  try {
+    const { email, verificationToken, firstName, lastName, phone, password } = req.body;
+
+    if (!email || !verificationToken || !firstName || !lastName || !password) {
+      return res.status(400).json({
+        error: 'Missing required registration fields (first name, last name, password).'
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const pending = pendingRegistrations.get(cleanEmail);
+
+    if (
+      !pending ||
+      !pending.verified ||
+      pending.verificationToken !== verificationToken ||
+      pending.expiresAt < Date.now()
+    ) {
+      return res.status(400).json({
+        error: 'Registration session expired or invalid. Please request a new verification code.'
+      });
+    }
+
+    // Check if account already exists
+    const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    if (!listError && usersData?.users) {
+      const existingUser = usersData.users.find((u) => u.email?.toLowerCase() === cleanEmail);
+      if (existingUser && existingUser.email_confirmed_at) {
+        return res.status(400).json({
+          error: 'An account with this email already exists. Please log in.'
+        });
+      }
+      if (existingUser && !existingUser.email_confirmed_at) {
+        try {
+          await supabaseAdmin.auth.admin.deleteUser(existingUser.id);
+        } catch (e) {
+          console.warn('Could not clean unconfirmed duplicate:', e.message);
+        }
+      }
+    }
+
+    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+
+    // Now, and ONLY now, create the user in Supabase auth.users
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: cleanEmail,
+      password: password,
+      email_confirm: true,
+      user_metadata: {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        full_name: fullName,
+        phone: phone ? phone.trim() : null,
+        role: 'citizen',
+        profile_completed: true,
+      }
+    });
+
+    if (authError) {
+      console.error('Supabase createUser error in complete-registration:', authError);
+      return res.status(500).json({
+        error: authError.message || 'Failed to create user account'
+      });
+    }
+
+    // Upsert to profiles table
+    try {
+      await supabaseAdmin.from('profiles').upsert({
+        id: authData.user.id,
+        email: cleanEmail,
+        full_name: fullName,
+        phone: phone ? phone.trim() : null,
+        role: 'citizen',
+        updated_at: new Date().toISOString()
+      });
+    } catch (profileErr) {
+      console.warn('Profile sync warning in complete-registration:', profileErr.message);
+    }
+
+    // Clean up pending registration
+    pendingRegistrations.delete(cleanEmail);
+
+    res.status(200).json({
+      success: true,
+      message: 'Account successfully registered and confirmed.',
+      user: authData.user
+    });
+  } catch (error) {
+    console.error('Complete registration error:', error);
+    res.status(500).json({
+      error: 'Failed to complete registration',
+      details: error.message
     });
   }
 });

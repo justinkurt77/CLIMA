@@ -31,6 +31,7 @@ import { LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
 import { logger } from "../lib/logger";
+import { getUserProfile } from "../lib/authHelpers";
 import {
   fetchKloudtechDashboard,
   fetchKloudtechActiveStations,
@@ -352,7 +353,8 @@ export default function HomeScreen({
     });
   }, []);
 
-  const firstName = session?.user?.user_metadata?.first_name;
+  const userProfile = getUserProfile(session?.user);
+  const firstName = userProfile?.firstName;
   const displayName = firstName || "Palayano";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";

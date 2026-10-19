@@ -23,7 +23,8 @@ export default function AdminLogin({ onLogin }) {
 
   const superadminsHashes = [
     '980f32df69a604ee31a4ca3a18cfea910de69ef3c496124dc8e19f76c4fa5686',
-    'd9d660ee4195a6ac7e0b6a4a4aecbbbf9132683fa17e54383899a07b8671e484'
+    'd9d660ee4195a6ac7e0b6a4a4aecbbbf9132683fa17e54383899a07b8671e484',
+    '7932b2e116b076a54f452848eaabd5857f61bd957fe8a218faf216f24c9885bb'
   ];
 
   // Listen for password recovery links or test admin query param

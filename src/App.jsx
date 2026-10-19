@@ -31,6 +31,7 @@ const LegalScreen = lazy(() => import("./screens/LegalScreen"));
 const NotFoundScreen = lazy(() => import("./screens/NotFoundScreen"));
 
 import { supabase } from "./lib/supabase";
+import { syncGoogleUserProfile, getUserProfile } from "./lib/authHelpers";
 
 const GREEN = "#2d8119";
 function Toast({ message, onDone }) {
@@ -48,6 +49,17 @@ function App() {
   const forcedSkeleton = urlParams?.get("skeleton");
 
   const [activeScreen, setActiveScreen] = useState(() => {
+    const savedReturnTab =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem("clima_auth_return_tab")
+        : null;
+    if (
+      savedReturnTab &&
+      ["home", "about", "maps", "profile", "elnino"].includes(savedReturnTab)
+    ) {
+      sessionStorage.removeItem("clima_auth_return_tab");
+      return savedReturnTab;
+    }
     if (forcedSkeleton && ["home", "about", "maps", "profile", "elnino"].includes(forcedSkeleton)) {
       return forcedSkeleton;
     }
@@ -108,14 +120,32 @@ function App() {
 
   // Auth Listener
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        const syncedSession = await syncGoogleUserProfile(supabase, session);
+        setSession(syncedSession);
+        const p = getUserProfile(syncedSession.user);
+        if (!p?.isComplete && !syncedSession.user.user_metadata?.role?.includes('admin')) {
+          setActiveScreen('profile');
+        }
+      } else {
+        setSession(null);
+      }
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        const syncedSession = await syncGoogleUserProfile(supabase, session);
+        setSession(syncedSession);
+        const p = getUserProfile(syncedSession.user);
+        if (!p?.isComplete && !syncedSession.user.user_metadata?.role?.includes('admin')) {
+          setActiveScreen('profile');
+        }
+      } else {
+        setSession(null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -141,10 +171,11 @@ function App() {
         const userEmailHash = await sha256(user.email || "");
         const superadminsHashes = [
           '980f32df69a604ee31a4ca3a18cfea910de69ef3c496124dc8e19f76c4fa5686',
-          'd9d660ee4195a6ac7e0b6a4a4aecbbbf9132683fa17e54383899a07b8671e484'
+          'd9d660ee4195a6ac7e0b6a4a4aecbbbf9132683fa17e54383899a07b8671e484',
+          '7932b2e116b076a54f452848eaabd5857f61bd957fe8a218faf216f24c9885bb'
         ];
-        const isSuper = superadminsHashes.includes(userEmailHash);
-        let isAdmin = user.user_metadata?.role === 'admin';
+        const isSuper = superadminsHashes.includes(userEmailHash) || user.user_metadata?.role === 'superadmin';
+        let isAdmin = user.user_metadata?.role === 'admin' || isSuper;
         let assignedCategories = user.user_metadata?.assigned_categories || ["All Categories"];
 
         if (!isSuper && !isAdmin) return; // not an admin, don't restore
@@ -261,7 +292,8 @@ function App() {
 
   const openModal = () => {
     // Check if user is authenticated before opening modal
-    if (!session || !session.user?.user_metadata?.first_name) {
+    const profile = getUserProfile(session?.user);
+    if (!session || !profile?.isComplete) {
       // User not logged in or profile incomplete -> redirect to profile/auth
       handleTabChange('profile');
       return;

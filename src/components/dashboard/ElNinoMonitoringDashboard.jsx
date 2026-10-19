@@ -1231,9 +1231,12 @@ function CivicAdvisoryCard({ post, isDark, session, onNavigateToAuth, onShareToa
     if (!newCommentText.trim()) return;
 
     const userMeta = session.user.user_metadata;
-    const authorName = userMeta?.first_name
-      ? `${userMeta.first_name} ${userMeta.last_name || ""}`.trim()
-      : session.user.email?.split("@")[0] || "Registered Citizen";
+    const authorName =
+      userMeta?.full_name ||
+      userMeta?.name ||
+      (userMeta?.first_name
+        ? `${userMeta.first_name} ${userMeta.last_name || ""}`.trim()
+        : session.user.email?.split("@")[0] || "Registered Citizen");
 
     const newComment = {
       id: `comm-${Date.now()}`,

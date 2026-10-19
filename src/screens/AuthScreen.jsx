@@ -15,23 +15,32 @@ import {
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
+import GoogleIcon from "../components/ui/GoogleIcon";
+import { signInWithGoogle, getUserProfile } from "../lib/authHelpers";
+import { logger } from "../lib/logger";
 
 export default function AuthScreen({ onLoginSuccess, session }) {
+  const initialProfile = getUserProfile(session?.user);
   const [mode, setMode] = useState(
-    session && !session.user?.user_metadata?.first_name ? "complete" : "login",
+    session && !initialProfile?.isComplete ? "complete" : "login",
   ); // login, register, verify, complete
 
   useEffect(() => {
-    // If the global auth listener sends us a session that isn't fully set up,
-    // lock the user into the complete profile screen.
-    if (session && !session.user?.user_metadata?.first_name) {
-      setMode("complete");
+    // If the global auth listener sends us a session, check if setup is complete
+    if (session?.user) {
+      const p = getUserProfile(session.user);
+      if (p?.isComplete) {
+        onLoginSuccess?.(session);
+      } else {
+        setMode("complete");
+      }
     }
-  }, [session]);
+  }, [session, onLoginSuccess]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
+  const [verificationToken, setVerificationToken] = useState(null);
 
   // Profile completion fields
   const [firstName, setFirstName] = useState("");
@@ -44,6 +53,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
   const [resetConfirmPassword, setResetConfirmPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState(null);
   const [msg, setMsg] = useState(null);
   
@@ -52,6 +62,46 @@ export default function AuthScreen({ onLoginSuccess, session }) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
+
+  // Sync profile data if user came from OAuth with partial metadata
+  useEffect(() => {
+    if (session?.user) {
+      const p = getUserProfile(session.user);
+      if (p) {
+        if (!firstName && p.firstName) setFirstName(p.firstName);
+        if (!lastName && p.lastName) setLastName(p.lastName);
+      }
+    }
+  }, [session]);
+
+  const isOAuthUser = Boolean(
+    session?.user?.app_metadata?.provider === "google" ||
+    session?.user?.app_metadata?.providers?.includes("google") ||
+    session?.user?.identities?.some((id) => id.provider === "google") ||
+    session?.user?.user_metadata?.avatar_url ||
+    session?.user?.user_metadata?.picture ||
+    session?.user?.user_metadata?.iss?.includes("google")
+  );
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    setError(null);
+    try {
+      await signInWithGoogle(supabase, { returnTab: "profile" });
+    } catch (err) {
+      logger.error("Google sign-in error:", err);
+      let errMsg = err.message || "Failed to sign in with Google.";
+      if (
+        errMsg.toLowerCase().includes("provider is not enabled") ||
+        errMsg.toLowerCase().includes("unsupported provider")
+      ) {
+        errMsg =
+          "Google login is not enabled in the Supabase project. Please configure Google provider in Supabase Auth settings.";
+      }
+      setError(errMsg);
+      setGoogleLoading(false);
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -82,37 +132,33 @@ export default function AuthScreen({ onLoginSuccess, session }) {
     }
   };
 
+  // Send OTP using custom Nodemailer backend without touching Supabase auth.users prematurely
+  const sendUserOtp = async (targetEmail, type = 'signup') => {
+    const cleanEmail = targetEmail.trim().toLowerCase();
+
+    const response = await fetch('/api/auth/send-user-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: cleanEmail, type }),
+    });
+
+    const resData = await response.json();
+    if (response.ok && resData.success) {
+      return { success: true };
+    }
+    throw new Error(resData.error || 'Failed to send verification code. Please check your email.');
+  };
+
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setMsg(null);
     try {
-      const { error: checkError } = await supabase.auth.signInWithOtp({
-        email: email,
-        options: {
-          shouldCreateUser: false,
-        },
-      });
-
-      if (!checkError) {
-        throw new Error(
-          "This email is already registered! Please go back and Login.",
-        );
-      }
-
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email,
-        options: {
-          shouldCreateUser: true,
-        },
-      });
-
-      if (error) throw error;
-
+      await sendUserOtp(email, 'signup');
       setMode("verify");
       setMsg(
-        "Please check your email inbox for the 8-digit verification code. (Check spam too!)",
+        "A 6-digit verification code has been sent to your email. Check your inbox (and spam folder)!",
       );
     } catch (err) {
       setError(err.message || "Failed to send Code.");
@@ -126,42 +172,23 @@ export default function AuthScreen({ onLoginSuccess, session }) {
     setLoading(true);
     setError(null);
     try {
-      let sessionData = null;
+      const response = await fetch('/api/auth/verify-registration-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          otp: otp.trim(),
+        }),
+      });
 
-      const { data: signupData, error: signupError } =
-        await supabase.auth.verifyOtp({
-          email: email,
-          token: otp,
-          type: "signup",
-        });
-
-      if (signupError) {
-        const { data: magicData, error: magicError } =
-          await supabase.auth.verifyOtp({
-            email: email,
-            token: otp,
-            type: "magiclink",
-          });
-
-        if (magicError) throw magicError;
-        sessionData = magicData;
-      } else {
-        sessionData = signupData;
+      const resData = await response.json();
+      if (!response.ok || !resData.success) {
+        throw new Error(resData.error || 'Invalid or expired verification code.');
       }
 
-      const user = sessionData?.user || sessionData?.session?.user;
-
-      if (user) {
-        if (!user.user_metadata?.first_name) {
-          setMode("complete");
-        } else if (sessionData?.session) {
-          onLoginSuccess(sessionData.session);
-        } else {
-          throw new Error("No active session created.");
-        }
-      } else {
-        throw new Error("Missing user data from verification.");
-      }
+      // Store the secure verification token and proceed to profile setup
+      setVerificationToken(resData.verificationToken);
+      setMode("complete");
     } catch (err) {
       setError(err.message || "Invalid Code.");
     } finally {
@@ -174,28 +201,101 @@ export default function AuthScreen({ onLoginSuccess, session }) {
     setLoading(true);
     setError(null);
 
-    if (password !== confirmPassword) {
+    if (!isOAuthUser && password !== confirmPassword) {
       setError("Passwords do not match.");
       setLoading(false);
       return;
     }
 
+    if (password && password !== confirmPassword) {
+      setError("Passwords do not match.");
+      setLoading(false);
+      return;
+    }
+
+    if (!isOAuthUser && (!password || password.length < 6)) {
+      setError("Password must be at least 6 characters.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { data, error } = await supabase.auth.updateUser({
-        password: password,
+      // CASE 1: Email-OTP Citizen Registration
+      // This is the ONLY time the user record is created in Supabase auth.users!
+      if (verificationToken) {
+        const response = await fetch('/api/auth/complete-registration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            verificationToken,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            phone: phone.trim() || undefined,
+            password,
+          }),
+        });
+
+        const resData = await response.json();
+        if (!response.ok || !resData.success) {
+          throw new Error(resData.error || 'Failed to complete registration.');
+        }
+
+        // Sign in immediately to establish active session
+        const { data: signInData, error: signInError } =
+          await supabase.auth.signInWithPassword({
+            email: email.trim().toLowerCase(),
+            password,
+          });
+
+        if (signInError) throw signInError;
+
+        setMode("success");
+        setTimeout(() => {
+          onLoginSuccess(signInData.session);
+        }, 2000);
+        return;
+      }
+
+      // CASE 2: OAuth or already authenticated user updating profile
+      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+      const updatePayload = {
         data: {
-          first_name: firstName,
-          last_name: lastName,
-          full_name: `${firstName} ${lastName}`,
-          phone: phone || undefined,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          full_name: fullName,
+          phone: phone.trim() || undefined,
+          profile_completed: true,
         },
-      });
+      };
+
+      if (!isOAuthUser && password) {
+        updatePayload.password = password;
+      }
+
+      const { data, error } = await supabase.auth.updateUser(updatePayload);
 
       if (error) throw error;
 
+      // Upsert to profiles table in Supabase
+      if (session?.user) {
+        try {
+          await supabase.from("profiles").upsert({
+            id: session.user.id,
+            email: session.user.email,
+            full_name: fullName,
+            phone: phone.trim() || null,
+            role: session.user.user_metadata?.role || "citizen",
+            updated_at: new Date().toISOString(),
+          });
+        } catch (profErr) {
+          logger.warn("Profile table upsert error:", profErr);
+        }
+      }
+
       const sessionResponse = await supabase.auth.getSession();
 
-      // Instead of calling immediately, show a smooth success modal
+      // Show smooth success modal
       setMode("success");
       const finalSession = data.session || sessionResponse.data.session;
 
@@ -217,26 +317,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
     setError(null);
     setMsg(null);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email,
-        options: {
-          shouldCreateUser: false,
-        },
-      });
-
-      if (error) {
-        if (
-          error.message?.toLowerCase().includes("signups not allowed") ||
-          error.message?.toLowerCase().includes("user not found")
-        ) {
-          throw new Error("No account found with this email address.");
-        }
-        throw error;
-      }
-
+      await sendUserOtp(email, 'recovery');
       setMode("forgot_verify");
       setMsg(
-        "A 8-digit code has been sent to your email. Check your inbox (and spam folder).",
+        "A 6-digit password reset code has been sent to your email. Check your inbox (and spam folder)!",
       );
     } catch (err) {
       setError(err.message || "Failed to send reset code.");
@@ -251,13 +335,25 @@ export default function AuthScreen({ onLoginSuccess, session }) {
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: email,
-        token: otp,
-        type: "magiclink",
+      let { data, error } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: otp.trim(),
+        type: "recovery",
       });
 
-      if (error) throw error;
+      if (error) {
+        const magicRes = await supabase.auth.verifyOtp({
+          email: email.trim().toLowerCase(),
+          token: otp.trim(),
+          type: "magiclink",
+        });
+        if (!magicRes.error) {
+          data = magicRes.data;
+          error = null;
+        } else {
+          throw error;
+        }
+      }
 
       // User is now signed in - move to reset password screen
       setMode("reset_password");
@@ -532,7 +628,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 >
                   Welcome back Palayano!
                 </h2>
-                <p style={{ color: "#a1a1aa", fontSize: 14, marginBottom: 24 }}>
+                <p style={{ color: "#a1a1aa", fontSize: 14, marginBottom: 20 }}>
                   Login to access your Palayan community.
                 </p>
 
@@ -554,6 +650,69 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     {error}
                   </motion.div>
                 )}
+
+                {/* Google Sign In Button */}
+                <motion.button
+                  whileHover={{ scale: 1.02, backgroundColor: "#f4f4f5" }}
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading || googleLoading}
+                  style={{
+                    width: "100%",
+                    padding: "13px 16px",
+                    borderRadius: 14,
+                    background: "#ffffff",
+                    color: "#18181b",
+                    fontSize: 15,
+                    fontWeight: 700,
+                    border: "1px solid rgba(255, 255, 255, 0.25)",
+                    cursor: loading || googleLoading ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 12,
+                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35)",
+                    opacity: loading || googleLoading ? 0.7 : 1,
+                    marginBottom: 16,
+                  }}
+                >
+                  {googleLoading ? (
+                    <>
+                      <Loader2 className="spin" size={19} color="#18181b" />
+                      <span>Connecting to Google...</span>
+                    </>
+                  ) : (
+                    <>
+                      <GoogleIcon size={20} />
+                      <span>Continue with Google</span>
+                    </>
+                  )}
+                </motion.button>
+
+                {/* Modern Divider */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    margin: "18px 0 20px",
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.12)" }} />
+                  <span
+                    style={{
+                      color: "#71717a",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    or sign in with email
+                  </span>
+                  <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.12)" }} />
+                </div>
 
                 {renderInput(
                   <Mail size={20} />,
@@ -692,7 +851,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 >
                   Create Account
                 </h2>
-                <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 28 }}>
+                <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 20 }}>
                   Enter your email address to get a verification code.
                 </p>
 
@@ -714,6 +873,69 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     {error}
                   </motion.div>
                 )}
+
+                {/* Google Sign Up Button */}
+                <motion.button
+                  whileHover={{ scale: 1.02, backgroundColor: "#f4f4f5" }}
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading || googleLoading}
+                  style={{
+                    width: "100%",
+                    padding: "13px 16px",
+                    borderRadius: 14,
+                    background: "#ffffff",
+                    color: "#18181b",
+                    fontSize: 15,
+                    fontWeight: 700,
+                    border: "1px solid rgba(255, 255, 255, 0.25)",
+                    cursor: loading || googleLoading ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 12,
+                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35)",
+                    opacity: loading || googleLoading ? 0.7 : 1,
+                    marginBottom: 16,
+                  }}
+                >
+                  {googleLoading ? (
+                    <>
+                      <Loader2 className="spin" size={19} color="#18181b" />
+                      <span>Connecting to Google...</span>
+                    </>
+                  ) : (
+                    <>
+                      <GoogleIcon size={20} />
+                      <span>Sign up with Google</span>
+                    </>
+                  )}
+                </motion.button>
+
+                {/* Modern Divider */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    margin: "18px 0 20px",
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.12)" }} />
+                  <span
+                    style={{
+                      color: "#71717a",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    or register with email code
+                  </span>
+                  <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.12)" }} />
+                </div>
 
                 {renderInput(
                   <Mail size={20} />,
@@ -768,14 +990,20 @@ export default function AuthScreen({ onLoginSuccess, session }) {
               >
                 <button
                   type="button"
-                  onClick={() => setMode("register")}
+                  onClick={() => {
+                    setMode("register");
+                    setOtp("");
+                    setVerificationToken(null);
+                    setError(null);
+                    setMsg(null);
+                  }}
                   style={{
                     background: "none",
                     border: "none",
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
-                    color: "#4B5563",
+                    color: "#a1a1aa",
                     fontWeight: 700,
                     padding: 0,
                     marginBottom: 20,
@@ -794,8 +1022,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 >
                   Verify Email
                 </h2>
-                <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 12 }}>
-                  We sent a 8-digit code to {email}
+                <p style={{ color: "#a1a1aa", fontSize: 14, marginBottom: 16 }}>
+                  We sent a verification code to <span style={{ color: "#ffffff", fontWeight: 700 }}>{email}</span>
                 </p>
 
                 {msg && (
@@ -839,7 +1067,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 {renderInput(
                   <ShieldCheck size={20} />,
                   "text",
-                  "Enter 8-digit Code",
+                  "Enter 6-digit Code",
                   otp,
                   setOtp,
                 )}
@@ -848,7 +1076,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   whileHover={{ scale: 1.02, backgroundColor: "#ea580c" }}
                   whileTap={{ scale: 0.98 }}
                   type="submit"
-                  disabled={loading || !otp || otp.length < 6}
+                  disabled={loading || !otp || otp.trim().length < 6}
                   style={{
                     width: "100%",
                     padding: "15px",
@@ -865,7 +1093,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     gap: 8,
                     marginTop: 12,
                     boxShadow: "0 4px 18px rgba(249, 115, 22, 0.35)",
-                    opacity: loading || !otp || otp.length < 6 ? 0.6 : 1,
+                    opacity: loading || !otp || otp.trim().length < 6 ? 0.6 : 1,
                   }}
                 >
                   {loading ? (
@@ -874,6 +1102,43 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     "Verify Code"
                   )}
                 </motion.button>
+
+                {/* Helpful Note & Resend Code */}
+                <div
+                  style={{
+                    marginTop: 18,
+                    padding: "12px 14px",
+                    borderRadius: 12,
+                    background: "rgba(255, 255, 255, 0.05)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    fontSize: 12,
+                    color: "#a1a1aa",
+                    textAlign: "center",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  💡 Tip: Please check your inbox (and spam folder) for the 6-digit verification code.
+                </div>
+
+                <div style={{ textAlign: "center", marginTop: 14 }}>
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={loading}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#f97316",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: loading ? "not-allowed" : "pointer",
+                      textDecoration: "underline",
+                      padding: 0,
+                    }}
+                  >
+                    Didn't receive it? Resend Code
+                  </button>
+                </div>
               </motion.form>
             )}
 
@@ -887,6 +1152,38 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 exit="exit"
                 onSubmit={handleCompleteProfile}
               >
+                {(verificationToken || isOAuthUser) && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (isOAuthUser) {
+                        try {
+                          await supabase.auth.signOut();
+                        } catch (e) {
+                          logger.warn("Sign out on cancel:", e);
+                        }
+                      }
+                      setMode("login");
+                      setVerificationToken(null);
+                      setOtp("");
+                      setError(null);
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      color: "#a1a1aa",
+                      fontWeight: 700,
+                      padding: 0,
+                      marginBottom: 20,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <ArrowLeft size={18} /> Cancel & Back
+                  </button>
+                )}
                 <h2
                   style={{
                     fontSize: 26,
@@ -898,7 +1195,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   Complete Profile
                 </h2>
                 <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 28 }}>
-                  Set up your profile details and password.
+                  {isOAuthUser
+                    ? "Set up your profile details."
+                    : "Set up your profile details and password."}
                 </p>
 
                 {error && (
@@ -941,27 +1240,31 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   phone,
                   setPhone,
                 )}
-                {renderInput(
-                  <Lock size={20} />,
-                  "text",
-                  "New Password",
-                  password,
-                  setPassword,
-                  false,
-                  true,
-                  showPassword,
-                  () => setShowPassword(!showPassword),
-                )}
-                {renderInput(
-                  <Lock size={20} />,
-                  "text",
-                  "Confirm Password",
-                  confirmPassword,
-                  setConfirmPassword,
-                  false,
-                  true,
-                  showConfirmPassword,
-                  () => setShowConfirmPassword(!showConfirmPassword),
+                {!isOAuthUser && (
+                  <>
+                    {renderInput(
+                      <Lock size={20} />,
+                      "text",
+                      "New Password",
+                      password,
+                      setPassword,
+                      false,
+                      true,
+                      showPassword,
+                      () => setShowPassword(!showPassword),
+                    )}
+                    {renderInput(
+                      <Lock size={20} />,
+                      "text",
+                      "Confirm Password",
+                      confirmPassword,
+                      setConfirmPassword,
+                      false,
+                      true,
+                      showConfirmPassword,
+                      () => setShowConfirmPassword(!showConfirmPassword),
+                    )}
+                  </>
                 )}
 
                 <motion.button
@@ -970,10 +1273,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   type="submit"
                   disabled={
                     loading ||
-                    !firstName ||
-                    !lastName ||
-                    !password ||
-                    !confirmPassword
+                    !firstName.trim() ||
+                    !lastName.trim() ||
+                    (!isOAuthUser &&
+                      (!password ||
+                        !confirmPassword ||
+                        password !== confirmPassword ||
+                        password.length < 6))
                   }
                   style={{
                     width: "100%",
@@ -993,10 +1299,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     boxShadow: "0 4px 18px rgba(249, 115, 22, 0.35)",
                     opacity:
                       loading ||
-                      !firstName ||
-                      !lastName ||
-                      !password ||
-                      !confirmPassword
+                      !firstName.trim() ||
+                      !lastName.trim() ||
+                      (!isOAuthUser &&
+                        (!password ||
+                          !confirmPassword ||
+                          password !== confirmPassword ||
+                          password.length < 6))
                         ? 0.6
                         : 1,
                   }}

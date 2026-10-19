@@ -9,6 +9,7 @@ import imageCompression from "browser-image-compression";
 import { AnimatePresence, motion } from "framer-motion";
 import { logger } from "../../lib/logger";
 import { validateImageFile } from "../../lib/fileValidator";
+import { getUserProfile } from "../../lib/authHelpers";
 
 function ReportModal({ isOpen, onClose, onSubmit, session }) {
   const fileRef = useRef(null);
@@ -39,12 +40,13 @@ function ReportModal({ isOpen, onClose, onSubmit, session }) {
 
   // Secondary auth check: if modal is open but user is not authenticated,
   // close the modal (App.jsx should have redirected to profile already)
+  const userProfile = getUserProfile(session?.user);
   useEffect(() => {
-    if (isOpen && (!session || !session.user?.user_metadata?.first_name)) {
+    if (isOpen && (!session || !userProfile?.isComplete)) {
       logger.warn('ReportModal opened without valid session - closing');
       handleClose();
     }
-  }, [isOpen, session]);
+  }, [isOpen, session, userProfile]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
   const reset = () => {
@@ -291,7 +293,7 @@ function ReportModal({ isOpen, onClose, onSubmit, session }) {
     try {
       const isGuest = !session;
       const computedFullName = session
-        ? `${session.user.user_metadata?.first_name || ""} ${session.user.user_metadata?.last_name || ""}`.trim()
+        ? (userProfile?.fullName || "Palayano User")
         : guestName.trim();
       const userId = session?.user?.id || null;
 
