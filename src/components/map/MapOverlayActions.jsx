@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Droplet, Palmtree, HeartPulse, Zap } from "lucide-react";
 import SearchBar from "./SearchBar";
 import { LayerControls } from "./LayerControls";
 import { KloudtrackMapControls } from "./KloudtrackMapControls";
@@ -136,11 +137,12 @@ export function MapOverlayActions({
               marginTop: 4,
             }}>
               {[
-                { id: "water", label: "Water", color: "#3B82F6", emoji: "💧" },
-                { id: "recreation", label: "Recreation", color: "#16a34a", emoji: "🏖️" },
-                { id: "health", label: "Health", color: "#dc2626", emoji: "🏥" },
-                { id: "utility", label: "Utilities", color: "#f59e0b", emoji: "⚡" },
+                { id: "water", label: "Water", color: "#38bdf8", icon: Droplet },
+                { id: "recreation", label: "Recreation", color: "#22c55e", icon: Palmtree },
+                { id: "health", label: "Health", color: "#ef4444", icon: HeartPulse },
+                { id: "utility", label: "Utilities", color: "#f59e0b", icon: Zap },
               ].map((cat) => {
+                const IconComponent = cat.icon;
                 const isActive = activeFilters.includes(cat.id);
                 return (
                   <button
@@ -154,8 +156,8 @@ export function MapOverlayActions({
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 6,
-                      padding: "8px 12px",
+                      gap: 7,
+                      padding: "8px 14px",
                       borderRadius: 16,
                       background: isActive
                         ? isDark
@@ -178,10 +180,10 @@ export function MapOverlayActions({
                       flexShrink: 0,
                     }}
                   >
-                    <span style={{ fontSize: 14, lineHeight: 1 }}>{cat.emoji}</span>
+                    <IconComponent size={14} color={cat.color} strokeWidth={2.4} />
                     <span
                       style={{
-                        fontSize: 11,
+                        fontSize: 11.5,
                         fontWeight: 700,
                         color: isDark ? "#ffffff" : "#09090b",
                       }}

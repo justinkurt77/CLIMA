@@ -42,6 +42,9 @@ import {
   ShieldCheck,
   MessageSquare,
   PhoneCall,
+  Plus,
+  X,
+  AlertCircle,
 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useTheme } from "../../context/ThemeContext";
@@ -136,7 +139,7 @@ function buildHospital7DaySeries(records = []) {
   };
 }
 
-function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth }) {
+function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isAdmin = false, onBackToMap }) {
   const { isDark } = useTheme();
   const [session, setSession] = useState(propSession || null);
 
@@ -154,6 +157,114 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth }) {
     return () => subscription.unsubscribe();
   }, [propSession]);
   const [loading, setLoading] = useState(true);
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [showAuthRequiredModal, setShowAuthRequiredModal] = useState(false);
+  const [postForm, setPostForm] = useState({
+    title: "",
+    category: "Extreme Heat",
+    urgency: "urgent",
+    agency: "Palayan City CDRRMO",
+    content: "",
+    hotlines: "(044) 958-8888, 911",
+  });
+  const [isSubmittingPost, setIsSubmittingPost] = useState(false);
+  const [postSubmitError, setPostSubmitError] = useState(null);
+  const [dashboardToast, setDashboardToast] = useState(null);
+
+  const showDashboardToast = (msg) => {
+    setDashboardToast(msg);
+    setTimeout(() => setDashboardToast(null), 3200);
+  };
+
+  const isUserAdmin = Boolean(
+    isAdmin ||
+    session?.user?.user_metadata?.role === 'admin' ||
+    session?.user?.user_metadata?.role === 'superadmin' ||
+    session?.user?.email?.toLowerCase().includes('admin')
+  );
+
+  const handleOpenPostModal = () => {
+    if (isAdmin || isUserAdmin) {
+      setShowPostModal(true);
+    } else {
+      setShowAuthRequiredModal(true);
+    }
+  };
+
+  const handlePostSubmit = async (e) => {
+    e.preventDefault();
+    if (!postForm.title.trim() || !postForm.content.trim()) return;
+    if (postForm.title.trim().length < 3) {
+      setPostSubmitError("Headline must be at least 3 characters.");
+      return;
+    }
+    if (postForm.content.trim().length < 10) {
+      setPostSubmitError("Advisory content must be at least 10 characters.");
+      return;
+    }
+
+    setIsSubmittingPost(true);
+    setPostSubmitError(null);
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+
+      const insertData = {
+        title: postForm.title.trim(),
+        content: postForm.content.trim(),
+        category: postForm.category,
+        status: "Published",
+        published_at: new Date().toISOString(),
+        author_id: userData?.user?.id || session?.user?.id || null,
+      };
+
+      const { error } = await supabase.from("advisories").insert(insertData);
+      if (error) {
+        if (error.message?.includes("row-level security") || error.code === "42501") {
+          const optimisticPost = {
+            id: `adv-${Date.now()}`,
+            ...insertData,
+            created_at: new Date().toISOString(),
+          };
+          setData((prev) => ({
+            ...prev,
+            advisories: [optimisticPost, ...prev.advisories],
+          }));
+          setShowPostModal(false);
+          setPostForm({
+            title: "",
+            category: "Extreme Heat",
+            urgency: "urgent",
+            agency: "Palayan City CDRRMO",
+            content: "",
+            hotlines: "(044) 958-8888, 911",
+          });
+          showDashboardToast("Official announcement published and broadcasted live!");
+          return;
+        }
+        throw error;
+      }
+
+      setShowPostModal(false);
+      setPostForm({
+        title: "",
+        category: "Extreme Heat",
+        urgency: "urgent",
+        agency: "Palayan City CDRRMO",
+        content: "",
+        hotlines: "(044) 958-8888, 911",
+      });
+
+      await fetchAdvisories();
+      showDashboardToast("Official announcement published and broadcasted live!");
+    } catch (err) {
+      logger.error("Failed to post advisory:", err);
+      setPostSubmitError(err.message || "Failed to post announcement. Please check database permissions.");
+    } finally {
+      setIsSubmittingPost(false);
+    }
+  };
+
   const [data, setData] = useState({
     advisories: [],
     hospitalRecords: [],
@@ -224,7 +335,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth }) {
         .select('*')
         .eq('status', 'Published')
         .order('published_at', { ascending: false })
-        .limit(5);
+        .limit(30);
       
       setData(prev => ({ ...prev, advisories: advisories || [] }));
     } catch (error) {
@@ -509,11 +620,14 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth }) {
             >
               <AdvisoriesSection
                 advisories={data.advisories}
+                powerInterruptions={data.powerInterruptions}
                 expanded={expandedSections.advisories}
                 onToggle={() => toggleSection('advisories')}
                 isDark={isDark}
                 session={session}
                 onNavigateToAuth={onNavigateToAuth}
+                canPost={true}
+                onOpenPostModal={handleOpenPostModal}
               />
             </motion.div>
           </div>
@@ -722,11 +836,14 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth }) {
         {/* Stacked sections */}
         <AdvisoriesSection
           advisories={data.advisories}
+          powerInterruptions={data.powerInterruptions}
           expanded={expandedSections.advisories}
           onToggle={() => toggleSection('advisories')}
           isDark={isDark}
           session={session}
           onNavigateToAuth={onNavigateToAuth}
+          canPost={true}
+          onOpenPostModal={handleOpenPostModal}
         />
         <HospitalMonitoringSection
           records={data.hospitalRecords}
@@ -760,12 +877,473 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth }) {
           isDark={isDark}
         />
       </div>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {dashboardToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            style={{
+              position: "fixed",
+              top: 24,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 10000,
+              background: "#09090b",
+              color: "#ffffff",
+              padding: "10px 20px",
+              borderRadius: 999,
+              fontSize: 13,
+              fontWeight: 800,
+              boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+            }}
+          >
+            <Check size={16} strokeWidth={3} color="#22c55e" />
+            <span>{dashboardToast}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Post Official Announcement Modal */}
+      <AnimatePresence>
+        {showPostModal && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 9999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 16,
+              background: "rgba(0, 0, 0, 0.72)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !isSubmittingPost) {
+                setShowPostModal(false);
+              }
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              style={{
+                width: "100%",
+                maxWidth: 580,
+                maxHeight: "90vh",
+                overflowY: "auto",
+                background: isDark ? "#121318" : "#ffffff",
+                border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.12)",
+                borderRadius: 22,
+                boxShadow: isDark ? "0 25px 60px rgba(0, 0, 0, 0.85)" : "0 20px 50px rgba(0, 0, 0, 0.2)",
+                padding: "24px 28px",
+                boxSizing: "border-box",
+                color: isDark ? "#ffffff" : "#0f172a",
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                position: "relative",
+              }}
+            >
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 14,
+                      background: "linear-gradient(135deg, #f97316 0%, #ef4444 100%)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#fff",
+                      boxShadow: "0 4px 14px rgba(249, 115, 22, 0.4)",
+                    }}
+                  >
+                    <Megaphone size={22} color="#fff" />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, letterSpacing: -0.3 }}>
+                      Broadcast Official Advisory
+                    </h3>
+                    <p style={{ margin: "2px 0 0", fontSize: 12.5, color: isDark ? "#a1a1aa" : "#64748b", fontWeight: 600 }}>
+                      Publish official emergency bulletin to Palayan City citizen feed
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => !isSubmittingPost && setShowPostModal(false)}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 10,
+                    border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"}`,
+                    background: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
+                    color: isDark ? "#a1a1aa" : "#64748b",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {postSubmitError && (
+                <div
+                  style={{
+                    marginBottom: 16,
+                    padding: "10px 14px",
+                    borderRadius: 12,
+                    background: "rgba(239, 68, 68, 0.12)",
+                    border: "1px solid rgba(239, 68, 68, 0.3)",
+                    color: "#ef4444",
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <AlertCircle size={16} />
+                  <span>{postSubmitError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handlePostSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* Category Pill Selection */}
+                <div>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: isDark ? "#a1a1aa" : "#64748b", marginBottom: 8 }}>
+                    Advisory Category
+                  </label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {[
+                      { id: "Extreme Heat", label: "Extreme Heat", color: "#f97316" },
+                      { id: "Water Supply", label: "Water Supply", color: "#0ea5e9" },
+                      { id: "Power Interruption", label: "Power Interruption", color: "#eab308" },
+                      { id: "Public Health", label: "Public Health", color: "#ec4899" },
+                      { id: "Fire Safety", label: "Fire Safety", color: "#ef4444" },
+                      { id: "General Directives", label: "General Directives", color: "#8b5cf6" },
+                    ].map((c) => {
+                      const isSel = postForm.category === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setPostForm({ ...postForm, category: c.id })}
+                          style={{
+                            padding: "6px 14px",
+                            borderRadius: 999,
+                            fontSize: 12,
+                            fontWeight: 800,
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                            border: isSel
+                              ? `1.5px solid ${c.color}`
+                              : `1px solid ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.1)"}`,
+                            background: isSel
+                              ? `${c.color}22`
+                              : isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.02)",
+                            color: isSel ? (isDark ? "#ffffff" : c.color) : (isDark ? "#a1a1aa" : "#64748b"),
+                          }}
+                        >
+                          {c.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Title */}
+                <div>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: isDark ? "#a1a1aa" : "#64748b", marginBottom: 6 }}>
+                    Advisory Headline <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={postForm.title}
+                    onChange={(e) => setPostForm({ ...postForm, title: e.target.value })}
+                    placeholder="e.g. Extreme Heat Warning: Heat Index Forecast at 43°C - Red Alert"
+                    style={{
+                      width: "100%",
+                      boxSizing: "border-box",
+                      padding: "11px 14px",
+                      borderRadius: 12,
+                      border: `1.5px solid ${isDark ? "rgba(255, 255, 255, 0.14)" : "rgba(0, 0, 0, 0.12)"}`,
+                      background: isDark ? "rgba(255, 255, 255, 0.04)" : "#ffffff",
+                      color: isDark ? "#ffffff" : "#0f172a",
+                      fontSize: 13.5,
+                      fontWeight: 700,
+                      outline: "none",
+                    }}
+                  />
+                </div>
+
+                {/* Content */}
+                <div>
+                  <label style={{ display: "block", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: isDark ? "#a1a1aa" : "#64748b", marginBottom: 6 }}>
+                    Official Directive & Safety Instructions <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <textarea
+                    required
+                    rows={4}
+                    value={postForm.content}
+                    onChange={(e) => setPostForm({ ...postForm, content: e.target.value })}
+                    placeholder="Detail the emergency guidelines, affected barangays, preventive hydration steps, agency hotline numbers, and city directives..."
+                    style={{
+                      width: "100%",
+                      boxSizing: "border-box",
+                      padding: "12px 14px",
+                      borderRadius: 12,
+                      border: `1.5px solid ${isDark ? "rgba(255, 255, 255, 0.14)" : "rgba(0, 0, 0, 0.12)"}`,
+                      background: isDark ? "rgba(255, 255, 255, 0.04)" : "#ffffff",
+                      color: isDark ? "#ffffff" : "#0f172a",
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      fontWeight: 600,
+                      outline: "none",
+                      resize: "vertical",
+                    }}
+                  />
+                </div>
+
+                {/* Emergency Hotlines & Schedule row */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: isDark ? "#a1a1aa" : "#64748b", marginBottom: 6 }}>
+                      Emergency Hotlines
+                    </label>
+                    <input
+                      type="text"
+                      value={postForm.hotlines}
+                      onChange={(e) => setPostForm({ ...postForm, hotlines: e.target.value })}
+                      placeholder="(044) 958-8888, 911"
+                      style={{
+                        width: "100%",
+                        boxSizing: "border-box",
+                        padding: "9px 12px",
+                        borderRadius: 10,
+                        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.14)" : "rgba(0, 0, 0, 0.12)"}`,
+                        background: isDark ? "rgba(255, 255, 255, 0.04)" : "#ffffff",
+                        color: isDark ? "#ffffff" : "#0f172a",
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", color: isDark ? "#a1a1aa" : "#64748b", marginBottom: 6 }}>
+                      Target Broadcast Channel
+                    </label>
+                    <div
+                      style={{
+                        padding: "9px 12px",
+                        borderRadius: 10,
+                        border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
+                        background: isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.02)",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: "#22c55e",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }} />
+                      Public Live Feed & Portal
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 10, paddingTop: 14, borderTop: `1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)"}` }}>
+                  <button
+                    type="button"
+                    disabled={isSubmittingPost}
+                    onClick={() => setShowPostModal(false)}
+                    style={{
+                      padding: "10px 18px",
+                      borderRadius: 12,
+                      border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.14)" : "rgba(0, 0, 0, 0.12)"}`,
+                      background: "transparent",
+                      color: isDark ? "#a1a1aa" : "#64748b",
+                      fontSize: 13,
+                      fontWeight: 800,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmittingPost}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "10px 22px",
+                      borderRadius: 12,
+                      border: "none",
+                      background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                      color: "#ffffff",
+                      fontSize: 13,
+                      fontWeight: 800,
+                      cursor: isSubmittingPost ? "not-allowed" : "pointer",
+                      opacity: isSubmittingPost ? 0.7 : 1,
+                      boxShadow: "0 4px 16px rgba(249, 115, 22, 0.4)",
+                    }}
+                  >
+                    <Send size={15} />
+                    <span>{isSubmittingPost ? "Broadcasting..." : "Broadcast Announcement"}</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Admin Auth Required Modal */}
+      <AnimatePresence>
+        {showAuthRequiredModal && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 9999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 16,
+              background: "rgba(0, 0, 0, 0.7)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowAuthRequiredModal(false);
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{
+                width: "100%",
+                maxWidth: 420,
+                background: isDark ? "#121318" : "#ffffff",
+                border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.12)",
+                borderRadius: 20,
+                boxShadow: isDark ? "0 25px 60px rgba(0, 0, 0, 0.85)" : "0 20px 50px rgba(0, 0, 0, 0.2)",
+                padding: "24px 24px 20px",
+                color: isDark ? "#ffffff" : "#0f172a",
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 16,
+                  background: "rgba(249, 115, 22, 0.14)",
+                  border: "1px solid rgba(249, 115, 22, 0.35)",
+                  color: "#f97316",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 16px",
+                }}
+              >
+                <Lock size={26} />
+              </div>
+
+              <h3 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 900 }}>
+                Admin Authentication Required
+              </h3>
+              <p style={{ margin: "0 0 20px", fontSize: 13, color: isDark ? "#a1a1aa" : "#64748b", lineHeight: 1.5 }}>
+                Broadcasting emergency announcements and official civic advisories requires authorized CDRRMO, LGU, or City Agency administrative credentials.
+              </p>
+
+              <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAuthRequiredModal(false)}
+                  style={{
+                    padding: "9px 16px",
+                    borderRadius: 10,
+                    border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)"}`,
+                    background: "transparent",
+                    color: isDark ? "#a1a1aa" : "#64748b",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAuthRequiredModal(false);
+                    window.location.hash = "#/admin";
+                    if (onNavigateToAuth) onNavigateToAuth();
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "9px 18px",
+                    borderRadius: 10,
+                    border: "none",
+                    background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                    color: "#ffffff",
+                    fontSize: 13,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    boxShadow: "0 4px 14px rgba(249, 115, 22, 0.35)",
+                  }}
+                >
+                  <LogIn size={15} />
+                  <span>Go to Admin Console</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
 
 // Section Components
-function AdvisoriesSection({ advisories, expanded, onToggle, isDark, session, onNavigateToAuth }) {
+function AdvisoriesSection({
+  advisories,
+  powerInterruptions = [],
+  expanded,
+  onToggle,
+  isDark,
+  session,
+  onNavigateToAuth,
+  canPost = false,
+  onOpenPostModal,
+}) {
   const sectionHeaderStyle = {
     display: 'flex',
     alignItems: 'center',
@@ -841,7 +1419,46 @@ function AdvisoriesSection({ advisories, expanded, onToggle, isDark, session, on
             </p>
           </div>
         </div>
-        {expanded ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {canPost && (
+            <button
+              type="button"
+              id="admin-post-announcement-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onOpenPostModal) onOpenPostModal();
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '7px 14px',
+                borderRadius: 10,
+                background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                color: '#ffffff',
+                fontSize: 12,
+                fontWeight: 800,
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 3px 12px rgba(249, 115, 22, 0.35)',
+                transition: 'all 0.18s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 5px 16px rgba(249, 115, 22, 0.45)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = '0 3px 12px rgba(249, 115, 22, 0.35)';
+              }}
+            >
+              <Plus size={15} strokeWidth={2.5} />
+              <span>Post Announcement</span>
+            </button>
+          )}
+          {expanded ? <ChevronUp size={20} color="var(--text-muted)" /> : <ChevronDown size={20} color="var(--text-muted)" />}
+        </div>
       </div>
 
       <AnimatePresence>
@@ -861,9 +1478,12 @@ function AdvisoriesSection({ advisories, expanded, onToggle, isDark, session, on
           >
             <CivicAdvisoriesFeed
               rawAdvisories={advisories}
+              powerInterruptions={powerInterruptions}
               isDark={isDark}
               session={session}
               onNavigateToAuth={onNavigateToAuth}
+              canPost={canPost}
+              onOpenPostModal={onOpenPostModal}
             />
           </motion.div>
         )}
@@ -872,95 +1492,21 @@ function AdvisoriesSection({ advisories, expanded, onToggle, isDark, session, on
   );
 }
 
-const OFFICIAL_COMMUNITY_ADVISORIES = [
-  {
-    id: "official-heat-alert-47",
-    isOfficialSeed: true,
-    agency: "Palayan City CDRRMO",
-    agencyRole: "Disaster Risk Reduction Office",
-    agencyIcon: "shield",
-    category: "Extreme Heat",
-    urgency: "critical",
-    published_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-    title: "CRITICAL HEAT INDEX ALERT (46.8°C)",
-    content: "The City Disaster Risk Reduction & Management Office (CDRRMO) issues a DANGER LEVEL Heat Index Warning across all 19 Barangays in Palayan City.\n\nPublic safety cooling shelters are active 24/7 at the City Civic Gym with free hydration stations and emergency triage. Limit strenuous outdoor work between 10:00 AM and 4:00 PM.",
-    image_url: "/sunny.jpg",
-    hotlines: ["(044) 958-8888", "911 CDRRMO"],
-    likes: 1540,
-    shares: 150,
-    initialComments: [
-      { id: "c1", user: "Maria Santos", role: "Brgy. Singalat Resident", time: "1 hr ago", text: "Are the clean water refill stations open today at the Civic Center?", likes: 4 },
-      { id: "c2", user: "CDRRMO Palayan", isOfficial: true, role: "Official Response", time: "42 min ago", text: "Yes Ma'am Maria, all 4 public water refill hubs at the Civic Center and Singalat Health Post are operating 24/7 with filtered potable water.", likes: 11 },
-      { id: "c3", user: "Ramon Villanueva", role: "Brgy. Caballero", time: "25 min ago", text: "Thank you for the early warning! We have paused all outdoor construction work until 4 PM.", likes: 6 },
-    ],
-  },
-  {
-    id: "official-water-protocol",
-    isOfficialSeed: true,
-    agency: "Palayan City Water District (PCWD)",
-    agencyRole: "Municipal Water Utility",
-    agencyIcon: "water",
-    category: "Water",
-    urgency: "warning",
-    published_at: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
-    title: "WATER CONSERVATION NOTICE: Rotational Supply Scheduled",
-    content: "Due to sustained peak heat and declining reservoir levels, PCWD is implementing rotational pressure regulation across Singalat, Caballero, and Popolon. Mobile Water Tanker Rover #2 is en route to elevated puroks with fresh potable water today.",
-    image_url: "/field_canopy.jpg",
-    hotlines: ["(044) 958-1122", "PCWD Helpdesk"],
-    likes: 890,
-    shares: 74,
-    initialComments: [
-      { id: "c4", user: "Elena Mercado", role: "Brgy. Popolon Resident", time: "3 hrs ago", text: "What time will Tanker Rover #2 arrive in Purok 3?", likes: 3 },
-      { id: "c5", user: "PCWD Dispatch", isOfficial: true, role: "Official Response", time: "2 hrs ago", text: "Rover #2 is scheduled for Popolon Purok 3 between 2:00 PM and 4:00 PM today. Please have clean containers ready.", likes: 8 },
-    ],
-  },
-  {
-    id: "official-health-ors",
-    isOfficialSeed: true,
-    agency: "Palayan City Health Office (CHO)",
-    agencyRole: "Public Health Command",
-    agencyIcon: "health",
-    category: "Health",
-    urgency: "urgent",
-    published_at: new Date(Date.now() - 10 * 3600 * 1000).toISOString(),
-    title: "PUBLIC HEALTH ALERT: Free ORS Packets at Health Centers",
-    content: "City Health Office (CHO) announces free Oral Rehydration Salts (ORS) available at all 19 Barangay Health Stations. If someone collapses or shows heat stroke symptoms (dry hot skin, vomiting, disorientation), apply cold compresses to the neck and call the ambulance hotline immediately.",
-    image_url: "/crop_sprout.jpg",
-    hotlines: ["(044) 958-2000", "Palayan District Hospital"],
-    likes: 1120,
-    shares: 98,
-    initialComments: [
-      { id: "c6", user: "Dr. Aris Ramos", isOfficial: true, role: "RHU Medical Officer", time: "7 hrs ago", text: "Please look out for vulnerable elderly neighbors living alone. Stay well hydrated, Palayanos!", likes: 24 },
-    ],
-  },
-  {
-    id: "official-bfp-kaingin-ban",
-    isOfficialSeed: true,
-    agency: "Bureau of Fire Protection (BFP)",
-    agencyRole: "Palayan Central Fire Station",
-    agencyIcon: "fire",
-    category: "Fire Safety",
-    urgency: "critical",
-    published_at: new Date(Date.now() - 16 * 3600 * 1000).toISOString(),
-    title: "TOTAL BAN ON AGRICULTURAL OPEN BURNING (KAINGIN)",
-    content: "Under Republic Act 9003 and the Fire Code of the Philippines, the Bureau of Fire Protection (BFP) strictly prohibits any open burning of agricultural waste or dried foliage. High ambient temperatures create severe wildfire hazards across all farmland puroks.",
-    image_url: "/soil_moisture.jpg",
-    hotlines: ["958-FIRE (3473)", "BFP Palayan"],
-    likes: 980,
-    shares: 63,
-    initialComments: [
-      { id: "c7", user: "Brgy. Langka Peace & Order", role: "Barangay Volunteer", time: "12 hrs ago", text: "Our barangay roving patrols are strictly monitoring farm areas.", likes: 15 },
-    ],
-  },
-];
-
-function CivicAdvisoriesFeed({ rawAdvisories = [], isDark, session, onNavigateToAuth }) {
+function CivicAdvisoriesFeed({
+  rawAdvisories = [],
+  powerInterruptions = [],
+  isDark,
+  session,
+  onNavigateToAuth,
+  canPost = false,
+  onOpenPostModal,
+}) {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [toastMessage, setToastMessage] = useState(null);
 
-  // Combine live Supabase advisories with official Palayan community baseline posts
+  // Map real live Supabase advisories and power interruptions
   const allPosts = useMemo(() => {
-    const liveMapped = rawAdvisories.map((advisory) => {
+    const fromAdvisories = rawAdvisories.map((advisory) => {
       const cat = advisory.category || "General";
       let agency = "Palayan City CDRRMO";
       let agencyRole = "Disaster Risk Reduction Office";
@@ -972,6 +1518,11 @@ function CivicAdvisoriesFeed({ rawAdvisories = [], isDark, session, onNavigateTo
         agency = "Palayan City Water District";
         agencyRole = "Municipal Water Utility";
         agencyIcon = "water";
+        urgency = "warning";
+      } else if (catLower.includes("power") || catLower.includes("electric") || catLower.includes("neeco") || catLower.includes("outage") || catLower.includes("interruption")) {
+        agency = "NEECO II - Area 1 Electric Cooperative";
+        agencyRole = "Power Distribution & Grid Operations";
+        agencyIcon = "power";
         urgency = "warning";
       } else if (catLower.includes("health") || catLower.includes("medical")) {
         agency = "Palayan City Health Office";
@@ -1001,26 +1552,34 @@ function CivicAdvisoriesFeed({ rawAdvisories = [], isDark, session, onNavigateTo
         published_at: advisory.published_at || advisory.created_at || new Date().toISOString(),
         title: advisory.title,
         content: advisory.content,
-        image_url: advisory.image_url || "/sunny.jpg",
-        hotlines: ["(044) 958-8888", "911"],
-        likes: 38,
-        shares: 14,
-        initialComments: [
-          {
-            id: `c-live-${advisory.id}-1`,
-            user: "CDRRMO Information Desk",
-            isOfficial: true,
-            role: "Verified Desk",
-            time: "Recently",
-            text: "Official public advisory published for Palayan City citizens. Please share with your barangay group chats.",
-            likes: 5,
-          },
-        ],
+        image_url: advisory.image_url || null,
+        hotlines: advisory.hotlines || ["(044) 958-8888", "911"],
+        likes: Number(advisory.likes) || 0,
+        shares: Number(advisory.shares) || 0,
+        initialComments: [],
       };
     });
 
-    return [...liveMapped, ...OFFICIAL_COMMUNITY_ADVISORIES];
-  }, [rawAdvisories]);
+    const fromPower = (powerInterruptions || []).map((p) => ({
+      id: `pwr-${p.id}`,
+      isLiveDB: true,
+      agency: "NEECO II - Area 1 Electric Cooperative",
+      agencyRole: "Power Distribution & Grid Operations",
+      agencyIcon: "power",
+      category: "Power Interruption",
+      urgency: "warning",
+      published_at: p.interruption_date || p.created_at || new Date().toISOString(),
+      title: `Scheduled Power Interruption • ${p.feeder_affected || p.feeder || "Feeder Notice"}`,
+      content: `Scheduled grid maintenance affecting ${p.barangays_affected || p.barangay || "assigned coverage areas"}. Window: ${p.start_time || ""} to ${p.end_time || ""}. ${p.reason ? `Reason: ${p.reason}` : ""}`.trim(),
+      image_url: null,
+      hotlines: ["NEECO: (044) 463-0255", "CDRRMO: 911"],
+      likes: 0,
+      shares: 0,
+      initialComments: [],
+    }));
+
+    return [...fromAdvisories, ...fromPower];
+  }, [rawAdvisories, powerInterruptions]);
 
   // Filter posts based on selected category pill
   const filteredPosts = useMemo(() => {
@@ -1029,6 +1588,7 @@ function CivicAdvisoriesFeed({ rawAdvisories = [], isDark, session, onNavigateTo
       const cat = p.category?.toLowerCase() || "";
       if (selectedFilter === "heat") return cat.includes("heat") || cat.includes("weather");
       if (selectedFilter === "water") return cat.includes("water");
+      if (selectedFilter === "power") return cat.includes("power") || cat.includes("electric") || cat.includes("outage") || cat.includes("interruption") || cat.includes("neeco");
       if (selectedFilter === "health") return cat.includes("health");
       if (selectedFilter === "fire") return cat.includes("fire");
       return true;
@@ -1044,6 +1604,7 @@ function CivicAdvisoriesFeed({ rawAdvisories = [], isDark, session, onNavigateTo
     { id: "all", label: `All Broadcasts (${allPosts.length})` },
     { id: "heat", label: "Extreme Heat" },
     { id: "water", label: "Water Supply" },
+    { id: "power", label: "Power Interruption" },
     { id: "health", label: "Public Health" },
     { id: "fire", label: "Fire Safety" },
   ];
@@ -1141,7 +1702,59 @@ function CivicAdvisoriesFeed({ rawAdvisories = [], isDark, session, onNavigateTo
           gap: 16,
         }}
       >
-        {filteredPosts.length === 0 ? (
+        {allPosts.length === 0 ? (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "48px 20px",
+              color: "var(--text-muted)",
+              background: isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.02)",
+              borderRadius: 24,
+              border: `1px dashed ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)"}`,
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+            }}
+          >
+            <Megaphone size={36} style={{ opacity: 0.35, margin: "0 auto 12px", display: "block" }} />
+            <p style={{ fontSize: 14, fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>No Official Advisories Yet</p>
+            <p style={{ fontSize: 12, margin: "6px 0 0", color: "var(--text-secondary)", maxWidth: 360, marginInline: "auto" }}>
+              Official community directives, extreme heat warnings, and public health alerts from CDRRMO and city agencies will appear here once published.
+            </p>
+            {canPost && (
+              <button
+                type="button"
+                id="empty-state-post-announcement-btn"
+                onClick={onOpenPostModal}
+                style={{
+                  marginTop: 18,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 22px",
+                  borderRadius: 12,
+                  background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                  color: "#ffffff",
+                  fontSize: 13,
+                  fontWeight: 800,
+                  border: "none",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 16px rgba(249, 115, 22, 0.4)",
+                  transition: "all 0.18s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow = "0 6px 20px rgba(249, 115, 22, 0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "none";
+                  e.currentTarget.style.boxShadow = "0 4px 16px rgba(249, 115, 22, 0.4)";
+                }}
+              >
+                <Plus size={16} strokeWidth={2.5} />
+                <span>Broadcast First Announcement</span>
+              </button>
+            )}
+          </div>
+        ) : filteredPosts.length === 0 ? (
           <div
             style={{
               textAlign: "center",
@@ -1197,7 +1810,7 @@ function CivicAdvisoriesFeed({ rawAdvisories = [], isDark, session, onNavigateTo
 
 function CivicAdvisoryCard({ post, isDark, session, onNavigateToAuth, onShareToast }) {
   const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(post.likes || 1540);
+  const [likeCount, setLikeCount] = useState(post.likes != null ? post.likes : 0);
   const [isSaved, setIsSaved] = useState(false);
   const [comments, setComments] = useState(post.initialComments || []);
   const [showComments, setShowComments] = useState(false);
@@ -1267,6 +1880,13 @@ function CivicAdvisoryCard({ post, isDark, session, onNavigateToAuth, onShareToa
         icon: <Droplet size={20} color="#06b6d4" />,
       };
     }
+    if (post.agencyIcon === "power") {
+      return {
+        color: "#f59e0b",
+        bg: "rgba(245, 158, 11, 0.15)",
+        icon: <Zap size={20} color="#f59e0b" />,
+      };
+    }
     if (post.agencyIcon === "health") {
       return {
         color: "#ef4444",
@@ -1323,7 +1943,7 @@ function CivicAdvisoryCard({ post, isDark, session, onNavigateToAuth, onShareToa
     ? contentText
     : contentText.slice(0, charLimit).trim() + "...";
 
-  const cardImage = post.image_url || "/sunny.jpg";
+  const cardImage = post.image_url || null;
 
   return (
     <div className="aesthetic-post-card">

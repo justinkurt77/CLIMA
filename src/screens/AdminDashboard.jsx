@@ -7,7 +7,7 @@ import {
   Plus, Trash2, Building, CheckCircle, CheckCircle2, Clock, TrendingUp, Search, X, Edit2, Check, Download,
   MapPin, Calendar, Phone, AlertCircle, AlertTriangle, ChevronRight, ChevronDown, ChevronUp, Navigation,
   ShieldAlert, Activity, Megaphone, HeartPulse, Tent, Truck, Flame, Droplet, Zap, Sprout, Wifi,
-  Sun, Moon, Bell, Menu, Layers
+  Sun, Moon, Bell, Menu, Layers, ThermometerSun
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect from "../components/ui/CustomSelect";
@@ -26,6 +26,7 @@ import { usePaginatedHospitalRecords } from "../hooks/usePaginatedHospitalRecord
 import { usePaginatedCDRRMOOps } from "../hooks/usePaginatedCDRRMOOps";
 import { usePaginatedBFPOps } from "../hooks/usePaginatedBFPOps";
 import AdminOverviewCommand from "../components/dashboard/AdminOverviewCommand";
+import ElNinoMonitoringDashboard from "../components/dashboard/ElNinoMonitoringDashboard";
 
 /* ── Dynamic Theme from Accent Color & Dark Mode ── */
 function hexToRgb(hex) {
@@ -365,6 +366,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
 
   const tabs = [
     { id: "overview", label: "Dashboard", icon: <BarChart3 size={18} />, module: "dashboard" },
+    { id: "elnino", label: "El Niño Monitoring", icon: <ThermometerSun size={18} />, module: "dashboard" },
     { id: "reports", label: "Citizen Reports", icon: <FileText size={18} />, module: "reports" },
     { id: "advisories", label: "Official Advisories", icon: <Megaphone size={18} />, module: "advisories" },
     { id: "hospitals", label: "Hospital Monitoring", icon: <HeartPulse size={18} />, module: "hospital" },
@@ -382,8 +384,8 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
 
   // Filter tabs based on permissions
   const visibleTabs = tabs.filter(tab => {
-    // Dashboard is always visible to all admins
-    if (tab.id === 'overview') return true;
+    // Dashboard and El Niño impact monitoring are always visible to all admins
+    if (tab.id === 'overview' || tab.id === 'elnino') return true;
     
     if (isSuperadmin) return true;
     if (!permissionsLoaded) return false; // Don't show tabs until permissions are loaded
@@ -739,6 +741,36 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
               isSuperadmin={isSuperadmin}
               adminDepartment={adminDepartment}
               currentUser={currentUser}
+            />
+          </motion.div>
+
+          <motion.div
+            variants={tabVariants}
+            initial="inactive"
+            animate={activeTab === "elnino" ? "active" : "inactive"}
+            style={floatingTabStyle}
+          >
+            <div style={{ marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <button
+                onClick={() => setActiveTab("overview")}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 9999,
+                  background: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.35)",
+                  color: "#f59e0b",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                ← Back to GIS Map
+              </button>
+            </div>
+            <ElNinoMonitoringDashboard
+              session={currentUser}
+              isAdmin={true}
+              onBackToMap={() => setActiveTab("overview")}
             />
           </motion.div>
 
@@ -3984,7 +4016,14 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                 <CustomSelect
                   value={newAdvisory.category}
                   onChange={v => setNewAdvisory({...newAdvisory, category: v})}
-                  options={[{value: "Weather", label: "Weather"}, {value: "Water", label: "Water Interruption"}, {value: "Power", label: "Power Outage"}, {value: "Health", label: "Health / Safety"}, {value: "General", label: "General"}]}
+                  options={[
+                    {value: "Extreme Heat", label: "Extreme Heat"},
+                    {value: "Water Supply", label: "Water Supply"},
+                    {value: "Power Interruption", label: "Power Interruption"},
+                    {value: "Public Health", label: "Public Health"},
+                    {value: "Fire Safety", label: "Fire Safety"},
+                    {value: "General Directives", label: "General Directives"}
+                  ]}
                   accent={S.accent}
                 />
               </div>
@@ -4012,7 +4051,7 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
             <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Manage public announcements and warnings.</p>
           </div>
           {canCreate('advisories') && (
-            <button onClick={() => setShowForm(true)} style={btnPrimary}><Plus size={16} /> New Advisory</button>
+            <button onClick={() => setShowForm(true)} style={btnPrimary}><Plus size={16} /> Post Announcement</button>
           )}
         </div>
       )}

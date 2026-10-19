@@ -10,6 +10,10 @@ import {
   CarFront,
   ClipboardList,
   Landmark,
+  Droplet,
+  Palmtree,
+  HeartPulse,
+  Zap,
 } from "lucide-react";
 
 const ICON_MAP = {
@@ -22,6 +26,21 @@ const ICON_MAP = {
   CarFront,
   ClipboardList,
   Landmark,
+  Droplet,
+  Palmtree,
+  HeartPulse,
+  Zap,
+  water: Droplet,
+  recreation: Palmtree,
+  health: HeartPulse,
+  utility: Zap,
+  government: Landmark,
+  "💧": Droplet,
+  "🏖️": Palmtree,
+  "🏥": HeartPulse,
+  "⚡": Zap,
+  "🏛️": Landmark,
+  "⚫": Landmark,
 };
 
 export function PinMarker({ color, icon }) {

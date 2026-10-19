@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Phone, Navigation } from "lucide-react";
+import { X, Phone, Navigation, Droplet, Palmtree, HeartPulse, Zap, Landmark } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 
 export function CategoryListPanel({
@@ -15,13 +15,14 @@ export function CategoryListPanel({
   if (!category) return null;
 
   const categoryConfig = {
-    water: { emoji: "💧", label: "Water Places", color: "#3B82F6" },
-    recreation: { emoji: "🏖️", label: "Recreation", color: "#16a34a" },
-    health: { emoji: "🏥", label: "Health", color: "#dc2626" },
-    utility: { emoji: "⚡", label: "Utilities", color: "#f59e0b" },
+    water: { icon: Droplet, label: "Water Places", color: "#38bdf8", bg: "rgba(56, 189, 248, 0.16)" },
+    recreation: { icon: Palmtree, label: "Recreation", color: "#22c55e", bg: "rgba(34, 197, 94, 0.16)" },
+    health: { icon: HeartPulse, label: "Health", color: "#ef4444", bg: "rgba(239, 68, 68, 0.16)" },
+    utility: { icon: Zap, label: "Utilities", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.16)" },
   };
 
-  const config = categoryConfig[category] || {};
+  const config = categoryConfig[category] || { icon: Droplet, label: "Places", color: "#38bdf8", bg: "rgba(56, 189, 248, 0.16)" };
+  const HeaderIcon = config.icon;
 
   return (
     <AnimatePresence>
@@ -33,7 +34,7 @@ export function CategoryListPanel({
           transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
           style={{
             position: "absolute",
-            top: "calc(8px + env(safe-area-inset-top, 0px) + 50px)",
+            top: "calc(126px + env(safe-area-inset-top, 0px))",
             left: 8,
             bottom: "calc(16px + env(safe-area-inset-bottom, 0px) + 68px)",
             width: 360,
@@ -67,7 +68,22 @@ export function CategoryListPanel({
               flexShrink: 0,
             }}
           >
-            <span style={{ fontSize: 24, lineHeight: 1 }}>{config.emoji}</span>
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 12,
+                background: config.bg,
+                border: `1.5px solid ${config.color}35`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                boxShadow: `0 2px 10px ${config.color}25`,
+              }}
+            >
+              <HeaderIcon size={20} color={config.color} strokeWidth={2.4} />
+            </div>
             <div style={{ flex: 1 }}>
               <h3
                 style={{
@@ -75,6 +91,7 @@ export function CategoryListPanel({
                   fontSize: 18,
                   fontWeight: 800,
                   color: isDark ? "#ffffff" : "#09090b",
+                  letterSpacing: -0.3,
                 }}
               >
                 {config.label}
@@ -85,6 +102,7 @@ export function CategoryListPanel({
                   fontSize: 12,
                   color: isDark ? "#a1a1aa" : "#71717a",
                   marginTop: 2,
+                  fontWeight: 600,
                 }}
               >
                 {facilities.length} {facilities.length === 1 ? "place" : "places"}
@@ -121,6 +139,17 @@ export function CategoryListPanel({
           >
             {facilities.map((facility) => {
               const isSelected = selectedFacilityId === facility.id;
+              const FacilityItemIcon =
+                category === "water" || facility.filterType === "water"
+                  ? Droplet
+                  : category === "recreation" || facility.filterType === "recreation"
+                  ? Palmtree
+                  : category === "health" || facility.filterType === "health"
+                  ? HeartPulse
+                  : category === "utility" || facility.filterType === "utility"
+                  ? Zap
+                  : Landmark;
+
               return (
                 <button
                   key={facility.id}
@@ -164,13 +193,26 @@ export function CategoryListPanel({
                       marginBottom: 6,
                       display: "flex",
                       alignItems: "flex-start",
-                      gap: 8,
+                      gap: 10,
                     }}
                   >
-                    <span style={{ fontSize: 16, lineHeight: 1, marginTop: -2 }}>
-                      {facility.icon}
-                    </span>
-                    <span style={{ flex: 1, lineHeight: 1.3 }}>
+                    <div
+                      style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: 8,
+                        background: config.bg,
+                        border: `1px solid ${config.color}35`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        marginTop: 1,
+                      }}
+                    >
+                      <FacilityItemIcon size={14} color={config.color} strokeWidth={2.4} />
+                    </div>
+                    <span style={{ flex: 1, lineHeight: 1.3, marginTop: 3 }}>
                       {facility.name}
                     </span>
                   </div>

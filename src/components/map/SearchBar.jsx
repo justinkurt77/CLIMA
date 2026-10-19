@@ -118,12 +118,8 @@ export default function SearchBar({
         className="map-search"
         style={{
           borderRadius: showDropdown
-            ? isPill
-              ? "24px 24px 0 0"
-              : "12px 12px 0 0"
-            : isPill
-              ? 40
-              : 12,
+            ? "24px 24px 0 0"
+            : 40,
           background: isDark ? "rgba(18, 18, 20, 0.94)" : "rgba(255, 255, 255, 0.96)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
@@ -134,8 +130,11 @@ export default function SearchBar({
             ? "0 6px 20px rgba(0,0,0,0.5)"
             : "0 6px 20px rgba(0,0,0,0.08)",
           transition: "border-color 0.2s",
-          padding: isPill ? "8px 12px" : "10px 14px",
-          height: isPill ? 56 : "auto",
+          padding: "0 18px",
+          height: 56,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
         }}
       >
         {loading ? (

@@ -51,6 +51,13 @@ function App() {
     if (forcedSkeleton && ["home", "about", "maps", "profile", "elnino"].includes(forcedSkeleton)) {
       return forcedSkeleton;
     }
+    const tabParam = urlParams?.get("tab");
+    if (tabParam && ["home", "about", "maps", "profile", "elnino", "legal", "admin"].includes(tabParam)) {
+      return tabParam;
+    }
+    const hash = typeof window !== "undefined" ? window.location.hash : "";
+    if (hash.includes("admin")) return "admin";
+    if (urlParams?.get("demo_admin") === "1" || urlParams?.get("admin") === "1") return "admin";
     return window.location.pathname === "/admin" ? "admin" : "home";
   });
   const isAdminView = activeScreen === "admin" || activeScreen === "admin-map";
@@ -88,12 +95,15 @@ function App() {
   useEffect(() => {
     const originalPushState = window.history.pushState;
     const handleUrlChange = () => {
-      const isAdmin = window.location.pathname === "/admin";
+      const hash = window.location.hash;
+      const search = new URLSearchParams(window.location.search);
+      const isAdmin = window.location.pathname === "/admin" || hash.includes("admin") || search.get("tab") === "admin" || search.get("demo_admin") === "1";
       if (isAdmin) setActiveScreen("admin");
       else if (window.location.pathname === "/") setActiveScreen("home");
     };
 
     window.addEventListener("popstate", handleUrlChange);
+    window.addEventListener("hashchange", handleUrlChange);
 
     window.history.pushState = function () {
       originalPushState.apply(this, arguments);
@@ -102,6 +112,7 @@ function App() {
 
     return () => {
       window.removeEventListener("popstate", handleUrlChange);
+      window.removeEventListener("hashchange", handleUrlChange);
       window.history.pushState = originalPushState;
     };
   }, []);
@@ -588,17 +599,16 @@ function App() {
         )}
       </AnimatePresence>
 
-      {/* MAP - Background layer: only visible on admin views */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 1,
-          opacity: isAdminView ? 1 : 0,
-          pointerEvents: isAdminView ? "auto" : "none",
-          transition: "opacity 0.4s ease",
-        }}
-      >
+      {/* MAP - Background layer: only mounted on admin views */}
+      {isAdminView && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 1,
+            pointerEvents: "auto",
+          }}
+        >
         <ErrorBoundary>
           <Suspense
             fallback={
@@ -729,6 +739,7 @@ function App() {
           </Suspense>
         </ErrorBoundary>
       </div>
+      )}
 
       {/* Global Blur Overlay for non-Home Screens (Excluding Maps) */}
       <AnimatePresence>
