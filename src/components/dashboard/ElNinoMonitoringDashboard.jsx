@@ -467,12 +467,17 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      const { data: operations } = await supabase
+      const { data: operations, error } = await supabase
         .from('bfp_operations')
         .select('*')
-        .or('operation_type.eq.wildfire,incident_type.eq.wildfire')
+        .in('operation_type', ['wildfire', 'fire_incident', 'fire'])
         .gte('operation_date', thirtyDaysAgo.toISOString().split('T')[0])
         .order('operation_date', { ascending: false });
+      
+      if (error) {
+        logger.error('Error fetching BFP operations:', error);
+        return;
+      }
       
       setData(prev => ({ ...prev, bfpOperations: operations || [] }));
     } catch (error) {
