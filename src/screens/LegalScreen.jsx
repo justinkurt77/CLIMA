@@ -538,7 +538,7 @@ function LegalScreen() {
         style={{
           flex: 1,
           overflowY: "auto",
-          padding: "24px 20px 60px",
+          padding: "24px 20px calc(110px + env(safe-area-inset-bottom, 0px))",
         }}
         className="hide-scroll"
       >

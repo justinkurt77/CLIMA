@@ -492,7 +492,7 @@ html.light .parallax-dot-btn:hover,
     display: none;
   }
   .parallax-section {
-    padding: 36px 16px 80px;
+    padding: 36px 16px calc(140px + env(safe-area-inset-bottom, 0px));
   }
   .parallax-glass-card,
   .parallax-kloudtech-card {

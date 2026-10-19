@@ -895,6 +895,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
               {/* Legal links section */}
               <div style={{
                 padding: '20px 24px',
+                paddingBottom: 'calc(100px + env(safe-area-inset-bottom, 0px))',
                 borderTop: '1px solid var(--border-subtle)',
                 background: 'var(--bg-card)'
               }}>

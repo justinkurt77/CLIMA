@@ -873,8 +873,10 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
 
       {/* Mobile View (<1024px) */}
       <div className="mobile-view-container" style={{ 
-        display: isMobile ? 'block' : 'none',
-        padding: 'max(20px, env(safe-area-inset-top, 20px)) 16px 96px',
+        display: isMobile ? 'flex' : 'none',
+        flexDirection: 'column',
+        gap: 12,
+        padding: 'max(20px, env(safe-area-inset-top, 20px)) 16px calc(180px + env(safe-area-inset-bottom, 0px))',
       }}>
         {/* Mobile Header Bar */}
         <motion.div
@@ -951,6 +953,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
           onNavigateToAuth={onNavigateToAuth}
           canPost={Boolean(isAdmin)}
           onOpenPostModal={handleOpenPostModal}
+          isMobile={true}
         />
         <HospitalMonitoringSection
           records={data.hospitalRecords}
@@ -1635,12 +1638,13 @@ function AdvisoriesSection({
   onNavigateToAuth,
   canPost = false,
   onOpenPostModal,
+  isMobile = false,
 }) {
   const sectionHeaderStyle = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: expanded ? 12 : 0,
     cursor: 'pointer',
     userSelect: 'none',
     flexShrink: 0,
@@ -1650,13 +1654,13 @@ function AdvisoriesSection({
     <div
       className="desktop-card"
       style={{
-        padding: '18px 20px',
+        padding: expanded ? '18px 20px' : '10px 16px',
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
+        height: isMobile ? 'auto' : '100%',
         minHeight: 0,
-        overflow: 'hidden',
-        borderRadius: 20,
+        overflow: isMobile ? 'visible' : 'hidden',
+        borderRadius: isMobile ? 16 : 20,
       }}
     >
       <div style={sectionHeaderStyle} onClick={onToggle}>
@@ -1763,9 +1767,9 @@ function AdvisoriesSection({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              flex: 1,
+              flex: isMobile ? 'none' : 1,
               minHeight: 0,
-              overflow: 'hidden',
+              overflow: isMobile ? 'visible' : 'hidden',
             }}
           >
             <CivicAdvisoriesFeed
@@ -1776,6 +1780,7 @@ function AdvisoriesSection({
               onNavigateToAuth={onNavigateToAuth}
               canPost={canPost}
               onOpenPostModal={onOpenPostModal}
+              isMobile={isMobile}
             />
           </motion.div>
         )}
@@ -1792,6 +1797,7 @@ function CivicAdvisoriesFeed({
   onNavigateToAuth,
   canPost = false,
   onOpenPostModal,
+  isMobile = false,
 }) {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [toastMessage, setToastMessage] = useState(null);
@@ -1992,15 +1998,15 @@ function CivicAdvisoriesFeed({
         })}
       </div>
 
-      {/* Feed List Container - Fills remaining height with smooth scroll */}
+      {/* Feed List Container - Fills remaining height on desktop, flows naturally on mobile */}
       <div
         className="civic-feed-scroll hide-scroll"
         style={{
-          flex: 1,
-          overflowY: "auto",
+          flex: isMobile ? 'none' : 1,
+          overflowY: isMobile ? 'visible' : 'auto',
           scrollbarWidth: "none",
           msOverflowStyle: "none",
-          paddingRight: 6,
+          paddingRight: isMobile ? 0 : 6,
           display: "flex",
           flexDirection: "column",
           gap: 16,
