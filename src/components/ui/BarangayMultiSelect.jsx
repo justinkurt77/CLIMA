@@ -21,6 +21,7 @@ export default function BarangayMultiSelect({
   isDark = true,
   accent = "#f97316",
   disabled = false,
+  error = false,
   placeholder = "Select affected Palayan barangays...",
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -108,8 +109,8 @@ export default function BarangayMultiSelect({
           padding: "8px 12px",
           borderRadius: 10,
           background: colors.bg,
-          border: `1.5px solid ${isOpen ? accent : colors.border}`,
-          boxShadow: isOpen ? `0 0 0 3px ${accent}22` : "none",
+          border: error ? "1.5px solid #ef4444" : `1.5px solid ${isOpen ? accent : colors.border}`,
+          boxShadow: error ? "0 0 0 3px rgba(239, 68, 68, 0.25)" : isOpen ? `0 0 0 3px ${accent}22` : "none",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",

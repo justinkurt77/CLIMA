@@ -7240,6 +7240,41 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   );
 }
 
+// Utility helpers for power outage time & duration calculations
+function calculateDurationMinutes(startTime, endTime) {
+  if (!startTime || !endTime) return null;
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return null;
+  let startMinutes = sh * 60 + sm;
+  let endMinutes = eh * 60 + em;
+  if (endMinutes < startMinutes) {
+    endMinutes += 24 * 60; // spans midnight
+  }
+  return endMinutes - startMinutes;
+}
+
+function calculateEndTime(startTime, durationMinutes) {
+  if (!startTime || durationMinutes == null || durationMinutes === '') return '';
+  const mins = parseInt(durationMinutes, 10);
+  if (isNaN(mins) || mins <= 0) return '';
+  const [sh, sm] = startTime.split(':').map(Number);
+  if (isNaN(sh) || isNaN(sm)) return '';
+  const totalMins = (sh * 60 + sm + mins) % (24 * 60);
+  const eh = Math.floor(totalMins / 60);
+  const em = totalMins % 60;
+  return `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+}
+
+function formatTime12h(timeStr) {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return timeStr;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const displayH = h % 12 || 12;
+  return `${displayH}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
 /* ── Power Utility Tab (Phase 9) ── */
 function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
   const [records, setRecords] = useState([]);
@@ -7247,6 +7282,7 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   const [activeTab, setActiveTab] = useState('view');
   const [editId, setEditId] = useState(null);
   const [now, setNow] = useState(() => new Date());
+  const [barangayError, setBarangayError] = useState(false);
   const today = new Date().toISOString().split('T')[0];
   const [formData, setFormData] = useState({
     interruption_date: today,
@@ -7254,7 +7290,8 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
     total_affected_households: '',
     feeders_affected: '',
     total_duration_minutes: '',
-    peak_outage_time: '',
+    peak_outage_time: '08:00',
+    set_end_time: '',
     cause: 'line_fault',
     restoration_status: 'ongoing',
     description: ''
@@ -7318,6 +7355,54 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
     }
   };
 
+  const handleStartTimeChange = (newStartTime) => {
+    let newDuration = formData.total_duration_minutes;
+    let newEndTime = formData.set_end_time;
+
+    if (newEndTime) {
+      const diff = calculateDurationMinutes(newStartTime, newEndTime);
+      if (diff != null) newDuration = String(diff);
+    } else if (newDuration && parseInt(newDuration, 10) > 0) {
+      newEndTime = calculateEndTime(newStartTime, newDuration);
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      peak_outage_time: newStartTime,
+      set_end_time: newEndTime,
+      total_duration_minutes: newDuration
+    }));
+  };
+
+  const handleEndTimeChange = (newEndTime) => {
+    const startTime = formData.peak_outage_time || '08:00';
+    let newDuration = formData.total_duration_minutes;
+
+    if (newEndTime) {
+      const diff = calculateDurationMinutes(startTime, newEndTime);
+      if (diff != null) newDuration = String(diff);
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      peak_outage_time: startTime,
+      set_end_time: newEndTime,
+      total_duration_minutes: newDuration
+    }));
+  };
+
+  const handleDurationChange = (newDuration) => {
+    const startTime = formData.peak_outage_time || '08:00';
+    const newEndTime = calculateEndTime(startTime, newDuration);
+
+    setFormData(prev => ({
+      ...prev,
+      peak_outage_time: prev.peak_outage_time || startTime,
+      total_duration_minutes: newDuration,
+      set_end_time: newEndTime || prev.set_end_time
+    }));
+  };
+
   const resetForm = () => {
     setFormData({
       interruption_date: today,
@@ -7325,22 +7410,41 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
       total_affected_households: '',
       feeders_affected: '',
       total_duration_minutes: '',
-      peak_outage_time: '',
+      peak_outage_time: '08:00',
+      set_end_time: '',
       cause: 'line_fault',
       restoration_status: 'ongoing',
       description: ''
     });
+    setBarangayError(false);
     setEditId(null);
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
+
+    const selectedList = parseBarangayList(formData.feeders_affected);
+    if (!selectedList || selectedList.length === 0) {
+      setBarangayError(true);
+      showErrorModal(
+        "Barangay Selection Required",
+        "Please select at least one affected Palayan City barangay from the dropdown before saving."
+      );
+      return;
+    }
+    setBarangayError(false);
+
+    const computedDuration = (formData.peak_outage_time && formData.set_end_time)
+      ? calculateDurationMinutes(formData.peak_outage_time, formData.set_end_time)
+      : null;
+    const finalDuration = parseInt(formData.total_duration_minutes, 10) || computedDuration || 0;
+
     const payload = {
       interruption_date: formData.interruption_date,
-      total_outages: parseInt(formData.total_outages) || 0,
+      total_outages: parseInt(formData.total_outages) || 1,
       total_affected_households: parseInt(formData.total_affected_households) || 0,
-      feeders_affected: formData.feeders_affected,
-      total_duration_minutes: parseInt(formData.total_duration_minutes) || 0,
+      feeders_affected: selectedList.join(", "),
+      total_duration_minutes: finalDuration,
       peak_outage_time: formData.peak_outage_time || null,
       cause: formData.cause,
       restoration_status: editId ? (formData.restoration_status || 'ongoing') : 'ongoing',
@@ -7359,10 +7463,17 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
       // Sync active power interruptions with advisories table for citizen notification & map visibility
       try {
         const selectedList = parseBarangayList(formData.feeders_affected);
-        const bgyNames = selectedList.length > 0 ? selectedList.join(", ") : "Palayan City";
+        const isAll = selectedList.length >= 16;
+        const bgyNames = isAll
+          ? "Palayan City (All 19 Barangays)"
+          : selectedList.length > 0
+          ? `Brgy. ${selectedList.join(", ")}`
+          : "Palayan City";
         if (payload.restoration_status !== "restored") {
           await supabase.from("advisories").insert({
-            title: `NEECO Power Interruption Advisory • Brgy. ${bgyNames}`,
+            title: isAll
+              ? "NEECO Power Interruption Advisory • Palayan City (City-wide)"
+              : `NEECO Power Interruption Advisory • ${bgyNames}`,
             category: "Power Interruption",
             status: "Published",
             content: `Scheduled/Ongoing power interruption in Palayan City affecting: ${bgyNames}. Cause: ${causeLabels[formData.cause] || formData.cause}. ${formData.description || "Grid maintenance and restoration ongoing."}`,
@@ -7441,17 +7552,22 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   };
 
   const handleEdit = (r) => {
+    const calcEndTime = r.peak_outage_time && r.total_duration_minutes
+      ? calculateEndTime(r.peak_outage_time, r.total_duration_minutes)
+      : '';
     setFormData({
       interruption_date: r.interruption_date,
       total_outages: r.total_outages != null ? String(r.total_outages) : '',
       total_affected_households: r.total_affected_households != null ? String(r.total_affected_households) : '',
       feeders_affected: r.feeders_affected || '',
       total_duration_minutes: r.total_duration_minutes != null ? String(r.total_duration_minutes) : '',
-      peak_outage_time: r.peak_outage_time || '',
+      peak_outage_time: r.peak_outage_time || '08:00',
+      set_end_time: calcEndTime,
       cause: r.cause || 'line_fault',
       restoration_status: r.restoration_status || 'ongoing',
       description: r.description || ''
     });
+    setBarangayError(false);
     setEditId(r.id);
     setActiveTab('add');
   };
@@ -7618,23 +7734,7 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
               <div>
                 <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Date *</label>
-                <input type='date' max={today} value={formData.interruption_date} onChange={e => setFormData({...formData, interruption_date: e.target.value})} required style={inputStyle} />
-              </div>
-              <div>
-                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Peak Outage Time</label>
-                <input type='time' value={formData.peak_outage_time} onChange={e => setFormData({...formData, peak_outage_time: e.target.value})} style={inputStyle} />
-              </div>
-              <div>
-                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Total Outages *</label>
-                <input type='number' min='0' placeholder='0' value={formData.total_outages} onChange={e => setFormData({...formData, total_outages: e.target.value})} required style={inputStyle} />
-              </div>
-              <div>
-                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Total Duration (minutes)</label>
-                <input type='number' min='0' placeholder='0' value={formData.total_duration_minutes} onChange={e => setFormData({...formData, total_duration_minutes: e.target.value})} style={inputStyle} />
-              </div>
-              <div>
-                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Households Affected</label>
-                <input type='number' min='0' placeholder='0' value={formData.total_affected_households} onChange={e => setFormData({...formData, total_affected_households: e.target.value})} style={inputStyle} />
+                <input type='date' value={formData.interruption_date} onChange={e => setFormData({...formData, interruption_date: e.target.value})} required style={inputStyle} />
               </div>
               <div>
                 <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Cause</label>
@@ -7652,6 +7752,115 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                   accent={S.accent}
                 />
               </div>
+
+              <div>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'flex', justifyContent: 'space-between', marginBottom: 4}}>
+                  <span>Start Time (Outage Begins) *</span>
+                  {formData.peak_outage_time && (
+                    <span style={{color: S.accent, fontWeight: 700}}>
+                      {formatTime12h(formData.peak_outage_time)}
+                    </span>
+                  )}
+                </label>
+                <input
+                  type='time'
+                  value={formData.peak_outage_time}
+                  onChange={e => handleStartTimeChange(e.target.value)}
+                  required
+                  style={inputStyle}
+                />
+              </div>
+
+              <div>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'flex', justifyContent: 'space-between', marginBottom: 4}}>
+                  <span>Set Time (Auto-lifts Outage) *</span>
+                  {formData.set_end_time && (
+                    <span style={{color: '#10b981', fontWeight: 700}}>
+                      {formatTime12h(formData.set_end_time)}
+                    </span>
+                  )}
+                </label>
+                <input
+                  type='time'
+                  value={formData.set_end_time}
+                  onChange={e => handleEndTimeChange(e.target.value)}
+                  placeholder="Set time"
+                  style={{
+                    ...inputStyle,
+                    borderColor: formData.set_end_time ? '#10b981' : undefined
+                  }}
+                />
+              </div>
+
+              <div style={{gridColumn: '1 / -1'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 6}}>
+                  <label style={{fontSize: 11, fontWeight: 800, color: S.muted}}>
+                    Total Duration (minutes)
+                  </label>
+                  {parseInt(formData.total_duration_minutes) > 0 && (
+                    <span style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: '#10b981',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      background: S.isDark ? "rgba(16, 185, 129, 0.12)" : "#ecfdf5",
+                      padding: '2px 8px',
+                      borderRadius: 6,
+                      border: `1px solid ${S.isDark ? "rgba(16, 185, 129, 0.25)" : "#d1fae5"}`
+                    }}>
+                      <Clock size={11} /> Auto-calculated: {Math.floor(parseInt(formData.total_duration_minutes) / 60)}h {parseInt(formData.total_duration_minutes) % 60}m
+                      {formData.set_end_time ? ` • Auto-lifts at ${formatTime12h(formData.set_end_time)}` : ''}
+                    </span>
+                  )}
+                </div>
+                <input
+                  type='number'
+                  min='0'
+                  placeholder='Auto-calculated when set time is selected'
+                  value={formData.total_duration_minutes}
+                  onChange={e => handleDurationChange(e.target.value)}
+                  style={inputStyle}
+                />
+
+                {/* Quick Presets */}
+                <div style={{display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', alignItems: 'center'}}>
+                  <span style={{fontSize: 10.5, fontWeight: 700, color: S.muted}}>Quick Presets:</span>
+                  {[
+                    { label: '1 hr', mins: 60 },
+                    { label: '2 hrs', mins: 120 },
+                    { label: '4 hrs', mins: 240 },
+                    { label: '8 hrs', mins: 480 },
+                    { label: 'Until 5:00 PM', end: '17:00' },
+                  ].map(preset => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => {
+                        if (preset.end) {
+                          handleEndTimeChange(preset.end);
+                        } else {
+                          handleDurationChange(String(preset.mins));
+                        }
+                      }}
+                      style={{
+                        padding: '3px 9px',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        borderRadius: 6,
+                        border: `1px solid ${S.border}`,
+                        background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "#f8fafc",
+                        color: S.text,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div style={{gridColumn: '1 / -1'}}>
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4}}>
                   <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block'}}>
@@ -7663,11 +7872,21 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                 </div>
                 <BarangayMultiSelect
                   selected={parseBarangayList(formData.feeders_affected)}
-                  onChange={(newList) => setFormData({...formData, feeders_affected: newList.join(", ")})}
+                  onChange={(newList) => {
+                    if (newList.length > 0) setBarangayError(false);
+                    setFormData({...formData, feeders_affected: newList.join(", ")});
+                  }}
+                  error={barangayError}
                   isDark={S.isDark}
                   accent={S.accent}
                   placeholder="Select all affected Palayan barangays from dropdown..."
                 />
+                {barangayError && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#ef4444', fontSize: 11.5, fontWeight: 700, marginTop: 5 }}>
+                    <AlertCircle size={13} strokeWidth={2.4} />
+                    <span>Please select at least one affected Palayan City barangay</span>
+                  </div>
+                )}
               </div>
               <div style={{gridColumn: '1 / -1'}}>
                 <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Description / Notes</label>
@@ -7774,14 +7993,18 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                         </div>
 
                         <div style={{display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: 11.5, color: S.muted}}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <Zap size={12} strokeWidth={2} />
-                            <span>{r.total_outages || 0} outage{(r.total_outages || 0) !== 1 ? 's' : ''}</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <Home size={12} strokeWidth={2} />
-                            <span>{(r.total_affected_households || 0).toLocaleString()} households</span>
-                          </div>
+                          {(r.total_outages || 0) > 1 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Zap size={12} strokeWidth={2} />
+                              <span>{r.total_outages} outages</span>
+                            </div>
+                          )}
+                          {(r.total_affected_households || 0) > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Home size={12} strokeWidth={2} />
+                              <span>{(r.total_affected_households || 0).toLocaleString()} households</span>
+                            </div>
+                          )}
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <Clock size={12} strokeWidth={2} />
                             <span>{Math.floor((r.total_duration_minutes || 0) / 60)}h {(r.total_duration_minutes || 0) % 60}m</span>
@@ -7789,7 +8012,10 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                           {r.peak_outage_time && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                               <Clock size={12} strokeWidth={2} />
-                              <span>Peak: {r.peak_outage_time.slice(0, 5)}</span>
+                              <span>
+                                Schedule: {formatTime12h(r.peak_outage_time.slice(0, 5))}
+                                {endTime ? ` – ${endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}` : ''}
+                              </span>
                             </div>
                           )}
                           {r.cause && (
@@ -7800,30 +8026,70 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                           )}
                         </div>
 
-                        {r.feeders_affected && (
+                        {r.feeders_affected && parseBarangayList(r.feeders_affected).length > 0 ? (
                           <div style={{margin: '8px 0 0', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap'}}>
                             <span style={{fontSize: 11, fontWeight: 700, color: S.muted, display: 'flex', alignItems: 'center', gap: 4}}>
                               <MapPin size={12} color="#f97316" /> Affected Barangays:
                             </span>
-                            {parseBarangayList(r.feeders_affected).map((bgy) => (
-                              <span
-                                key={bgy}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 3,
-                                  padding: '2px 8px',
-                                  borderRadius: 6,
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  background: S.isDark ? "rgba(249, 115, 22, 0.16)" : "#fff7ed",
-                                  border: `1px solid ${S.isDark ? "rgba(249, 115, 22, 0.35)" : "#ffedd5"}`,
-                                  color: S.isDark ? "#fb923c" : "#c2410c",
-                                }}
-                              >
-                                {bgy}
-                              </span>
-                            ))}
+                            {(() => {
+                              const bList = parseBarangayList(r.feeders_affected);
+                              if (bList.length >= 18) {
+                                return (
+                                  <span
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 3,
+                                      padding: '2px 9px',
+                                      borderRadius: 6,
+                                      fontSize: 11,
+                                      fontWeight: 800,
+                                      background: S.isDark ? "rgba(249, 115, 22, 0.22)" : "#fff7ed",
+                                      border: `1px solid ${S.isDark ? "rgba(249, 115, 22, 0.45)" : "#fed7aa"}`,
+                                      color: S.isDark ? "#fb923c" : "#c2410c",
+                                    }}
+                                  >
+                                    ⚡ Palayan City (City-wide)
+                                  </span>
+                                );
+                              }
+                              return bList.map((bgy) => (
+                                <span
+                                  key={bgy}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 3,
+                                    padding: '2px 8px',
+                                    borderRadius: 6,
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    background: S.isDark ? "rgba(249, 115, 22, 0.16)" : "#fff7ed",
+                                    border: `1px solid ${S.isDark ? "rgba(249, 115, 22, 0.35)" : "#ffedd5"}`,
+                                    color: S.isDark ? "#fb923c" : "#c2410c",
+                                  }}
+                                >
+                                  {bgy}
+                                </span>
+                              ));
+                            })()}
+                          </div>
+                        ) : (
+                          <div style={{margin: '8px 0 0', display: 'flex', alignItems: 'center', gap: 6}}>
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              padding: '2px 8px',
+                              borderRadius: 6,
+                              fontSize: 11,
+                              fontWeight: 800,
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              border: '1px solid rgba(239, 68, 68, 0.35)',
+                              color: '#ef4444'
+                            }}>
+                              <AlertCircle size={12} strokeWidth={2.4} /> No barangay selected (Click Edit to assign)
+                            </span>
                           </div>
                         )}
                         {r.description && <p style={{margin: '4px 0 0', fontSize: 12, color: S.muted}}>{r.description}</p>}

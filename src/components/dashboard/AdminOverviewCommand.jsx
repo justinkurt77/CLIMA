@@ -141,6 +141,8 @@ export default function AdminOverviewCommand({
   const {
     powerOutageGeoJSON,
     affectedBarangayOutages,
+    displayOutageMarkers,
+    isWholeCity,
     hasActiveAdvisories,
   } = usePowerInterruptionAdvisories();
 
@@ -513,9 +515,9 @@ export default function AdminOverviewCommand({
 
             {/* Power Interruption Outage Markers for Affected Barangays */}
             {hasActiveAdvisories &&
-              affectedBarangayOutages.map((outage) => (
+              displayOutageMarkers.map((outage) => (
                 <Marker
-                  key={`admin-power-outage-${outage.name}`}
+                  key={outage.isWholeCity ? "admin-power-outage-whole-city" : `admin-power-outage-${outage.name}`}
                   longitude={outage.lng}
                   latitude={outage.lat}
                   anchor="bottom"
@@ -527,11 +529,12 @@ export default function AdminOverviewCommand({
                       setInfoPopup({
                         lng: outage.lng,
                         lat: outage.lat,
-                        title: `Brgy. ${outage.name}`,
-                        subtitle: "NEECO Power Interruption Advisory",
+                        title: outage.isWholeCity ? "Palayan City" : `Brgy. ${outage.name}`,
+                        subtitle: outage.isWholeCity ? "City-wide NEECO Power Interruption" : "NEECO Power Interruption Advisory",
                         color: outage.status === "ongoing" ? "#ef4444" : "#f59e0b",
                         lines: [
                           `Status: ${(outage.status || "ongoing").toUpperCase()}`,
+                          outage.isWholeCity && "Scope: All 19 Barangays of Palayan City",
                           outage.date && `Date: ${outage.date}`,
                           outage.peakTime && `Peak Time: ${outage.peakTime.slice(0, 5)}`,
                           outage.cause && `Cause: ${outage.cause}`,
@@ -553,23 +556,25 @@ export default function AdminOverviewCommand({
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 5,
-                        padding: "4px 8px",
-                        borderRadius: 14,
+                        gap: outage.isWholeCity ? 6 : 5,
+                        padding: outage.isWholeCity ? "5px 12px" : "4px 8px",
+                        borderRadius: outage.isWholeCity ? 18 : 14,
                         background: isDark ? "rgba(24, 24, 27, 0.94)" : "#ffffff",
                         border: "2px solid #f59e0b",
-                        boxShadow: "0 4px 14px rgba(245, 158, 11, 0.5)",
-                        fontSize: 11,
+                        boxShadow: outage.isWholeCity
+                          ? "0 4px 18px rgba(245, 158, 11, 0.65), 0 0 16px rgba(245, 158, 11, 0.3)"
+                          : "0 4px 14px rgba(245, 158, 11, 0.5)",
+                        fontSize: outage.isWholeCity ? 11.5 : 11,
                         fontWeight: 800,
                         color: isDark ? "#ffffff" : "#18181b",
                         whiteSpace: "nowrap",
                       }}
                     >
-                      <Zap size={12} color="#f59e0b" fill="#f59e0b" />
-                      <span>Brgy. {outage.name}</span>
+                      <Zap size={outage.isWholeCity ? 13 : 12} color="#f59e0b" fill="#f59e0b" />
+                      <span>{outage.isWholeCity ? "Palayan City" : `Brgy. ${outage.name}`}</span>
                       <span
                         style={{
-                          padding: "1px 5px",
+                          padding: "1px 6px",
                           borderRadius: 4,
                           fontSize: 9,
                           fontWeight: 800,
@@ -578,16 +583,16 @@ export default function AdminOverviewCommand({
                           color: outage.status === "ongoing" ? "#ef4444" : "#f59e0b",
                         }}
                       >
-                        {outage.status || "Outage"}
+                        {outage.isWholeCity ? "City-wide" : (outage.status || "Outage")}
                       </span>
                     </div>
                     <div
                       style={{
                         width: 0,
                         height: 0,
-                        borderLeft: "5px solid transparent",
-                        borderRight: "5px solid transparent",
-                        borderTop: "5px solid #f59e0b",
+                        borderLeft: outage.isWholeCity ? "5px solid transparent" : "4px solid transparent",
+                        borderRight: outage.isWholeCity ? "5px solid transparent" : "4px solid transparent",
+                        borderTop: outage.isWholeCity ? "5px solid #f59e0b" : "4px solid #f59e0b",
                       }}
                     />
                   </div>

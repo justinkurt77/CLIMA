@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "../lib/supabase";
 import { logger } from "../lib/logger";
 import {
+  PALAYAN_CITY_BARANGAYS,
   PALAYAN_BARANGAY_CENTROIDS,
   matchesBarangay,
   parseBarangayList,
@@ -229,6 +230,90 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
     return Array.from(affectedBarangayMap.values());
   }, [affectedBarangayMap]);
 
+  // Check if all or nearly all barangays in Palayan City are selected / affected
+  const isWholeCity = useMemo(() => {
+    if (affectedBarangays.length === 0) return false;
+    if (affectedBarangays.length >= 16) return true;
+
+    // Check if at least 16 of the 19 barangays are matched (resilient for slight naming differences)
+    const matchCount = PALAYAN_CITY_BARANGAYS.filter((bgy) =>
+      affectedBarangays.some((aff) => matchesBarangay(aff, bgy))
+    ).length;
+    if (matchCount >= 16) return true;
+
+    // Also check if any active power interruption record explicitly specifies whole city / all barangays
+    const now = new Date();
+    const hasWholeCityRecord = powerRecords.some((r) => {
+      if (!isPowerOutageActive(r, now)) return false;
+      const f = (r.feeders_affected || "").toLowerCase();
+      const d = (r.description || "").toLowerCase();
+      return (
+        f.includes("whole palayan") ||
+        f.includes("all barangay") ||
+        f.includes("entire city") ||
+        f.includes("all palayan") ||
+        f.includes("palayan city") ||
+        d.includes("whole palayan") ||
+        d.includes("all 19 barangay")
+      );
+    });
+    if (hasWholeCityRecord) return true;
+
+    // Check if any active advisory mentions whole city
+    const hasWholeCityAdvisory = advisoryRecords.some((adv) => {
+      const text = `${adv.title || ""} ${adv.content || ""}`.toLowerCase();
+      if (text.includes("restored") || text.includes("lifted") || text.includes("cleared")) return false;
+      return (
+        text.includes("whole palayan") ||
+        text.includes("all 19 barangay") ||
+        text.includes("entire city") ||
+        text.includes("all barangay")
+      );
+    });
+    return hasWholeCityAdvisory;
+  }, [affectedBarangays, powerRecords, advisoryRecords, tick]);
+
+  // Unified display markers:
+  // If all of the barangays are selected, collapse to ONE single clean "Whole Palayan City" marker in the center
+  // Otherwise, display individual barangay markers
+  const displayOutageMarkers = useMemo(() => {
+    if (affectedBarangays.length === 0) return [];
+
+    if (isWholeCity) {
+      const now = new Date();
+      const activeRecord = powerRecords.find((r) => isPowerOutageActive(r, now)) || advisoryRecords[0];
+      const anyMeta = affectedBarangayOutages[0] || {};
+      const totalHouseholds = affectedBarangayOutages.reduce(
+        (sum, o) => sum + (parseInt(o.households, 10) || 0),
+        0
+      );
+
+      return [
+        {
+          name: "Palayan City",
+          isWholeCity: true,
+          totalBarangays: PALAYAN_CITY_BARANGAYS.length,
+          barangays: affectedBarangays,
+          // Geographic center of Palayan City
+          lng: 121.0965,
+          lat: 15.5350,
+          status: anyMeta.status || "ongoing",
+          date: anyMeta.date || (activeRecord ? activeRecord.interruption_date : ""),
+          peakTime: anyMeta.peakTime || (activeRecord ? activeRecord.peak_outage_time : ""),
+          duration: anyMeta.duration || (activeRecord ? activeRecord.total_duration_minutes : ""),
+          endTime: anyMeta.endTime,
+          cause: anyMeta.cause || (activeRecord ? activeRecord.cause : "City-wide Power Interruption"),
+          households: totalHouseholds || (activeRecord ? activeRecord.total_affected_households : 0),
+          description: anyMeta.description || (activeRecord ? activeRecord.description : "City-wide power interruption affecting all barangays of Palayan City."),
+          source: anyMeta.source || "NEECO Power Interruption Record",
+          rawRecord: anyMeta.rawRecord || activeRecord,
+        },
+      ];
+    }
+
+    return affectedBarangayOutages;
+  }, [isWholeCity, affectedBarangays, affectedBarangayOutages, powerRecords, advisoryRecords, tick]);
+
   // Construct GeoJSON FeatureCollection of highlighted barangay polygons
   const powerOutageGeoJSON = useMemo(() => {
     if (!geoJSONData || !geoJSONData.features || affectedBarangays.length === 0) {
@@ -237,6 +322,7 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
 
     const matchedFeatures = geoJSONData.features
       .filter((f) => {
+        if (isWholeCity) return true; // Entire city highlighted
         const name = f.properties?.adm4_en;
         return affectedBarangays.some((aff) => matchesBarangay(aff, name));
       })
@@ -248,6 +334,7 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
           properties: {
             ...f.properties,
             isPowerOutage: true,
+            isWholeCity,
             outageStatus: meta.status || "ongoing",
             outageCause: meta.cause || "Power Interruption",
             outageDate: meta.date || "",
@@ -256,7 +343,7 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
       });
 
     return { type: "FeatureCollection", features: matchedFeatures };
-  }, [geoJSONData, affectedBarangays, affectedBarangayMap]);
+  }, [geoJSONData, affectedBarangays, affectedBarangayMap, isWholeCity]);
 
   return {
     loading,
@@ -264,6 +351,8 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
     advisoryRecords,
     affectedBarangays,
     affectedBarangayOutages,
+    displayOutageMarkers,
+    isWholeCity,
     powerOutageGeoJSON,
     hasActiveAdvisories: affectedBarangays.length > 0,
     refetch: fetchData,

@@ -218,6 +218,8 @@ function MapScreen({
   const {
     powerOutageGeoJSON,
     affectedBarangayOutages,
+    displayOutageMarkers,
+    isWholeCity,
     affectedBarangays,
     hasActiveAdvisories,
   } = usePowerInterruptionAdvisories(barangayGeoJSON);
@@ -832,7 +834,11 @@ function MapScreen({
             />
             <Zap size={14} color="#18181b" fill="#18181b" />
             <span style={{ fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              Power Advisory: Brgy. {affectedBarangays.join(", ")}
+              {isWholeCity
+                ? "Power Advisory: Palayan City (City-wide)"
+                : affectedBarangays.length > 3
+                ? `Power Advisory: Brgy. ${affectedBarangays.slice(0, 3).join(", ")} (+${affectedBarangays.length - 3} more)`
+                : `Power Advisory: Brgy. ${affectedBarangays.join(", ")}`}
             </span>
             <span style={{ fontSize: 11, fontWeight: 700, textDecoration: "underline", opacity: 0.85, whiteSpace: "nowrap" }}>
               Focus Map
@@ -1365,9 +1371,9 @@ function MapScreen({
 
           {/* Power Interruption Warning Markers */}
           {(activeLayers.powerFeeders || hasActiveAdvisories) &&
-            affectedBarangayOutages.map((outage) => (
+            displayOutageMarkers.map((outage) => (
               <Marker
-                key={`pwr-outage-marker-${outage.name}`}
+                key={outage.isWholeCity ? "pwr-outage-marker-whole-city" : `pwr-outage-marker-${outage.name}`}
                 longitude={outage.lng}
                 latitude={outage.lat}
                 anchor="bottom"
@@ -1391,41 +1397,45 @@ function MapScreen({
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 5,
-                      padding: "4px 9px",
-                      borderRadius: 16,
+                      gap: outage.isWholeCity ? 7 : 5,
+                      padding: outage.isWholeCity ? "6px 14px" : "4px 9px",
+                      borderRadius: outage.isWholeCity ? 20 : 16,
                       background: mapStyleId === "dark-v11" ? "rgba(24, 24, 27, 0.95)" : "#ffffff",
                       border: "2px solid #f59e0b",
-                      boxShadow: "0 4px 14px rgba(245, 158, 11, 0.55)",
-                      fontSize: 11,
+                      boxShadow: outage.isWholeCity
+                        ? "0 4px 18px rgba(245, 158, 11, 0.7), 0 0 24px rgba(245, 158, 11, 0.4)"
+                        : "0 4px 14px rgba(245, 158, 11, 0.55)",
+                      fontSize: outage.isWholeCity ? 12.5 : 11,
                       fontWeight: 800,
                       color: mapStyleId === "dark-v11" ? "#ffffff" : "#18181b",
                       whiteSpace: "nowrap",
                     }}
                   >
-                    <Zap size={13} color="#f59e0b" fill="#f59e0b" strokeWidth={2.4} />
-                    <span>Brgy. {outage.name}</span>
+                    <Zap size={outage.isWholeCity ? 15 : 13} color="#f59e0b" fill="#f59e0b" strokeWidth={2.4} />
+                    <span>{outage.isWholeCity ? "Palayan City" : `Brgy. ${outage.name}`}</span>
                     <span
                       style={{
-                        padding: "1px 6px",
-                        borderRadius: 4,
-                        fontSize: 9,
+                        padding: "1px 7px",
+                        borderRadius: 5,
+                        fontSize: 9.5,
                         fontWeight: 800,
                         textTransform: "uppercase",
-                        background: outage.status === "ongoing" ? "rgba(239, 68, 68, 0.2)" : "rgba(245, 158, 11, 0.2)",
+                        background: outage.status === "ongoing" ? "rgba(239, 68, 68, 0.22)" : "rgba(245, 158, 11, 0.22)",
                         color: outage.status === "ongoing" ? "#ef4444" : "#f59e0b",
+                        border: `1px solid ${outage.status === "ongoing" ? "rgba(239, 68, 68, 0.45)" : "rgba(245, 158, 11, 0.45)"}`,
+                        letterSpacing: "0.3px",
                       }}
                     >
-                      {outage.status || "Outage"}
+                      {outage.isWholeCity ? "City-wide" : (outage.status || "Outage")}
                     </span>
                   </div>
                   <div
                     style={{
                       width: 0,
                       height: 0,
-                      borderLeft: "5px solid transparent",
-                      borderRight: "5px solid transparent",
-                      borderTop: "5px solid #f59e0b",
+                      borderLeft: outage.isWholeCity ? "6px solid transparent" : "5px solid transparent",
+                      borderRight: outage.isWholeCity ? "6px solid transparent" : "5px solid transparent",
+                      borderTop: outage.isWholeCity ? "6px solid #f59e0b" : "5px solid #f59e0b",
                     }}
                   />
                 </div>
@@ -1463,10 +1473,10 @@ function MapScreen({
                   </div>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 800, color: isDark ? "#ffffff" : "#18181b" }}>
-                      Brgy. {selectedOutage.name}
+                      {selectedOutage.isWholeCity ? "Palayan City" : `Brgy. ${selectedOutage.name}`}
                     </div>
                     <div style={{ fontSize: 10.5, fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", letterSpacing: 0.3 }}>
-                      NEECO Power Advisory
+                      {selectedOutage.isWholeCity ? "City-wide Power Interruption (All 19 Barangays)" : "NEECO Power Advisory"}
                     </div>
                   </div>
                 </div>
