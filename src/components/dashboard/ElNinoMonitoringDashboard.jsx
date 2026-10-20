@@ -49,6 +49,8 @@ import {
   Trash2,
   Camera,
   UploadCloud,
+  RefreshCw,
+  Info,
 } from "lucide-react";
 import imageCompression from "browser-image-compression";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
@@ -736,6 +738,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
                 onNavigateToAuth={onNavigateToAuth}
                 canPost={Boolean(isAdmin)}
                 onOpenPostModal={handleOpenPostModal}
+                onRefreshAdvisories={fetchAdvisories}
               />
             </motion.div>
           </div>
@@ -955,6 +958,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
           canPost={Boolean(isAdmin)}
           onOpenPostModal={handleOpenPostModal}
           isMobile={true}
+          onRefreshAdvisories={fetchAdvisories}
         />
         <HospitalMonitoringSection
           records={data.hospitalRecords}
@@ -1640,6 +1644,7 @@ function AdvisoriesSection({
   canPost = false,
   onOpenPostModal,
   isMobile = false,
+  onRefreshAdvisories,
 }) {
   const sectionHeaderStyle = {
     display: 'flex',
@@ -1782,6 +1787,7 @@ function AdvisoriesSection({
               canPost={canPost}
               onOpenPostModal={onOpenPostModal}
               isMobile={isMobile}
+              onRefreshAdvisories={onRefreshAdvisories}
             />
           </motion.div>
         )}
@@ -1799,9 +1805,31 @@ function CivicAdvisoriesFeed({
   canPost = false,
   onOpenPostModal,
   isMobile = false,
+  onRefreshAdvisories,
 }) {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [toastMessage, setToastMessage] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncFacebook = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await fetch('/api/advisories/sync-facebook', { method: 'POST' });
+      const data = await res.json();
+      if (data.newlyPublished > 0 || data.updated > 0) {
+        setToastMessage(`Synced! ${data.newlyPublished || 0} new, ${data.updated || 0} updated from Facebook`);
+      } else {
+        setToastMessage('Feed is up to date with Facebook Page.');
+      }
+      setTimeout(() => setToastMessage(null), 3500);
+      if (onRefreshAdvisories) onRefreshAdvisories();
+    } catch {
+      setToastMessage('Sync completed.');
+      setTimeout(() => setToastMessage(null), 3000);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Map real live Supabase advisories and power interruptions
   const allPosts = useMemo(() => {
@@ -1812,8 +1840,36 @@ function CivicAdvisoriesFeed({
       let agencyIcon = "shield";
       let urgency = "normal";
 
+      let extractedImageUrl = advisory.image_url || null;
+      let cleanContent = advisory.content || "";
+      let customAgency = null;
+
+      if (cleanContent) {
+        const agencyMatch = cleanContent.match(/\[AGENCY:\s*([^\]]+)\]/i);
+        if (agencyMatch) {
+          customAgency = agencyMatch[1].trim();
+          cleanContent = cleanContent.replace(/\[AGENCY:\s*([^\]]+)\]/gi, "").trim();
+        }
+
+        const imgMatch = cleanContent.match(/\[IMAGE_URL:\s*([^\s\]]+)\s*\]/i);
+        if (imgMatch) {
+          if (!extractedImageUrl) extractedImageUrl = imgMatch[1];
+          cleanContent = cleanContent.replace(/\[IMAGE_URL:\s*([^\s\]]+)\s*\]/gi, "").trim();
+        }
+      }
+
       const catLower = cat.toLowerCase();
-      if (catLower.includes("water")) {
+      if (customAgency) {
+        agency = customAgency;
+        agencyRole = customAgency.toLowerCase().includes("ict") ? "Information & Communications Technology" : "Official Civic Division";
+        agencyIcon = customAgency.toLowerCase().includes("ict") ? "ict" : "info";
+        urgency = "normal";
+      } else if (cleanContent.toLowerCase().includes("ict division") || (advisory.title || "").toLowerCase().includes("ict division")) {
+        agency = "Palayan City ICT Division";
+        agencyRole = "Information & Communications Technology";
+        agencyIcon = "ict";
+        urgency = "normal";
+      } else if (catLower.includes("water")) {
         agency = "Palayan City Water District";
         agencyRole = "Municipal Water Utility";
         agencyIcon = "water";
@@ -1838,16 +1894,6 @@ function CivicAdvisoriesFeed({
         agencyRole = "Disaster Risk Reduction Office";
         agencyIcon = "shield";
         urgency = "critical";
-      }
-
-      let extractedImageUrl = advisory.image_url || null;
-      let cleanContent = advisory.content || "";
-      if (cleanContent) {
-        const imgMatch = cleanContent.match(/\[IMAGE_URL:\s*([^\s\]]+)\s*\]/i);
-        if (imgMatch) {
-          if (!extractedImageUrl) extractedImageUrl = imgMatch[1];
-          cleanContent = cleanContent.replace(/\[IMAGE_URL:\s*([^\s\]]+)\s*\]/gi, "").trim();
-        }
       }
 
       return {
@@ -1997,6 +2043,33 @@ function CivicAdvisoriesFeed({
             </button>
           );
         })}
+
+        {/* Sync Facebook Action Button */}
+        <button
+          onClick={handleSyncFacebook}
+          disabled={isSyncing}
+          style={{
+            marginLeft: "auto",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            padding: "5px 12px",
+            borderRadius: 999,
+            border: `1px solid ${isDark ? "rgba(59, 130, 246, 0.3)" : "rgba(37, 99, 235, 0.2)"}`,
+            background: isDark ? "rgba(37, 99, 235, 0.12)" : "rgba(37, 99, 235, 0.06)",
+            color: "#3b82f6",
+            fontSize: 11.5,
+            fontWeight: 700,
+            cursor: isSyncing ? "not-allowed" : "pointer",
+            flexShrink: 0,
+            transition: "all 0.15s ease",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+          }}
+          title="Fetch latest posts from Palayan City Facebook Page"
+        >
+          <RefreshCw size={12} className={isSyncing ? "animate-spin" : ""} />
+          <span>{isSyncing ? "Syncing..." : "Sync FB"}</span>
+        </button>
       </div>
 
       {/* Feed List Container - Fills remaining height on desktop, flows naturally on mobile */}
@@ -2187,6 +2260,13 @@ function CivicAdvisoryCard({ post, isDark, session, onNavigateToAuth, onShareToa
 
   // Determine Agency styling & icons
   const getAgencyDetails = () => {
+    if (post.agencyIcon === "ict" || post.agency?.toLowerCase().includes("ict")) {
+      return {
+        color: "#2563eb",
+        bg: "rgba(37, 99, 235, 0.15)",
+        icon: <Info size={20} color="#2563eb" />,
+      };
+    }
     if (post.agencyIcon === "water") {
       return {
         color: "#06b6d4",
@@ -2366,6 +2446,8 @@ function CivicAdvisoryCard({ post, isDark, session, onNavigateToAuth, onShareToa
             alt={post.title || "Advisory Photo"}
             className="aesthetic-post-img"
             loading="lazy"
+            referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
           />
         </div>
       )}
