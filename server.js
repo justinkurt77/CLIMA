@@ -8,6 +8,7 @@ import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import { saveModifiedAdvisory, scrapeFacebookPage, syncFacebookPageViaGraphApi } from './server/facebookIngestionService.js';
 
 dotenv.config();
 
@@ -788,8 +789,71 @@ app.post('/api/auth/change-password', authLimiter, async (req, res) => {
   }
 });
 
+// ==========================================
+// FACEBOOK HASHTAG INGESTION & SCRAPING
+// ==========================================
+
+// Ingest a raw Facebook post, modify it, and publish directly to Advisories
+app.post('/api/advisories/ingest-facebook', async (req, res) => {
+  try {
+    const { text, imageUrl, publishedAt, hashtag } = req.body;
+    const targetHashtag = hashtag || process.env.FB_TARGET_HASHTAG || '#PalayanAdvisoryElNino';
+
+    const result = await saveModifiedAdvisory({
+      rawText: text,
+      imageUrl,
+      publishedAt,
+      targetHashtag
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error('Ingest FB error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Trigger a live Facebook sync on-demand (Graph API primary, fallback scraper secondary)
+app.post('/api/advisories/sync-facebook', async (req, res) => {
+  try {
+    const { pageUrl, hashtag, useScraper = false } = req.body || {};
+    const targetHashtag = hashtag || process.env.FB_TARGET_HASHTAG || '#PalayanAdvisoryElNino';
+
+    // Prefer official Graph API if configured
+    if (!useScraper && process.env.FB_PAGE_ACCESS_TOKEN && process.env.FB_PAGE_ID) {
+      const graphResult = await syncFacebookPageViaGraphApi({ targetHashtag });
+      return res.json({ method: 'graph_api', ...graphResult });
+    }
+
+    // Fallback: Headless scraping
+    const targetUrl = pageUrl || process.env.FB_PAGE_URL || 'https://www.facebook.com/PalayanCityOfficial';
+    const result = await scrapeFacebookPage({ pageUrl: targetUrl, targetHashtag });
+    res.json({ method: 'scraper', ...result });
+  } catch (err) {
+    console.error('Sync FB error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`✅ CLIMA Admin API server running on http://localhost:${PORT}`);
   console.log(`📧 SMTP configured: ${process.env.SMTP_USER}`);
+  console.log(`📡 Facebook Monitor active: Page ID ${process.env.FB_PAGE_ID || 'None'}, Hashtag ${process.env.FB_TARGET_HASHTAG || '#PalayanAdvisoryElNino'}`);
+
+  // Auto-sync on startup if credentials exist
+  if (process.env.FB_PAGE_ACCESS_TOKEN && process.env.FB_PAGE_ID) {
+    console.log('🚀 [FB Auto-Sync] Performing initial Facebook advisory sync...');
+    syncFacebookPageViaGraphApi().catch(err => {
+      console.error('Startup FB sync error:', err.message);
+    });
+
+    // Schedule background sync every 15 minutes
+    setInterval(() => {
+      console.log('⏰ [FB Auto-Sync] Running scheduled background sync...');
+      syncFacebookPageViaGraphApi().catch(err => {
+        console.error('Scheduled FB sync error:', err.message);
+      });
+    }, 15 * 60 * 1000);
+  }
 });
