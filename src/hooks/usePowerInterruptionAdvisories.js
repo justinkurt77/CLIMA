@@ -9,16 +9,60 @@ import {
 } from "../lib/palayanBarangays";
 
 /**
+ * Calculates the exact scheduled end / restoration timestamp for a power interruption record.
+ */
+export function getOutageEndTime(record) {
+  if (!record || !record.interruption_date) return null;
+  const timeStr = record.peak_outage_time || "00:00:00";
+  const [h, m] = timeStr.split(":").map(Number);
+  const start = new Date(`${record.interruption_date}T00:00:00`);
+  start.setHours(isNaN(h) ? 0 : h, isNaN(m) ? 0 : m, 0, 0);
+
+  const durationMins = parseInt(record.total_duration_minutes, 10) || 0;
+  if (durationMins > 0) {
+    return new Date(start.getTime() + durationMins * 60 * 1000);
+  }
+  // If no duration set, defaults to end of the day
+  return new Date(`${record.interruption_date}T23:59:59`);
+}
+
+/**
+ * Checks if a power outage is currently active.
+ * Returns false if explicitly restored/lifted, or if the set time is met (auto-lift).
+ */
+export function isPowerOutageActive(record, now = new Date()) {
+  if (!record) return false;
+  if (record.restoration_status === "restored") return false;
+
+  const endTime = getOutageEndTime(record);
+  if (endTime && now >= endTime) {
+    return false; // Auto-lift: set time is met!
+  }
+
+  return record.restoration_status === "ongoing";
+}
+
+/**
  * usePowerInterruptionAdvisories
  *
  * Realtime hook that manages active power interruption advisories
  * and maps them to affected Palayan City barangays for map highlighting.
+ * Automatically lifts outages when the set duration/time is met.
  */
 export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
   const [powerRecords, setPowerRecords] = useState([]);
   const [advisoryRecords, setAdvisoryRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [geoJSONData, setGeoJSONData] = useState(barangayGeoJSON);
+  const [tick, setTick] = useState(0);
+
+  // Periodic ticker every 15s to automatically lift outages the second the set time is met
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
 
   // If barangayGeoJSON not passed as prop, load it once
   useEffect(() => {
@@ -33,16 +77,30 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const today = new Date().toISOString().split("T")[0];
 
-      // 1. Fetch active power interruptions (ongoing, partial, or recent within 24h)
+      // 1. Fetch power interruptions (exclude records explicitly marked 'restored')
       const { data: pwrData, error: pwrError } = await supabase
         .from("power_interruptions")
         .select("*")
-        .or(`restoration_status.in.(ongoing,partial),interruption_date.gte.${today}`)
+        .neq("restoration_status", "restored")
         .order("interruption_date", { ascending: false });
 
       if (pwrError) logger.warn("Fetch power_interruptions:", pwrError);
+
+      // Check if any ongoing records have met their set time and auto-lift them in DB
+      const now = new Date();
+      const expiredIds = (pwrData || [])
+        .filter((r) => r.restoration_status !== "restored" && !isPowerOutageActive(r, now))
+        .map((r) => r.id);
+
+      if (expiredIds.length > 0) {
+        supabase
+          .from("power_interruptions")
+          .update({ restoration_status: "restored", updated_at: now.toISOString() })
+          .in("id", expiredIds)
+          .then(() => logger.info("Auto-lifted expired power interruptions in DB:", expiredIds))
+          .catch((e) => logger.warn("Failed to auto-lift in DB:", e));
+      }
 
       // 2. Fetch active Power Interruption advisories
       const { data: advData, error: advError } = await supabase
@@ -91,16 +149,22 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
     };
   }, [fetchData]);
 
-  // Aggregate all affected barangays and their metadata
+  // Aggregate all active affected barangays and their metadata
   const affectedBarangayMap = useMemo(() => {
     const map = new Map();
+    const now = new Date();
 
-    // From power_interruptions table
+    // From power_interruptions table - ONLY active, un-lifted outages
     powerRecords.forEach((record) => {
+      if (!isPowerOutageActive(record, now)) {
+        return; // Auto-lifted: set time met or explicitly restored
+      }
+
       // Primary: feeders_affected column (stores selected barangays)
       const listFromFeeders = parseBarangayList(record.feeders_affected);
       const listFromDesc = extractBarangaysFromText(record.description);
       const combined = Array.from(new Set([...listFromFeeders, ...listFromDesc]));
+      const endTime = getOutageEndTime(record);
 
       combined.forEach((bgyName) => {
         if (!map.has(bgyName)) {
@@ -109,10 +173,11 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
             name: bgyName,
             lng: coords.lng,
             lat: coords.lat,
-            status: record.restoration_status || "ongoing",
+            status: "ongoing",
             date: record.interruption_date,
             peakTime: record.peak_outage_time,
             duration: record.total_duration_minutes,
+            endTime,
             households: record.total_affected_households,
             cause: record.cause,
             description: record.description,
@@ -123,8 +188,13 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
       });
     });
 
-    // From advisories table (if any additional barangays mentioned)
+    // From advisories table - only active, non-restored alerts
     advisoryRecords.forEach((advisory) => {
+      const text = `${advisory.title || ""} ${advisory.content || ""}`.toLowerCase();
+      if (text.includes("restored") || text.includes("lifted") || text.includes("cleared")) {
+        return; // Skip restored advisories
+      }
+
       const listFromTitle = extractBarangaysFromText(advisory.title);
       const listFromContent = extractBarangaysFromText(advisory.content);
       const combined = Array.from(new Set([...listFromTitle, ...listFromContent]));
@@ -149,7 +219,7 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
     });
 
     return map;
-  }, [powerRecords, advisoryRecords]);
+  }, [powerRecords, advisoryRecords, tick]);
 
   const affectedBarangays = useMemo(() => {
     return Array.from(affectedBarangayMap.keys());

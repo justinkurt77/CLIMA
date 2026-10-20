@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useInView } from "react-intersection-observer";
 import { supabase } from "../lib/supabase";
 import DOMPurify from "dompurify";
@@ -30,6 +30,7 @@ import { usePaginatedCDRRMOOps } from "../hooks/usePaginatedCDRRMOOps";
 import { usePaginatedBFPOps } from "../hooks/usePaginatedBFPOps";
 import AdminOverviewCommand from "../components/dashboard/AdminOverviewCommand";
 import ElNinoMonitoringDashboard from "../components/dashboard/ElNinoMonitoringDashboard";
+import { getOutageEndTime, isPowerOutageActive } from "../hooks/usePowerInterruptionAdvisories";
 
 /* ── Dynamic Theme from Accent Color & Dark Mode ── */
 function hexToRgb(hex) {
@@ -4107,8 +4108,8 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                     </div>
                     <p style={{ margin: "0 0 12px", fontSize: 13, color: S.text, lineHeight: 1.5, opacity: 0.9 }}>{displayContent}</p>
                     {attachedImage && (
-                      <div style={{ marginBottom: 12, borderRadius: 12, overflow: "hidden", maxWidth: 560, border: `1px solid ${S.border}`, background: S.cardSubtle }}>
-                        <img src={attachedImage} alt="Advisory attachment" style={{ width: "100%", height: "auto", maxHeight: 480, objectFit: "contain", display: "block" }} />
+                      <div style={{ marginBottom: 12, borderRadius: 12, overflow: "hidden", maxWidth: 560, border: `1px solid ${S.border}`, background: "#000000", display: "flex", justifyContent: "center", alignItems: "center" }}>
+                        <img src={attachedImage} alt="Advisory attachment" style={{ width: "auto", maxWidth: "100%", height: "auto", maxHeight: 440, objectFit: "contain", display: "block", margin: "0 auto" }} />
                       </div>
                     )}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: S.muted, fontWeight: 600 }}>
@@ -7245,6 +7246,7 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('view');
   const [editId, setEditId] = useState(null);
+  const [now, setNow] = useState(() => new Date());
   const today = new Date().toISOString().split('T')[0];
   const [formData, setFormData] = useState({
     interruption_date: today,
@@ -7254,9 +7256,17 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
     total_duration_minutes: '',
     peak_outage_time: '',
     cause: 'line_fault',
-    restoration_status: 'restored',
+    restoration_status: 'ongoing',
     description: ''
   });
+
+  // Real-time ticker to auto-lift outages the instant their scheduled set time expires
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 10000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => { fetchRecords(); }, []);
 
@@ -7275,7 +7285,32 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
         .gte('interruption_date', cutoffDate)
         .order('interruption_date', { ascending: false });
       if (error) throw error;
-      setRecords(data || []);
+
+      const rawRecords = data || [];
+      const currTime = new Date();
+
+      // Check if any ongoing records have met their set time and auto-lift them in DB
+      const expiredIds = rawRecords
+        .filter(r => r.restoration_status !== 'restored' && !isPowerOutageActive(r, currTime))
+        .map(r => r.id);
+
+      if (expiredIds.length > 0) {
+        supabase
+          .from('power_interruptions')
+          .update({ restoration_status: 'restored', updated_at: currTime.toISOString() })
+          .in('id', expiredIds)
+          .then(() => logger.info('Auto-lifted expired power outages in DB:', expiredIds))
+          .catch(err => logger.warn('Failed to auto-lift in DB:', err));
+
+        rawRecords.forEach(r => {
+          if (expiredIds.includes(r.id)) {
+            r.restoration_status = 'restored';
+            r._autoLifted = true;
+          }
+        });
+      }
+
+      setRecords(rawRecords);
     } catch (e) {
       logger.error('fetchRecords error:', e);
     } finally {
@@ -7292,7 +7327,7 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
       total_duration_minutes: '',
       peak_outage_time: '',
       cause: 'line_fault',
-      restoration_status: 'restored',
+      restoration_status: 'ongoing',
       description: ''
     });
     setEditId(null);
@@ -7308,7 +7343,7 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
       total_duration_minutes: parseInt(formData.total_duration_minutes) || 0,
       peak_outage_time: formData.peak_outage_time || null,
       cause: formData.cause,
-      restoration_status: formData.restoration_status,
+      restoration_status: editId ? (formData.restoration_status || 'ongoing') : 'ongoing',
       description: formData.description,
       updated_at: new Date().toISOString()
     };
@@ -7325,12 +7360,12 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
       try {
         const selectedList = parseBarangayList(formData.feeders_affected);
         const bgyNames = selectedList.length > 0 ? selectedList.join(", ") : "Palayan City";
-        if (formData.restoration_status !== "restored") {
+        if (payload.restoration_status !== "restored") {
           await supabase.from("advisories").insert({
             title: `NEECO Power Interruption Advisory • Brgy. ${bgyNames}`,
             category: "Power Interruption",
             status: "Published",
-            content: `Scheduled/Ongoing power interruption in Palayan City affecting: ${bgyNames}. Status: ${formData.restoration_status.toUpperCase()}. Cause: ${causeLabels[formData.cause] || formData.cause}. ${formData.description || "Grid maintenance and restoration ongoing."}`,
+            content: `Scheduled/Ongoing power interruption in Palayan City affecting: ${bgyNames}. Cause: ${causeLabels[formData.cause] || formData.cause}. ${formData.description || "Grid maintenance and restoration ongoing."}`,
             published_at: new Date().toISOString(),
           });
         }
@@ -7347,6 +7382,64 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
     }
   };
 
+  const handleLiftOutage = (record) => {
+    const barangays = parseBarangayList(record.feeders_affected);
+    const bgyText = barangays.length > 0 ? `Brgy. ${barangays.join(', ')}` : 'Palayan City';
+    showConfirmModal(
+      '⚡ Lift Power Outage',
+      `Are you sure you want to lift the power outage for ${bgyText}? This will immediately restore electricity status and clear all outage highlights from citizen and admin maps.`,
+      async () => {
+        try {
+          const { error } = await supabase
+            .from('power_interruptions')
+            .update({
+              restoration_status: 'restored',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', record.id);
+          if (error) throw error;
+
+          // Archive corresponding published power interruption advisories
+          try {
+            const { data: advList } = await supabase
+              .from('advisories')
+              .select('id, title, content')
+              .eq('category', 'Power Interruption')
+              .eq('status', 'Published');
+
+            if (advList && advList.length > 0) {
+              const matchingIds = advList
+                .filter((adv) => {
+                  const combined = `${adv.title} ${adv.content}`;
+                  return barangays.length === 0 || barangays.some((b) => combined.includes(b));
+                })
+                .map((a) => a.id);
+
+              if (matchingIds.length > 0) {
+                await supabase
+                  .from('advisories')
+                  .update({
+                    status: 'Archived',
+                    updated_at: new Date().toISOString(),
+                  })
+                  .in('id', matchingIds);
+              }
+            }
+          } catch (advErr) {
+            logger.warn('Error archiving corresponding power advisory:', advErr);
+          }
+
+          await fetchRecords();
+          showSuccessModal('Outage Lifted', `Power outage for ${bgyText} has been lifted and map highlights cleared.`);
+        } catch (err) {
+          logger.error('Failed to lift outage:', err);
+          showErrorModal('Error', 'Failed to lift power outage: ' + (err.message || 'Unknown error'));
+        }
+      },
+      '⚡ Lift Outage Now'
+    );
+  };
+
   const handleEdit = (r) => {
     setFormData({
       interruption_date: r.interruption_date,
@@ -7356,7 +7449,7 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
       total_duration_minutes: r.total_duration_minutes != null ? String(r.total_duration_minutes) : '',
       peak_outage_time: r.peak_outage_time || '',
       cause: r.cause || 'line_fault',
-      restoration_status: r.restoration_status || 'restored',
+      restoration_status: r.restoration_status || 'ongoing',
       description: r.description || ''
     });
     setEditId(r.id);
@@ -7384,6 +7477,7 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   // Analytics (last 30 days)
   const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const recent = records.filter(r => new Date(r.interruption_date) >= thirtyDaysAgo);
+  const activeCount = records.filter(r => isPowerOutageActive(r, now)).length;
   const daysWithOutages = recent.length;
   const totalOutages = recent.reduce((s, r) => s + (parseInt(r.total_outages) || 0), 0);
   const totalHouseholds = recent.reduce((s, r) => s + (parseInt(r.total_affected_households) || 0), 0);
@@ -7391,11 +7485,6 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   const avgOutages = daysWithOutages > 0 ? (totalOutages / daysWithOutages).toFixed(1) : '0.0';
 
   const causeLabels = { line_fault: 'Line Fault', transformer_issue: 'Transformer Issue', weather: 'Weather', maintenance: 'Maintenance', overload: 'Overload', other: 'Other' };
-  const statusColors = {
-    ongoing: { bg: '#fef2f2', color: '#dc2626' },
-    restored: { bg: '#ecfdf5', color: '#10b981' },
-    partial: { bg: '#fff7ed', color: '#ea580c' }
-  };
 
   const tabBtnStyle = (active) => ({
     padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 800, fontSize: 13,
@@ -7416,6 +7505,7 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
       {/* Analytics Cards - Minimalist, modern palette */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
         {[
+          { label: "Active Outages", value: activeCount, sub: activeCount > 0 ? "Currently ongoing" : "Grid normal", icon: Zap, color: activeCount > 0 ? "#ef4444" : "#10b981", bg: activeCount > 0 ? "rgba(239, 68, 68, 0.12)" : "rgba(16, 185, 129, 0.12)" },
           { label: "Outage Days", value: daysWithOutages, sub: "Last 30 days", icon: Calendar, color: "#eab308", bg: "rgba(234, 179, 8, 0.12)" },
           { label: "Total Outages", value: totalOutages, sub: "Incidents", icon: Zap, color: "#ef4444", bg: "rgba(239, 68, 68, 0.12)" },
           { label: "Households", value: totalHouseholds.toLocaleString(), sub: "Affected", icon: Home, color: "#a855f7", bg: "rgba(168, 85, 247, 0.12)" },
@@ -7580,19 +7670,6 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                 />
               </div>
               <div style={{gridColumn: '1 / -1'}}>
-                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Restoration Status</label>
-                <CustomSelect
-                  value={formData.restoration_status}
-                  onChange={v => setFormData({...formData, restoration_status: v})}
-                  options={[
-                    { value: 'ongoing', label: 'Ongoing' },
-                    { value: 'restored', label: 'Restored' },
-                    { value: 'partial', label: 'Partial' }
-                  ]}
-                  accent={S.accent}
-                />
-              </div>
-              <div style={{gridColumn: '1 / -1'}}>
                 <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Description / Notes</label>
                 <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{...inputStyle, resize: 'vertical'}} />
               </div>
@@ -7620,27 +7697,82 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
               {records.map(r => {
                 const d = new Date(r.interruption_date + 'T00:00:00');
                 const label = d.toLocaleDateString('en-PH', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
-                const sc = statusColors[r.restoration_status] || { bg: '#f1f5f9', color: S.muted };
+                const active = isPowerOutageActive(r, now);
+                const endTime = getOutageEndTime(r);
+                const isTimePassed = endTime ? now >= endTime : false;
+
                 return (
-                  <div key={r.id} style={{ border: `1px solid ${S.border}`, borderRadius: 10, padding: 14, background: S.isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.015)" }}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
-                      <div style={{flex: 1}}>
+                  <div
+                    key={r.id}
+                    style={{
+                      border: `1px solid ${active ? (S.isDark ? "rgba(239, 68, 68, 0.35)" : "rgba(239, 68, 68, 0.3)") : S.border}`,
+                      borderRadius: 10,
+                      padding: 14,
+                      background: active
+                        ? (S.isDark ? "rgba(239, 68, 68, 0.04)" : "rgba(254, 242, 242, 0.4)")
+                        : (S.isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.015)"),
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10}}>
+                      <div style={{flex: 1, minWidth: 260}}>
                         <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap'}}>
-                          <Zap size={15} color='#eab308' strokeWidth={2.2} />
+                          <Zap size={15} color={active ? '#ef4444' : '#10b981'} strokeWidth={2.4} fill={active ? '#ef4444' : 'none'} />
                           <span style={{fontWeight: 800, fontSize: 14, color: S.text}}>{label}</span>
-                          <span style={{
-                            padding: '2px 8px',
-                            borderRadius: 6,
-                            fontSize: 10.5,
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            background: r.restoration_status === 'ongoing' ? (S.isDark ? "rgba(239, 68, 68, 0.14)" : "#fef2f2") : r.restoration_status === 'partial' ? (S.isDark ? "rgba(249, 115, 22, 0.14)" : "#fff7ed") : (S.isDark ? "rgba(34, 197, 94, 0.14)" : "#f0fdf4"),
-                            color: r.restoration_status === 'ongoing' ? (S.isDark ? "#ef4444" : "#dc2626") : r.restoration_status === 'partial' ? (S.isDark ? "#f97316" : "#ea580c") : (S.isDark ? "#22c55e" : "#16a34a"),
-                            border: `1px solid ${r.restoration_status === 'ongoing' ? (S.isDark ? "rgba(239, 68, 68, 0.28)" : "#fecaca") : r.restoration_status === 'partial' ? (S.isDark ? "rgba(249, 115, 22, 0.28)" : "#fed7aa") : (S.isDark ? "rgba(34, 197, 94, 0.28)" : "#bbf7d0")}`
-                          }}>
-                            {r.restoration_status === 'ongoing' ? 'Ongoing' : r.restoration_status === 'partial' ? 'Partial' : 'Restored'}
-                          </span>
+                          {active ? (
+                            <span style={{
+                              padding: '2px 8px',
+                              borderRadius: 6,
+                              fontSize: 10.5,
+                              fontWeight: 800,
+                              textTransform: 'uppercase',
+                              background: S.isDark ? "rgba(239, 68, 68, 0.18)" : "#fef2f2",
+                              color: S.isDark ? "#ef4444" : "#dc2626",
+                              border: `1px solid ${S.isDark ? "rgba(239, 68, 68, 0.35)" : "#fecaca"}`,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5
+                            }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', display: 'inline-block', boxShadow: '0 0 6px #ef4444' }} />
+                              Active Outage
+                            </span>
+                          ) : (
+                            <span style={{
+                              padding: '2px 8px',
+                              borderRadius: 6,
+                              fontSize: 10.5,
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              background: S.isDark ? "rgba(34, 197, 94, 0.14)" : "#f0fdf4",
+                              color: S.isDark ? "#22c55e" : "#16a34a",
+                              border: `1px solid ${S.isDark ? "rgba(34, 197, 94, 0.28)" : "#bbf7d0"}`,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4
+                            }}>
+                              <Check size={11} strokeWidth={2.6} />
+                              {r._autoLifted || isTimePassed ? 'Auto-Lifted' : 'Restored / Lifted'}
+                            </span>
+                          )}
+
+                          {active && endTime && (
+                            <span style={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: '#f59e0b',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              background: S.isDark ? "rgba(245, 158, 11, 0.12)" : "#fffbeb",
+                              border: `1px solid ${S.isDark ? "rgba(245, 158, 11, 0.25)" : "#fef3c7"}`,
+                              padding: '2px 7px',
+                              borderRadius: 6
+                            }}>
+                              <Clock size={11} /> Auto-lifts: {endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                            </span>
+                          )}
                         </div>
+
                         <div style={{display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: 11.5, color: S.muted}}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <Zap size={12} strokeWidth={2} />
@@ -7667,6 +7799,7 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                             </div>
                           )}
                         </div>
+
                         {r.feeders_affected && (
                           <div style={{margin: '8px 0 0', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap'}}>
                             <span style={{fontSize: 11, fontWeight: 700, color: S.muted, display: 'flex', alignItems: 'center', gap: 4}}>
@@ -7695,9 +7828,79 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                         )}
                         {r.description && <p style={{margin: '4px 0 0', fontSize: 12, color: S.muted}}>{r.description}</p>}
                       </div>
-                      <div style={{display: 'flex', gap: 6, marginLeft: 12}}>
-                        <button onClick={() => handleEdit(r)} style={{ background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "#ffffff", border: `1px solid ${S.border}`, borderRadius: 6, padding: "4px 8px", cursor: 'pointer', color: S.text, fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}><Edit2 size={11} /> Edit</button>
-                        <button onClick={() => handleDelete(r.id)} style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}><Trash2 size={12} /></button>
+
+                      <div style={{display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto'}}>
+                        {active ? (
+                          <button
+                            type="button"
+                            onClick={() => handleLiftOutage(r)}
+                            title="Lift power outage and clear map highlights immediately"
+                            style={{
+                              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                              color: "#ffffff",
+                              border: "none",
+                              borderRadius: 7,
+                              padding: "6px 12px",
+                              cursor: "pointer",
+                              fontSize: 11.5,
+                              fontWeight: 800,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
+                              boxShadow: "0 2px 8px rgba(16, 185, 129, 0.32)",
+                              transition: "all 0.15s ease",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            <Zap size={12} fill="#ffffff" />
+                            Lift Outage
+                          </button>
+                        ) : (
+                          <span
+                            style={{
+                              padding: "4px 9px",
+                              borderRadius: 6,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: S.isDark ? "#22c55e" : "#16a34a",
+                              background: S.isDark ? "rgba(34, 197, 94, 0.1)" : "#f0fdf4",
+                              border: `1px solid ${S.isDark ? "rgba(34, 197, 94, 0.2)" : "#bbf7d0"}`,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            <Check size={11} strokeWidth={2.6} /> Lifted
+                          </span>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(r)}
+                          style={{
+                            background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "#ffffff",
+                            border: `1px solid ${S.border}`,
+                            borderRadius: 6,
+                            padding: "5px 9px",
+                            cursor: 'pointer',
+                            color: S.text,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          <Edit2 size={11} /> Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(r.id)}
+                          style={{ ...btnDanger, fontSize: 11, padding: "5px 9px" }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </div>
                     </div>
                   </div>

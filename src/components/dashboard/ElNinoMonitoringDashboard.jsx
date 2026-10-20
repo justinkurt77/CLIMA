@@ -2450,6 +2450,11 @@ function CivicAdvisoryCard({ post, isDark, session, onNavigateToAuth, onShareToa
             onClick={() => setShowLightbox(true)}
             title="Click to view full image"
           >
+            <div
+              className="aesthetic-post-img-blur-bg"
+              style={{ backgroundImage: `url(${cardImage})` }}
+              aria-hidden="true"
+            />
             <img
               src={cardImage}
               alt={post.title || "Advisory Photo"}
