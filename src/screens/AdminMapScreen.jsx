@@ -95,8 +95,9 @@ export default function AdminMapScreen({
   // with a periodic refresh as a safety net if the realtime channel is unavailable.
   useEffect(() => {
     fetchReports();
+    const channelId = `admin_map_reports_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const channel = supabase
-      .channel("admin_map_reports")
+      .channel(channelId)
       .on("postgres_changes", { event: "*", schema: "public", table: "reports" }, () => fetchReports())
       .subscribe();
     const poll = setInterval(() => {

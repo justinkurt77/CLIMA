@@ -400,8 +400,9 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
     fetchAllData();
     
     // Real-time subscriptions
+    const channelId = `elnino_advisories_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const advisoriesChannel = supabase
-      .channel('public:advisories')
+      .channel(channelId)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -413,7 +414,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
       .subscribe();
 
     return () => {
-      advisoriesChannel.unsubscribe();
+      supabase.removeChannel(advisoriesChannel);
     };
   }, []);
 

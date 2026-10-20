@@ -15,8 +15,9 @@ export default function IntelligenceDashboard() {
     fetchData();
 
     // Real-time subscriptions
+    const alertsChannelId = `conflict_alerts_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const alertsSub = supabase
-      .channel("conflict_alerts")
+      .channel(alertsChannelId)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "conflict_alerts" },
@@ -24,8 +25,9 @@ export default function IntelligenceDashboard() {
       )
       .subscribe();
 
+    const notifsChannelId = `inter_agency_notifications_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const notifsSub = supabase
-      .channel("inter_agency_notifications")
+      .channel(notifsChannelId)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "inter_agency_notifications" },
@@ -34,8 +36,8 @@ export default function IntelligenceDashboard() {
       .subscribe();
 
     return () => {
-      alertsSub.unsubscribe();
-      notifsSub.unsubscribe();
+      supabase.removeChannel(alertsSub);
+      supabase.removeChannel(notifsSub);
     };
   }, [filter]);
 

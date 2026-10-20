@@ -763,8 +763,9 @@ export default function HomeScreen({
     fetchAdvisories();
 
     // Subscribe to real-time updates
+    const channelId = `public_advisories_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const subscription = supabase
-      .channel("public_advisories")
+      .channel(channelId)
       .on(
         "postgres_changes",
         {
@@ -780,7 +781,7 @@ export default function HomeScreen({
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      supabase.removeChannel(subscription);
     };
   }, []);
 

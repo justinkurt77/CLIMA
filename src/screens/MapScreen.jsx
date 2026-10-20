@@ -37,6 +37,7 @@ import {
   Sun,
   Map as MapIcon,
   HeartPulse,
+  Zap,
 } from "lucide-react";
 
 const ICON_MAP = {
@@ -153,6 +154,7 @@ import {
   getPinnedLocations,
   subscribePinnedLocations,
 } from "../lib/pinnedLocationsStorage";
+import { usePowerInterruptionAdvisories } from "../hooks/usePowerInterruptionAdvisories";
 
 function createGeoJSONCircle(center, radiusInKm, points = 64) {
   const [lng, lat] = center;
@@ -211,6 +213,14 @@ function MapScreen({
   const [mapStyleId, setMapStyleId] = useState(isDark ? "dark-v11" : "streets-v12");
   const [isExiting, setIsExiting] = useState(false);
   const [barangayMarkers, setBarangayMarkers] = useState([]);
+  const [barangayGeoJSON, setBarangayGeoJSON] = useState(null);
+  const [selectedOutage, setSelectedOutage] = useState(null);
+  const {
+    powerOutageGeoJSON,
+    affectedBarangayOutages,
+    affectedBarangays,
+    hasActiveAdvisories,
+  } = usePowerInterruptionAdvisories(barangayGeoJSON);
   const [selectedKloudtrackStation, setSelectedKloudtrackStation] = useState(null);
   const [activeMetric, setActiveMetric] = useState("heatIndex");
   const [weatherStations, setWeatherStations] = useState(PALAYAN_KLOUDTECH_STATIONS);
@@ -472,6 +482,7 @@ function MapScreen({
     fetch("/palayan-barangays.geojson")
       .then((res) => res.json())
       .then((data) => {
+        setBarangayGeoJSON(data);
         if (data && data.features) {
           const markers = data.features.map((f) => {
             // Calculate a simple bounding box center for the polygon
@@ -770,6 +781,64 @@ function MapScreen({
       />
 
       <div className="map-container" style={{ position: "absolute", inset: 0 }}>
+        {/* Active Power Interruption Advisory Floating Alert */}
+        {hasActiveAdvisories && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{
+              position: "absolute",
+              top: 14,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 40,
+              background: "rgba(245, 158, 11, 0.95)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              color: "#18181b",
+              padding: "7px 16px",
+              borderRadius: 9999,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 6px 22px rgba(245, 158, 11, 0.45)",
+              cursor: "pointer",
+              maxWidth: "92%",
+            }}
+            onClick={() => {
+              if (mapRef.current && affectedBarangayOutages.length > 0) {
+                const bounds = affectedBarangayOutages.reduce(
+                  (b, o) => b.extend([o.lng, o.lat]),
+                  new mapboxgl.LngLatBounds()
+                );
+                mapRef.current.fitBounds(bounds, {
+                  padding: { top: 120, bottom: 80, left: 80, right: 80 },
+                  duration: 1500,
+                  maxZoom: 14,
+                });
+              }
+            }}
+          >
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#ef4444",
+                boxShadow: "0 0 8px #ef4444",
+                flexShrink: 0,
+              }}
+            />
+            <Zap size={14} color="#18181b" fill="#18181b" />
+            <span style={{ fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              Power Advisory: Brgy. {affectedBarangays.join(", ")}
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 700, textDecoration: "underline", opacity: 0.85, whiteSpace: "nowrap" }}>
+              Focus Map
+            </span>
+          </motion.div>
+        )}
         <Map
           ref={mapRef}
           mapboxAccessToken={MAPBOX_TOKEN}
@@ -823,6 +892,34 @@ function MapScreen({
                   "line-width": 1.5,
                   "line-opacity": mapStyleId === "dark-v11" ? 0.6 : 0.75,
                   "line-dasharray": [3, 2],
+                }}
+              />
+            </Source>
+          )}
+
+          {/* Highlighted Barangays with Power Interruption Advisory */}
+          {(activeLayers.powerFeeders || hasActiveAdvisories) && powerOutageGeoJSON?.features?.length > 0 && (
+            <Source
+              id="power-outage-advisory-source"
+              type="geojson"
+              data={powerOutageGeoJSON}
+            >
+              <Layer
+                id="power-outage-advisory-fill"
+                type="fill"
+                paint={{
+                  "fill-color": "#f59e0b",
+                  "fill-opacity": mapStyleId === "dark-v11" ? 0.32 : 0.25,
+                }}
+              />
+              <Layer
+                id="power-outage-advisory-stroke"
+                type="line"
+                paint={{
+                  "line-color": "#fbbf24",
+                  "line-width": 3,
+                  "line-opacity": 0.95,
+                  "line-dasharray": [4, 2],
                 }}
               />
             </Source>
@@ -1265,6 +1362,176 @@ function MapScreen({
               </div>
             </Marker>
           ))}
+
+          {/* Power Interruption Warning Markers */}
+          {(activeLayers.powerFeeders || hasActiveAdvisories) &&
+            affectedBarangayOutages.map((outage) => (
+              <Marker
+                key={`pwr-outage-marker-${outage.name}`}
+                longitude={outage.lng}
+                latitude={outage.lat}
+                anchor="bottom"
+              >
+                <div
+                  onClick={(e) => {
+                    e.originalEvent?.stopPropagation();
+                    e.stopPropagation();
+                    setSelectedOutage(outage);
+                  }}
+                  style={{
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    transform: "translateY(-4px)",
+                    zIndex: 60,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "4px 9px",
+                      borderRadius: 16,
+                      background: mapStyleId === "dark-v11" ? "rgba(24, 24, 27, 0.95)" : "#ffffff",
+                      border: "2px solid #f59e0b",
+                      boxShadow: "0 4px 14px rgba(245, 158, 11, 0.55)",
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: mapStyleId === "dark-v11" ? "#ffffff" : "#18181b",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <Zap size={13} color="#f59e0b" fill="#f59e0b" strokeWidth={2.4} />
+                    <span>Brgy. {outage.name}</span>
+                    <span
+                      style={{
+                        padding: "1px 6px",
+                        borderRadius: 4,
+                        fontSize: 9,
+                        fontWeight: 800,
+                        textTransform: "uppercase",
+                        background: outage.status === "ongoing" ? "rgba(239, 68, 68, 0.2)" : "rgba(245, 158, 11, 0.2)",
+                        color: outage.status === "ongoing" ? "#ef4444" : "#f59e0b",
+                      }}
+                    >
+                      {outage.status || "Outage"}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      width: 0,
+                      height: 0,
+                      borderLeft: "5px solid transparent",
+                      borderRight: "5px solid transparent",
+                      borderTop: "5px solid #f59e0b",
+                    }}
+                  />
+                </div>
+              </Marker>
+            ))}
+
+          {/* Power Outage Advisory Popup */}
+          {selectedOutage && (
+            <Popup
+              longitude={selectedOutage.lng}
+              latitude={selectedOutage.lat}
+              anchor="top"
+              offset={14}
+              closeButton={true}
+              closeOnClick={false}
+              onClose={() => setSelectedOutage(null)}
+              maxWidth="320px"
+              style={{ zIndex: 120, fontFamily: "'Nunito', sans-serif" }}
+            >
+              <div style={{ padding: "8px 6px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      background: "rgba(245, 158, 11, 0.2)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Zap size={16} color="#f59e0b" fill="#f59e0b" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: isDark ? "#ffffff" : "#18181b" }}>
+                      Brgy. {selectedOutage.name}
+                    </div>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", letterSpacing: 0.3 }}>
+                      NEECO Power Advisory
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 6,
+                    margin: "8px 0",
+                    padding: "8px",
+                    borderRadius: 8,
+                    background: isDark ? "rgba(255, 255, 255, 0.05)" : "#f8f9fa",
+                    fontSize: 11,
+                  }}
+                >
+                  <div>
+                    <span style={{ color: "#71717a", display: "block" }}>Restoration Status</span>
+                    <strong
+                      style={{
+                        color: selectedOutage.status === "ongoing" ? "#ef4444" : "#f59e0b",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {selectedOutage.status}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "#71717a", display: "block" }}>Date</span>
+                    <strong>{selectedOutage.date || "Today"}</strong>
+                  </div>
+                  {selectedOutage.peakTime && (
+                    <div>
+                      <span style={{ color: "#71717a", display: "block" }}>Peak Outage Time</span>
+                      <strong>{selectedOutage.peakTime.slice(0, 5)}</strong>
+                    </div>
+                  )}
+                  {selectedOutage.cause && (
+                    <div>
+                      <span style={{ color: "#71717a", display: "block" }}>Cause</span>
+                      <strong>{selectedOutage.cause}</strong>
+                    </div>
+                  )}
+                  {selectedOutage.households && (
+                    <div>
+                      <span style={{ color: "#71717a", display: "block" }}>Affected Homes</span>
+                      <strong>{Number(selectedOutage.households).toLocaleString()}</strong>
+                    </div>
+                  )}
+                  {selectedOutage.duration && (
+                    <div>
+                      <span style={{ color: "#71717a", display: "block" }}>Duration</span>
+                      <strong>{selectedOutage.duration} mins</strong>
+                    </div>
+                  )}
+                </div>
+
+                {selectedOutage.description && (
+                  <p style={{ margin: "6px 0 0", fontSize: 11.5, color: isDark ? "#d4d4d8" : "#3f3f46", lineHeight: 1.4 }}>
+                    {selectedOutage.description}
+                  </p>
+                )}
+              </div>
+            </Popup>
+          )}
 
           {searchPin && (
             <Marker

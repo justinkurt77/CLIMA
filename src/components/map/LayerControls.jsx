@@ -42,7 +42,7 @@ const LAYER_CATEGORIES = [
     name: "Utilities",
     layers: [
       { id: "waterFacilities", name: "Water Facilities", color: "#06B6D4" },
-      { id: "powerFeeders", name: "Power Feeders", color: "#FBBF24" },
+      { id: "powerFeeders", name: "Power Outage Advisories", color: "#F59E0B" },
     ],
   },
   {

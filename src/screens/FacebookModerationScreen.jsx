@@ -14,8 +14,9 @@ export default function FacebookModerationScreen() {
     fetchFacebookPosts();
 
     // Set up real-time subscription
+    const channelId = `facebook_posts_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const subscription = supabase
-      .channel("facebook_posts")
+      .channel(channelId)
       .on(
         "postgres_changes",
         {
@@ -30,7 +31,7 @@ export default function FacebookModerationScreen() {
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      supabase.removeChannel(subscription);
     };
   }, [filter]);
 

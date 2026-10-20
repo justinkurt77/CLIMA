@@ -50,6 +50,7 @@ import {
 } from "../../lib/pinnedLocationsStorage";
 import PinLocationModal from "../map/PinLocationModal";
 import CustomPinMarker from "../map/CustomPinMarker";
+import { usePowerInterruptionAdvisories } from "../../hooks/usePowerInterruptionAdvisories";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "";
 const TZ = "Asia/Manila";
@@ -137,6 +138,11 @@ export default function AdminOverviewCommand({
   const [isInspectorOpen, setIsInspectorOpen] = useState(true);
   const [isTelemetryVisible, setIsTelemetryVisible] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const {
+    powerOutageGeoJSON,
+    affectedBarangayOutages,
+    hasActiveAdvisories,
+  } = usePowerInterruptionAdvisories();
 
   // Custom Pinned Locations State (Water facilities, hospitals, fire stations, etc.)
   const [pinnedLocations, setPinnedLocations] = useState(() => getPinnedLocations());
@@ -480,6 +486,113 @@ export default function AdminOverviewCommand({
                 }}
               />
             </Source>
+
+            {/* Highlighted Barangays with Active Power Interruption Advisory */}
+            {hasActiveAdvisories && powerOutageGeoJSON?.features?.length > 0 && (
+              <Source id="admin-power-outage-source" type="geojson" data={powerOutageGeoJSON}>
+                <Layer
+                  id="admin-power-outage-fill"
+                  type="fill"
+                  paint={{
+                    "fill-color": "#f59e0b",
+                    "fill-opacity": isDark ? 0.32 : 0.24,
+                  }}
+                />
+                <Layer
+                  id="admin-power-outage-stroke"
+                  type="line"
+                  paint={{
+                    "line-color": "#fbbf24",
+                    "line-width": 2.8,
+                    "line-opacity": 0.95,
+                    "line-dasharray": [4, 2],
+                  }}
+                />
+              </Source>
+            )}
+
+            {/* Power Interruption Outage Markers for Affected Barangays */}
+            {hasActiveAdvisories &&
+              affectedBarangayOutages.map((outage) => (
+                <Marker
+                  key={`admin-power-outage-${outage.name}`}
+                  longitude={outage.lng}
+                  latitude={outage.lat}
+                  anchor="bottom"
+                >
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedReport(null);
+                      setInfoPopup({
+                        lng: outage.lng,
+                        lat: outage.lat,
+                        title: `Brgy. ${outage.name}`,
+                        subtitle: "NEECO Power Interruption Advisory",
+                        color: outage.status === "ongoing" ? "#ef4444" : "#f59e0b",
+                        lines: [
+                          `Status: ${(outage.status || "ongoing").toUpperCase()}`,
+                          outage.date && `Date: ${outage.date}`,
+                          outage.peakTime && `Peak Time: ${outage.peakTime.slice(0, 5)}`,
+                          outage.cause && `Cause: ${outage.cause}`,
+                          outage.households && `Affected Households: ${Number(outage.households).toLocaleString()}`,
+                          outage.duration && `Duration: ${outage.duration} mins`,
+                          outage.description,
+                        ].filter(Boolean),
+                      });
+                    }}
+                    style={{
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      zIndex: 80,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 5,
+                        padding: "4px 8px",
+                        borderRadius: 14,
+                        background: isDark ? "rgba(24, 24, 27, 0.94)" : "#ffffff",
+                        border: "2px solid #f59e0b",
+                        boxShadow: "0 4px 14px rgba(245, 158, 11, 0.5)",
+                        fontSize: 11,
+                        fontWeight: 800,
+                        color: isDark ? "#ffffff" : "#18181b",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <Zap size={12} color="#f59e0b" fill="#f59e0b" />
+                      <span>Brgy. {outage.name}</span>
+                      <span
+                        style={{
+                          padding: "1px 5px",
+                          borderRadius: 4,
+                          fontSize: 9,
+                          fontWeight: 800,
+                          textTransform: "uppercase",
+                          background: outage.status === "ongoing" ? "rgba(239, 68, 68, 0.2)" : "rgba(245, 158, 11, 0.2)",
+                          color: outage.status === "ongoing" ? "#ef4444" : "#f59e0b",
+                        }}
+                      >
+                        {outage.status || "Outage"}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        width: 0,
+                        height: 0,
+                        borderLeft: "5px solid transparent",
+                        borderRight: "5px solid transparent",
+                        borderTop: "5px solid #f59e0b",
+                      }}
+                    />
+                  </div>
+                </Marker>
+              ))}
 
             {/* KloudTech IoT Weather Stations */}
             {stationLabelPositions.map((s) => {
@@ -1561,7 +1674,7 @@ export default function AdminOverviewCommand({
                 <div style={card}>
                   <div style={sectionLabel}>Key facilities</div>
                   <div style={{ fontSize: 16, fontWeight: 900, marginTop: 2 }}>
-                    {facilities.status === "loading" ? "…" : facilities.status === "error" ? "5" : facilities.items.length || "5"}
+                    {facilities.status === "loading" ? "…" : facilities.status === "error" ? "0" : (facilities.items?.length ?? 0)}
                   </div>
                   <div style={{ fontSize: 9, color: Z[600], fontWeight: 600 }}>Hospitals & Services</div>
                 </div>

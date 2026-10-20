@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect from "../components/ui/CustomSelect";
+import BarangayMultiSelect from "../components/ui/BarangayMultiSelect";
+import { parseBarangayList } from "../lib/palayanBarangays";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
@@ -354,8 +356,9 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
   // Live reports: refresh instantly on any change to the reports table, with a
   // periodic silent refresh as a safety net if the realtime channel is unavailable.
   useEffect(() => {
+    const channelId = `admin_reports_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const channel = supabase
-      .channel("admin_dashboard_reports")
+      .channel(channelId)
       .on("postgres_changes", { event: "*", schema: "public", table: "reports" }, () => fetchData(true))
       .subscribe();
     const poll = setInterval(() => {
@@ -7317,6 +7320,24 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
         ({ error } = await supabase.from('power_interruptions').insert(payload));
       }
       if (error) throw error;
+
+      // Sync active power interruptions with advisories table for citizen notification & map visibility
+      try {
+        const selectedList = parseBarangayList(formData.feeders_affected);
+        const bgyNames = selectedList.length > 0 ? selectedList.join(", ") : "Palayan City";
+        if (formData.restoration_status !== "restored") {
+          await supabase.from("advisories").insert({
+            title: `NEECO Power Interruption Advisory • Brgy. ${bgyNames}`,
+            category: "Power Interruption",
+            status: "Published",
+            content: `Scheduled/Ongoing power interruption in Palayan City affecting: ${bgyNames}. Status: ${formData.restoration_status.toUpperCase()}. Cause: ${causeLabels[formData.cause] || formData.cause}. ${formData.description || "Grid maintenance and restoration ongoing."}`,
+            published_at: new Date().toISOString(),
+          });
+        }
+      } catch (advSyncErr) {
+        logger.warn("Syncing advisory with power interruption:", advSyncErr);
+      }
+
       showSuccessModal('Saved', editId ? 'Power record updated.' : 'Power record added.');
       resetForm();
       setActiveTab('view');
@@ -7542,8 +7563,21 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                 />
               </div>
               <div style={{gridColumn: '1 / -1'}}>
-                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Feeders Affected</label>
-                <input type='text' placeholder='e.g. Feeder A, Feeder B, Feeder C' value={formData.feeders_affected} onChange={e => setFormData({...formData, feeders_affected: e.target.value})} style={inputStyle} />
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4}}>
+                  <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block'}}>
+                    Affected Barangays (Palayan City) *
+                  </label>
+                  <span style={{fontSize: 11, fontWeight: 700, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 4}}>
+                    <Zap size={12} /> Highlights on Live Map
+                  </span>
+                </div>
+                <BarangayMultiSelect
+                  selected={parseBarangayList(formData.feeders_affected)}
+                  onChange={(newList) => setFormData({...formData, feeders_affected: newList.join(", ")})}
+                  isDark={S.isDark}
+                  accent={S.accent}
+                  placeholder="Select all affected Palayan barangays from dropdown..."
+                />
               </div>
               <div style={{gridColumn: '1 / -1'}}>
                 <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Restoration Status</label>
@@ -7633,7 +7667,32 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                             </div>
                           )}
                         </div>
-                        {r.feeders_affected && <p style={{margin: '6px 0 0', fontSize: 12, color: S.text}}>Feeders: {r.feeders_affected}</p>}
+                        {r.feeders_affected && (
+                          <div style={{margin: '8px 0 0', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap'}}>
+                            <span style={{fontSize: 11, fontWeight: 700, color: S.muted, display: 'flex', alignItems: 'center', gap: 4}}>
+                              <MapPin size={12} color="#f97316" /> Affected Barangays:
+                            </span>
+                            {parseBarangayList(r.feeders_affected).map((bgy) => (
+                              <span
+                                key={bgy}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 3,
+                                  padding: '2px 8px',
+                                  borderRadius: 6,
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  background: S.isDark ? "rgba(249, 115, 22, 0.16)" : "#fff7ed",
+                                  border: `1px solid ${S.isDark ? "rgba(249, 115, 22, 0.35)" : "#ffedd5"}`,
+                                  color: S.isDark ? "#fb923c" : "#c2410c",
+                                }}
+                              >
+                                {bgy}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         {r.description && <p style={{margin: '4px 0 0', fontSize: 12, color: S.muted}}>{r.description}</p>}
                       </div>
                       <div style={{display: 'flex', gap: 6, marginLeft: 12}}>
