@@ -270,14 +270,17 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
         setIsUploadingPhoto(true);
         try {
           let fileToUpload = selectedPhoto;
-          try {
-            fileToUpload = await imageCompression(selectedPhoto, {
-              maxSizeMB: 0.5,
-              maxWidthOrHeight: 1400,
-              useWebWorker: true,
-            });
-          } catch (compErr) {
-            logger.warn("Image compression fallback to original file", compErr);
+          // Keep exact original file dimensions and quality (only compress if larger than 10MB)
+          if (selectedPhoto.size > 10 * 1024 * 1024) {
+            try {
+              fileToUpload = await imageCompression(selectedPhoto, {
+                maxSizeMB: 8,
+                maxWidthOrHeight: 4096,
+                useWebWorker: true,
+              });
+            } catch (compErr) {
+              logger.warn("Image compression fallback to original file", compErr);
+            }
           }
 
           const ext = fileToUpload.name?.split(".").pop() || "jpg";
@@ -2200,6 +2203,7 @@ function CivicAdvisoryCard({ post, isDark, session, onNavigateToAuth, onShareToa
   const [showComments, setShowComments] = useState(false);
   const [newCommentText, setNewCommentText] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
 
   const toggleLike = () => {
     if (isLiked) {
@@ -2438,18 +2442,87 @@ function CivicAdvisoryCard({ post, isDark, session, onNavigateToAuth, onShareToa
         )}
       </div>
 
-      {/* ── 3. POST IMAGE (ULTRA-ROUNDED MEDIA) ── */}
+      {/* ── 3. POST IMAGE (EXACT ORIGINAL SIZE & ASPECT RATIO) ── */}
       {cardImage && (
-        <div className="aesthetic-post-img-container">
-          <img
-            src={cardImage}
-            alt={post.title || "Advisory Photo"}
-            className="aesthetic-post-img"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            crossOrigin="anonymous"
-          />
-        </div>
+        <>
+          <div
+            className="aesthetic-post-img-container"
+            onClick={() => setShowLightbox(true)}
+            title="Click to view full image"
+          >
+            <img
+              src={cardImage}
+              alt={post.title || "Advisory Photo"}
+              className="aesthetic-post-img"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+            />
+          </div>
+
+          {/* Fullscreen Lightbox Modal */}
+          {showLightbox && (
+            <div
+              onClick={() => setShowLightbox(false)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 999999,
+                background: "rgba(0, 0, 0, 0.92)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "24px 16px",
+                cursor: "zoom-out",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setShowLightbox(false)}
+                aria-label="Close full image view"
+                style={{
+                  position: "absolute",
+                  top: 24,
+                  right: 24,
+                  background: "rgba(255, 255, 255, 0.16)",
+                  border: "1px solid rgba(255, 255, 255, 0.25)",
+                  borderRadius: "50%",
+                  width: 44,
+                  height: 44,
+                  color: "#ffffff",
+                  fontSize: 22,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "background 0.2s ease",
+                  zIndex: 1000000,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.16)"; }}
+              >
+                ✕
+              </button>
+              <img
+                src={cardImage}
+                alt={post.title || "Advisory Photo"}
+                style={{
+                  maxWidth: "96vw",
+                  maxHeight: "92vh",
+                  width: "auto",
+                  height: "auto",
+                  objectFit: "contain",
+                  borderRadius: 12,
+                  boxShadow: "0 25px 70px rgba(0, 0, 0, 0.8)",
+                  cursor: "default",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* ── 4. AESTHETIC ACTION PILLS ROW (❤️ 1.5K | 💬 1.5K | ✈️ 150 ... 🔖) ── */}

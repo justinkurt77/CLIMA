@@ -4107,8 +4107,8 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                     </div>
                     <p style={{ margin: "0 0 12px", fontSize: 13, color: S.text, lineHeight: 1.5, opacity: 0.9 }}>{displayContent}</p>
                     {attachedImage && (
-                      <div style={{ marginBottom: 12, borderRadius: 10, overflow: "hidden", maxHeight: 200, maxWidth: 360, border: `1px solid ${S.border}` }}>
-                        <img src={attachedImage} alt="Advisory attachment" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      <div style={{ marginBottom: 12, borderRadius: 12, overflow: "hidden", maxWidth: 560, border: `1px solid ${S.border}`, background: S.cardSubtle }}>
+                        <img src={attachedImage} alt="Advisory attachment" style={{ width: "100%", height: "auto", maxHeight: 480, objectFit: "contain", display: "block" }} />
                       </div>
                     )}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: S.muted, fontWeight: 600 }}>
