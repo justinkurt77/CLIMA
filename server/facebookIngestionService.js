@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+// import { chromium } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import fs from 'fs';
@@ -349,6 +349,14 @@ export async function scrapeFacebookPage({
   let browser = null;
 
   try {
+    let pw;
+    try {
+      pw = await import('playwright');
+    } catch {
+      console.warn('⚠️ [FB Scraper] Playwright not installed; skipping headless scrape.');
+      return { success: false, error: 'Playwright not installed in environment' };
+    }
+    const chromium = pw.chromium;
     browser = await chromium.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled']

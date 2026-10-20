@@ -143,6 +143,21 @@ html.dark *,
   scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
 }
 
+/* Form Dropdowns & Selects in Dark Mode */
+html.dark select,
+[data-theme="dark"] select {
+  color-scheme: dark;
+  background-color: var(--bg-card-subtle, #18181b);
+  color: var(--text-primary, #ffffff);
+}
+
+html.dark option,
+[data-theme="dark"] option {
+  background-color: #18181b;
+  color: #ffffff;
+}
+
+
 * {
   margin: 0;
   padding: 0;

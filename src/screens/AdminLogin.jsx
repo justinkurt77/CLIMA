@@ -503,8 +503,8 @@ export default function AdminLogin({ onLogin }) {
             type="submit"
             disabled={loading}
             style={{
-              padding: "14px",
-              borderRadius: 14,
+              padding: "14px 24px",
+              borderRadius: 9999,
               border: "none",
               background: "#f97316",
               color: "white",

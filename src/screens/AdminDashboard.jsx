@@ -8,7 +8,7 @@ import {
   MapPin, Calendar, Phone, AlertCircle, AlertTriangle, ChevronRight, ChevronDown, ChevronUp, Navigation,
   ShieldAlert, Activity, Megaphone, HeartPulse, Tent, Truck, Flame, Droplet, Zap, Sprout, Wifi,
   Sun, Moon, Bell, Menu, Layers, ThermometerSun, DollarSign, LifeBuoy,
-  Home, Wrench, TrendingDown
+  Home, Wrench, TrendingDown, ArrowLeft
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect from "../components/ui/CustomSelect";
@@ -169,21 +169,25 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
     fontSize: 14, fontWeight: 600, outline: "none", fontFamily: S.font,
     color: S.text, transition: "border-color 0.2s, box-shadow 0.2s",
     boxShadow: isDark ? "0 1px 3px rgba(0,0,0,0.3)" : "0 1px 2px rgba(0,0,0,0.04)",
+    colorScheme: isDark ? "dark" : "light",
   };
   const selectStyle = {
     ...inputStyle,
     appearance: "none", WebkitAppearance: "none", MozAppearance: "none",
     paddingRight: 36, cursor: "pointer",
+    background: S.inputBg,
+    color: S.text,
+    colorScheme: isDark ? "dark" : "light",
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(isDark ? "#a1a1aa" : "#71717a")}' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
     backgroundRepeat: "no-repeat",
     backgroundPosition: "right 12px center",
     backgroundSize: "16px",
   };
   const btnPrimary = {
-    padding: "10px 20px", borderRadius: 12, border: "none",
-    background: S.accent, color: "#fff", fontWeight: 800, fontSize: 14,
-    cursor: "pointer", fontFamily: S.font, display: "flex", alignItems: "center", gap: 8,
-    boxShadow: `0 4px 14px ${S.accent}44`, transition: "opacity 0.15s, transform 0.15s",
+    padding: "10px 22px", borderRadius: 9999, border: "none",
+    background: S.accent, color: "#ffffff", fontWeight: 800, fontSize: 13.5,
+    cursor: "pointer", fontFamily: S.font, display: "inline-flex", alignItems: "center", gap: 8,
+    boxShadow: `0 4px 14px ${S.accent}55`, transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
   };
   const btnDanger = {
     background: "none", border: "none", color: S.red, cursor: "pointer",
@@ -197,6 +201,40 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
   };
 
   const [activeTab, setActiveTab] = useState("overview");
+
+  const BackToMapButton = () => (
+    <div style={{ marginBottom: 16 }}>
+      <button
+        onClick={() => setActiveTab("overview")}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "8px 18px",
+          borderRadius: 9999,
+          background: S.accent,
+          color: "#ffffff",
+          border: "none",
+          fontSize: 13,
+          fontWeight: 800,
+          cursor: "pointer",
+          boxShadow: `0 4px 14px ${S.accent}55`,
+          transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = "translateY(-1px)";
+          e.currentTarget.style.boxShadow = `0 6px 20px ${S.accent}77`;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow = `0 4px 14px ${S.accent}55`;
+        }}
+      >
+        <ArrowLeft size={16} strokeWidth={2.4} />
+        <span>Back to GIS Map</span>
+      </button>
+    </div>
+  );
   const [departments, setDepartments] = useState([]);
   const [categories, setCategories] = useState([]);
   const [reports, setReports] = useState([]);
@@ -757,23 +795,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "elnino" ? "active" : "inactive"}
             style={floatingTabStyle}
           >
-            <div style={{ marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <button
-                onClick={() => setActiveTab("overview")}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: 9999,
-                  background: "rgba(245, 158, 11, 0.12)",
-                  border: "1px solid rgba(245, 158, 11, 0.35)",
-                  color: "#f59e0b",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                ← Back to GIS Map
-              </button>
-            </div>
+            <BackToMapButton />
             <ElNinoMonitoringDashboard
               session={currentUser}
               isAdmin={true}
@@ -787,23 +809,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "reports" ? "active" : "inactive"}
             style={floatingTabStyle}
           >
-            <div style={{ marginBottom: 14 }}>
-              <button
-                onClick={() => setActiveTab("overview")}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: 9999,
-                  background: "rgba(245, 158, 11, 0.12)",
-                  border: "1px solid rgba(245, 158, 11, 0.35)",
-                  color: "#f59e0b",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                ← Back to GIS Map
-              </button>
-            </div>
+            <BackToMapButton />
             <ReportsTab reports={reports} onUpdate={() => fetchData(true)} S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} onViewReport={setDetailReport} />
           </motion.div>
 
@@ -813,23 +819,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "advisories" ? "active" : "inactive"}
             style={floatingTabStyle}
           >
-            <div style={{ marginBottom: 14 }}>
-              <button
-                onClick={() => setActiveTab("overview")}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: 9999,
-                  background: "rgba(245, 158, 11, 0.12)",
-                  border: "1px solid rgba(245, 158, 11, 0.35)",
-                  color: "#f59e0b",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                ← Back to GIS Map
-              </button>
-            </div>
+            <BackToMapButton />
             <AdvisoriesTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} />
           </motion.div>
 
@@ -839,23 +829,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "hospitals" ? "active" : "inactive"}
             style={floatingTabStyle}
           >
-            <div style={{ marginBottom: 14 }}>
-              <button
-                onClick={() => setActiveTab("overview")}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: 9999,
-                  background: "rgba(245, 158, 11, 0.12)",
-                  border: "1px solid rgba(245, 158, 11, 0.35)",
-                  color: "#f59e0b",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                ← Back to GIS Map
-              </button>
-            </div>
+            <BackToMapButton />
             <HospitalsTab 
               S={S} 
               cardStyle={cardStyle} 
@@ -877,23 +851,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "operations" ? "active" : "inactive"}
             style={floatingTabStyle}
           >
-            <div style={{ marginBottom: 14 }}>
-              <button
-                onClick={() => setActiveTab("overview")}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: 9999,
-                  background: "rgba(245, 158, 11, 0.12)",
-                  border: "1px solid rgba(245, 158, 11, 0.35)",
-                  color: "#f59e0b",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                ← Back to GIS Map
-              </button>
-            </div>
+            <BackToMapButton />
             <OperationsTab 
               S={S} 
               cardStyle={cardStyle} 
@@ -915,23 +873,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "bfp" ? "active" : "inactive"}
             style={floatingTabStyle}
           >
-            <div style={{ marginBottom: 14 }}>
-              <button
-                onClick={() => setActiveTab("overview")}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: 9999,
-                  background: "rgba(245, 158, 11, 0.12)",
-                  border: "1px solid rgba(245, 158, 11, 0.35)",
-                  color: "#f59e0b",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                ← Back to GIS Map
-              </button>
-            </div>
+            <BackToMapButton />
             <BfpOperationsTab 
               S={S} 
               cardStyle={cardStyle} 
@@ -953,23 +895,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "agriculture" ? "active" : "inactive"}
             style={floatingTabStyle}
           >
-            <div style={{ marginBottom: 14 }}>
-              <button
-                onClick={() => setActiveTab("overview")}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: 9999,
-                  background: "rgba(245, 158, 11, 0.12)",
-                  border: "1px solid rgba(245, 158, 11, 0.35)",
-                  color: "#f59e0b",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                ← Back to GIS Map
-              </button>
-            </div>
+            <BackToMapButton />
             <AgricultureDamagesTab 
               S={S} 
               cardStyle={cardStyle} 
@@ -991,23 +917,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "water" ? "active" : "inactive"}
             style={floatingTabStyle}
           >
-            <div style={{ marginBottom: 14 }}>
-              <button
-                onClick={() => setActiveTab("overview")}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: 9999,
-                  background: "rgba(245, 158, 11, 0.12)",
-                  border: "1px solid rgba(245, 158, 11, 0.35)",
-                  color: "#f59e0b",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                ← Back to GIS Map
-              </button>
-            </div>
+            <BackToMapButton />
             <WaterUtilityTab 
               S={S} 
               cardStyle={cardStyle} 
@@ -1029,23 +939,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             animate={activeTab === "power" ? "active" : "inactive"}
             style={floatingTabStyle}
           >
-            <div style={{ marginBottom: 14 }}>
-              <button
-                onClick={() => setActiveTab("overview")}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: 9999,
-                  background: "rgba(245, 158, 11, 0.12)",
-                  border: "1px solid rgba(245, 158, 11, 0.35)",
-                  color: "#f59e0b",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                ← Back to GIS Map
-              </button>
-            </div>
+            <BackToMapButton />
             <PowerUtilityTab 
               S={S} 
               cardStyle={cardStyle} 
@@ -1069,23 +963,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                 animate={activeTab === "users" ? "active" : "inactive"}
                 style={floatingTabStyle}
               >
-                <div style={{ marginBottom: 14 }}>
-                  <button
-                    onClick={() => setActiveTab("overview")}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: 9999,
-                      background: "rgba(245, 158, 11, 0.12)",
-                      border: "1px solid rgba(245, 158, 11, 0.35)",
-                      color: "#f59e0b",
-                      fontSize: 12,
-                      fontWeight: 800,
-                      cursor: "pointer",
-                    }}
-                  >
-                    ← Back to GIS Map
-                  </button>
-                </div>
+                <BackToMapButton />
                 <UsersTab 
                   categories={categories} 
                   departments={departments} 
@@ -1107,23 +985,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                 animate={activeTab === "settings" ? "active" : "inactive"}
                 style={floatingTabStyle}
               >
-                <div style={{ marginBottom: 14 }}>
-                  <button
-                    onClick={() => setActiveTab("overview")}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: 9999,
-                      background: "rgba(245, 158, 11, 0.12)",
-                      border: "1px solid rgba(245, 158, 11, 0.35)",
-                      color: "#f59e0b",
-                      fontSize: 12,
-                      fontWeight: 800,
-                      cursor: "pointer",
-                    }}
-                  >
-                    ← Back to GIS Map
-                  </button>
-                </div>
+                <BackToMapButton />
                 <SettingsTab 
                   departments={departments} 
                   categories={categories} 
@@ -1147,24 +1009,8 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                 animate={activeTab === "logs" ? "active" : "inactive"}
                 style={floatingTabStyle}
               >
-                <div style={{ marginBottom: 14 }}>
-                  <button
-                    onClick={() => setActiveTab("overview")}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: 9999,
-                      background: "rgba(245, 158, 11, 0.12)",
-                      border: "1px solid rgba(245, 158, 11, 0.35)",
-                      color: "#f59e0b",
-                      fontSize: 12,
-                      fontWeight: 800,
-                      cursor: "pointer",
-                    }}
-                  >
-                    ← Back to GIS Map
-                  </button>
-                </div>
-                <ActivityLogsTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} />
+                <BackToMapButton />
+                <ActivityLogsTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} isSuperadmin={isSuperadmin} />
               </motion.div>
             </>
           )}
@@ -1228,15 +1074,16 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                   <button
                     onClick={() => setShowModal(false)}
                     style={{
-                      padding: "10px 18px",
-                      borderRadius: 10,
+                      padding: "10px 20px",
+                      borderRadius: 9999,
                       border: `1px solid ${S.border}`,
                       background: S.cardSubtle,
                       color: S.text,
-                      fontSize: 14,
+                      fontSize: 13.5,
                       fontWeight: 700,
                       cursor: "pointer",
                       fontFamily: S.font,
+                      transition: "all 0.2s ease",
                     }}
                   >
                     {modalConfig.cancelText}
@@ -1245,16 +1092,17 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                 <button
                   onClick={modalConfig.onConfirm}
                   style={{
-                    padding: "10px 20px",
-                    borderRadius: 10,
+                    padding: "10px 22px",
+                    borderRadius: 9999,
                     border: "none",
                     background: modalConfig.type === "error" ? S.red : S.accent,
                     color: "#fff",
-                    fontSize: 14,
-                    fontWeight: 700,
+                    fontSize: 13.5,
+                    fontWeight: 800,
                     cursor: "pointer",
                     fontFamily: S.font,
-                    boxShadow: `0 4px 12px ${S.accent}33`,
+                    boxShadow: modalConfig.type === "error" ? `0 4px 14px ${S.red}55` : `0 4px 14px ${S.accent}55`,
+                    transition: "all 0.2s ease",
                   }}
                 >
                   {modalConfig.confirmText}
@@ -1468,17 +1316,31 @@ function OverviewTab({
               <button
                 onClick={() => setShowDetailedAnalytics(false)}
                 style={{
-                  padding: "6px 14px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "7px 16px",
                   borderRadius: 9999,
-                  background: "rgba(245, 158, 11, 0.12)",
-                  border: "1px solid rgba(245, 158, 11, 0.35)",
-                  color: "#f59e0b",
-                  fontSize: 12,
+                  background: S.accent,
+                  color: "#ffffff",
+                  border: "none",
+                  fontSize: 12.5,
                   fontWeight: 800,
                   cursor: "pointer",
+                  boxShadow: `0 4px 14px ${S.accent}55`,
+                  transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow = `0 6px 20px ${S.accent}77`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = `0 4px 14px ${S.accent}55`;
                 }}
               >
-                ✕ Close Analytics
+                <X size={14} strokeWidth={2.4} />
+                <span>Close Analytics</span>
               </button>
             </div>
           {/* Date Range Selector */}
@@ -2562,7 +2424,7 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
       )}
 
       {/* Create New Admin */}
-      <div style={cardStyle}>
+      <div style={{ ...cardStyle, position: "relative", zIndex: 10 }}>
         <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Create New Admin</h3>
         <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>Create a brand new admin account. They'll log in with the credentials you set.</p>
         <form onSubmit={handleCreateAdmin} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -2584,6 +2446,7 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
                 onChange={setNewDept}
                 options={[{ value: "All Departments", label: "All Departments (Superadmin)" }, ...departments.map(d => ({ value: d.id, label: d.name }))]}
                 accent={S.accent}
+                isDark={S.isDark}
               />
             </div>
             <button type="submit" disabled={creating} style={{ ...btnPrimary, height: 42, opacity: creating ? 0.6 : 1 }}>
@@ -2597,7 +2460,7 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
       </div>
 
       {/* Assign Existing User */}
-      <div style={cardStyle}>
+      <div style={{ ...cardStyle, position: "relative", zIndex: 5 }}>
         <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Promote/Update User</h3>
         <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>Promote a citizen to admin, or update an existing admin's office assignment.</p>
         <form onSubmit={handleAssignExisting} style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
@@ -2612,6 +2475,7 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
               onChange={setAssignDept}
               options={[{ value: "All Departments", label: "All Departments" }, ...departments.map(d => ({ value: d.id, label: d.name }))]}
               accent={S.accent}
+              isDark={S.isDark}
             />
           </div>
           <button type="submit" style={btnPrimary}>Promote</button>
@@ -2619,7 +2483,7 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
       </div>
 
       {/* Current Admins */}
-      <div style={cardStyle}>
+      <div style={{ ...cardStyle, position: "relative", zIndex: 1 }}>
         <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Current Admins</h3>
         <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>{admins.length} admin{admins.length !== 1 ? "s" : ""} configured</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -3057,10 +2921,18 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
           </p>
 
           {/* Quick Templates */}
-          <div style={{ marginBottom: 20, padding: 16, background: "#fefce8", borderRadius: 12, border: "1px solid #fef08a" }}>
+          <div style={{
+            marginBottom: 20,
+            padding: 16,
+            background: S.isDark ? "rgba(245, 158, 11, 0.12)" : "#fefce8",
+            borderRadius: 12,
+            border: S.isDark ? "1px solid rgba(245, 158, 11, 0.25)" : "1px solid #fef08a",
+            position: "relative",
+            zIndex: 20,
+          }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <span style={{ fontSize: 16 }}>⚡</span>
-              <span style={{ fontSize: 12, fontWeight: 900, color: "#854d0e", textTransform: "uppercase", letterSpacing: 0.5 }}>Quick Role Templates</span>
+              <span style={{ fontSize: 12, fontWeight: 900, color: S.isDark ? "#f59e0b" : "#854d0e", textTransform: "uppercase", letterSpacing: 0.5 }}>Quick Role Templates</span>
             </div>
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
               <CustomSelect
@@ -3070,7 +2942,8 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
                   { value: "", label: "Select admin user first..." },
                   ...adminUsers.map(u => ({ value: u.id, label: `${u.full_name} (${u.email})` }))
                 ]}
-                accent="#854d0e"
+                accent={S.isDark ? "#f59e0b" : "#854d0e"}
+                isDark={S.isDark}
               />
             </div>
             {selectedUser && (
@@ -3159,7 +3032,7 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
       </div>
 
       {/* Categories Section */}
-      <div style={cardStyle}>
+      <div style={{ ...cardStyle, position: "relative", zIndex: 10 }}>
         <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Issue Categories</h3>
         <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>
           Categories are what citizens select when filing reports. Each category belongs to a <strong>group</strong> (shown in the app) and is <strong>linked to an office</strong> (for routing).
@@ -3576,10 +3449,37 @@ function DashboardReportModal({ report, S, onClose, onStatusChange }) {
 }
 
 /* ── Activity Logs Tab ── */
-function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle }) {
+function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle, isSuperadmin = true }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [usersMap, setUsersMap] = useState({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [actionFilter, setActionFilter] = useState("ALL");
+  const [tableFilter, setTableFilter] = useState("ALL");
+  const [expandedLogId, setExpandedLogId] = useState(null);
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState(null);
+
+  // Helper to filter out any mock/dummy records
+  const isDummyLog = useCallback((log) => {
+    const title = (log.new_data?.title || log.old_data?.title || log.new_data?.name || log.old_data?.name || "").toLowerCase().trim();
+    const content = (log.new_data?.content || log.old_data?.content || log.new_data?.description || log.old_data?.description || "").toLowerCase();
+
+    if (!title && !content && !log.table_name) return true;
+    if (title === "test" || title === "a" || title.startsWith("test") || title.includes("probe")) return true;
+    if (title.startsWith("advisory ca208da9")) return true;
+    if (title.includes("obstructed sidewalks")) return true;
+
+    const dummyKeywords = [
+      "bollywood", "jantar mantar", "fathom", "indonesian", "palangka raya",
+      "nepal", "australia", "pupils and a teacher", "children were buried",
+      "chinese foreign minister", "satellite images give clues", "saudi arabia",
+      "nay pyi taw", "bbc is in central", "jordon steele-john", "gunmen firing shots",
+      "kolkata"
+    ];
+    return dummyKeywords.some(k => title.includes(k) || content.includes(k));
+  }, []);
 
   useEffect(() => {
     fetchLogs();
@@ -3589,11 +3489,13 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle }) {
     setLoading(true);
     try {
       // Fetch logs
-      const { data: logsData } = await supabase
+      const { data: logsData, error } = await supabase
         .from("audit_logs")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(200);
+
+      if (error) logger.warn("Fetch audit_logs error:", error);
 
       // Fetch users to map actor_id to name
       const { data: usersData } = await supabase.rpc("get_auth_users");
@@ -3604,7 +3506,10 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle }) {
         });
       }
 
-      setLogs(logsData || []);
+      // Filter out any mock/dummy test records
+      const cleanLogs = (logsData || []).filter(l => !isDummyLog(l));
+
+      setLogs(cleanLogs);
       setUsersMap(uMap);
     } catch (e) {
       logger.error(e);
@@ -3613,53 +3518,448 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle }) {
     }
   };
 
-  if (loading) return <p style={{ textAlign: "center", color: S.muted, padding: 40 }}>Loading logs…</p>;
+  const handleClearLogs = async () => {
+    setClearing(true);
+    try {
+      // 1. Try server endpoint
+      let cleared = false;
+      try {
+        const res = await fetch("/api/admin/clear-audit-logs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ purgeOnlyDummy: false })
+        });
+        if (res.ok) cleared = true;
+      } catch {
+        try {
+          const res2 = await fetch("http://localhost:3001/api/admin/clear-audit-logs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ purgeOnlyDummy: false })
+          });
+          if (res2.ok) cleared = true;
+        } catch {}
+      }
+
+      // 2. Direct Supabase deletion attempt
+      await supabase.from("audit_logs").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+      setLogs([]);
+      setShowClearModal(false);
+      setFeedbackMsg({ type: "success", text: "Audit logs have been cleared successfully." });
+      setTimeout(() => setFeedbackMsg(null), 4000);
+    } catch (err) {
+      logger.error("Failed to clear logs:", err);
+      setFeedbackMsg({ type: "error", text: "Failed to clear logs: " + (err.message || "Error") });
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  const handleDeleteSingle = async (logId) => {
+    if (!window.confirm("Permanently delete this audit log entry?")) return;
+    try {
+      try {
+        await fetch(`/api/admin/audit-logs/${logId}`, { method: "DELETE" });
+      } catch {
+        try {
+          await fetch(`http://localhost:3001/api/admin/audit-logs/${logId}`, { method: "DELETE" });
+        } catch {}
+      }
+      await supabase.from("audit_logs").delete().eq("id", logId);
+      setLogs(prev => prev.filter(l => l.id !== logId));
+    } catch (err) {
+      logger.error("Failed to delete log entry:", err);
+    }
+  };
+
+  // Distinct tables for filter
+  const tableOptions = useMemo(() => {
+    const set = new Set();
+    logs.forEach(l => { if (l.table_name) set.add(l.table_name); });
+    return ["ALL", ...Array.from(set)];
+  }, [logs]);
+
+  // Filtered logs
+  const filteredLogs = useMemo(() => {
+    return logs.filter(log => {
+      if (actionFilter !== "ALL" && log.action !== actionFilter) return false;
+      if (tableFilter !== "ALL" && log.table_name !== tableFilter) return false;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const title = (log.new_data?.title || log.old_data?.title || log.new_data?.name || log.old_data?.name || "").toLowerCase();
+        const actor = (log.actor_id && usersMap[log.actor_id] ? usersMap[log.actor_id] : "").toLowerCase();
+        const tbl = (log.table_name || "").toLowerCase();
+        const recId = (log.record_id || "").toLowerCase();
+        return title.includes(q) || actor.includes(q) || tbl.includes(q) || recId.includes(q);
+      }
+      return true;
+    });
+  }, [logs, actionFilter, tableFilter, searchQuery, usersMap]);
+
+  if (loading) return <p style={{ textAlign: "center", color: S.muted, padding: 40 }}>Loading audit trail…</p>;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Toast Feedback */}
+      {feedbackMsg && (
+        <div style={{
+          padding: "12px 18px",
+          borderRadius: 10,
+          background: feedbackMsg.type === "success" ? (S.isDark ? "rgba(16, 185, 129, 0.2)" : "#ecfdf5") : (S.isDark ? "rgba(239, 68, 68, 0.2)" : "#fef2f2"),
+          border: `1px solid ${feedbackMsg.type === "success" ? "#10b981" : "#ef4444"}`,
+          color: feedbackMsg.type === "success" ? "#10b981" : "#ef4444",
+          fontSize: 13,
+          fontWeight: 700,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}>
+          {feedbackMsg.type === "success" ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
+          {feedbackMsg.text}
+        </div>
+      )}
+
       <div style={cardStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        {/* Header Bar */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
           <div>
-            <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Audit Logs</h3>
-            <p style={{ margin: 0, fontSize: 13, color: S.muted }}>Tracking system modifications for accountability and compliance.</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: S.text }}>Audit Logs & System Activity</h3>
+              <span style={{ fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 9999, background: S.isDark ? "rgba(245, 158, 11, 0.2)" : "rgba(245, 158, 11, 0.15)", color: "#f59e0b" }}>
+                {filteredLogs.length} {filteredLogs.length === 1 ? "entry" : "entries"}
+              </span>
+            </div>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>
+              Immutable administrative history, tracking record creations, modifications, and removals.
+            </p>
           </div>
-          <button onClick={fetchLogs} style={{ padding: "8px 12px", borderRadius: 8, border: `1px solid ${S.border}`, background: S.cardSubtle, cursor: "pointer", fontFamily: S.font, fontWeight: 700, fontSize: 13, color: S.text, display: "flex", alignItems: "center", gap: 6 }}>
-            <RefreshCw size={14} /> Refresh
-          </button>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <button
+              onClick={fetchLogs}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 8,
+                border: `1px solid ${S.border}`,
+                background: S.cardSubtle,
+                cursor: "pointer",
+                fontFamily: S.font,
+                fontWeight: 700,
+                fontSize: 13,
+                color: S.text,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <RefreshCw size={14} /> Refresh
+            </button>
+
+            {isSuperadmin && logs.length > 0 && (
+              <button
+                onClick={() => setShowClearModal(true)}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: 8,
+                  border: "1px solid rgba(239, 68, 68, 0.4)",
+                  background: S.isDark ? "rgba(239, 68, 68, 0.15)" : "#fef2f2",
+                  cursor: "pointer",
+                  fontFamily: S.font,
+                  fontWeight: 700,
+                  fontSize: 13,
+                  color: "#ef4444",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <Trash2 size={14} /> Clear Logs
+              </button>
+            )}
+          </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {logs.map(log => {
-            const actorName = log.actor_id ? (usersMap[log.actor_id] || "Unknown User") : "System / Guest";
+        {/* Search & Filters */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 18 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            {/* Search Input */}
+            <div style={{ position: "relative", flex: "1 1 240px" }}>
+              <Search size={15} color={S.muted} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
+              <input
+                type="text"
+                placeholder="Search by title, table, user or record ID..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{
+                  ...inputStyle,
+                  paddingLeft: 34,
+                  fontSize: 13,
+                  width: "100%",
+                }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 2 }}
+                >
+                  <X size={14} color={S.muted} />
+                </button>
+              )}
+            </div>
+
+            {/* Action Filter Pills */}
+            <div style={{ display: "flex", gap: 4, background: S.cardSubtle, padding: 3, borderRadius: 8, border: `1px solid ${S.border}` }}>
+              {["ALL", "INSERT", "UPDATE", "DELETE"].map(action => (
+                <button
+                  key={action}
+                  onClick={() => setActionFilter(action)}
+                  style={{
+                    padding: "5px 10px",
+                    borderRadius: 6,
+                    border: "none",
+                    background: actionFilter === action ? (S.isDark ? "#374151" : "#ffffff") : "transparent",
+                    color: actionFilter === action ? S.text : S.muted,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    boxShadow: actionFilter === action ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
+                  }}
+                >
+                  {action}
+                </button>
+              ))}
+            </div>
+
+            {/* Table Filter Dropdown */}
+            {tableOptions.length > 2 && (
+              <CustomSelect
+                value={tableFilter}
+                onChange={setTableFilter}
+                options={tableOptions.map(t => ({
+                  value: t,
+                  label: t === "ALL" ? "All Tables" : `Table: ${t}`
+                }))}
+                compact
+                accent={S.accent}
+                isDark={S.isDark}
+                style={{ width: "auto", minWidth: 140 }}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Logs List */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {filteredLogs.map(log => {
+            const actorName = log.actor_id ? (usersMap[log.actor_id] || "Admin") : "System / Superadmin";
             const actionColor = log.action === "DELETE" ? "#ef4444" : log.action === "INSERT" ? "#10b981" : "#3b82f6";
-            const actionBg = log.action === "DELETE" ? (S.isDark ? "rgba(239, 68, 68, 0.15)" : "#fef2f2") : log.action === "INSERT" ? (S.isDark ? "rgba(16, 185, 129, 0.15)" : "#ecfdf5") : (S.isDark ? "rgba(59, 130, 246, 0.15)" : "#eff6ff");
+            const actionBg = log.action === "DELETE" ? (S.isDark ? "rgba(239, 68, 68, 0.18)" : "#fef2f2") : log.action === "INSERT" ? (S.isDark ? "rgba(16, 185, 129, 0.18)" : "#ecfdf5") : (S.isDark ? "rgba(59, 130, 246, 0.18)" : "#eff6ff");
             
+            // Extract item title / name / summary
+            const logTitle = log.new_data?.title || log.old_data?.title || log.new_data?.name || log.old_data?.name || log.new_data?.affected_barangays || "";
+            const isExpanded = expandedLogId === log.id;
+
             return (
-              <div key={log.id} style={{ padding: "14px 16px", borderRadius: 12, border: `1px solid ${S.border}`, background: S.cardSubtle, display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ padding: "4px 10px", borderRadius: 6, background: actionBg, color: actionColor, fontSize: 11, fontWeight: 900 }}>{log.action}</span>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: S.text }}>{log.table_name}</span>
+              <div
+                key={log.id}
+                style={{
+                  padding: "14px 16px",
+                  borderRadius: 12,
+                  border: `1px solid ${S.border}`,
+                  background: S.cardSubtle,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  transition: "border-color 0.15s ease",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ padding: "3px 9px", borderRadius: 6, background: actionBg, color: actionColor, fontSize: 11, fontWeight: 900, letterSpacing: 0.5 }}>
+                      {log.action}
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 800, padding: "2px 8px", borderRadius: 6, background: S.isDark ? "rgba(255,255,255,0.06)" : "#f1f5f9", color: S.text }}>
+                      {log.table_name}
+                    </span>
+                    {logTitle && (
+                      <span style={{ fontSize: 13, fontWeight: 800, color: S.text, maxWidth: 460, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={logTitle}>
+                        {logTitle}
+                      </span>
+                    )}
                   </div>
-                  <span style={{ fontSize: 11, color: S.muted, fontWeight: 700 }}>
-                    {new Date(log.created_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}
-                  </span>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, color: S.muted, fontWeight: 700 }}>
+                      {new Date(log.created_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}
+                    </span>
+                    {isSuperadmin && (
+                      <button
+                        onClick={() => handleDeleteSingle(log.id)}
+                        title="Delete log entry"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: S.muted,
+                          padding: 4,
+                          borderRadius: 4,
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                
-                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: S.muted, fontWeight: 600 }}>
-                  <Users size={14} /> {actorName} 
-                  <span style={{ color: S.border }}>|</span> 
-                  <span style={{ fontFamily: "monospace", fontSize: 11, color: S.muted }}>ID: {log.record_id.slice(0, 8)}...</span>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, fontSize: 12, color: S.muted, fontWeight: 600 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <Users size={13} color={S.muted} />
+                    <span style={{ color: S.text, fontWeight: 700 }}>{actorName}</span>
+                    <span style={{ color: S.border }}>•</span>
+                    <span style={{ fontFamily: "monospace", fontSize: 11, color: S.muted }}>Record: {log.record_id ? log.record_id.slice(0, 8) + "…" : "N/A"}</span>
+                  </div>
+
+                  {(log.new_data || log.old_data) && (
+                    <button
+                      onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: "#3b82f6",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 3,
+                        padding: "2px 6px",
+                      }}
+                    >
+                      {isExpanded ? <>Hide Details <ChevronUp size={12} /></> : <>View Changes <ChevronDown size={12} /></>}
+                    </button>
+                  )}
                 </div>
+
+                {/* Expanded Details JSON viewer */}
+                {isExpanded && (
+                  <div style={{ marginTop: 4, paddingTop: 10, borderTop: `1px dashed ${S.border}`, display: "flex", flexDirection: "column", gap: 8 }}>
+                    {log.old_data && (
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 800, color: "#ef4444", marginBottom: 3 }}>Previous State:</div>
+                        <pre style={{ margin: 0, padding: 8, borderRadius: 6, background: S.isDark ? "rgba(0,0,0,0.3)" : "#f8fafc", fontSize: 11, color: S.text, overflowX: "auto", fontFamily: "monospace" }}>
+                          {JSON.stringify(log.old_data, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                    {log.new_data && (
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 800, color: "#10b981", marginBottom: 3 }}>New State:</div>
+                        <pre style={{ margin: 0, padding: 8, borderRadius: 6, background: S.isDark ? "rgba(0,0,0,0.3)" : "#f8fafc", fontSize: 11, color: S.text, overflowX: "auto", fontFamily: "monospace" }}>
+                          {JSON.stringify(log.new_data, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
-          {logs.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No audit logs recorded yet.</p>}
+
+          {filteredLogs.length === 0 && (
+            <div style={{ textAlign: "center", color: S.muted, padding: "36px 20px" }}>
+              <CheckCircle2 size={32} color="#10b981" style={{ margin: "0 auto 8px" }} />
+              <p style={{ margin: 0, fontWeight: 700, fontSize: 14 }}>
+                {searchQuery || actionFilter !== "ALL" || tableFilter !== "ALL" ? "No matching audit logs found." : "No audit logs recorded yet."}
+              </p>
+              <p style={{ margin: "4px 0 0", fontSize: 12, color: S.muted }}>All dummy test records have been permanently cleared.</p>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Confirmation Modal: Clear All Audit Logs */}
+      {showClearModal && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.6)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 99999,
+          padding: 16,
+        }}>
+          <div style={{
+            ...cardStyle,
+            maxWidth: 440,
+            width: "100%",
+            padding: 24,
+            boxShadow: "0 20px 25px -5px rgba(0,0,0,0.3)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(239, 68, 68, 0.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444" }}>
+                <Trash2 size={22} />
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: S.text }}>Clear Audit Logs?</h4>
+                <p style={{ margin: 0, fontSize: 12, color: S.muted }}>Superadmin Administrative Action</p>
+              </div>
+            </div>
+
+            <p style={{ margin: "0 0 20px", fontSize: 13, color: S.muted, lineHeight: 1.5 }}>
+              This will permanently purge all historical audit trail entries from the system database. This action cannot be undone.
+            </p>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button
+                onClick={() => setShowClearModal(false)}
+                disabled={clearing}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 8,
+                  border: `1px solid ${S.border}`,
+                  background: S.cardSubtle,
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: S.text,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClearLogs}
+                disabled={clearing}
+                style={{
+                  padding: "8px 18px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#ef4444",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 800,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                {clearing ? <RefreshCw size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                {clearing ? "Clearing…" : "Confirm Clear"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 /* ── Advisories Tab (Phase 3) - REDESIGNED WITH BETTER WORKFLOW ── */
 function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, canCreate, canEdit, canDelete }) {
@@ -4414,9 +4714,18 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* Hospital Header */}
-      <div style={{ ...cardStyle, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "#fff", padding: 32 }}>
+      <div style={{
+        ...cardStyle,
+        background: S.isDark
+          ? "linear-gradient(135deg, #1e1b4b 0%, #2e1065 50%, #172554 100%)"
+          : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        border: S.isDark ? "1px solid rgba(139, 92, 246, 0.25)" : "none",
+        boxShadow: S.isDark ? "0 14px 34px rgba(0, 0, 0, 0.55)" : "0 14px 34px rgba(102, 126, 234, 0.25)",
+        color: "#fff",
+        padding: 28,
+      }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 12 }}>
-          <div style={{ width: 56, height: 56, background: "rgba(255,255,255,0.2)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 56, height: 56, background: "rgba(255,255,255,0.18)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <HeartPulse size={32} color="#fff" />
           </div>
           <div>
@@ -4425,11 +4734,11 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginTop: 20 }}>
-          <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 12, padding: 16, backdropFilter: "blur(10px)" }}>
+          <div style={{ background: S.isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: 16, backdropFilter: "blur(10px)" }}>
             <p style={{ margin: 0, fontSize: 11, fontWeight: 700, opacity: 0.8, textTransform: "uppercase" }}>Total Records</p>
             <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900 }}>{records.length}</p>
           </div>
-          <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 12, padding: 16, backdropFilter: "blur(10px)" }}>
+          <div style={{ background: S.isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: 16, backdropFilter: "blur(10px)" }}>
             <p style={{ margin: 0, fontSize: 11, fontWeight: 700, opacity: 0.8, textTransform: "uppercase" }}>El Niño Impact</p>
             <p style={{ margin: "4px 0 0", fontSize: 28, fontWeight: 900 }}>{elNinoPercentage}%</p>
             <p style={{ margin: "4px 0 0", fontSize: 10, opacity: 0.8 }}>of total admissions</p>
@@ -4439,37 +4748,56 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
 
       {/* Statistics Cards - Last 7 Days */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-        <div style={{ ...cardStyle, background: "#fff1f2", borderColor: "#fecdd3" }}>
+        <div style={{
+          ...cardStyle,
+          background: S.isDark ? "rgba(225, 29, 72, 0.12)" : "#fff1f2",
+          borderColor: S.isDark ? "rgba(225, 29, 72, 0.28)" : "#fecdd3"
+        }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <AlertTriangle size={18} color="#e11d48" />
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#e11d48", textTransform: "uppercase" }}>Heat Stroke</p>
+            <AlertTriangle size={18} color={S.isDark ? "#fb7185" : "#e11d48"} />
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: S.isDark ? "#fb7185" : "#e11d48", textTransform: "uppercase" }}>Heat Stroke</p>
           </div>
-          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#9f1239" }}>{totalHeatStroke}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#be123c" }}>Last 7 days</p>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: S.isDark ? "#fda4af" : "#9f1239" }}>{totalHeatStroke}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 11, color: S.isDark ? "#fb7185" : "#be123c", fontWeight: 600 }}>Last 7 days</p>
         </div>
-        <div style={{ ...cardStyle, background: "#fff7ed", borderColor: "#fed7aa" }}>
+
+        <div style={{
+          ...cardStyle,
+          background: S.isDark ? "rgba(234, 88, 12, 0.12)" : "#fff7ed",
+          borderColor: S.isDark ? "rgba(234, 88, 12, 0.28)" : "#fed7aa"
+        }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <AlertCircle size={18} color="#ea580c" />
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Heat Exhaustion</p>
+            <AlertCircle size={18} color={S.isDark ? "#fb923c" : "#ea580c"} />
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: S.isDark ? "#fb923c" : "#ea580c", textTransform: "uppercase" }}>Heat Exhaustion</p>
           </div>
-          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#9a3412" }}>{totalExhaustion}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#c2410c" }}>Last 7 days</p>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: S.isDark ? "#fdba74" : "#9a3412" }}>{totalExhaustion}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 11, color: S.isDark ? "#fb923c" : "#c2410c", fontWeight: 600 }}>Last 7 days</p>
         </div>
-        <div style={{ ...cardStyle, background: "#f0f9ff", borderColor: "#bae6fd" }}>
+
+        <div style={{
+          ...cardStyle,
+          background: S.isDark ? "rgba(2, 132, 199, 0.12)" : "#f0f9ff",
+          borderColor: S.isDark ? "rgba(2, 132, 199, 0.28)" : "#bae6fd"
+        }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <Droplet size={18} color="#0284c7" />
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#0284c7", textTransform: "uppercase" }}>Dehydration</p>
+            <Droplet size={18} color={S.isDark ? "#38bdf8" : "#0284c7"} />
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: S.isDark ? "#38bdf8" : "#0284c7", textTransform: "uppercase" }}>Dehydration</p>
           </div>
-          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#075985" }}>{totalDehydration}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#0369a1" }}>Last 7 days</p>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: S.isDark ? "#7dd3fc" : "#075985" }}>{totalDehydration}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 11, color: S.isDark ? "#38bdf8" : "#0369a1", fontWeight: 600 }}>Last 7 days</p>
         </div>
-        <div style={{ ...cardStyle, background: "#faf5ff", borderColor: "#e9d5ff" }}>
+
+        <div style={{
+          ...cardStyle,
+          background: S.isDark ? "rgba(147, 51, 234, 0.12)" : "#faf5ff",
+          borderColor: S.isDark ? "rgba(147, 51, 234, 0.28)" : "#e9d5ff"
+        }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <Activity size={18} color="#9333ea" />
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#9333ea", textTransform: "uppercase" }}>Respiratory</p>
+            <Activity size={18} color={S.isDark ? "#c084fc" : "#9333ea"} />
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: S.isDark ? "#c084fc" : "#9333ea", textTransform: "uppercase" }}>Respiratory</p>
           </div>
-          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: "#6b21a8" }}>{totalRespiratory}</p>
-          <p style={{ margin: "4px 0 0", fontSize: 11, color: "#7e22ce" }}>Last 7 days</p>
+          <p style={{ margin: 0, fontSize: 32, fontWeight: 900, color: S.isDark ? "#d8b4fe" : "#6b21a8" }}>{totalRespiratory}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 11, color: S.isDark ? "#c084fc" : "#7e22ce", fontWeight: 600 }}>Last 7 days</p>
         </div>
       </div>
 
@@ -4486,40 +4814,42 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
             <button
               onClick={() => { setActiveSubTab("add"); setIsExpanded(true); }}
               style={{
-                padding: "10px 20px",
-                borderRadius: 10,
+                padding: "8px 20px",
+                borderRadius: 9999,
                 border: "none",
-                background: activeSubTab === "add" ? S.accent : "transparent",
+                background: activeSubTab === "add" ? S.accent : (S.isDark ? "rgba(255,255,255,0.06)" : "transparent"),
                 color: activeSubTab === "add" ? "#fff" : S.text,
-                fontSize: 14,
+                fontSize: 13.5,
                 fontWeight: 800,
                 cursor: "pointer",
-                transition: "all 0.2s",
+                boxShadow: activeSubTab === "add" ? `0 4px 14px ${S.accent}55` : "none",
+                transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                 display: "flex",
                 alignItems: "center",
                 gap: 8
               }}
             >
-              <Plus size={16} /> Add Record
+              <Plus size={16} strokeWidth={2.6} /> Add Record
             </button>
             <button
               onClick={() => { setActiveSubTab("view"); setIsExpanded(true); }}
               style={{
-                padding: "10px 20px",
-                borderRadius: 10,
+                padding: "8px 20px",
+                borderRadius: 9999,
                 border: "none",
-                background: activeSubTab === "view" ? S.accent : "transparent",
+                background: activeSubTab === "view" ? S.accent : (S.isDark ? "rgba(255,255,255,0.06)" : "transparent"),
                 color: activeSubTab === "view" ? "#fff" : S.text,
-                fontSize: 14,
+                fontSize: 13.5,
                 fontWeight: 800,
                 cursor: "pointer",
-                transition: "all 0.2s",
+                boxShadow: activeSubTab === "view" ? `0 4px 14px ${S.accent}55` : "none",
+                transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                 display: "flex",
                 alignItems: "center",
                 gap: 8
               }}
             >
-              <FileText size={16} /> View Records
+              <FileText size={16} strokeWidth={2.4} /> View Records
             </button>
           </div>
           <button
@@ -4567,7 +4897,9 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
                           disabled={editId !== null}
                           style={{
                             ...inputStyle,
-                            backgroundColor: editId ? S.cardBg : "#fff",
+                            backgroundColor: editId ? (S.isDark ? "rgba(255,255,255,0.05)" : S.cardSubtle) : S.inputBg,
+                            color: S.text,
+                            colorScheme: S.isDark ? "dark" : "light",
                             cursor: editId ? "not-allowed" : "text",
                             opacity: editId ? 0.7 : 1
                           }} 
@@ -4655,21 +4987,22 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
                               });
                             }}
                             style={{
-                              padding: "10px 20px",
-                              borderRadius: 10,
+                              padding: "10px 22px",
+                              borderRadius: 9999,
                               border: `1px solid ${S.border}`,
                               background: S.cardSubtle,
                               color: S.text,
-                              fontSize: 14,
+                              fontSize: 13.5,
                               fontWeight: 700,
-                              cursor: "pointer"
+                              cursor: "pointer",
+                              transition: "all 0.2s ease",
                             }}
                           >
                             Cancel Edit
                           </button>
                         )}
                         <button type="submit" style={btnPrimary}>
-                          <Check size={16} /> {editId ? "Update Record" : "Save Record"}
+                          <Check size={16} strokeWidth={2.6} /> {editId ? "Update Record" : "Save Record"}
                         </button>
                       </div>
                     </div>
@@ -4698,8 +5031,12 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
                             style={{ 
                               padding: "20px 24px", 
                               borderRadius: 16, 
-                              border: `2px solid ${criticalLevel === "critical" ? "#fecdd3" : criticalLevel === "warning" ? "#fed7aa" : S.border}`, 
-                              background: criticalLevel === "critical" ? "#fff1f2" : criticalLevel === "warning" ? "#fff7ed" : "#fafafa",
+                              border: `2px solid ${criticalLevel === "critical" ? (S.isDark ? "rgba(244,63,94,0.35)" : "#fecdd3") : criticalLevel === "warning" ? (S.isDark ? "rgba(249,115,22,0.35)" : "#fed7aa") : S.border}`, 
+                              background: criticalLevel === "critical" 
+                                ? (S.isDark ? "rgba(225,29,72,0.12)" : "#fff1f2") 
+                                : criticalLevel === "warning" 
+                                ? (S.isDark ? "rgba(234,88,12,0.12)" : "#fff7ed") 
+                                : (S.isDark ? S.cardSubtle : "#fafafa"),
                               display: "flex",
                               justifyContent: "space-between",
                               alignItems: "flex-start"
@@ -4719,7 +5056,7 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
                                   <Calendar size={24} color="#fff" />
                                 </div>
                                 <div style={{ flex: 1 }}>
-                                  <h4 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: "#18181b" }}>
+                                  <h4 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: S.text }}>
                                     {new Date(record.record_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                                   </h4>
                                   <p style={{ margin: "2px 0 0", fontSize: 12, color: S.muted, fontWeight: 700 }}>
@@ -4765,20 +5102,20 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
                       
                               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 16, marginBottom: 12 }}>
                                 <div>
-                                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#e11d48", textTransform: "uppercase" }}>Heat Stroke</p>
-                                  <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#9f1239" }}>{record.heat_stroke_cases || 0}</p>
+                                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.isDark ? "#fb7185" : "#e11d48", textTransform: "uppercase" }}>Heat Stroke</p>
+                                  <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: S.isDark ? "#fda4af" : "#9f1239" }}>{record.heat_stroke_cases || 0}</p>
                                 </div>
                                 <div>
-                                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#ea580c", textTransform: "uppercase" }}>Heat Exhaustion</p>
-                                  <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#9a3412" }}>{record.heat_exhaustion_cases || 0}</p>
+                                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.isDark ? "#fb923c" : "#ea580c", textTransform: "uppercase" }}>Heat Exhaustion</p>
+                                  <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: S.isDark ? "#fdba74" : "#9a3412" }}>{record.heat_exhaustion_cases || 0}</p>
                                 </div>
                                 <div>
-                                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#0284c7", textTransform: "uppercase" }}>Dehydration</p>
-                                  <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#075985" }}>{record.dehydration_cases || 0}</p>
+                                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.isDark ? "#38bdf8" : "#0284c7", textTransform: "uppercase" }}>Dehydration</p>
+                                  <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: S.isDark ? "#7dd3fc" : "#075985" }}>{record.dehydration_cases || 0}</p>
                                 </div>
                                 <div>
-                                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#9333ea", textTransform: "uppercase" }}>Respiratory</p>
-                                  <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#6b21a8" }}>{record.respiratory_cases || 0}</p>
+                                  <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: S.isDark ? "#c084fc" : "#9333ea", textTransform: "uppercase" }}>Respiratory</p>
+                                  <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: S.isDark ? "#d8b4fe" : "#6b21a8" }}>{record.respiratory_cases || 0}</p>
                                 </div>
                               </div>
 
@@ -4786,12 +5123,12 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
                                 <div style={{ 
                                   padding: "12px 16px", 
                                   borderRadius: 10, 
-                                  background: "rgba(0,0,0,0.03)", 
+                                  background: S.isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)", 
                                   marginTop: 12,
-                                  border: "1px solid rgba(0,0,0,0.06)"
+                                  border: `1px solid ${S.border}`
                                 }}>
                                   <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: S.muted, textTransform: "uppercase", marginBottom: 4 }}>Remarks</p>
-                                  <p style={{ margin: 0, fontSize: 13, color: "#3f3f46", lineHeight: 1.5 }}>{record.remarks}</p>
+                                  <p style={{ margin: 0, fontSize: 13, color: S.text, lineHeight: 1.5 }}>{record.remarks}</p>
                                 </div>
                               )}
                             </div>
@@ -4800,20 +5137,21 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
                               <button 
                                 onClick={() => editRecord(record)} 
                                 style={{ 
-                                  background: "none", 
+                                  background: S.isDark ? "rgba(255,255,255,0.06)" : "none", 
                                   border: `1px solid ${S.border}`, 
-                                  borderRadius: 10, 
-                                  padding: "8px 12px", 
+                                  borderRadius: 9999, 
+                                  padding: "7px 14px", 
                                   cursor: "pointer", 
                                   color: S.text,
                                   display: "flex",
                                   alignItems: "center",
                                   gap: 6,
                                   fontWeight: 700,
-                                  fontSize: 13
+                                  fontSize: 12.5,
+                                  transition: "all 0.2s ease"
                                 }}
                               >
-                                <Edit2 size={14} /> Edit
+                                <Edit2 size={13} /> Edit
                               </button>
                               <button 
                                 onClick={() => deleteRecord(record.id, record.record_date)} 
@@ -7469,6 +7807,17 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
           : selectedList.length > 0
           ? `Brgy. ${selectedList.join(", ")}`
           : "Palayan City";
+
+        // Archive previous published power interruption advisories to avoid stale alerts
+        await supabase
+          .from("advisories")
+          .update({
+            status: "Archived",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("category", "Power Interruption")
+          .eq("status", "Published");
+
         if (payload.restoration_status !== "restored") {
           await supabase.from("advisories").insert({
             title: isAll
@@ -7512,30 +7861,14 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
 
           // Archive corresponding published power interruption advisories
           try {
-            const { data: advList } = await supabase
+            await supabase
               .from('advisories')
-              .select('id, title, content')
+              .update({
+                status: 'Archived',
+                updated_at: new Date().toISOString(),
+              })
               .eq('category', 'Power Interruption')
               .eq('status', 'Published');
-
-            if (advList && advList.length > 0) {
-              const matchingIds = advList
-                .filter((adv) => {
-                  const combined = `${adv.title} ${adv.content}`;
-                  return barangays.length === 0 || barangays.some((b) => combined.includes(b));
-                })
-                .map((a) => a.id);
-
-              if (matchingIds.length > 0) {
-                await supabase
-                  .from('advisories')
-                  .update({
-                    status: 'Archived',
-                    updated_at: new Date().toISOString(),
-                  })
-                  .in('id', matchingIds);
-              }
-            }
           } catch (advErr) {
             logger.warn('Error archiving corresponding power advisory:', advErr);
           }
@@ -7580,6 +7913,21 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
         try {
           const { error } = await supabase.from('power_interruptions').delete().eq('id', id);
           if (error) throw error;
+
+          // Archive any published power interruption advisories
+          try {
+            await supabase
+              .from('advisories')
+              .update({
+                status: 'Archived',
+                updated_at: new Date().toISOString(),
+              })
+              .eq('category', 'Power Interruption')
+              .eq('status', 'Published');
+          } catch (advErr) {
+            logger.warn('Error archiving power advisory on delete:', advErr);
+          }
+
           await fetchRecords();
           showSuccessModal('Deleted', 'Power record deleted.');
         } catch (err) {

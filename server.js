@@ -833,6 +833,67 @@ app.post('/api/advisories/sync-facebook', async (req, res) => {
     console.error('Sync FB error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
+// Clear or purge audit logs endpoint (superadmin action)
+app.post('/api/admin/clear-audit-logs', async (req, res) => {
+  try {
+    const { purgeOnlyDummy = false, specificIds = [] } = req.body || {};
+
+    if (Array.isArray(specificIds) && specificIds.length > 0) {
+      const { error } = await supabaseAdmin.from('audit_logs').delete().in('id', specificIds);
+      if (error) throw error;
+      return res.json({ success: true, deleted: specificIds.length });
+    }
+
+    if (purgeOnlyDummy) {
+      const { data: logs, error: fetchErr } = await supabaseAdmin.from('audit_logs').select('*');
+      if (fetchErr) throw fetchErr;
+
+      const dummyKeywords = [
+        'bollywood', 'jantar mantar', 'fathom', 'indonesian', 'palangka raya',
+        'nepal', 'australia', 'pupils and a teacher', 'children were buried',
+        'chinese foreign minister', 'satellite images give clues', 'saudi arabia',
+        'nay pyi taw', 'bbc is in central', 'jordon steele-john', 'gunmen firing shots',
+        'kolkata'
+      ];
+
+      const dummyIds = (logs || []).filter(d => {
+        const title = (d.new_data?.title || d.old_data?.title || d.new_data?.name || d.old_data?.name || '').toLowerCase().trim();
+        const content = (d.new_data?.content || d.old_data?.content || '').toLowerCase();
+        if (!title && !content) return true;
+        if (title === 'test' || title === 'a' || title.startsWith('test') || title.includes('probe')) return true;
+        if (title.startsWith('advisory ca208da9')) return true;
+        if (title.includes('obstructed sidewalks')) return true;
+        return dummyKeywords.some(k => title.includes(k) || content.includes(k));
+      }).map(d => d.id);
+
+      if (dummyIds.length > 0) {
+        const { error: delErr } = await supabaseAdmin.from('audit_logs').delete().in('id', dummyIds);
+        if (delErr) throw delErr;
+      }
+      return res.json({ success: true, deleted: dummyIds.length });
+    }
+
+    // Delete all audit logs
+    const { error } = await supabaseAdmin.from('audit_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (error) throw error;
+    res.json({ success: true, message: 'All audit logs cleared successfully' });
+  } catch (err) {
+    console.error('Clear audit logs error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Delete individual audit log
+app.delete('/api/admin/audit-logs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabaseAdmin.from('audit_logs').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true, id });
+  } catch (err) {
+    console.error('Delete audit log error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Start server
