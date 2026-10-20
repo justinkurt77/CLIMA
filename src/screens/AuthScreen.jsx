@@ -651,69 +651,6 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   </motion.div>
                 )}
 
-                {/* Google Sign In Button */}
-                <motion.button
-                  whileHover={{ scale: 1.02, backgroundColor: "#f4f4f5" }}
-                  whileTap={{ scale: 0.98 }}
-                  type="button"
-                  onClick={handleGoogleLogin}
-                  disabled={loading || googleLoading}
-                  style={{
-                    width: "100%",
-                    padding: "13px 16px",
-                    borderRadius: 14,
-                    background: "#ffffff",
-                    color: "#18181b",
-                    fontSize: 15,
-                    fontWeight: 700,
-                    border: "1px solid rgba(255, 255, 255, 0.25)",
-                    cursor: loading || googleLoading ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 12,
-                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35)",
-                    opacity: loading || googleLoading ? 0.7 : 1,
-                    marginBottom: 16,
-                  }}
-                >
-                  {googleLoading ? (
-                    <>
-                      <Loader2 className="spin" size={19} color="#18181b" />
-                      <span>Connecting to Google...</span>
-                    </>
-                  ) : (
-                    <>
-                      <GoogleIcon size={20} />
-                      <span>Continue with Google</span>
-                    </>
-                  )}
-                </motion.button>
-
-                {/* Modern Divider */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    margin: "18px 0 20px",
-                    gap: 12,
-                  }}
-                >
-                  <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.12)" }} />
-                  <span
-                    style={{
-                      color: "#71717a",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                    }}
-                  >
-                    or sign in with email
-                  </span>
-                  <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.12)" }} />
-                </div>
-
                 {renderInput(
                   <Mail size={20} />,
                   "email",
@@ -764,7 +701,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 <div
                   style={{
                     textAlign: "center",
-                    marginTop: 16,
+                    marginTop: 14,
                   }}
                 >
                   <span
@@ -784,6 +721,68 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     Forgot Password?
                   </span>
                 </div>
+
+                {/* Modern Divider */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    margin: "20px 0 16px",
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.12)" }} />
+                  <span
+                    style={{
+                      color: "#71717a",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    or continue with
+                  </span>
+                  <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.12)" }} />
+                </div>
+
+                {/* Google Sign In Button */}
+                <motion.button
+                  whileHover={{ scale: 1.02, backgroundColor: "#f4f4f5" }}
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading || googleLoading}
+                  style={{
+                    width: "100%",
+                    padding: "13px 16px",
+                    borderRadius: 14,
+                    background: "#ffffff",
+                    color: "#18181b",
+                    fontSize: 15,
+                    fontWeight: 700,
+                    border: "1px solid rgba(255, 255, 255, 0.25)",
+                    cursor: loading || googleLoading ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 12,
+                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35)",
+                    opacity: loading || googleLoading ? 0.7 : 1,
+                  }}
+                >
+                  {googleLoading ? (
+                    <>
+                      <Loader2 className="spin" size={19} color="#18181b" />
+                      <span>Connecting to Google...</span>
+                    </>
+                  ) : (
+                    <>
+                      <GoogleIcon size={20} />
+                      <span>Continue with Google</span>
+                    </>
+                  )}
+                </motion.button>
 
                 <div
                   style={{
