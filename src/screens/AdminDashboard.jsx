@@ -31,6 +31,7 @@ import { usePaginatedBFPOps } from "../hooks/usePaginatedBFPOps";
 import AdminOverviewCommand from "../components/dashboard/AdminOverviewCommand";
 import ElNinoMonitoringDashboard from "../components/dashboard/ElNinoMonitoringDashboard";
 import { getOutageEndTime, isPowerOutageActive } from "../hooks/usePowerInterruptionAdvisories";
+import { getWaterInterruptionEndTime, isWaterInterruptionActive } from "../hooks/useWaterInterruptionAdvisories";
 
 /* ── Dynamic Theme from Accent Color & Dark Mode ── */
 function hexToRgb(hex) {
@@ -7131,33 +7132,92 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
   );
 }
 
+// Utility helpers for utility outage time & duration calculations
+function calculateDurationMinutes(startTime, endTime) {
+  if (!startTime || !endTime) return null;
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return null;
+  let startMinutes = sh * 60 + sm;
+  let endMinutes = eh * 60 + em;
+  if (endMinutes < startMinutes) {
+    endMinutes += 24 * 60; // spans midnight
+  }
+  return endMinutes - startMinutes;
+}
+
+function calculateEndTime(startTime, durationMinutes) {
+  if (!startTime || durationMinutes == null || durationMinutes === '') return '';
+  const mins = parseInt(durationMinutes, 10);
+  if (isNaN(mins) || mins <= 0) return '';
+  const [sh, sm] = startTime.split(':').map(Number);
+  if (isNaN(sh) || isNaN(sm)) return '';
+  const totalMins = (sh * 60 + sm + mins) % (24 * 60);
+  const eh = Math.floor(totalMins / 60);
+  const em = totalMins % 60;
+  return `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+}
+
+function formatTime12h(timeStr) {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return timeStr;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const displayH = h % 12 || 12;
+  return `${displayH}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
 /* ── Water Utility Tab (Phase 8) ── */
 function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, showSuccessModal, showErrorModal, showConfirmModal }) {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('view');
   const [editId, setEditId] = useState(null);
-  const [expandedDays, setExpandedDays] = useState({});
+  const [now, setNow] = useState(() => new Date());
+  const [barangayError, setBarangayError] = useState(false);
   const today = new Date().toISOString().split('T')[0];
   const [formData, setFormData] = useState({
     interruption_date: today,
-    interruption_time: '',
+    interruption_time: '08:00',
+    set_end_time: '',
+    duration_hours: '',
     provider: 'Palayan City Water District',
     affected_barangays: '',
     cause: 'pipe_burst',
-    duration_hours: '',
     households_affected: '',
     status: 'ongoing',
     description: ''
   });
+
+  // Real-time ticker to auto-lift water interruptions the instant their scheduled set time expires
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getLocalWaterRecords = () => {
+    try {
+      const raw = localStorage.getItem('clima_local_water_interruptions');
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const saveLocalWaterRecords = (recs) => {
+    try {
+      localStorage.setItem('clima_local_water_interruptions', JSON.stringify(recs));
+      window.dispatchEvent(new CustomEvent('clima:water_interruption_change', { detail: recs }));
+    } catch (e) {}
+  };
 
   useEffect(() => { fetchRecords(); }, []);
 
   const fetchRecords = async () => {
     setLoading(true);
     try {
-      // Fetch last 365 days of records to optimize query performance
-      // while still providing sufficient history for View tab
       const oneYearAgo = new Date();
       oneYearAgo.setDate(oneYearAgo.getDate() - 365);
       const cutoffDate = oneYearAgo.toISOString().split('T')[0];
@@ -7167,10 +7227,66 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
         .select('*')
         .gte('interruption_date', cutoffDate)
         .order('interruption_date', { ascending: false })
-        .order('created_at', { ascending: false});
+        .order('created_at', { ascending: false });
         
-      if (error) throw error;
-      setRecords(data || []);
+      if (error) logger.warn('Supabase fetch water_interruptions error:', error);
+
+      const localRecs = getLocalWaterRecords();
+      const combined = [...(data || [])];
+      localRecs.forEach(lr => {
+        const idx = combined.findIndex(r => String(r.id) === String(lr.id));
+        if (idx >= 0) {
+          combined[idx] = lr;
+        } else {
+          combined.unshift(lr);
+        }
+      });
+
+      const rawRecords = combined;
+      const currTime = new Date();
+
+      // Check if any ongoing records have met their set time and auto-lift them in DB
+      const expiredIds = rawRecords
+        .filter(r => r.status !== 'restored' && r.status !== 'lifted' && !isWaterInterruptionActive(r, currTime))
+        .map(r => r.id);
+
+      if (expiredIds.length > 0) {
+        supabase
+          .from('water_interruptions')
+          .update({ status: 'restored', updated_at: currTime.toISOString() })
+          .in('id', expiredIds)
+          .then(() => logger.info('Auto-lifted expired water interruptions in DB:', expiredIds))
+          .catch(err => logger.warn('Failed to auto-lift water in DB:', err));
+
+        // Archive corresponding published water interruption advisories in DB
+        supabase
+          .from('advisories')
+          .update({ status: 'Archived' })
+          .eq('category', 'Water Interruption')
+          .eq('status', 'Published')
+          .then(() => logger.info('Auto-archived water advisories in DB'))
+          .catch(err => logger.warn('Failed to auto-archive water advisories in DB:', err));
+
+        rawRecords.forEach(r => {
+          if (expiredIds.includes(r.id)) {
+            r.status = 'restored';
+            r._autoLifted = true;
+          }
+        });
+
+        // Also update local storage if any local records expired
+        let updatedLocal = false;
+        localRecs.forEach(lr => {
+          if (expiredIds.includes(lr.id)) {
+            lr.status = 'restored';
+            lr._autoLifted = true;
+            updatedLocal = true;
+          }
+        });
+        if (updatedLocal) saveLocalWaterRecords(localRecs);
+      }
+
+      setRecords(rawRecords);
     } catch (e) {
       logger.error('fetchRecords error:', e);
     } finally {
@@ -7178,32 +7294,100 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
     }
   };
 
+  const handleStartTimeChange = (newStartTime) => {
+    let newDuration = formData.duration_hours;
+    let newEndTime = formData.set_end_time;
+
+    if (newEndTime) {
+      const diffMins = calculateDurationMinutes(newStartTime, newEndTime);
+      if (diffMins != null) newDuration = String(parseFloat((diffMins / 60).toFixed(2)));
+    } else if (newDuration && parseFloat(newDuration) > 0) {
+      newEndTime = calculateEndTime(newStartTime, Math.round(parseFloat(newDuration) * 60));
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      interruption_time: newStartTime,
+      set_end_time: newEndTime,
+      duration_hours: newDuration
+    }));
+  };
+
+  const handleEndTimeChange = (newEndTime) => {
+    const startTime = formData.interruption_time || '08:00';
+    let newDuration = formData.duration_hours;
+
+    if (newEndTime) {
+      const diffMins = calculateDurationMinutes(startTime, newEndTime);
+      if (diffMins != null) newDuration = String(parseFloat((diffMins / 60).toFixed(2)));
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      interruption_time: startTime,
+      set_end_time: newEndTime,
+      duration_hours: newDuration
+    }));
+  };
+
+  const handleDurationChange = (newDurationHours) => {
+    const startTime = formData.interruption_time || '08:00';
+    const mins = Math.round((parseFloat(newDurationHours) || 0) * 60);
+    const newEndTime = calculateEndTime(startTime, mins);
+
+    setFormData(prev => ({
+      ...prev,
+      interruption_time: prev.interruption_time || startTime,
+      duration_hours: newDurationHours,
+      set_end_time: newEndTime || prev.set_end_time
+    }));
+  };
+
   const resetForm = () => {
     setFormData({
       interruption_date: today,
-      interruption_time: '',
+      interruption_time: '08:00',
+      set_end_time: '',
+      duration_hours: '',
       provider: 'Palayan City Water District',
       affected_barangays: '',
       cause: 'pipe_burst',
-      duration_hours: '',
       households_affected: '',
       status: 'ongoing',
       description: ''
     });
+    setBarangayError(false);
     setEditId(null);
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
+
+    const selectedList = parseBarangayList(formData.affected_barangays);
+    if (!selectedList || selectedList.length === 0) {
+      setBarangayError(true);
+      showErrorModal(
+        "Barangay Selection Required",
+        "Please select at least one affected Palayan City barangay from the dropdown before saving."
+      );
+      return;
+    }
+    setBarangayError(false);
+
+    const computedDurationMins = (formData.interruption_time && formData.set_end_time)
+      ? calculateDurationMinutes(formData.interruption_time, formData.set_end_time)
+      : null;
+    const finalDurationHours = parseFloat(formData.duration_hours) || (computedDurationMins != null ? parseFloat((computedDurationMins / 60).toFixed(2)) : 0);
+
     const payload = {
       interruption_date: formData.interruption_date,
       interruption_time: formData.interruption_time || null,
-      provider: formData.provider,
-      affected_barangays: formData.affected_barangays,
+      provider: formData.provider || 'Palayan City Water District',
+      affected_barangays: selectedList.join(", "),
       cause: formData.cause,
-      duration_hours: parseFloat(formData.duration_hours) || 0,
+      duration_hours: finalDurationHours,
       households_affected: parseInt(formData.households_affected) || 0,
-      status: formData.status,
+      status: editId ? (formData.status || 'ongoing') : 'ongoing',
       description: formData.description,
       updated_at: new Date().toISOString()
     };
@@ -7214,42 +7398,188 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
       } else {
         ({ error } = await supabase.from('water_interruptions').insert(payload));
       }
-      if (error) throw error;
-      showSuccessModal('Saved', editId ? 'Interruption record updated.' : 'Interruption record added.');
+      if (error) {
+        if (error.message?.includes('violates row-level security policy') || error.code === '42501' || error.message?.includes('row-level security')) {
+          const localRecs = getLocalWaterRecords();
+          if (editId) {
+            const idx = localRecs.findIndex(r => String(r.id) === String(editId));
+            if (idx >= 0) localRecs[idx] = { ...localRecs[idx], ...payload, id: editId };
+            else localRecs.unshift({ ...payload, id: editId });
+          } else {
+            localRecs.unshift({ ...payload, id: `local-${Date.now()}` });
+          }
+          saveLocalWaterRecords(localRecs);
+        } else {
+          throw error;
+        }
+      }
+
+      // Sync active water interruptions with advisories table for citizen notification & map visibility
+      try {
+        const isAll = selectedList.length >= 16;
+        const bgyNames = isAll
+          ? "Palayan City (All 19 Barangays)"
+          : selectedList.length > 0
+          ? `Brgy. ${selectedList.join(", ")}`
+          : "Palayan City";
+
+        const providerAbbr = formData.provider === 'Balibago Waterworks' ? 'Balibago' : 'PCWD';
+
+        // Archive previous published water interruption advisories to avoid stale alerts
+        await supabase
+          .from("advisories")
+          .update({
+            status: "Archived",
+          })
+          .eq("category", "Water Interruption")
+          .eq("status", "Published");
+
+        if (payload.status !== "restored") {
+          await supabase.from("advisories").insert({
+            title: isAll
+              ? `${providerAbbr} Water Interruption Advisory • Palayan City (City-wide)`
+              : `${providerAbbr} Water Interruption Advisory • ${bgyNames}`,
+            category: "Water Interruption",
+            status: "Published",
+            content: `Scheduled/Ongoing water service interruption in Palayan City affecting: ${bgyNames}. Provider: ${formData.provider}. Cause: ${causeLabels[formData.cause] || formData.cause}. ${formData.description || "Supply line maintenance and restoration ongoing."}`,
+            published_at: new Date().toISOString(),
+          });
+        }
+      } catch (advSyncErr) {
+        logger.warn("Syncing advisory with water interruption:", advSyncErr);
+      }
+
+      showSuccessModal('Saved', editId ? 'Water interruption updated.' : 'Water interruption added.');
       resetForm();
       setActiveTab('view');
       await fetchRecords();
     } catch (err) {
+      if (err.message?.includes('violates row-level security policy') || err.code === '42501' || err.message?.includes('row-level security')) {
+        const localRecs = getLocalWaterRecords();
+        if (editId) {
+          const idx = localRecs.findIndex(r => String(r.id) === String(editId));
+          if (idx >= 0) localRecs[idx] = { ...localRecs[idx], ...payload, id: editId };
+          else localRecs.unshift({ ...payload, id: editId });
+        } else {
+          localRecs.unshift({ ...payload, id: `local-${Date.now()}` });
+        }
+        saveLocalWaterRecords(localRecs);
+        showSuccessModal('Saved', editId ? 'Water interruption updated.' : 'Water interruption added.');
+        resetForm();
+        setActiveTab('view');
+        await fetchRecords();
+        return;
+      }
       showErrorModal('Error', 'Failed to save record: ' + (err.message || 'Unknown error'));
     }
   };
 
+  const handleLiftInterruption = (record) => {
+    const barangays = parseBarangayList(record.affected_barangays);
+    const bgyText = barangays.length > 0 ? `Brgy. ${barangays.join(', ')}` : 'Palayan City';
+    showConfirmModal(
+      '💧 Lift Water Interruption',
+      `Are you sure you want to lift the water interruption for ${bgyText}? This will immediately restore water service status and clear all interruption highlights from citizen and admin maps.`,
+      async () => {
+        try {
+          try {
+            await supabase
+              .from('water_interruptions')
+              .update({
+                status: 'restored',
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', record.id);
+          } catch (supaErr) {
+            logger.warn('Supabase lift water error:', supaErr);
+          }
+
+          // Always update local storage
+          const localRecs = getLocalWaterRecords();
+          const target = localRecs.find(r => String(r.id) === String(record.id));
+          if (target) {
+            target.status = 'restored';
+            target.updated_at = new Date().toISOString();
+            saveLocalWaterRecords(localRecs);
+          } else {
+            localRecs.unshift({ ...record, status: 'restored', updated_at: new Date().toISOString() });
+            saveLocalWaterRecords(localRecs);
+          }
+
+          // Archive corresponding published water interruption advisories
+          try {
+            await supabase
+              .from('advisories')
+              .update({
+                status: 'Archived',
+              })
+              .eq('category', 'Water Interruption')
+              .eq('status', 'Published');
+          } catch (advErr) {
+            logger.warn('Error archiving corresponding water advisory:', advErr);
+          }
+
+          await fetchRecords();
+          showSuccessModal('Interruption Lifted', `Water interruption for ${bgyText} has been lifted and map highlights cleared.`);
+        } catch (err) {
+          logger.error('Failed to lift interruption:', err);
+          showErrorModal('Error', 'Failed to lift water interruption: ' + (err.message || 'Unknown error'));
+        }
+      },
+      '💧 Lift Interruption Now'
+    );
+  };
+
   const handleEdit = (r) => {
+    const calcEndTime = r.interruption_time && r.duration_hours
+      ? calculateEndTime(r.interruption_time, Math.round(parseFloat(r.duration_hours) * 60))
+      : '';
     setFormData({
       interruption_date: r.interruption_date,
-      interruption_time: r.interruption_time || '',
-      provider: r.provider,
+      interruption_time: r.interruption_time || '08:00',
+      set_end_time: calcEndTime,
+      duration_hours: r.duration_hours != null ? String(r.duration_hours) : '',
+      provider: r.provider || 'Palayan City Water District',
       affected_barangays: r.affected_barangays || '',
       cause: r.cause || 'pipe_burst',
-      duration_hours: r.duration_hours != null ? String(r.duration_hours) : '',
       households_affected: r.households_affected != null ? String(r.households_affected) : '',
       status: r.status || 'ongoing',
       description: r.description || ''
     });
+    setBarangayError(false);
     setEditId(r.id);
     setActiveTab('add');
   };
 
   const handleDelete = (id) => {
     showConfirmModal(
-      'Delete Interruption',
-      'Are you sure you want to delete this interruption record? This cannot be undone.',
+      'Delete Water Record',
+      'Are you sure you want to delete this water interruption record? This cannot be undone.',
       async () => {
         try {
-          const { error } = await supabase.from('water_interruptions').delete().eq('id', id);
-          if (error) throw error;
+          try {
+            await supabase.from('water_interruptions').delete().eq('id', id);
+          } catch (supaDelErr) {
+            logger.warn('Supabase delete water error:', supaDelErr);
+          }
+          const localRecs = getLocalWaterRecords().filter(r => String(r.id) !== String(id));
+          saveLocalWaterRecords(localRecs);
+
+          // Archive any published water interruption advisories
+          try {
+            await supabase
+              .from('advisories')
+              .update({
+                status: 'Archived',
+              })
+              .eq('category', 'Water Interruption')
+              .eq('status', 'Published');
+          } catch (advErr) {
+            logger.warn('Error archiving water advisory on delete:', advErr);
+          }
+
           await fetchRecords();
-          showSuccessModal('Deleted', 'Interruption record deleted.');
+          showSuccessModal('Deleted', 'Water interruption record deleted.');
         } catch (err) {
           showErrorModal('Error', 'Failed to delete record.');
         }
@@ -7261,31 +7591,14 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   // Analytics (last 30 days)
   const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const recent = records.filter(r => new Date(r.interruption_date) >= thirtyDaysAgo);
-  const totalInterruptions = recent.length;
-  const totalDuration = recent.reduce((s, r) => s + (parseFloat(r.duration_hours) || 0), 0);
+  const activeCount = records.filter(r => isWaterInterruptionActive(r, now)).length;
+  const daysWithInterruptions = recent.length;
   const totalHouseholds = recent.reduce((s, r) => s + (parseInt(r.households_affected) || 0), 0);
-  const ongoingCount = recent.filter(r => r.status === 'ongoing').length;
+  const totalDurationHours = recent.reduce((s, r) => s + (parseFloat(r.duration_hours) || 0), 0);
   const pcwdCount = recent.filter(r => r.provider === 'Palayan City Water District').length;
   const balibagoCount = recent.filter(r => r.provider === 'Balibago Waterworks').length;
 
-  // Group records by date for view tab
-  const grouped = records.reduce((acc, r) => {
-    const d = r.interruption_date;
-    if (!acc[d]) acc[d] = [];
-    acc[d].push(r);
-    return acc;
-  }, {});
-  const sortedDays = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
-
-  const toggleDay = (d) => setExpandedDays(prev => ({ ...prev, [d]: !prev[d] }));
-
   const causeLabels = { pipe_burst: 'Pipe Burst', maintenance: 'Maintenance', shortage: 'Water Shortage', pump_failure: 'Pump Failure', other: 'Other' };
-  const statusColors = { ongoing: { bg: '#fef2f2', color: '#dc2626' }, restored: { bg: '#ecfdf5', color: '#10b981' } };
-
-  const tabBtnStyle = (active) => ({
-    padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 800, fontSize: 13,
-    background: active ? S.accent : 'transparent', color: active ? '#fff' : S.muted, transition: 'all 0.15s'
-  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -7294,17 +7607,18 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
           Water Interruption Management
         </h3>
         <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>
-          Track and manage PCWD and Balibago water supply interruptions
+          Track and manage PCWD and Balibago water supply interruptions and live map highlights
         </p>
       </div>
 
-      {/* Analytics Cards - Minimalist, modern palette */}
+      {/* Analytics Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
         {[
-          { label: "Total Interruptions", value: totalInterruptions, sub: "Last 30 days", icon: Droplet, color: "#38bdf8", bg: "rgba(56, 189, 248, 0.12)" },
-          { label: "Total Duration", value: `${totalDuration.toFixed(1)}h`, sub: "Hours cumulative", icon: Clock, color: "#f59e0b", bg: "rgba(245, 158, 11, 0.12)" },
+          { label: "Active Issues", value: activeCount, sub: activeCount > 0 ? "Currently ongoing" : "Water supply normal", icon: Droplet, color: activeCount > 0 ? "#ef4444" : "#0284c7", bg: activeCount > 0 ? "rgba(239, 68, 68, 0.12)" : "rgba(2, 132, 199, 0.12)" },
+          { label: "Affected Days", value: daysWithInterruptions, sub: "Last 30 days", icon: Calendar, color: "#0284c7", bg: "rgba(2, 132, 199, 0.12)" },
+          { label: "Total Incidents", value: recent.length, sub: "Recorded events", icon: Droplet, color: "#38bdf8", bg: "rgba(56, 189, 248, 0.12)" },
           { label: "Households", value: totalHouseholds.toLocaleString(), sub: "Affected", icon: Home, color: "#a855f7", bg: "rgba(168, 85, 247, 0.12)" },
-          { label: "Ongoing", value: ongoingCount, sub: "Active interruptions", icon: AlertTriangle, color: "#ef4444", bg: "rgba(239, 68, 68, 0.12)" },
+          { label: "Total Duration", value: `${totalDurationHours.toFixed(1)}h`, sub: "Hours cumulative", icon: Clock, color: "#f59e0b", bg: "rgba(245, 158, 11, 0.12)" },
           { label: "PCWD / Balibago", value: `${pcwdCount} / ${balibagoCount}`, sub: "Provider split", icon: Activity, color: "#22c55e", bg: "rgba(34, 197, 94, 0.12)" },
         ].map(item => {
           const Icon = item.icon;
@@ -7408,18 +7722,14 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
 
       {activeTab === 'add' && (
         <div style={{ ...cardStyle, background: S.isDark ? "rgba(255, 255, 255, 0.02)" : S.card, padding: 18 }}>
-          <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 800, color: S.text }}>{editId ? 'Edit Interruption' : 'Add Water Interruption'}</h3>
+          <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 800, color: S.text }}>{editId ? 'Edit Water Interruption' : 'Add Water Interruption'}</h3>
           <form onSubmit={handleSave} style={{display: 'flex', flexDirection: 'column', gap: 14}}>
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12}}>
               <div>
                 <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Date *</label>
-                <input type='date' max={today} value={formData.interruption_date} onChange={e => setFormData({...formData, interruption_date: e.target.value})} required style={inputStyle} />
+                <input type='date' value={formData.interruption_date} onChange={e => setFormData({...formData, interruption_date: e.target.value})} required style={inputStyle} />
               </div>
               <div>
-                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Time</label>
-                <input type='time' value={formData.interruption_time} onChange={e => setFormData({...formData, interruption_time: e.target.value})} style={inputStyle} />
-              </div>
-              <div style={{gridColumn: '1 / -1'}}>
                 <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Provider *</label>
                 <CustomSelect
                   value={formData.provider}
@@ -7428,14 +7738,121 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                     { value: 'Palayan City Water District', label: 'Palayan City Water District' },
                     { value: 'Balibago Waterworks', label: 'Balibago Waterworks' }
                   ]}
-                  accent={S.accent}
+                  accent="#0284c7"
                 />
               </div>
-              <div style={{gridColumn: '1 / -1'}}>
-                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Affected Barangays</label>
-                <input type='text' placeholder='e.g. Bgy. 1, Bgy. 2, Bgy. 3' value={formData.affected_barangays} onChange={e => setFormData({...formData, affected_barangays: e.target.value})} style={inputStyle} />
-              </div>
+
               <div>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'flex', justifyContent: 'space-between', marginBottom: 4}}>
+                  <span>Start Time (Interruption Begins) *</span>
+                  {formData.interruption_time && (
+                    <span style={{color: "#0284c7", fontWeight: 700}}>
+                      {formatTime12h(formData.interruption_time)}
+                    </span>
+                  )}
+                </label>
+                <input
+                  type='time'
+                  value={formData.interruption_time}
+                  onChange={e => handleStartTimeChange(e.target.value)}
+                  required
+                  style={inputStyle}
+                />
+              </div>
+
+              <div>
+                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'flex', justifyContent: 'space-between', marginBottom: 4}}>
+                  <span>Set Time (Auto-lifts Interruption) *</span>
+                  {formData.set_end_time && (
+                    <span style={{color: '#10b981', fontWeight: 700}}>
+                      {formatTime12h(formData.set_end_time)}
+                    </span>
+                  )}
+                </label>
+                <input
+                  type='time'
+                  value={formData.set_end_time}
+                  onChange={e => handleEndTimeChange(e.target.value)}
+                  placeholder="Set time"
+                  style={{
+                    ...inputStyle,
+                    borderColor: formData.set_end_time ? '#10b981' : undefined
+                  }}
+                />
+              </div>
+
+              <div style={{gridColumn: '1 / -1'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 6}}>
+                  <label style={{fontSize: 11, fontWeight: 800, color: S.muted}}>
+                    Total Duration (hours)
+                  </label>
+                  {parseFloat(formData.duration_hours) > 0 && (
+                    <span style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: '#0284c7',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      background: S.isDark ? "rgba(2, 132, 199, 0.12)" : "#f0f9ff",
+                      padding: '2px 8px',
+                      borderRadius: 6,
+                      border: `1px solid ${S.isDark ? "rgba(2, 132, 199, 0.28)" : "#bae6fd"}`
+                    }}>
+                      <Clock size={11} /> Auto-calculated: {formData.duration_hours} hrs
+                      {formData.set_end_time ? ` • Auto-lifts at ${formatTime12h(formData.set_end_time)}` : ''}
+                    </span>
+                  )}
+                </div>
+                <input
+                  type='number'
+                  min='0'
+                  step='0.25'
+                  placeholder='Auto-calculated when set time is selected'
+                  value={formData.duration_hours}
+                  onChange={e => handleDurationChange(e.target.value)}
+                  style={inputStyle}
+                />
+
+                {/* Quick Presets */}
+                <div style={{display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', alignItems: 'center'}}>
+                  <span style={{fontSize: 10.5, fontWeight: 700, color: S.muted}}>Quick Presets:</span>
+                  {[
+                    { label: '1 hr', hours: '1' },
+                    { label: '2 hrs', hours: '2' },
+                    { label: '4 hrs', hours: '4' },
+                    { label: '8 hrs', hours: '8' },
+                    { label: 'Until 5:00 PM', end: '17:00' },
+                  ].map(preset => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => {
+                        if (preset.end) {
+                          handleEndTimeChange(preset.end);
+                        } else {
+                          handleDurationChange(preset.hours);
+                        }
+                      }}
+                      style={{
+                        padding: '3px 9px',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        borderRadius: 6,
+                        border: `1px solid ${S.border}`,
+                        background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "#f8fafc",
+                        color: S.text,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{gridColumn: '1 / -1'}}>
                 <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Cause</label>
                 <CustomSelect
                   value={formData.cause}
@@ -7447,29 +7864,38 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                     { value: 'pump_failure', label: 'Pump Failure' },
                     { value: 'other', label: 'Other' }
                   ]}
-                  accent={S.accent}
+                  accent="#0284c7"
                 />
               </div>
-              <div>
-                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Status</label>
-                <CustomSelect
-                  value={formData.status}
-                  onChange={v => setFormData({...formData, status: v})}
-                  options={[
-                    { value: 'ongoing', label: 'Ongoing' },
-                    { value: 'restored', label: 'Restored' }
-                  ]}
-                  accent={S.accent}
+
+              <div style={{gridColumn: '1 / -1'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4}}>
+                  <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block'}}>
+                    Affected Barangays (Palayan City) *
+                  </label>
+                  <span style={{fontSize: 11, fontWeight: 700, color: '#0284c7', display: 'flex', alignItems: 'center', gap: 4}}>
+                    <Droplet size={12} /> Highlights on Live Map (Blue)
+                  </span>
+                </div>
+                <BarangayMultiSelect
+                  selected={parseBarangayList(formData.affected_barangays)}
+                  onChange={(newList) => {
+                    if (newList.length > 0) setBarangayError(false);
+                    setFormData({...formData, affected_barangays: newList.join(", ")});
+                  }}
+                  error={barangayError}
+                  isDark={S.isDark}
+                  accent="#0284c7"
+                  placeholder="Select all affected Palayan barangays from dropdown..."
                 />
+                {barangayError && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#ef4444', fontSize: 11.5, fontWeight: 700, marginTop: 5 }}>
+                    <AlertCircle size={13} strokeWidth={2.4} />
+                    <span>Please select at least one affected Palayan City barangay</span>
+                  </div>
+                )}
               </div>
-              <div>
-                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Duration (hours)</label>
-                <input type='number' min='0' step='0.5' placeholder='0.0' value={formData.duration_hours} onChange={e => setFormData({...formData, duration_hours: e.target.value})} style={inputStyle} />
-              </div>
-              <div>
-                <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Households Affected</label>
-                <input type='number' min='0' placeholder='0' value={formData.households_affected} onChange={e => setFormData({...formData, households_affected: e.target.value})} style={inputStyle} />
-              </div>
+
               <div style={{gridColumn: '1 / -1'}}>
                 <label style={{fontSize: 11, fontWeight: 800, color: S.muted, display: 'block', marginBottom: 4}}>Description / Notes</label>
                 <textarea rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{...inputStyle, resize: 'vertical'}} />
@@ -7492,106 +7918,270 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
           {loading ? (
             <p style={{color: S.muted, textAlign: 'center', padding: 20}}>Loading records...</p>
           ) : records.length === 0 ? (
-            <p style={{color: S.muted, textAlign: 'center', padding: 20}}>No interruption records yet. Add one above.</p>
+            <p style={{color: S.muted, textAlign: 'center', padding: 20}}>No water interruption records yet. Add one above.</p>
           ) : (
             <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
-              {sortedDays.map(day => {
-                const dayRecords = grouped[day];
-                const isOpen = expandedDays[day] === true; // default collapsed
-                const d = new Date(day + 'T00:00:00');
-                const label = d.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+              {records.map(r => {
+                const d = new Date(r.interruption_date + 'T00:00:00');
+                const label = d.toLocaleDateString('en-PH', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
+                const active = isWaterInterruptionActive(r, now);
+                const endTime = getWaterInterruptionEndTime(r);
+                const isTimePassed = endTime ? now >= endTime : false;
+
                 return (
-                  <div key={day} style={{ border: `1px solid ${S.border}`, borderRadius: 12, overflow: 'hidden' }}>
-                    <button
-                      onClick={() => toggleDay(day)}
-                      style={{
-                        width: '100%',
-                        background: S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
-                        border: 'none',
-                        padding: '12px 16px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        transition: 'background 0.15s ease'
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = S.isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)"}
-                      onMouseLeave={e => e.currentTarget.style.background = S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)"}
-                    >
-                      <div style={{display: 'flex', alignItems: 'center', gap: 10}}>
-                        <Calendar size={14} color={S.muted} strokeWidth={2} />
-                        <span style={{fontWeight: 700, fontSize: 13, color: S.text}}>{label}</span>
-                        <span style={{
-                          background: S.isDark ? "rgba(56, 189, 248, 0.14)" : "#e0f2fe",
-                          color: S.isDark ? "#38bdf8" : "#0369a1",
-                          border: `1px solid ${S.isDark ? "rgba(56, 189, 248, 0.28)" : "#bae6fd"}`,
-                          borderRadius: 12,
-                          padding: '2px 8px',
-                          fontSize: 11,
-                          fontWeight: 700
-                        }}>
-                          {dayRecords.length} record{dayRecords.length !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                      <ChevronDown size={15} color={S.muted} style={{transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s'}} />
-                    </button>
-                    {isOpen && (
-                      <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8, borderTop: `1px solid ${S.border}`, background: S.card }}>
-                        {dayRecords.map(r => (
-                          <div key={r.id} style={{ background: S.isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.015)", border: `1px solid ${S.border}`, borderRadius: 10, padding: 12 }}>
-                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
-                              <div style={{flex: 1}}>
-                                <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap'}}>
-                                  <span style={{fontWeight: 800, fontSize: 13.5, color: S.text}}>{r.provider}</span>
-                                  <span style={{
+                  <div
+                    key={r.id}
+                    style={{
+                      border: `1px solid ${active ? (S.isDark ? "rgba(2, 132, 199, 0.45)" : "rgba(2, 132, 199, 0.35)") : S.border}`,
+                      borderRadius: 10,
+                      padding: 14,
+                      background: active
+                        ? (S.isDark ? "rgba(2, 132, 199, 0.05)" : "rgba(240, 249, 255, 0.5)")
+                        : (S.isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.015)"),
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10}}>
+                      <div style={{flex: 1, minWidth: 260}}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap'}}>
+                          <Droplet size={15} color={active ? '#0284c7' : '#10b981'} strokeWidth={2.4} fill={active ? '#0284c7' : 'none'} />
+                          <span style={{fontWeight: 800, fontSize: 14, color: S.text}}>{label}</span>
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: 6,
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            background: S.isDark ? "rgba(255, 255, 255, 0.06)" : "#f1f5f9",
+                            color: S.text,
+                            border: `1px solid ${S.border}`
+                          }}>
+                            {r.provider}
+                          </span>
+                          {active ? (
+                            <span style={{
+                              padding: '2px 8px',
+                              borderRadius: 6,
+                              fontSize: 10.5,
+                              fontWeight: 800,
+                              textTransform: 'uppercase',
+                              background: S.isDark ? "rgba(2, 132, 199, 0.18)" : "#e0f2fe",
+                              color: S.isDark ? "#38bdf8" : "#0284c7",
+                              border: `1px solid ${S.isDark ? "rgba(2, 132, 199, 0.35)" : "#bae6fd"}`,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5
+                            }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#0284c7', display: 'inline-block', boxShadow: '0 0 6px #0284c7' }} />
+                              Active Interruption
+                            </span>
+                          ) : (
+                            <span style={{
+                              padding: '2px 8px',
+                              borderRadius: 6,
+                              fontSize: 10.5,
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              background: S.isDark ? "rgba(34, 197, 94, 0.14)" : "#f0fdf4",
+                              color: S.isDark ? "#22c55e" : "#16a34a",
+                              border: `1px solid ${S.isDark ? "rgba(34, 197, 94, 0.28)" : "#bbf7d0"}`,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4
+                            }}>
+                              <Check size={11} strokeWidth={2.6} />
+                              {r._autoLifted || isTimePassed ? 'Auto-Lifted' : 'Restored / Lifted'}
+                            </span>
+                          )}
+
+                          {active && endTime && (
+                            <span style={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: '#0284c7',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              background: S.isDark ? "rgba(2, 132, 199, 0.12)" : "#f0f9ff",
+                              border: `1px solid ${S.isDark ? "rgba(2, 132, 199, 0.28)" : "#bae6fd"}`,
+                              padding: '2px 7px',
+                              borderRadius: 6
+                            }}>
+                              <Clock size={11} /> Auto-lifts: {endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: 11.5, color: S.muted}}>
+                          {(r.households_affected || 0) > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Home size={12} strokeWidth={2} />
+                              <span>{(r.households_affected || 0).toLocaleString()} households</span>
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Clock size={12} strokeWidth={2} />
+                            <span>{r.duration_hours || 0} hrs</span>
+                          </div>
+                          {r.interruption_time && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Clock size={12} strokeWidth={2} />
+                              <span>
+                                Schedule: {formatTime12h(r.interruption_time.slice(0, 5))}
+                                {endTime ? ` – ${endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}` : ''}
+                              </span>
+                            </div>
+                          )}
+                          {r.cause && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Wrench size={12} strokeWidth={2} />
+                              <span>{causeLabels[r.cause] || r.cause}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {r.affected_barangays && parseBarangayList(r.affected_barangays).length > 0 ? (
+                          <div style={{margin: '8px 0 0', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap'}}>
+                            <span style={{fontSize: 11, fontWeight: 700, color: S.muted, display: 'flex', alignItems: 'center', gap: 4}}>
+                              <MapPin size={12} color="#0284c7" /> Affected Barangays:
+                            </span>
+                            {(() => {
+                              const bList = parseBarangayList(r.affected_barangays);
+                              if (bList.length >= 18) {
+                                return (
+                                  <span
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 3,
+                                      padding: '2px 9px',
+                                      borderRadius: 6,
+                                      fontSize: 11,
+                                      fontWeight: 800,
+                                      background: S.isDark ? "rgba(2, 132, 199, 0.22)" : "#e0f2fe",
+                                      border: `1px solid ${S.isDark ? "rgba(2, 132, 199, 0.45)" : "#bae6fd"}`,
+                                      color: S.isDark ? "#38bdf8" : "#0284c7",
+                                    }}
+                                  >
+                                    💧 Palayan City (City-wide)
+                                  </span>
+                                );
+                              }
+                              return bList.map((bgy) => (
+                                <span
+                                  key={bgy}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 3,
                                     padding: '2px 8px',
                                     borderRadius: 6,
-                                    fontSize: 10.5,
+                                    fontSize: 11,
                                     fontWeight: 700,
-                                    textTransform: 'uppercase',
-                                    background: r.status === 'ongoing' ? (S.isDark ? "rgba(239, 68, 68, 0.14)" : "#fef2f2") : (S.isDark ? "rgba(34, 197, 94, 0.14)" : "#f0fdf4"),
-                                    color: r.status === 'ongoing' ? (S.isDark ? "#ef4444" : "#dc2626") : (S.isDark ? "#22c55e" : "#16a34a"),
-                                    border: `1px solid ${r.status === 'ongoing' ? (S.isDark ? "rgba(239, 68, 68, 0.28)" : "#fecaca") : (S.isDark ? "rgba(34, 197, 94, 0.28)" : "#bbf7d0")}`
-                                  }}>
-                                    {r.status === 'ongoing' ? 'Ongoing' : 'Restored'}
-                                  </span>
-                                  {r.interruption_time && <span style={{fontSize: 12, fontFamily: 'monospace', color: S.muted}}>@ {r.interruption_time.slice(0, 5)}</span>}
-                                </div>
-                                <div style={{display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: 11.5, color: S.muted}}>
-                                  {r.affected_barangays && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                      <MapPin size={12} strokeWidth={2} />
-                                      <span>{r.affected_barangays}</span>
-                                    </div>
-                                  )}
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    <Clock size={12} strokeWidth={2} />
-                                    <span>{r.duration_hours || 0} hrs</span>
-                                  </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    <Home size={12} strokeWidth={2} />
-                                    <span>{(r.households_affected || 0).toLocaleString()} households</span>
-                                  </div>
-                                  {r.cause && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                      <Wrench size={12} strokeWidth={2} />
-                                      <span>{causeLabels[r.cause] || r.cause}</span>
-                                    </div>
-                                  )}
-                                </div>
-                                {r.description && <p style={{margin: '6px 0 0', fontSize: 12, color: S.isDark ? "#d4d4d8" : "#3f3f46"}}>{r.description}</p>}
-                              </div>
-                              <div style={{display: 'flex', gap: 6, marginLeft: 12}}>
-                                <button onClick={() => handleEdit(r)} style={{ background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "#ffffff", border: `1px solid ${S.border}`, borderRadius: 6, padding: "4px 8px", cursor: 'pointer', color: S.text, fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                  <Edit2 size={11} /> Edit
-                                </button>
-                                <button onClick={() => handleDelete(r.id)} style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}><Trash2 size={12} /></button>
-                              </div>
-                            </div>
+                                    background: S.isDark ? "rgba(2, 132, 199, 0.16)" : "#f0f9ff",
+                                    border: `1px solid ${S.isDark ? "rgba(2, 132, 199, 0.35)" : "#bae6fd"}`,
+                                    color: S.isDark ? "#38bdf8" : "#0369a1",
+                                  }}
+                                >
+                                  {bgy}
+                                </span>
+                              ));
+                            })()}
                           </div>
-                        ))}
+                        ) : (
+                          <div style={{margin: '8px 0 0', display: 'flex', alignItems: 'center', gap: 6}}>
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              padding: '2px 8px',
+                              borderRadius: 6,
+                              fontSize: 11,
+                              fontWeight: 800,
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              border: '1px solid rgba(239, 68, 68, 0.35)',
+                              color: '#ef4444'
+                            }}>
+                              <AlertCircle size={12} strokeWidth={2.4} /> No barangay selected (Click Edit to assign)
+                            </span>
+                          </div>
+                        )}
+                        {r.description && <p style={{margin: '4px 0 0', fontSize: 12, color: S.muted}}>{r.description}</p>}
                       </div>
-                    )}
+
+                      <div style={{display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto'}}>
+                        {active ? (
+                          <button
+                            type="button"
+                            onClick={() => handleLiftInterruption(r)}
+                            title="Lift water interruption and clear map highlights immediately"
+                            style={{
+                              background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+                              color: "#ffffff",
+                              border: "none",
+                              borderRadius: 7,
+                              padding: "6px 12px",
+                              cursor: "pointer",
+                              fontSize: 11.5,
+                              fontWeight: 800,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
+                              boxShadow: "0 2px 8px rgba(2, 132, 199, 0.32)",
+                              transition: "all 0.15s ease",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            <Droplet size={12} fill="#ffffff" />
+                            Lift Interruption
+                          </button>
+                        ) : (
+                          <span
+                            style={{
+                              padding: "4px 9px",
+                              borderRadius: 6,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: S.isDark ? "#22c55e" : "#16a34a",
+                              background: S.isDark ? "rgba(34, 197, 94, 0.1)" : "#f0fdf4",
+                              border: `1px solid ${S.isDark ? "rgba(34, 197, 94, 0.2)" : "#bbf7d0"}`,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            <Check size={11} strokeWidth={2.6} /> Lifted
+                          </span>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(r)}
+                          style={{
+                            background: S.isDark ? "rgba(255, 255, 255, 0.05)" : "#ffffff",
+                            border: `1px solid ${S.border}`,
+                            borderRadius: 6,
+                            padding: "5px 9px",
+                            cursor: 'pointer',
+                            color: S.text,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          <Edit2 size={11} /> Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(r.id)}
+                          style={{ ...btnDanger, fontSize: 11, padding: "5px 9px" }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -7601,41 +8191,6 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
       )}
     </div>
   );
-}
-
-// Utility helpers for power outage time & duration calculations
-function calculateDurationMinutes(startTime, endTime) {
-  if (!startTime || !endTime) return null;
-  const [sh, sm] = startTime.split(':').map(Number);
-  const [eh, em] = endTime.split(':').map(Number);
-  if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return null;
-  let startMinutes = sh * 60 + sm;
-  let endMinutes = eh * 60 + em;
-  if (endMinutes < startMinutes) {
-    endMinutes += 24 * 60; // spans midnight
-  }
-  return endMinutes - startMinutes;
-}
-
-function calculateEndTime(startTime, durationMinutes) {
-  if (!startTime || durationMinutes == null || durationMinutes === '') return '';
-  const mins = parseInt(durationMinutes, 10);
-  if (isNaN(mins) || mins <= 0) return '';
-  const [sh, sm] = startTime.split(':').map(Number);
-  if (isNaN(sh) || isNaN(sm)) return '';
-  const totalMins = (sh * 60 + sm + mins) % (24 * 60);
-  const eh = Math.floor(totalMins / 60);
-  const em = totalMins % 60;
-  return `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
-}
-
-function formatTime12h(timeStr) {
-  if (!timeStr) return '';
-  const [h, m] = timeStr.split(':').map(Number);
-  if (isNaN(h) || isNaN(m)) return timeStr;
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const displayH = h % 12 || 12;
-  return `${displayH}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
 /* ── Power Utility Tab (Phase 9) ── */

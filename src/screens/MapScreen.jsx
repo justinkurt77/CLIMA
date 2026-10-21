@@ -38,6 +38,7 @@ import {
   Map as MapIcon,
   HeartPulse,
   Zap,
+  Droplet,
 } from "lucide-react";
 
 const ICON_MAP = {
@@ -155,6 +156,7 @@ import {
   subscribePinnedLocations,
 } from "../lib/pinnedLocationsStorage";
 import { usePowerInterruptionAdvisories } from "../hooks/usePowerInterruptionAdvisories";
+import { useWaterInterruptionAdvisories } from "../hooks/useWaterInterruptionAdvisories";
 
 function createGeoJSONCircle(center, radiusInKm, points = 64) {
   const [lng, lat] = center;
@@ -223,6 +225,15 @@ function MapScreen({
     affectedBarangays,
     hasActiveAdvisories,
   } = usePowerInterruptionAdvisories(barangayGeoJSON);
+  const [selectedWaterOutage, setSelectedWaterOutage] = useState(null);
+  const {
+    waterInterruptionGeoJSON,
+    affectedBarangayOutages: affectedWaterOutages,
+    displayWaterMarkers,
+    isWholeCity: isWholeCityWater,
+    affectedBarangays: affectedWaterBarangays,
+    hasActiveWaterAdvisories,
+  } = useWaterInterruptionAdvisories(barangayGeoJSON);
   const [selectedKloudtrackStation, setSelectedKloudtrackStation] = useState(null);
   const [activeMetric, setActiveMetric] = useState("heatIndex");
   const [weatherStations, setWeatherStations] = useState(PALAYAN_KLOUDTECH_STATIONS);
@@ -931,6 +942,34 @@ function MapScreen({
             </Source>
           )}
 
+          {/* Highlighted Barangays with Water Interruption Advisory (Blue) */}
+          {(activeLayers.waterFacilities || hasActiveWaterAdvisories) && waterInterruptionGeoJSON?.features?.length > 0 && (
+            <Source
+              id="water-outage-advisory-source"
+              type="geojson"
+              data={waterInterruptionGeoJSON}
+            >
+              <Layer
+                id="water-outage-advisory-fill"
+                type="fill"
+                paint={{
+                  "fill-color": "#0284c7",
+                  "fill-opacity": mapStyleId === "dark-v11" ? 0.32 : 0.25,
+                }}
+              />
+              <Layer
+                id="water-outage-advisory-stroke"
+                type="line"
+                paint={{
+                  "line-color": "#38bdf8",
+                  "line-width": 3,
+                  "line-opacity": 0.95,
+                  "line-dasharray": [4, 2],
+                }}
+              />
+            </Source>
+          )}
+
           {/* KloudTrack Station Coverage (3.2km IoT range) */}
           {activeLayers.stationCoverage && (
             <Source id="kloudtrack-station-coverage" type="geojson" data={stationCoverageGeoJSON}>
@@ -1442,6 +1481,79 @@ function MapScreen({
               </Marker>
             ))}
 
+          {/* Water Interruption Warning Markers (Blue) */}
+          {(activeLayers.waterFacilities || hasActiveWaterAdvisories) &&
+            displayWaterMarkers.map((outage) => (
+              <Marker
+                key={outage.isWholeCity ? "wtr-outage-marker-whole-city" : `wtr-outage-marker-${outage.name}`}
+                longitude={outage.lng}
+                latitude={outage.lat}
+                anchor="bottom"
+              >
+                <div
+                  onClick={(e) => {
+                    e.originalEvent?.stopPropagation();
+                    e.stopPropagation();
+                    setSelectedWaterOutage(outage);
+                  }}
+                  style={{
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    transform: "translateY(-4px)",
+                    zIndex: 60,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: outage.isWholeCity ? 7 : 5,
+                      padding: outage.isWholeCity ? "6px 14px" : "4px 9px",
+                      borderRadius: outage.isWholeCity ? 20 : 16,
+                      background: mapStyleId === "dark-v11" ? "rgba(24, 24, 27, 0.95)" : "#ffffff",
+                      border: "2px solid #0284c7",
+                      boxShadow: outage.isWholeCity
+                        ? "0 4px 18px rgba(2, 132, 199, 0.7), 0 0 24px rgba(2, 132, 199, 0.4)"
+                        : "0 4px 14px rgba(2, 132, 199, 0.55)",
+                      fontSize: outage.isWholeCity ? 12.5 : 11,
+                      fontWeight: 800,
+                      color: mapStyleId === "dark-v11" ? "#ffffff" : "#18181b",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <Droplet size={outage.isWholeCity ? 15 : 13} color="#0284c7" fill="#0284c7" strokeWidth={2.4} />
+                    <span>{outage.isWholeCity ? "Palayan City" : `Brgy. ${outage.name}`}</span>
+                    <span
+                      style={{
+                        padding: "1px 7px",
+                        borderRadius: 5,
+                        fontSize: 9.5,
+                        fontWeight: 800,
+                        textTransform: "uppercase",
+                        background: outage.status === "ongoing" ? "rgba(2, 132, 199, 0.22)" : "rgba(34, 197, 94, 0.22)",
+                        color: outage.status === "ongoing" ? "#38bdf8" : "#22c55e",
+                        border: `1px solid ${outage.status === "ongoing" ? "rgba(2, 132, 199, 0.45)" : "rgba(34, 197, 94, 0.45)"}`,
+                        letterSpacing: "0.3px",
+                      }}
+                    >
+                      {outage.isWholeCity ? "City-wide" : (outage.status || "Interruption")}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      width: 0,
+                      height: 0,
+                      borderLeft: outage.isWholeCity ? "6px solid transparent" : "5px solid transparent",
+                      borderRight: outage.isWholeCity ? "6px solid transparent" : "5px solid transparent",
+                      borderTop: outage.isWholeCity ? "6px solid #0284c7" : "5px solid #0284c7",
+                    }}
+                  />
+                </div>
+              </Marker>
+            ))}
+
           {/* Power Outage Advisory Popup */}
           {selectedOutage && (
             <Popup
@@ -1537,6 +1649,111 @@ function MapScreen({
                 {selectedOutage.description && (
                   <p style={{ margin: "6px 0 0", fontSize: 11.5, color: isDark ? "#d4d4d8" : "#3f3f46", lineHeight: 1.4 }}>
                     {selectedOutage.description}
+                  </p>
+                )}
+              </div>
+            </Popup>
+          )}
+
+          {/* Water Interruption Details Popup */}
+          {selectedWaterOutage && (
+            <Popup
+              longitude={selectedWaterOutage.lng}
+              latitude={selectedWaterOutage.lat}
+              anchor="top"
+              offset={14}
+              closeButton={true}
+              closeOnClick={false}
+              onClose={() => setSelectedWaterOutage(null)}
+              maxWidth="320px"
+              style={{ zIndex: 120, fontFamily: "'Nunito', sans-serif" }}
+            >
+              <div style={{ padding: "8px 6px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      background: "rgba(2, 132, 199, 0.2)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Droplet size={16} color="#0284c7" fill="#0284c7" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: isDark ? "#ffffff" : "#18181b" }}>
+                      {selectedWaterOutage.isWholeCity ? "Palayan City" : `Brgy. ${selectedWaterOutage.name}`}
+                    </div>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "#0284c7", textTransform: "uppercase", letterSpacing: 0.3 }}>
+                      {selectedWaterOutage.isWholeCity ? "City-wide Water Interruption (All 19 Barangays)" : `${selectedWaterOutage.provider || "Water Utility"} Advisory`}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 6,
+                    margin: "8px 0",
+                    padding: "8px",
+                    borderRadius: 8,
+                    background: isDark ? "rgba(255, 255, 255, 0.05)" : "#f8f9fa",
+                    fontSize: 11,
+                  }}
+                >
+                  <div>
+                    <span style={{ color: "#71717a", display: "block" }}>Status</span>
+                    <strong
+                      style={{
+                        color: selectedWaterOutage.status === "ongoing" ? "#38bdf8" : "#22c55e",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {selectedWaterOutage.status}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "#71717a", display: "block" }}>Provider</span>
+                    <strong>{selectedWaterOutage.provider || "PCWD"}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "#71717a", display: "block" }}>Date</span>
+                    <strong>{selectedWaterOutage.date || "Today"}</strong>
+                  </div>
+                  {selectedWaterOutage.startTime && (
+                    <div>
+                      <span style={{ color: "#71717a", display: "block" }}>Start Time</span>
+                      <strong>{selectedWaterOutage.startTime.slice(0, 5)}</strong>
+                    </div>
+                  )}
+                  {selectedWaterOutage.durationHours && (
+                    <div>
+                      <span style={{ color: "#71717a", display: "block" }}>Duration</span>
+                      <strong>{selectedWaterOutage.durationHours} hrs</strong>
+                    </div>
+                  )}
+                  {selectedWaterOutage.cause && (
+                    <div>
+                      <span style={{ color: "#71717a", display: "block" }}>Cause</span>
+                      <strong style={{ textTransform: "capitalize" }}>{selectedWaterOutage.cause.replace(/_/g, " ")}</strong>
+                    </div>
+                  )}
+                  {selectedWaterOutage.households && (
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <span style={{ color: "#71717a", display: "block" }}>Affected Homes</span>
+                      <strong>{Number(selectedWaterOutage.households).toLocaleString()} households</strong>
+                    </div>
+                  )}
+                </div>
+
+                {selectedWaterOutage.description && (
+                  <p style={{ margin: "6px 0 0", fontSize: 11.5, color: isDark ? "#d4d4d8" : "#3f3f46", lineHeight: 1.4 }}>
+                    {selectedWaterOutage.description}
                   </p>
                 )}
               </div>
