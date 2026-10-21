@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { logger } from "../lib/logger";
 import { useTheme } from "../context/ThemeContext";
+import { checkUserAdminRole } from "../lib/authHelpers";
 import ChangePasswordScreen from "./ChangePasswordScreen";
 import ForgotPasswordScreen from "./ForgotPasswordScreen";
 
@@ -21,11 +22,6 @@ export default function AdminLogin({ onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  const superadminsHashes = [
-    '980f32df69a604ee31a4ca3a18cfea910de69ef3c496124dc8e19f76c4fa5686',
-    'd9d660ee4195a6ac7e0b6a4a4aecbbbf9132683fa17e54383899a07b8671e484',
-    '7932b2e116b076a54f452848eaabd5857f61bd957fe8a218faf216f24c9885bb'
-  ];
 
   // Listen for password recovery links or test admin query param
   useEffect(() => {
@@ -53,74 +49,23 @@ export default function AdminLogin({ onLogin }) {
   }, [onLogin]);
 
   const checkAdminAuth = async (user) => {
-    const sha256 = async (str) => {
-      const buf = new TextEncoder().encode(str.toLowerCase().trim());
-      const hash = await crypto.subtle.digest("SHA-256", buf);
-      return Array.from(new Uint8Array(hash))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-    };
-    const userEmailHash = await sha256(user?.email || "");
-    const isHashSuper = superadminsHashes.includes(userEmailHash);
-    
-    // Check for superadmin or admin role in user_metadata
-    const userRole = user?.user_metadata?.role;
-    let isSuper = isHashSuper || userRole === 'superadmin';
-    let isAdmin = userRole === 'admin';
-    let assignedCategories = user?.user_metadata?.assigned_categories || ["All Categories"];
-
-    if (!isSuper && !isAdmin) {
-      // Check profiles table for role
-      try {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('role, assigned_categories')
-          .eq('id', user?.id)
-          .single();
-        
-        if (profileError) {
-          logger.error("Profile lookup error:", profileError);
-          throw new Error("Database error: Unable to verify admin role");
-        }
-        
-        if (profile) {
-          const role = profile.role;
-          if (role === 'admin' || role === 'superadmin') {
-            isAdmin = role === 'admin';
-            isSuper = role === 'superadmin';
-            assignedCategories = profile.assigned_categories || ["All Categories"];
-          }
-        }
-      } catch (e) {
-        logger.error("Error checking admin auth:", e);
-        throw e; // Re-throw to be caught by outer try-catch
+    try {
+      const adminData = await checkUserAdminRole(user, supabase);
+      if (adminData.isAdmin) {
+        onLogin({
+          isSuperadmin: adminData.isSuperadmin,
+          adminCategories: adminData.adminCategories,
+          adminDepartment: adminData.adminDepartment,
+          email: user?.email || adminData.email,
+        });
+      } else {
+        await supabase.auth.signOut();
+        setError("Unauthorized admin account.");
+        setStep("login");
       }
-    }
-
-    if (isSuper || isAdmin) {
-      // Resolve the admin's department from their assigned categories (optional, non-blocking)
-      let adminDepartment = null;
-      if (!isSuper && assignedCategories && !assignedCategories.includes("All Categories")) {
-        try {
-          const { data: cats, error: catError } = await supabase
-            .from("categories")
-            .select("department_id, departments(id, name, accent_color)")
-            .in("name", assignedCategories)
-            .limit(1);
-          
-          if (!catError && cats && cats.length > 0 && cats[0].departments) {
-            adminDepartment = cats[0].departments;
-          }
-        } catch (e) { 
-          logger.warn("Department lookup failed (non-critical):", e); 
-        }
-      }
-      // Login succeeds even if department lookup fails
-      onLogin({ isSuperadmin: isSuper, adminCategories: assignedCategories, adminDepartment });
-    } else {
-      await supabase.auth.signOut();
-      setError("Unauthorized admin account.");
-      setStep("login");
+    } catch (e) {
+      logger.error("Error checking admin auth:", e);
+      setError(e.message || "Failed to verify admin privileges.");
     }
   };
 

@@ -138,7 +138,7 @@ const tabVariants = {
   }
 };
 
-export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, adminCategories, adminDepartment }) {
+export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, adminCategories, adminDepartment, onViewCitizenApp }) {
   const { theme, isDark, toggleTheme } = useTheme();
   const S = makeStyles(getTheme(isSuperadmin ? null : adminDepartment, isDark), isDark);
 
@@ -712,6 +712,31 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
           <span style={{ fontSize: 11, color: S.textSecondary, fontWeight: 700 }}>
             {isSuperadmin ? "Superadmin Portal" : (adminDepartment?.name || "Operations Lead")}
           </span>
+
+          {onViewCitizenApp && (
+            <button
+              onClick={onViewCitizenApp}
+              title="Return to Citizen Portal"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "3px 10px",
+                marginLeft: 4,
+                borderRadius: 9999,
+                background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)",
+                border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.14)" : "rgba(0, 0, 0, 0.1)"}`,
+                color: S.text,
+                fontSize: 11,
+                fontWeight: 800,
+                cursor: "pointer",
+                transition: "all 0.18s ease",
+              }}
+            >
+              <Home size={12} strokeWidth={2.4} />
+              <span>Citizen View</span>
+            </button>
+          )}
         </div>
 
 
@@ -7666,7 +7691,7 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
 
       // Check if any ongoing records have met their set time and auto-lift them in DB
       const expiredIds = rawRecords
-        .filter(r => r.restoration_status !== 'restored' && !isPowerOutageActive(r, currTime))
+        .filter(r => r.restoration_status !== 'restored' && r.restoration_status !== 'lifted' && !isPowerOutageActive(r, currTime))
         .map(r => r.id);
 
       if (expiredIds.length > 0) {
@@ -7676,6 +7701,15 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
           .in('id', expiredIds)
           .then(() => logger.info('Auto-lifted expired power outages in DB:', expiredIds))
           .catch(err => logger.warn('Failed to auto-lift in DB:', err));
+
+        // Archive corresponding published power interruption advisories in DB
+        supabase
+          .from('advisories')
+          .update({ status: 'Archived' })
+          .eq('category', 'Power Interruption')
+          .eq('status', 'Published')
+          .then(() => logger.info('Auto-archived power advisories in DB'))
+          .catch(err => logger.warn('Failed to auto-archive advisories in DB:', err));
 
         rawRecords.forEach(r => {
           if (expiredIds.includes(r.id)) {
@@ -7813,7 +7847,6 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
           .from("advisories")
           .update({
             status: "Archived",
-            updated_at: new Date().toISOString(),
           })
           .eq("category", "Power Interruption")
           .eq("status", "Published");
@@ -7865,7 +7898,6 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
               .from('advisories')
               .update({
                 status: 'Archived',
-                updated_at: new Date().toISOString(),
               })
               .eq('category', 'Power Interruption')
               .eq('status', 'Published');
@@ -7920,7 +7952,6 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
               .from('advisories')
               .update({
                 status: 'Archived',
-                updated_at: new Date().toISOString(),
               })
               .eq('category', 'Power Interruption')
               .eq('status', 'Published');

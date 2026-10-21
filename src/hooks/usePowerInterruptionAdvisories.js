@@ -33,7 +33,13 @@ export function getOutageEndTime(record) {
  */
 export function isPowerOutageActive(record, now = new Date()) {
   if (!record) return false;
-  if (record.restoration_status === "restored") return false;
+  if (
+    record.restoration_status === "restored" ||
+    record.restoration_status === "lifted" ||
+    record._autoLifted
+  ) {
+    return false;
+  }
 
   const endTime = getOutageEndTime(record);
   if (endTime && now >= endTime) {
@@ -79,11 +85,12 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
     try {
       setLoading(true);
 
-      // 1. Fetch power interruptions (exclude records explicitly marked 'restored')
+      // 1. Fetch power interruptions (exclude records explicitly marked 'restored' or 'lifted')
       const { data: pwrData, error: pwrError } = await supabase
         .from("power_interruptions")
         .select("*")
         .neq("restoration_status", "restored")
+        .neq("restoration_status", "lifted")
         .order("interruption_date", { ascending: false });
 
       if (pwrError) logger.warn("Fetch power_interruptions:", pwrError);
@@ -91,7 +98,7 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
       // Check if any ongoing records have met their set time and auto-lift them in DB
       const now = new Date();
       const expiredIds = (pwrData || [])
-        .filter((r) => r.restoration_status !== "restored" && !isPowerOutageActive(r, now))
+        .filter((r) => r.restoration_status !== "restored" && r.restoration_status !== "lifted" && !isPowerOutageActive(r, now))
         .map((r) => r.id);
 
       if (expiredIds.length > 0) {
@@ -101,6 +108,15 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
           .in("id", expiredIds)
           .then(() => logger.info("Auto-lifted expired power interruptions in DB:", expiredIds))
           .catch((e) => logger.warn("Failed to auto-lift in DB:", e));
+
+        // Archive corresponding published power interruption advisories in DB
+        supabase
+          .from("advisories")
+          .update({ status: "Archived" })
+          .eq("category", "Power Interruption")
+          .eq("status", "Published")
+          .then(() => logger.info("Auto-archived power advisories in DB"))
+          .catch((e) => logger.warn("Failed to auto-archive advisories in DB:", e));
       }
 
       // 2. Fetch active Power Interruption advisories
@@ -232,10 +248,20 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
 
     // From advisories table - only active, non-restored alerts
     advisoryRecords.forEach((advisory) => {
-      // If active power interruptions exist, skip NEECO sync advisories so powerRecords remains the source of truth
+      // NEECO power interruption records in power_interruptions are the sole authority for NEECO outages.
+      // NEECO sync advisories (created for notification ticker / announcements) must NEVER create map highlights independently.
       const isNeecoSync = (advisory.title || "").includes("NEECO Power Interruption Advisory");
-      if (hasActivePowerRecords && isNeecoSync) {
+      if (isNeecoSync) {
         return;
+      }
+
+      // Check if advisory is expired (e.g. published more than 24 hours ago)
+      const pubDate = advisory.published_at || advisory.created_at;
+      if (pubDate) {
+        const publishedTime = new Date(pubDate).getTime();
+        if (now.getTime() - publishedTime > 24 * 60 * 60 * 1000) {
+          return;
+        }
       }
 
       const text = `${advisory.title || ""} ${advisory.content || ""}`.toLowerCase();
@@ -316,6 +342,12 @@ export function usePowerInterruptionAdvisories(barangayGeoJSON = null) {
     const hasActivePowerRecords = powerRecords.some((r) => isPowerOutageActive(r, now));
     if (!hasActivePowerRecords) {
       const hasExplicitWholeCityAdvisory = advisoryRecords.some((adv) => {
+        const isNeecoSync = (adv.title || "").includes("NEECO Power Interruption Advisory");
+        if (isNeecoSync) return false;
+        const pubDate = adv.published_at || adv.created_at;
+        if (pubDate && now.getTime() - new Date(pubDate).getTime() > 24 * 60 * 60 * 1000) {
+          return false;
+        }
         const text = `${adv.title || ""} ${adv.content || ""}`.toLowerCase();
         if (text.includes("restored") || text.includes("lifted") || text.includes("cleared")) return false;
         return (

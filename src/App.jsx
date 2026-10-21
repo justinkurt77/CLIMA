@@ -31,7 +31,7 @@ const LegalScreen = lazy(() => import("./screens/LegalScreen"));
 const NotFoundScreen = lazy(() => import("./screens/NotFoundScreen"));
 
 import { supabase } from "./lib/supabase";
-import { syncGoogleUserProfile, getUserProfile } from "./lib/authHelpers";
+import { syncGoogleUserProfile, getUserProfile, checkUserAdminRole } from "./lib/authHelpers";
 
 const GREEN = "#2d8119";
 function Toast({ message, onDone }) {
@@ -162,58 +162,43 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Restore admin session on reload
+  // Synchronize admin authentication & permissions across both citizen and admin views
   useEffect(() => {
-    if (isAdminAuthenticated || !isAdminView) return;
+    let isCancelled = false;
 
-    const restoreAdmin = async () => {
+    const evaluateAdmin = async (user) => {
       try {
-        const { data: { session: current } } = await supabase.auth.getSession();
-        if (!current?.user) return;
-
-        const user = current.user;
-        const sha256 = async (str) => {
-          const buf = new TextEncoder().encode(str.toLowerCase().trim());
-          const hash = await crypto.subtle.digest("SHA-256", buf);
-          return Array.from(new Uint8Array(hash))
-            .map((b) => b.toString(16).padStart(2, "0"))
-            .join("");
-        };
-        const userEmailHash = await sha256(user.email || "");
-        const superadminsHashes = [
-          '980f32df69a604ee31a4ca3a18cfea910de69ef3c496124dc8e19f76c4fa5686',
-          'd9d660ee4195a6ac7e0b6a4a4aecbbbf9132683fa17e54383899a07b8671e484',
-          '7932b2e116b076a54f452848eaabd5857f61bd957fe8a218faf216f24c9885bb'
-        ];
-        const isSuper = superadminsHashes.includes(userEmailHash) || user.user_metadata?.role === 'superadmin';
-        let isAdmin = user.user_metadata?.role === 'admin' || isSuper;
-        let assignedCategories = user.user_metadata?.assigned_categories || ["All Categories"];
-
-        if (!isSuper && !isAdmin) return; // not an admin, don't restore
-
-        let adminDepartment = null;
-        if (!isSuper && assignedCategories && !assignedCategories.includes("All Categories")) {
-          try {
-            const { data: cats } = await supabase
-              .from("categories")
-              .select("department_id, departments(id, name, accent_color)")
-              .in("name", assignedCategories)
-              .limit(1);
-            if (cats?.length > 0 && cats[0].departments) {
-              adminDepartment = cats[0].departments;
-            }
-          } catch (e) { logger.error("Dept lookup failed", e); }
+        const adminCheck = await checkUserAdminRole(user, supabase);
+        if (isCancelled) return;
+        if (adminCheck.isAdmin) {
+          setIsAdminAuthenticated(true);
+          setAdminUser(adminCheck);
+        } else {
+          setIsAdminAuthenticated(false);
+          setAdminUser(null);
         }
-
-        setIsAdminAuthenticated(true);
-        setAdminUser({ isSuperadmin: isSuper, adminCategories: assignedCategories, adminDepartment });
       } catch (e) {
-        logger.error("Admin session restore failed", e);
+        logger.error("Admin role evaluation failed", e);
       }
     };
 
-    restoreAdmin();
-  }, [isAdminView]);
+    if (session?.user) {
+      evaluateAdmin(session.user);
+    } else {
+      supabase.auth.getSession().then(({ data: { session: current } }) => {
+        if (isCancelled) return;
+        if (current?.user) {
+          evaluateAdmin(current.user);
+        } else {
+          evaluateAdmin(null);
+        }
+      });
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [session, isAdminView]);
 
   // Fetch reports from Supabase when session changes
   useEffect(() => {
@@ -358,6 +343,9 @@ function App() {
                 userLocation={userLocation}
                 setActiveScreen={handleTabChange}
                 refreshTrigger={refreshTrigger}
+                isAdmin={isAdminAuthenticated}
+                isSuperadmin={adminUser?.isSuperadmin}
+                adminUser={adminUser}
               />
             )}
           </motion.div>
@@ -441,6 +429,9 @@ function App() {
                 session={session}
                 setActiveScreen={handleTabChange}
                 isLoadingReports={isLoadingReports}
+                isAdmin={isAdminAuthenticated}
+                isSuperadmin={adminUser?.isSuperadmin}
+                adminUser={adminUser}
               />
             )}
           </motion.div>
@@ -561,6 +552,7 @@ function App() {
                       setAdminUser(null);
                       supabase.auth.signOut();
                     }}
+                    onViewCitizenApp={() => handleTabChange("home")}
                     onMapOverview={() => setActiveScreen("admin-map")}
                     isSuperadmin={adminUser?.isSuperadmin}
                     adminCategories={adminUser?.adminCategories}
@@ -614,6 +606,7 @@ function App() {
                 ) : (
                   <AdminMapScreen
                     onBackToDashboard={() => setActiveScreen("admin")}
+                    onViewCitizenApp={() => handleTabChange("home")}
                     onLogout={() => {
                       setIsAdminAuthenticated(false);
                       setAdminUser(null);
@@ -802,6 +795,9 @@ function App() {
           activeScreen={activeScreen}
           setActiveScreen={handleTabChange}
           session={session}
+          isAdmin={isAdminAuthenticated}
+          isSuperadmin={adminUser?.isSuperadmin}
+          adminUser={adminUser}
           onOpenModal={openModal}
           onRefresh={() => {
             setLoadingTab(activeScreen);

@@ -14,6 +14,7 @@ import {
   TreePine,
   CarFront,
   ClipboardList,
+  Home,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { logger } from "../lib/logger";
@@ -67,6 +68,7 @@ const REPORT_REFRESH_MS = 30 * 1000;
 export default function AdminMapScreen({
   onLogout,
   onBackToDashboard,
+  onViewCitizenApp,
   isSuperadmin,
   adminCategories,
   adminDepartment,
@@ -183,6 +185,28 @@ export default function AdminMapScreen({
             >
               <ArrowLeft size={13} />
               <span>Dashboard</span>
+            </button>
+          )}
+          {onViewCitizenApp && (
+            <button
+              onClick={onViewCitizenApp}
+              title="Return to Citizen Portal"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "3px 10px",
+                borderRadius: 9999,
+                background: "rgba(45, 129, 25, 0.15)",
+                border: "1px solid rgba(45, 129, 25, 0.35)",
+                color: Z[900],
+                fontSize: 11,
+                fontWeight: 800,
+                cursor: "pointer",
+              }}
+            >
+              <Home size={13} />
+              <span>Citizen View</span>
             </button>
           )}
           <span style={{ fontSize: 13, fontWeight: 900, color: Z[950], letterSpacing: "-0.01em" }}>

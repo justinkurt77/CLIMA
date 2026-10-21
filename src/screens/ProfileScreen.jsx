@@ -11,6 +11,7 @@ import {
   Check,
   Moon,
   Sun,
+  Shield,
 } from "lucide-react";
 import MyReportsScreen from "./MyReportsScreen";
 import AuthScreen from "./AuthScreen";
@@ -28,9 +29,32 @@ const menuItems = [
   { id: "support", Icon: HelpCircle, label: "Help & Support" },
 ];
 
-function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiveScreen, isLoadingReports = false }) {
+function ProfileScreen({
+  userReports: allReports,
+  onOpenModal,
+  session,
+  setActiveScreen,
+  isLoadingReports = false,
+  isAdmin = false,
+  isSuperadmin = false,
+  adminUser = null,
+}) {
   const { theme, toggleTheme, isDark } = useTheme();
   const userProfile = getUserProfile(session?.user);
+
+  const isUserAdmin = Boolean(
+    isAdmin ||
+    isSuperadmin ||
+    adminUser?.isAdmin ||
+    session?.user?.user_metadata?.role === "admin" ||
+    session?.user?.user_metadata?.role === "superadmin" ||
+    session?.user?.user_metadata?.role?.includes("admin")
+  );
+  const isUserSuperadmin = Boolean(
+    isSuperadmin ||
+    adminUser?.isSuperadmin ||
+    session?.user?.user_metadata?.role === "superadmin"
+  );
 
   // Filter for the user's personal reports to show in "My Reports" and stats
   const userReports = (allReports || []).filter((r) => {
@@ -847,9 +871,151 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                 </div>
               </div>
 
+              {/* Prominent Admin Console Quick Launch Card */}
+              {isUserAdmin && (
+                <div style={{ padding: "0 20px 14px 20px" }}>
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    id="profile-admin-portal-card-btn"
+                    onClick={() => setActiveScreen && setActiveScreen("admin")}
+                    style={{
+                      width: "100%",
+                      padding: "16px 18px",
+                      borderRadius: 22,
+                      background: isDark
+                        ? "linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(217, 119, 6, 0.08))"
+                        : "linear-gradient(135deg, #fffbeb, #fef3c7)",
+                      border: "1.5px solid rgba(245, 158, 11, 0.4)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 14,
+                      cursor: "pointer",
+                      textAlign: "left",
+                      boxShadow: isDark
+                        ? "0 8px 24px rgba(0, 0, 0, 0.35)"
+                        : "0 8px 20px rgba(245, 158, 11, 0.15)",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <div
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 14,
+                          background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                          color: "#ffffff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          boxShadow: "0 4px 14px rgba(245, 158, 11, 0.4)",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Shield size={22} strokeWidth={2.4} />
+                      </div>
+                      <div>
+                        <div
+                          style={{
+                            fontSize: 15,
+                            fontWeight: 800,
+                            color: isDark ? "#fbbf24" : "#92400e",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          {isUserSuperadmin ? "Superadmin Console" : "Admin Command"}
+                          <span
+                            style={{
+                              fontSize: 9,
+                              fontWeight: 900,
+                              padding: "2px 7px",
+                              borderRadius: 9999,
+                              background: isDark ? "rgba(245, 158, 11, 0.25)" : "rgba(245, 158, 11, 0.2)",
+                              border: "1px solid rgba(245, 158, 11, 0.4)",
+                              color: isDark ? "#fbbf24" : "#b45309",
+                              letterSpacing: "0.06em",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {isUserSuperadmin ? "SUPERADMIN" : "ADMIN"}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: isDark ? "#d1d5db" : "#78350f",
+                            marginTop: 2,
+                          }}
+                        >
+                          Access CLIMA City Command & Incident Operations
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        color: isDark ? "#fbbf24" : "#b45309",
+                        fontWeight: 800,
+                        fontSize: 13,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <ChevronRight size={18} strokeWidth={2.5} />
+                    </div>
+                  </motion.button>
+                </div>
+              )}
+
               {/* Light green body with pill menu items */}
               <div className="profile-body-green">
                 <div className="menu-list-green">
+                  {/* Admin Console Menu Item */}
+                  {isUserAdmin && (
+                    <button
+                      id="profile-admin-menu-item-btn"
+                      className="menu-item-green"
+                      onClick={() => setActiveScreen && setActiveScreen("admin")}
+                      style={{
+                        borderColor: "rgba(245, 158, 11, 0.35)",
+                        background: isDark ? "rgba(245, 158, 11, 0.08)" : "rgba(245, 158, 11, 0.05)",
+                      }}
+                    >
+                      <span className="menu-icon-green" style={{ color: "#f59e0b" }}>
+                        <Shield size={20} strokeWidth={2.4} />
+                      </span>
+                      <span className="menu-text-green" style={{ fontWeight: 800 }}>
+                        {isUserSuperadmin ? "Superadmin Console" : "Admin Portal"}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 800,
+                          color: "#f59e0b",
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                          background: "rgba(245, 158, 11, 0.15)",
+                          border: "1px solid rgba(245, 158, 11, 0.3)",
+                          marginRight: 6,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {isUserSuperadmin ? "Superadmin" : "Admin"}
+                      </span>
+                      <ChevronRight
+                        size={18}
+                        strokeWidth={2}
+                        className="menu-arrow-green"
+                      />
+                    </button>
+                  )}
                   {menuItems.map(({ id, Icon, label }) => (
                     <button
                       key={id}

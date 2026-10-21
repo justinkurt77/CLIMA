@@ -26,6 +26,7 @@ import {
   ArrowRight,
   Activity,
   Loader2,
+  Shield,
 } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 import { useTheme } from "../context/ThemeContext";
@@ -200,8 +201,25 @@ export default function HomeScreen({
   userLocation,
   setActiveScreen,
   refreshTrigger = 0,
+  isAdmin = false,
+  isSuperadmin = false,
+  adminUser = null,
 }) {
   const { isDark, toggleTheme } = useTheme();
+
+  const isUserAdmin = Boolean(
+    isAdmin ||
+    isSuperadmin ||
+    adminUser?.isAdmin ||
+    session?.user?.user_metadata?.role === "admin" ||
+    session?.user?.user_metadata?.role === "superadmin" ||
+    session?.user?.user_metadata?.role?.includes("admin")
+  );
+  const isUserSuperadmin = Boolean(
+    isSuperadmin ||
+    adminUser?.isSuperadmin ||
+    session?.user?.user_metadata?.role === "superadmin"
+  );
   const rootRef = useRef(null);
   const headerRef = useRef(null);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -929,6 +947,35 @@ export default function HomeScreen({
               </button>
             </div>
 
+            {/* Admin Console Shortcut Pill Button */}
+            {isUserAdmin && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setActiveScreen("admin")}
+                className="desktop-admin-badge-btn"
+                title={isUserSuperadmin ? "Go to Superadmin Console" : "Go to Admin Console"}
+                id="home-desktop-admin-btn"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  padding: "8px 14px",
+                  borderRadius: 14,
+                  background: isDark ? "rgba(245, 158, 11, 0.14)" : "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.38)",
+                  color: "#f59e0b",
+                  fontSize: 13,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(245, 158, 11, 0.15)",
+                }}
+              >
+                <Shield size={16} strokeWidth={2.4} />
+                <span>{isUserSuperadmin ? "Superadmin" : "Admin Console"}</span>
+              </motion.button>
+            )}
+
             {/* Download / Report Action Pill Button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -1394,8 +1441,47 @@ export default function HomeScreen({
             </p>
           </div>
 
-          {/* Action Controls: Theme Toggle & Report Button */}
+          {/* Action Controls: Theme Toggle, Admin Button & Report Button */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            {/* Mobile Admin Console Button */}
+            {isUserAdmin && (
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={() => setActiveScreen("admin")}
+                id="home-mobile-admin-btn"
+                title={isUserSuperadmin ? "Superadmin Console" : "Admin Console"}
+                aria-label="Admin Console"
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "50%",
+                  background: isDark ? "rgba(245, 158, 11, 0.18)" : "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.4)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "#f59e0b",
+                  boxShadow: "0 2px 8px rgba(245, 158, 11, 0.18)",
+                  position: "relative",
+                }}
+              >
+                <Shield size={18} strokeWidth={2.4} />
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 2,
+                    right: 2,
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: "#f59e0b",
+                    boxShadow: "0 0 6px #f59e0b",
+                  }}
+                />
+              </motion.button>
+            )}
+
             <motion.button
               whileTap={{ scale: 0.92 }}
               onClick={toggleTheme}
