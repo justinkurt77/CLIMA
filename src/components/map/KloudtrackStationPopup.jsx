@@ -153,7 +153,7 @@ export function KloudtrackStationPopup({
           ? "0 20px 50px rgba(0, 0, 0, 0.75)"
           : "0 20px 40px rgba(0, 0, 0, 0.15)",
         overflow: "hidden",
-        fontFamily: "Nunito, sans-serif",
+        fontFamily: "'Nohemi', sans-serif",
       }}
     >
       {/* ── TOP HEADER ── */}

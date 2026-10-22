@@ -145,7 +145,7 @@ export function LayerControls({
           color: isDark ? "#ffffff" : "#09090b",
           fontWeight: 600,
           fontSize: 14,
-          fontFamily: "Nunito, sans-serif",
+          fontFamily: "'Nohemi', sans-serif",
           whiteSpace: "nowrap",
         }}
       >

@@ -194,7 +194,7 @@ export default function AdminLogin({ onLogin }) {
       alignItems: "center",
       justifyContent: "center",
       background: isDark ? "#090a0f" : "#f8f9fa",
-      fontFamily: "var(--font-sans, -apple-system, BlinkMacSystemFont, 'Inter', 'Outfit', sans-serif)",
+      fontFamily: "var(--font-sans, 'Nohemi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif)",
       position: "fixed",
       inset: 0,
       zIndex: 9999,

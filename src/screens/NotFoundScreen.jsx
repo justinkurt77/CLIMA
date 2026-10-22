@@ -26,7 +26,7 @@ export default function NotFoundScreen({ onNavigate }) {
           justifyContent: 'center',
           background: bgColor,
           padding: '20px',
-          fontFamily: "'Nunito', -apple-system, sans-serif",
+          fontFamily: "'Nohemi', -apple-system, sans-serif",
         }}
       >
         <div
@@ -104,7 +104,7 @@ export default function NotFoundScreen({ onNavigate }) {
               color: accentColor,
               lineHeight: 1,
               marginBottom: 16,
-              fontFamily: "'Baloo 2', cursive",
+              fontFamily: "'Nohemi', sans-serif",
             }}
           >
             404
@@ -117,7 +117,7 @@ export default function NotFoundScreen({ onNavigate }) {
               fontWeight: 800,
               color: textPrimary,
               marginBottom: 12,
-              fontFamily: "'Baloo 2', cursive",
+              fontFamily: "'Nohemi', sans-serif",
             }}
           >
             Page Not Found

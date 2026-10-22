@@ -132,7 +132,7 @@ export default function EmergencyContactsModal({ isOpen, onClose }) {
                     fontWeight: 800,
                     color: 'var(--text-primary)',
                     margin: 0,
-                    fontFamily: "'Baloo 2', cursive",
+                    fontFamily: "'Nohemi', sans-serif",
                   }}
                 >
                   Emergency Hotlines

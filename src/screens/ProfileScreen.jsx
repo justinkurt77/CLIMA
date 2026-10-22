@@ -329,7 +329,7 @@ function ProfileScreen({
                 >
                   <h2
                     style={{
-                      fontFamily: "Baloo 2, cursive",
+                      fontFamily: "'Nohemi', sans-serif",
                       fontSize: 24,
                       fontWeight: 800,
                       color: "var(--text-primary)",
@@ -665,7 +665,7 @@ function ProfileScreen({
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                   <h2
                     style={{
-                      fontFamily: "Baloo 2, cursive",
+                      fontFamily: "'Nohemi', sans-serif",
                       fontSize: 24,
                       fontWeight: 800,
                       color: "var(--text-primary)",

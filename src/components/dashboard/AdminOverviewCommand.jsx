@@ -51,6 +51,7 @@ import {
 } from "../../lib/pinnedLocationsStorage";
 import PinLocationModal from "../map/PinLocationModal";
 import CustomPinMarker from "../map/CustomPinMarker";
+import SecurityConfirmModal from "../ui/SecurityConfirmModal";
 import { usePowerInterruptionAdvisories } from "../../hooks/usePowerInterruptionAdvisories";
 import { useWaterInterruptionAdvisories } from "../../hooks/useWaterInterruptionAdvisories";
 
@@ -128,7 +129,7 @@ export default function AdminOverviewCommand({
   isSuperadmin,
   adminDepartment,
   currentUser,
-  leftInset = 82,
+  leftInset = 98,
 }) {
   const Z = useMemo(() => getZTokens(isDark), [isDark]);
   const now = useNow();
@@ -193,6 +194,15 @@ export default function AdminOverviewCommand({
     (e) => {
       setMapLoaded(true);
       const map = e.target;
+      try {
+        map.resize();
+        setTimeout(() => {
+          try {
+            map.resize();
+          } catch (_) {}
+        }, 300);
+      } catch (_) {}
+
       if (mapStyleId === "streets-v12") {
         const roadColor = "#c8d4e0";
         const roadCasing = "#dce6ef";
@@ -224,6 +234,32 @@ export default function AdminOverviewCommand({
     },
     [mapStyleId],
   );
+
+  // Keep Mapbox canvas sized to 100% of the screen container and track layout shifts
+  useEffect(() => {
+    const handleResize = () => {
+      if (mapRef.current) {
+        mapRef.current.resize();
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    const t1 = setTimeout(handleResize, 150);
+    const t2 = setTimeout(handleResize, 500);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.resize();
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [isInspectorOpen]);
 
   /* ── Reports ── */
   const mappedReports = useMemo(() => reports.filter(hasCoords), [reports]);
@@ -260,7 +296,7 @@ export default function AdminOverviewCommand({
         isLive: true,
         heroLabel: "Heat Index",
         hero: liveStation.heatIndex,
-        risk: getHeatRisk(liveStation.heatIndex),
+        risk: getHeatRisk(liveStation.heatIndex, isDark),
         temp: liveStation.temp,
         humidity: liveStation.humidity,
         wind: liveStation.wind,
@@ -275,7 +311,7 @@ export default function AdminOverviewCommand({
           isLive: false,
           heroLabel: "Feels-like",
           hero: cur.apparent_temperature,
-          risk: getHeatRisk(cur.apparent_temperature),
+          risk: getHeatRisk(cur.apparent_temperature, isDark),
           temp: cur.temperature_2m,
           humidity: cur.relative_humidity_2m,
           wind: cur.wind_speed_10m,
@@ -388,6 +424,15 @@ export default function AdminOverviewCommand({
     }
   }, []);
 
+  const [securityModalConfig, setSecurityModalConfig] = useState({
+    isOpen: false,
+    title: "Delete Pinned Facility",
+    message: "",
+    itemName: "",
+    confirmText: "Verify & Delete",
+    onConfirmed: null,
+  });
+
   const handleDeletePin = useCallback(
     (pinId) => {
       const updated = deletePinnedLocation(pinId);
@@ -397,6 +442,24 @@ export default function AdminOverviewCommand({
       }
     },
     [selectedPin],
+  );
+
+  const requestDeletePin = useCallback(
+    (pinId, pinName = "") => {
+      const pin = pinnedLocations.find((p) => p.id === pinId);
+      const name = pinName || pin?.name || "Facility Pin";
+      setSecurityModalConfig({
+        isOpen: true,
+        title: "Delete Pinned Facility",
+        message: `Are you sure you want to delete "${name}"? This action permanently removes the pin from the operational map. Please enter your admin password to authenticate.`,
+        itemName: name,
+        confirmText: "Verify & Delete",
+        onConfirmed: () => {
+          handleDeletePin(pinId);
+        },
+      });
+    },
+    [handleDeletePin, pinnedLocations],
   );
 
   const filteredPins = useMemo(() => {
@@ -443,7 +506,7 @@ export default function AdminOverviewCommand({
         overflow: "hidden",
         background: Z[50],
         color: Z[950],
-        fontFamily: "'Nunito', sans-serif",
+        fontFamily: "'Nohemi', sans-serif",
       }}
     >
       <style>{`
@@ -477,6 +540,8 @@ export default function AdminOverviewCommand({
             mapStyle={`mapbox://styles/mapbox/${mapStyleId}`}
             attributionControl={false}
             antialias={false}
+            trackResize={true}
+            fadeDuration={0}
             onLoad={handleMapLoad}
             onClick={handleMapClick}
           >
@@ -721,7 +786,7 @@ export default function AdminOverviewCommand({
 
             {/* KloudTech IoT Weather Stations */}
             {stationLabelPositions.map((s) => {
-              const risk = getHeatRisk(stations.isLive ? s.heatIndex : null);
+              const risk = getHeatRisk(stations.isLive ? s.heatIndex : null, isDark);
               return (
                 <Marker key={s.id} longitude={s.location[0]} latitude={s.location[1]} anchor="center">
                   <div
@@ -833,7 +898,7 @@ export default function AdminOverviewCommand({
                 closeOnClick={false}
                 maxWidth="280px"
               >
-                <div style={{ fontFamily: "'Nunito', sans-serif", color: "#09090b", minWidth: 200 }}>
+                <div style={{ fontFamily: "'Nohemi', sans-serif", color: "#09090b", minWidth: 200 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
                     <span
                       style={{
@@ -847,18 +912,39 @@ export default function AdminOverviewCommand({
                     >
                       {PIN_CATEGORIES[selectedPin.category]?.label || selectedPin.category}
                     </span>
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 800,
-                        padding: "2px 6px",
-                        borderRadius: 6,
-                        background: PIN_STATUSES[selectedPin.status]?.bg || "rgba(34, 197, 94, 0.15)",
-                        color: PIN_STATUSES[selectedPin.status]?.color || "#22c55e",
-                      }}
-                    >
-                      {PIN_STATUSES[selectedPin.status]?.label || selectedPin.status}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span
+                        style={{
+                          fontSize: 9,
+                          fontWeight: 800,
+                          padding: "2px 6px",
+                          borderRadius: 6,
+                          background: PIN_STATUSES[selectedPin.status]?.bg || "rgba(34, 197, 94, 0.15)",
+                          color: PIN_STATUSES[selectedPin.status]?.color || "#22c55e",
+                        }}
+                      >
+                        {PIN_STATUSES[selectedPin.status]?.label || selectedPin.status}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPin(null);
+                        }}
+                        title="Close popup"
+                        style={{
+                          border: "none",
+                          background: "none",
+                          cursor: "pointer",
+                          padding: 2,
+                          color: "#71717a",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
                   </div>
                   <p style={{ margin: "6px 0 2px", fontSize: 13, fontWeight: 900, color: "#09090b" }}>
                     {selectedPin.name}
@@ -904,7 +990,7 @@ export default function AdminOverviewCommand({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeletePin(selectedPin.id);
+                        requestDeletePin(selectedPin.id, selectedPin.name);
                       }}
                       style={{
                         padding: "5px 8px",
@@ -938,7 +1024,7 @@ export default function AdminOverviewCommand({
                 closeOnClick={false}
                 maxWidth="260px"
               >
-                <div style={{ fontFamily: "'Nunito', sans-serif", color: "#09090b", minWidth: 180 }}>
+                <div style={{ fontFamily: "'Nohemi', sans-serif", color: "#09090b", minWidth: 180 }}>
                   <span
                     style={{
                       fontSize: 9,
@@ -969,7 +1055,7 @@ export default function AdminOverviewCommand({
                 closeOnClick={false}
                 maxWidth="260px"
               >
-                <div style={{ fontFamily: "'Nunito', sans-serif", color: "#09090b", minWidth: 170 }}>
+                <div style={{ fontFamily: "'Nohemi', sans-serif", color: "#09090b", minWidth: 170 }}>
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 900 }}>{infoPopup.title}</p>
                   <p style={{ margin: "2px 0 0", fontSize: 10, color: infoPopup.color, fontWeight: 800 }}>
                     {infoPopup.subtitle}
@@ -1270,19 +1356,19 @@ export default function AdminOverviewCommand({
                   padding: "6px 14px",
                   borderRadius: 9999,
                   background: isDark ? "rgba(22, 16, 12, 0.94)" : "rgba(254, 243, 199, 0.92)",
-                  border: `1.5px solid ${conditions.risk?.color || "#f59e0b"}`,
-                  boxShadow: `0 4px 18px ${conditions.risk?.color || "#f59e0b"}40`,
+                  border: `1px solid ${conditions.risk?.border || "rgba(245, 158, 11, 0.3)"}`,
+                  boxShadow: "0 4px 14px rgba(0, 0, 0, 0.15)",
                   backdropFilter: "blur(18px)",
                   WebkitBackdropFilter: "blur(18px)",
                   flexShrink: 0,
                 }}
               >
                 <Flame size={15} color={conditions.risk?.color || "#f59e0b"} />
-                <span style={{ fontSize: 11, fontWeight: 800, color: Z[700] }}>Heat Index</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: Z[700] }}>Heat Index</span>
                 <span
                   style={{
                     fontSize: 13,
-                    fontWeight: 900,
+                    fontWeight: 800,
                     color: conditions.risk?.color || "#f59e0b",
                   }}
                 >
@@ -1294,11 +1380,12 @@ export default function AdminOverviewCommand({
                   <span
                     style={{
                       fontSize: 10,
-                      fontWeight: 900,
-                      padding: "1px 7px",
+                      fontWeight: 700,
+                      padding: "2px 8px",
                       borderRadius: 9999,
-                      background: `${conditions.risk.color}25`,
+                      background: conditions.risk.bg || "rgba(245, 158, 11, 0.15)",
                       color: conditions.risk.color,
+                      border: `1px solid ${conditions.risk.border || "rgba(245, 158, 11, 0.3)"}`,
                     }}
                   >
                     {conditions.risk.label}
@@ -1597,7 +1684,7 @@ export default function AdminOverviewCommand({
                       <Edit3 size={13} /> Edit Pin
                     </button>
                     <button
-                      onClick={() => handleDeletePin(selectedPin.id)}
+                      onClick={() => requestDeletePin(selectedPin.id, selectedPin.name)}
                       style={{
                         padding: "7px 12px",
                         borderRadius: 10,
@@ -1724,12 +1811,13 @@ export default function AdminOverviewCommand({
                         <span
                           style={{
                             fontSize: 10,
-                            fontWeight: 900,
+                            fontWeight: 700,
                             padding: "4px 10px",
                             borderRadius: 9999,
-                            background: `${conditions.risk.color}22`,
+                            background: conditions.risk.bg || `${conditions.risk.color}1e`,
                             color: conditions.risk.color,
-                            border: `1px solid ${conditions.risk.color}55`,
+                            border: `1px solid ${conditions.risk.border || `${conditions.risk.color}40`}`,
+                            letterSpacing: "0.2px",
                           }}
                         >
                           {conditions.risk.label}
@@ -1799,7 +1887,7 @@ export default function AdminOverviewCommand({
                 <div style={card}>
                   <div style={sectionLabel}>Key facilities</div>
                   <div style={{ fontSize: 16, fontWeight: 900, marginTop: 2 }}>
-                    {facilities.status === "loading" ? "…" : facilities.status === "error" ? "0" : (facilities.items?.length ?? 0)}
+                    {pinnedLocations.length > 0 ? pinnedLocations.length : (facilities.items?.length ?? 0)}
                   </div>
                   <div style={{ fontSize: 9, color: Z[600], fontWeight: 600 }}>Hospitals & Services</div>
                 </div>
@@ -2217,7 +2305,7 @@ export default function AdminOverviewCommand({
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleDeletePin(pin.id);
+                                      requestDeletePin(pin.id, pin.name);
                                     }}
                                     title="Delete Pin"
                                     style={{
@@ -2285,7 +2373,7 @@ export default function AdminOverviewCommand({
           setIsPinningMode(false);
         }}
         onSave={handleSavePin}
-        onDelete={handleDeletePin}
+        onDelete={(pinId) => requestDeletePin(pinId, editingPin?.name)}
         onPickOnMap={(draft) => {
           setDraftPinData(draft);
           if (draft?.id) {
@@ -2299,6 +2387,19 @@ export default function AdminOverviewCommand({
         editingPin={editingPin}
         isDark={isDark}
         currentUser={currentUser}
+      />
+
+      {/* Security Confirmation Modal for Deleting Pins */}
+      <SecurityConfirmModal
+        isOpen={securityModalConfig.isOpen}
+        onClose={() => setSecurityModalConfig((prev) => ({ ...prev, isOpen: false }))}
+        onConfirmed={securityModalConfig.onConfirmed}
+        title={securityModalConfig.title}
+        message={securityModalConfig.message}
+        itemName={securityModalConfig.itemName}
+        confirmText={securityModalConfig.confirmText}
+        isDark={isDark}
+        currentUserEmail={currentUser?.email}
       />
     </div>
   );

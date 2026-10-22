@@ -23,17 +23,66 @@ const WEATHER_POLL_MS = 10 * 60 * 1000;
 const FACILITY_CACHE_KEY = "clima_osm_facilities_v1";
 const FACILITY_CACHE_MS = 24 * 60 * 60 * 1000;
 
-/** PAGASA heat index classification */
-export function getHeatRisk(heatIndex) {
+/** PAGASA heat index classification with soft pastel aesthetics */
+export function getHeatRisk(heatIndex, isDark = true) {
   const hi = Number(heatIndex);
   if (heatIndex === null || heatIndex === undefined || Number.isNaN(hi)) {
-    return { label: "No data", color: "#71717a", level: -1 };
+    return {
+      label: "No data",
+      color: isDark ? "#a1a1aa" : "#71717a",
+      bg: isDark ? "rgba(161, 161, 170, 0.14)" : "rgba(244, 244, 246, 0.9)",
+      border: isDark ? "rgba(161, 161, 170, 0.3)" : "rgba(212, 212, 216, 0.8)",
+      level: -1,
+    };
   }
-  if (hi >= 52) return { label: "Extreme Danger", color: "#dc2626", level: 4 };
-  if (hi >= 42) return { label: "Danger", color: "#ea580c", level: 3 };
-  if (hi >= 33) return { label: "Extreme Caution", color: "#f59e0b", level: 2 };
-  if (hi >= 27) return { label: "Caution", color: "#eab308", level: 1 };
-  return { label: "Normal", color: "#22c55e", level: 0 };
+  if (hi >= 52) {
+    return {
+      label: "Extreme Danger",
+      // Authoritative emergency red
+      color: isDark ? "#ef4444" : "#dc2626",
+      bg: isDark ? "rgba(239, 68, 68, 0.16)" : "rgba(239, 68, 68, 0.1)",
+      border: isDark ? "rgba(239, 68, 68, 0.35)" : "rgba(220, 38, 38, 0.3)",
+      level: 4,
+    };
+  }
+  if (hi >= 42) {
+    return {
+      label: "Danger",
+      // Soft pastel apricot / peach
+      color: isDark ? "#fdba74" : "#ea580c",
+      bg: isDark ? "rgba(251, 146, 60, 0.16)" : "rgba(255, 237, 213, 0.9)",
+      border: isDark ? "rgba(251, 146, 60, 0.35)" : "rgba(253, 186, 116, 0.75)",
+      level: 3,
+    };
+  }
+  if (hi >= 33) {
+    return {
+      label: "Extreme Caution",
+      // Soft pastel amber / butter
+      color: isDark ? "#fde68a" : "#d97706",
+      bg: isDark ? "rgba(251, 191, 36, 0.16)" : "rgba(254, 243, 199, 0.9)",
+      border: isDark ? "rgba(251, 191, 36, 0.35)" : "rgba(252, 211, 77, 0.75)",
+      level: 2,
+    };
+  }
+  if (hi >= 27) {
+    return {
+      label: "Caution",
+      // Soft pastel lemon / cream
+      color: isDark ? "#fef08a" : "#ca8a04",
+      bg: isDark ? "rgba(250, 204, 21, 0.15)" : "rgba(254, 249, 195, 0.9)",
+      border: isDark ? "rgba(250, 204, 21, 0.32)" : "rgba(253, 224, 71, 0.75)",
+      level: 1,
+    };
+  }
+  return {
+    label: "Normal",
+    // Soft pastel mint / sage
+    color: isDark ? "#86efac" : "#16a34a",
+    bg: isDark ? "rgba(74, 222, 128, 0.15)" : "rgba(220, 252, 231, 0.9)",
+    border: isDark ? "rgba(74, 222, 128, 0.32)" : "rgba(134, 239, 172, 0.75)",
+    level: 0,
+  };
 }
 
 const num = (v) => (v === null || v === undefined || v === "" || Number.isNaN(Number(v)) ? null : Number(v));

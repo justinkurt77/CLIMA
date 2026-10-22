@@ -7,7 +7,7 @@ import ReportModal from "./components/ui/ReportModal";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import ElNinoMonitoringDashboard from "./components/dashboard/ElNinoMonitoringDashboard";
 import { logger } from "./lib/logger";
-import { Map as MapIcon } from "lucide-react";
+import { useTheme } from "./context/ThemeContext";
 import TabSkeleton, {
   HomeTabSkeleton,
   MapTabSkeleton,
@@ -76,12 +76,10 @@ function App() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [toast, setToast] = useState(null);
+  const { isDark } = useTheme();
   const [userReports, setUserReports] = useState([]);
-  const [mapVisited, setMapVisited] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
-  const [isMapFullView, setIsMapFullView] = useState(false);
-  const [isNavMinimized, setIsNavMinimized] = useState(false);
   const [session, setSession] = useState(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [adminUser, setAdminUser] = useState(null);
@@ -278,13 +276,6 @@ function App() {
     }
   }, []);
 
-  useEffect(() => {
-    if (activeScreen === "home" && !mapVisited) setMapVisited(true);
-    // Reset map full view when switching screens to avoid disappearing UI
-    if (activeScreen !== "home") {
-      setIsMapFullView(false);
-    }
-  }, [activeScreen, mapVisited]);
 
   const openModal = () => {
     // Check if user is authenticated before opening modal
@@ -521,7 +512,7 @@ function App() {
             className="screen active"
             style={{
               zIndex: 10,
-              background: "transparent",
+              background: isDark ? "#000000" : "#ffffff",
               overflow: "hidden",
               position: "absolute",
               inset: 0,
@@ -534,9 +525,31 @@ function App() {
               <Suspense
                 fallback={
                   <div
-                    style={{ padding: 40, color: "#4B6043", fontWeight: 800 }}
+                    style={{
+                      height: "100%",
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: isDark ? "#000000" : "#ffffff",
+                      flexDirection: "column",
+                      gap: 12,
+                    }}
                   >
-                    Loading Console...
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        border: isDark ? "4px solid rgba(255, 255, 255, 0.12)" : "4px solid rgba(0, 0, 0, 0.12)",
+                        borderTopColor: "#f59e0b",
+                        borderRadius: "50%",
+                      }}
+                    />
+                    <p style={{ color: "#71717a", fontFamily: "var(--font-sans, 'Nohemi', sans-serif)", fontWeight: 700, fontSize: 14 }}>
+                      Loading Console…
+                    </p>
                   </div>
                 }
               >
@@ -578,6 +591,8 @@ function App() {
               width: "100%",
               height: "100%",
               borderRadius: "inherit",
+              background: isDark ? "#000000" : "#ffffff",
+              overflow: "hidden",
             }}
           >
             <ErrorBoundary>
@@ -585,16 +600,30 @@ function App() {
                 fallback={
                   <div
                     style={{
-                      height: "100vh",
+                      height: "100%",
+                      width: "100%",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: "#1a2612",
-                      color: "white",
-                      fontWeight: 800,
+                      background: isDark ? "#000000" : "#ffffff",
+                      flexDirection: "column",
+                      gap: 12,
                     }}
                   >
-                    Loading Map...
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        border: isDark ? "4px solid rgba(255, 255, 255, 0.12)" : "4px solid rgba(0, 0, 0, 0.12)",
+                        borderTopColor: "#f59e0b",
+                        borderRadius: "50%",
+                      }}
+                    />
+                    <p style={{ color: "#71717a", fontFamily: "var(--font-sans, 'Nohemi', sans-serif)", fontWeight: 700, fontSize: 14 }}>
+                      Loading Map…
+                    </p>
                   </div>
                 }
               >
@@ -624,171 +653,6 @@ function App() {
         )}
       </AnimatePresence>
 
-      {/* MAP - Background layer: only mounted on admin views */}
-      {isAdminView && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 1,
-            pointerEvents: "auto",
-          }}
-        >
-        <ErrorBoundary>
-          <Suspense
-            fallback={
-              <div
-                className="map-loading"
-                style={{ position: "relative", flex: 1 }}
-              >
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: 8, color: "var(--accent)" }}>
-                  <MapIcon size={34} style={{ opacity: 0.7 }} />
-                </div>
-                <div className="map-loading-text">Loading map...</div>
-              </div>
-            }
-          >
-            <AnimatePresence mode="wait">
-              {!userLocation ? (
-                <motion.div
-                  key="loading"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5 }}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "#f0ece8",
-                    zIndex: 2,
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "relative",
-                      width: 80,
-                      height: 80,
-                      marginBottom: 24,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {[0, 1, 2].map((i) => (
-                      <motion.div
-                        key={i}
-                        animate={{
-                          scale: [1, 3],
-                          opacity: [0.4, 0],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeOut",
-                          delay: i * 0.6,
-                        }}
-                        style={{
-                          position: "absolute",
-                          width: 24,
-                          height: 24,
-                          borderRadius: "50%",
-                          background: "#4B6043",
-                        }}
-                      />
-                    ))}
-                    {/* Core GPS Dot */}
-                    <motion.div
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{
-                        duration: 1,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                      style={{
-                        position: "absolute",
-                        width: 14,
-                        height: 14,
-                        borderRadius: "50%",
-                        background: "#2d8119",
-                        boxShadow: "0 0 12px rgba(45, 129, 25, 0.6)",
-                        zIndex: 10,
-                      }}
-                    />
-                  </div>
-                  <motion.div
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 1.5,
-                      ease: "easeInOut",
-                    }}
-                    style={{
-                      color: "#4B6043",
-                      fontSize: 15,
-                      fontWeight: 800,
-                      fontFamily: "Nunito, sans-serif",
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    Locating you...
-                  </motion.div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="map"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                  style={{ position: "absolute", inset: 0 }}
-                >
-                  <MapScreen
-                    onOpenModal={openModal}
-                    userReports={userReports}
-                    showMapUI={activeScreen === "home" || activeScreen === "maps"}
-                    userLocation={userLocation}
-                    isMapFullView={isMapFullView || activeScreen === "maps"}
-                    onMapDoubleClick={() => setIsMapFullView((prev) => !prev)}
-                    onPinClick={() => setIsMapFullView(true)}
-                    isNavMinimized={isNavMinimized}
-                    isAdmin={isAdminView}
-                    activeScreen={activeScreen}
-                    refreshTrigger={refreshTrigger}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Suspense>
-        </ErrorBoundary>
-      </div>
-      )}
-
-      {/* Global Blur Overlay for non-Home Screens (Excluding Maps) */}
-      <AnimatePresence>
-        {activeScreen !== "home" &&
-          activeScreen !== "maps" &&
-          activeScreen !== "admin" &&
-          activeScreen !== "admin-map" && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.6, ease: "easeInOut" }}
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "rgba(0,0,0,0.15)",
-                backdropFilter: "blur(4px)",
-                WebkitBackdropFilter: "blur(4px)",
-                zIndex: 2, // Above map (1), below screens (10)
-                pointerEvents: "none",
-              }}
-            />
-          )}
-      </AnimatePresence>
 
       {!isAdminView && (
         <CitizenNav

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
+import { useTheme } from "../../context/ThemeContext";
 import {
   ChevronRight,
   CloudRain,
@@ -50,6 +51,43 @@ function LiveConditionsCard({
 }) {
   const [hoveredPoint, setHoveredPoint] = useState(null);
   const containerRef = useRef(null);
+  const { isDark } = useTheme();
+
+  const pastelBadgeStyle = useMemo(() => {
+    switch (heatIndex) {
+      case "Extreme Danger":
+        return {
+          background: isDark ? "rgba(239, 68, 68, 0.16)" : "rgba(239, 68, 68, 0.1)",
+          color: isDark ? "#ef4444" : "#dc2626",
+          border: `1px solid ${isDark ? "rgba(239, 68, 68, 0.35)" : "rgba(220, 38, 38, 0.3)"}`,
+        };
+      case "Danger":
+        return {
+          background: isDark ? "rgba(251, 146, 60, 0.16)" : "rgba(255, 237, 213, 0.9)",
+          color: isDark ? "#fdba74" : "#ea580c",
+          border: `1px solid ${isDark ? "rgba(251, 146, 60, 0.35)" : "rgba(253, 186, 116, 0.75)"}`,
+        };
+      case "Extreme Caution":
+        return {
+          background: isDark ? "rgba(251, 191, 36, 0.16)" : "rgba(254, 243, 199, 0.9)",
+          color: isDark ? "#fde68a" : "#d97706",
+          border: `1px solid ${isDark ? "rgba(251, 191, 36, 0.35)" : "rgba(252, 211, 77, 0.75)"}`,
+        };
+      case "Caution":
+        return {
+          background: isDark ? "rgba(250, 204, 21, 0.15)" : "rgba(254, 249, 195, 0.9)",
+          color: isDark ? "#fef08a" : "#ca8a04",
+          border: `1px solid ${isDark ? "rgba(250, 204, 21, 0.32)" : "rgba(253, 224, 71, 0.75)"}`,
+        };
+      case "Normal":
+      default:
+        return {
+          background: isDark ? "rgba(74, 222, 128, 0.15)" : "rgba(220, 252, 231, 0.9)",
+          color: isDark ? "#86efac" : "#16a34a",
+          border: `1px solid ${isDark ? "rgba(74, 222, 128, 0.32)" : "rgba(134, 239, 172, 0.75)"}`,
+        };
+    }
+  }, [heatIndex, isDark]);
 
   // Clean numeric parsing for bottom sensor stats
   const numericHumidity = useMemo(() => {
@@ -233,6 +271,7 @@ function LiveConditionsCard({
               exit={{ opacity: 0, scale: 0.92 }}
               transition={{ duration: 0.18 }}
               className="desktop-danger-badge"
+              style={pastelBadgeStyle}
             >
               {heatIndex}
             </motion.div>

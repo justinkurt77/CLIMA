@@ -67,7 +67,7 @@ export default function EmergencyScreen() {
         flexDirection: "column",
         overflow: "hidden",
         background: "var(--bg-app)",
-        fontFamily: "'Nunito', -apple-system, sans-serif",
+        fontFamily: "'Nohemi', -apple-system, sans-serif",
         pointerEvents: "auto",
         transition: "background-color 0.25s ease",
       }}

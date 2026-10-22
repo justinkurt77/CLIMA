@@ -1,6 +1,100 @@
+/* ── Nohemi Custom Typeface (Weights: 100 - 900) ─────────────────── */
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/nohemi/Nohemi-Thin.ttf') format('truetype');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/nohemi/Nohemi-ExtraLight.ttf') format('truetype');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/nohemi/Nohemi-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/nohemi/Nohemi-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/nohemi/Nohemi-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/nohemi/Nohemi-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/nohemi/Nohemi-SemiBold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/nohemi/Nohemi-Bold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi';
+  src: url('/fonts/nohemi/Nohemi-Bold.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Explicit aliases for direct targeting */
+@font-face {
+  font-family: 'Nohemi ExtraLight';
+  src: url('/fonts/nohemi/Nohemi-ExtraLight.ttf') format('truetype');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nohemi Light';
+  src: url('/fonts/nohemi/Nohemi-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root,
 html.light {
   color-scheme: light;
+  --font-sans: 'Nohemi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family: 'Nohemi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-weight-body: 200;
+  --font-weight-title: 300;
   --red: #f59e0b;
   --red-dark: #d97706;
   --yellow: #fef08a;
@@ -47,6 +141,10 @@ html.light {
 html.dark,
 [data-theme="dark"] {
   color-scheme: dark;
+  --font-sans: 'Nohemi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family: 'Nohemi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-weight-body: 200;
+  --font-weight-title: 300;
   --red: #f59e0b;
   --red-dark: #d97706;
   --yellow: #fef08a;
@@ -158,11 +256,26 @@ html.dark option,
 }
 
 
-* {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
+  font-family: 'Nohemi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 200;
+}
+
+html,
+body,
+#root,
+button,
+input,
+select,
+textarea,
+optgroup {
+  font-family: 'Nohemi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
 }
 
 html,
@@ -177,9 +290,25 @@ body,
 }
 
 body {
-  font-family: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Nohemi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-weight: 200;
+  letter-spacing: 0.015em;
   background: var(--bg-app);
   overscroll-behavior: none;
+}
+
+/* Elegant Clean Titles & Headers */
+h1, h2, h3, h4, h5, h6,
+.modal-title,
+.section-title,
+.mine-title,
+.empty-title {
+  font-weight: 600;
+  letter-spacing: 0.015em;
+}
+
+strong, b {
+  font-weight: 600;
 }
 
 /* Utility: hide scrollbars */
@@ -322,7 +451,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .app-logo {
-  font-family: "Baloo 2", cursive;
+  font-family: 'Nohemi', sans-serif;
   font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.5px;
@@ -442,7 +571,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .cta-text h3 {
-  font-family: "Baloo 2", cursive;
+  font-family: 'Nohemi', sans-serif;
   font-weight: 700;
   color: var(--dark);
   font-size: 18px;
@@ -465,7 +594,7 @@ html.light body:has(.app-shell.admin-mode),
 
 /* SECTION TITLE */
 .section-title {
-  font-family: "Baloo 2", cursive;
+  font-family: 'Nohemi', sans-serif;
   font-size: 17px;
   font-weight: 700;
   color: var(--dark);
@@ -536,7 +665,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .stat-num {
-  font-family: "Baloo 2", cursive;
+  font-family: 'Nohemi', sans-serif;
   font-size: 24px;
   font-weight: 800;
   color: var(--yellow);
@@ -751,7 +880,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .map-title {
-  font-family: "Baloo 2", cursive;
+  font-family: 'Nohemi', sans-serif;
   font-size: 18px;
   font-weight: 800;
   color: var(--dark);
@@ -793,7 +922,7 @@ html.light body:has(.app-shell.admin-mode),
 .map-container .leaflet-popup-content-wrapper {
   border-radius: 14px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  font-family: "Nunito", sans-serif;
+  font-family: 'Nohemi', sans-serif;
 }
 
 .map-container .leaflet-popup-tip {
@@ -943,7 +1072,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .modal-title {
-  font-family: "Baloo 2", cursive;
+  font-family: 'Nohemi', sans-serif;
   font-size: 22px;
   font-weight: 800;
   color: var(--dark);
@@ -971,7 +1100,7 @@ html.light body:has(.app-shell.admin-mode),
   border: 2px solid var(--light-gray);
   border-radius: 12px;
   padding: 12px 14px;
-  font-family: "Nunito", sans-serif;
+  font-family: 'Nohemi', sans-serif;
   font-size: 14px;
   color: var(--dark);
   outline: none;
@@ -1022,7 +1151,7 @@ html.light body:has(.app-shell.admin-mode),
   border: none;
   border-radius: 14px;
   padding: 16px;
-  font-family: "Baloo 2", cursive;
+  font-family: 'Nohemi', sans-serif;
   font-size: 17px;
   font-weight: 700;
   cursor: pointer;
@@ -1062,7 +1191,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .profile-name {
-  font-family: "Baloo 2", cursive;
+  font-family: 'Nohemi', sans-serif;
   font-size: 22px;
   font-weight: 800;
   color: white;
@@ -1098,7 +1227,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .pstat-num {
-  font-family: "Baloo 2", cursive;
+  font-family: 'Nohemi', sans-serif;
   font-size: 22px;
   font-weight: 800;
   color: var(--red);
@@ -1169,7 +1298,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .mine-title {
-  font-family: "Baloo 2", cursive;
+  font-family: 'Nohemi', sans-serif;
   font-size: 22px;
   font-weight: 800;
   color: white;
@@ -1197,7 +1326,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .empty-title {
-  font-family: "Baloo 2", cursive;
+  font-family: 'Nohemi', sans-serif;
   font-weight: 700;
   color: var(--dark);
   margin-bottom: 4px;
@@ -1325,7 +1454,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .map-loading-text {
-  font-family: "Baloo 2", cursive;
+  font-family: 'Nohemi', sans-serif;
   font-weight: 700;
   color: var(--gray);
   font-size: 14px;
@@ -1508,7 +1637,7 @@ html.light body:has(.app-shell.admin-mode),
 
 /* Name inside pill */
 .profile-name-green {
-  font-family: "Baloo 2", cursive;
+  font-family: 'Nohemi', sans-serif;
   font-size: 20px;
   font-weight: 800;
   color: var(--text-primary);
@@ -1534,7 +1663,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .pstat-num-green {
-  font-family: "Baloo 2", cursive;
+  font-family: 'Nohemi', sans-serif;
   font-size: 20px;
   font-weight: 800;
   color: var(--text-primary);
@@ -2138,14 +2267,14 @@ html.dark .desktop-header-backdrop,
 
 .desktop-loc-city {
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 500;
   color: var(--text-primary);
   letter-spacing: -0.2px;
 }
 
 .desktop-loc-date {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 300;
   color: var(--text-secondary);
   padding-left: 23px;
 }
@@ -2171,7 +2300,7 @@ html.dark .desktop-header-backdrop,
   color: var(--text-primary);
   padding: 0 16px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -2209,7 +2338,7 @@ html.dark .desktop-header-backdrop,
   color: #ffffff;
   border: none;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2320,7 +2449,7 @@ html.dark .desktop-hero-card::before,
 
 .desktop-hero-temp {
   font-size: 84px;
-  font-weight: 900;
+  font-weight: 200;
   line-height: 0.95;
   letter-spacing: -3.5px;
   color: #ffffff;
@@ -2329,7 +2458,7 @@ html.dark .desktop-hero-card::before,
 
 .desktop-hero-condition {
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 400;
   color: #ffffff;
   margin-top: 12px;
   letter-spacing: -0.3px;
@@ -2338,7 +2467,7 @@ html.dark .desktop-hero-card::before,
 
 .desktop-hero-subcondition {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 300;
   color: #ffffff;
   margin-top: 2px;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(0, 0, 0, 0.8);
@@ -2358,7 +2487,7 @@ html.dark .desktop-hero-card::before,
   border-radius: 12px;
   padding: 5px 14px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 400;
   color: #ffffff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -2396,7 +2525,7 @@ html.dark .desktop-hero-glass-card,
   font-size: 13px;
   line-height: 1.55;
   color: rgba(255, 255, 255, 0.95);
-  font-weight: 600;
+  font-weight: 300;
   margin: 0;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
@@ -2436,13 +2565,13 @@ html.dark .desktop-hero-glass-card,
 
 .desktop-hourly-time {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 400;
   color: var(--text-muted);
 }
 
 .desktop-hourly-rain {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 500;
   color: #38bdf8;
 }
 
@@ -2456,7 +2585,7 @@ html.dark .desktop-hero-glass-card,
 
 .desktop-hourly-temp {
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 400;
   color: var(--text-primary);
 }
 
@@ -2484,7 +2613,7 @@ html.dark .desktop-hero-glass-card,
 
 .desktop-weekly-day {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 400;
   color: var(--text-muted);
 }
 
@@ -2498,20 +2627,20 @@ html.dark .desktop-hero-glass-card,
 
 .desktop-weekly-rain-badge {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 500;
   color: #38bdf8;
   margin-top: 2px;
 }
 
 .desktop-weekly-high {
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 400;
   color: var(--text-primary);
 }
 
 .desktop-weekly-low {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 300;
   color: var(--text-muted);
 }
 
@@ -2546,7 +2675,7 @@ html.dark .desktop-hero-glass-card,
 
 .desktop-card-title {
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
@@ -2567,13 +2696,13 @@ html.dark .desktop-hero-glass-card,
   align-items: center;
   gap: 7px;
   font-size: 13.5px;
-  font-weight: 800;
+  font-weight: 400;
   color: var(--text-primary);
 }
 
 .desktop-live-temp-flow {
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 400;
   line-height: 1;
   letter-spacing: -0.02em;
   color: var(--text-primary);
@@ -2582,7 +2711,7 @@ html.dark .desktop-hero-glass-card,
 
 .desktop-live-temp-tag {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 400;
   color: var(--text-muted);
   background: var(--bg-card-subtle);
   border: 1px solid var(--border-subtle);
@@ -2597,14 +2726,14 @@ html.dark .desktop-hero-glass-card,
 }
 
 .desktop-danger-badge {
-  background: var(--accent-orange);
-  color: #ffffff;
   font-size: 11px;
-  font-weight: 800;
-  padding: 4px 12px;
-  border-radius: 12px;
+  font-weight: 600;
+  padding: 3px 11px;
+  border-radius: 9999px;
   letter-spacing: 0.3px;
-  box-shadow: 0 2px 8px var(--accent-glow);
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s ease;
 }
 
 .desktop-bklit-badge {
@@ -2612,7 +2741,7 @@ html.dark .desktop-hero-glass-card,
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   padding: 3px 10px;
   border-radius: 9999px;
   letter-spacing: 0.2px;
@@ -2620,15 +2749,29 @@ html.dark .desktop-hero-glass-card,
 }
 
 .desktop-bklit-badge-pos {
-  background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.28);
+  background: rgba(74, 222, 128, 0.14);
+  color: #86efac;
+  border: 1px solid rgba(74, 222, 128, 0.32);
+}
+
+html.light .desktop-bklit-badge-pos,
+[data-theme="light"] .desktop-bklit-badge-pos {
+  background: rgba(220, 252, 231, 0.9);
+  color: #16a34a;
+  border: 1px solid rgba(134, 239, 172, 0.7);
 }
 
 .desktop-bklit-badge-neg {
-  background: rgba(239, 68, 68, 0.12);
+  background: rgba(239, 68, 68, 0.16);
   color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.28);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+html.light .desktop-bklit-badge-neg,
+[data-theme="light"] .desktop-bklit-badge-neg {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.3);
 }
 
 .desktop-wave-container {
@@ -2668,13 +2811,13 @@ html.dark .desktop-hero-glass-card,
   justify-content: center;
   gap: 5px;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 400;
   color: var(--text-primary);
 }
 
 .desktop-stat-sub {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 300;
   color: var(--text-muted);
   margin-top: 2px;
 }
@@ -2738,20 +2881,20 @@ html.dark .desktop-hero-glass-card,
 
 .desktop-recent-city {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 400;
   color: var(--text-primary);
 }
 
 .desktop-recent-condition {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 300;
   color: var(--text-muted);
   margin-top: 1px;
 }
 
 .desktop-recent-temp {
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 400;
   color: var(--text-primary);
 }
 
@@ -2798,7 +2941,7 @@ html.dark .desktop-wind-overlay,
 
 .desktop-wind-title {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 400;
   color: #475569;
   transition: color 0.3s ease;
 }
@@ -2810,7 +2953,7 @@ html.dark .desktop-wind-title,
 
 .desktop-wind-speed {
   font-size: 20px;
-  font-weight: 900;
+  font-weight: 400;
   color: #09090b;
   margin-top: 4px;
   transition: color 0.3s ease;
@@ -2823,7 +2966,7 @@ html.dark .desktop-wind-speed,
 
 .desktop-wind-direction {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 300;
   color: #64748b;
   margin-top: 2px;
   transition: color 0.3s ease;
@@ -3055,14 +3198,22 @@ html.dark .desktop-wind-direction,
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.15);
-  padding: 2px 7px;
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  padding: 2px 8px;
   border-radius: 999px;
   margin-top: 6px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+}
+
+html.light .kloudtech-danger-pill,
+[data-theme="light"] .kloudtech-danger-pill {
+  color: #dc2626;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
 }
 
 .danger-dot {
@@ -3072,26 +3223,44 @@ html.dark .desktop-wind-direction,
   background: #ef4444;
 }
 
+html.light .danger-dot,
+[data-theme="light"] .danger-dot {
+  background: #dc2626;
+}
+
 .kloudtech-caution-pill {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  font-weight: 800;
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.15);
-  padding: 2px 7px;
+  font-weight: 700;
+  color: #fde68a;
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  padding: 2px 8px;
   border-radius: 999px;
   margin-top: 6px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 
+html.light .kloudtech-caution-pill,
+[data-theme="light"] .kloudtech-caution-pill {
+  color: #d97706;
+  background: rgba(254, 243, 199, 0.9);
+  border: 1px solid rgba(252, 211, 77, 0.7);
+}
+
 .caution-dot {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #f59e0b;
+  background: #fde68a;
+}
+
+html.light .caution-dot,
+[data-theme="light"] .caution-dot {
+  background: #d97706;
 }
 
 .kloudtech-normal-pill {
@@ -3099,21 +3268,34 @@ html.dark .desktop-wind-direction,
   align-items: center;
   gap: 4px;
   font-size: 10px;
-  font-weight: 800;
-  color: #22c55e;
-  background: rgba(34, 197, 94, 0.15);
-  padding: 2px 7px;
+  font-weight: 700;
+  color: #86efac;
+  background: rgba(74, 222, 128, 0.14);
+  border: 1px solid rgba(74, 222, 128, 0.32);
+  padding: 2px 8px;
   border-radius: 999px;
   margin-top: 6px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 
+html.light .kloudtech-normal-pill,
+[data-theme="light"] .kloudtech-normal-pill {
+  color: #16a34a;
+  background: rgba(220, 252, 231, 0.9);
+  border: 1px solid rgba(134, 239, 172, 0.7);
+}
+
 .normal-dot {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #22c55e;
+  background: #86efac;
+}
+
+html.light .normal-dot,
+[data-theme="light"] .normal-dot {
+  background: #16a34a;
 }
 
 /* 5. Filter Controls & Download Button */
@@ -3276,7 +3458,7 @@ html.dark .desktop-wind-direction,
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-medium);
   color: var(--text-primary);
-  font-family: "Nunito", sans-serif;
+  font-family: 'Nohemi', sans-serif;
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
@@ -3378,7 +3560,8 @@ html.dark .desktop-wind-direction,
 
 /* ── Aesthetic Mobile/Social-Style Advisory Feed (Inspired by Modern App Card) ── */
 .aesthetic-post-card {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Nohemi', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0.012em;
   border-radius: 28px;
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.06);
@@ -3388,6 +3571,19 @@ html.dark .desktop-wind-direction,
   flex-direction: column;
   gap: 14px;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.aesthetic-post-card h1,
+.aesthetic-post-card h2,
+.aesthetic-post-card h3,
+.aesthetic-post-card h4 {
+  letter-spacing: 0.015em;
+  line-height: 1.35;
+}
+
+.kloud-metric-btn,
+.kloud-scale-btn {
+  letter-spacing: 0.015em;
 }
 
 html.dark .aesthetic-post-card,
@@ -3512,7 +3708,7 @@ html.dark .aesthetic-post-card,
   border-radius: 999px;
   font-size: 13px;
   font-weight: 700;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Nohemi', sans-serif;
   border: none;
   cursor: pointer;
   background: #f4f4f5;

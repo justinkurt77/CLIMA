@@ -1565,7 +1565,7 @@ function MapScreen({
               closeOnClick={false}
               onClose={() => setSelectedOutage(null)}
               maxWidth="320px"
-              style={{ zIndex: 120, fontFamily: "'Nunito', sans-serif" }}
+              style={{ zIndex: 120, fontFamily: "'Nohemi', sans-serif" }}
             >
               <div style={{ padding: "8px 6px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -1666,7 +1666,7 @@ function MapScreen({
               closeOnClick={false}
               onClose={() => setSelectedWaterOutage(null)}
               maxWidth="320px"
-              style={{ zIndex: 120, fontFamily: "'Nunito', sans-serif" }}
+              style={{ zIndex: 120, fontFamily: "'Nohemi', sans-serif" }}
             >
               <div style={{ padding: "8px 6px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -1807,7 +1807,7 @@ function MapScreen({
               closeOnClick={false}
               onClose={() => setSelectedKloudtrackStation(null)}
               maxWidth="360px"
-              style={{ zIndex: 100, fontFamily: "Nunito, sans-serif" }}
+              style={{ zIndex: 100, fontFamily: "'Nohemi', sans-serif" }}
             >
               <KloudtrackStationPopup
                 station={selectedKloudtrackStation}
@@ -1843,7 +1843,7 @@ function MapScreen({
               closeOnClick={false}
               onClose={closePopup}
               className={isExiting ? "popup-exiting" : ""}
-              style={{ fontFamily: "Nunito, sans-serif" }}
+              style={{ fontFamily: "'Nohemi', sans-serif" }}
               maxWidth="320px"
             >
               <MapPopupContent

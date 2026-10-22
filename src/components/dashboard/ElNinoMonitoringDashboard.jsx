@@ -624,11 +624,11 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
                 <h1
                   style={{
                     fontSize: 20,
-                    fontWeight: 800,
+                    fontWeight: 650,
                     color: "var(--text-primary)",
                     margin: 0,
-                    letterSpacing: -0.4,
-                    lineHeight: 1.2,
+                    letterSpacing: "0.015em",
+                    lineHeight: 1.25,
                   }}
                 >
                   El Niño Impact Dashboard
@@ -658,10 +658,10 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
                   <span
                     style={{
                       fontSize: 10,
-                      fontWeight: 800,
-                      letterSpacing: "0.06em",
+                      fontWeight: 600,
+                      letterSpacing: "0.05em",
                       textTransform: "uppercase",
-                      color: isDark ? "#fca5a5" : "#dc2626",
+                      color: isDark ? "#ef4444" : "#dc2626",
                     }}
                   >
                     Extreme Heat & Drought Advisory
@@ -672,7 +672,8 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
               <p
                 style={{
                   fontSize: 12,
-                  fontWeight: 600,
+                  fontWeight: 500,
+                  letterSpacing: "0.01em",
                   color: "var(--text-secondary)",
                   margin: "3px 0 0",
                   lineHeight: 1.4,
@@ -835,7 +836,8 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
             >
               <h3 style={{
                 fontSize: 15,
-                fontWeight: 800,
+                fontWeight: 650,
+                letterSpacing: "0.015em",
                 color: 'var(--text-primary)',
                 marginBottom: 16,
               }}>
@@ -920,16 +922,16 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
 
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-              <h1 style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>
+              <h1 style={{ fontSize: 16, fontWeight: 650, color: "var(--text-primary)", margin: 0, letterSpacing: "0.015em" }}>
                 El Niño Impact
               </h1>
               <span
                 style={{
                   fontSize: 9,
-                  fontWeight: 800,
-                  letterSpacing: "0.06em",
+                  fontWeight: 600,
+                  letterSpacing: "0.05em",
                   textTransform: "uppercase",
-                  color: isDark ? "#fca5a5" : "#dc2626",
+                  color: isDark ? "#ef4444" : "#dc2626",
                   background: isDark ? "rgba(239, 68, 68, 0.18)" : "rgba(239, 68, 68, 0.1)",
                   padding: "2px 6px",
                   borderRadius: 999,
@@ -1020,7 +1022,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
               display: "flex",
               alignItems: "center",
               gap: 8,
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontFamily: "'Nohemi', sans-serif",
             }}
           >
             <Check size={16} strokeWidth={3} color="#22c55e" />
@@ -1068,7 +1070,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
                 padding: "24px 28px",
                 boxSizing: "border-box",
                 color: isDark ? "#ffffff" : "#0f172a",
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontFamily: "'Nohemi', sans-serif",
                 position: "relative",
               }}
             >
@@ -1091,10 +1093,10 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
                     <Megaphone size={22} color="#fff" />
                   </div>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, letterSpacing: -0.3 }}>
+                    <h3 style={{ margin: 0, fontSize: 18, fontWeight: 650, letterSpacing: "0.015em" }}>
                       Broadcast Official Advisory
                     </h3>
-                    <p style={{ margin: "2px 0 0", fontSize: 12.5, color: isDark ? "#a1a1aa" : "#64748b", fontWeight: 600 }}>
+                    <p style={{ margin: "2px 0 0", fontSize: 12.5, color: isDark ? "#a1a1aa" : "#64748b", fontWeight: 500, letterSpacing: "0.01em" }}>
                       Publish official emergency bulletin to Palayan City citizen feed
                     </p>
                   </div>
@@ -1556,7 +1558,7 @@ function ElNinoMonitoringDashboard({ session: propSession, onNavigateToAuth, isA
                 boxShadow: isDark ? "0 25px 60px rgba(0, 0, 0, 0.85)" : "0 20px 50px rgba(0, 0, 0, 0.2)",
                 padding: "24px 24px 20px",
                 color: isDark ? "#ffffff" : "#0f172a",
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontFamily: "'Nohemi', sans-serif",
                 textAlign: "center",
               }}
             >
@@ -1691,16 +1693,17 @@ function AdvisoriesSection({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <h2 style={{
                 fontSize: 17,
-                fontWeight: 800,
+                fontWeight: 650,
                 color: 'var(--text-primary)',
                 margin: 0,
-                letterSpacing: -0.3,
+                letterSpacing: "0.015em",
               }}>
                 Official Advisories
               </h2>
               <span style={{
                 fontSize: 10,
-                fontWeight: 800,
+                fontWeight: 600,
+                letterSpacing: "0.02em",
                 color: '#f97316',
                 background: isDark ? 'rgba(249, 115, 22, 0.16)' : 'rgba(249, 115, 22, 0.1)',
                 padding: '2px 8px',
@@ -1717,7 +1720,8 @@ function AdvisoriesSection({
             <p style={{
               fontSize: 12,
               color: 'var(--text-secondary)',
-              fontWeight: 600,
+              fontWeight: 500,
+              letterSpacing: "0.01em",
               margin: '2px 0 0',
             }}>
               Official LGU announcements, emergency alerts, and verified community directives
@@ -1994,7 +1998,7 @@ function CivicAdvisoriesFeed({
               alignItems: "center",
               gap: 8,
               pointerEvents: "none",
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontFamily: "'Nohemi', sans-serif",
             }}
           >
             <Check size={14} strokeWidth={3} color="#22c55e" />
@@ -2039,7 +2043,7 @@ function CivicAdvisoriesFeed({
                 whiteSpace: "nowrap",
                 flexShrink: 0,
                 transition: "all 0.18s ease",
-                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                fontFamily: "'Nohemi', sans-serif",
               }}
             >
               {tab.label}
@@ -2066,7 +2070,7 @@ function CivicAdvisoriesFeed({
             cursor: isSyncing ? "not-allowed" : "pointer",
             flexShrink: 0,
             transition: "all 0.15s ease",
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontFamily: "'Nohemi', sans-serif",
           }}
           title="Fetch latest posts from Palayan City Facebook Page"
         >
@@ -2098,7 +2102,7 @@ function CivicAdvisoriesFeed({
               background: isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.02)",
               borderRadius: 24,
               border: `1px dashed ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)"}`,
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontFamily: "'Nohemi', sans-serif",
             }}
           >
             <Megaphone size={36} style={{ opacity: 0.35, margin: "0 auto 12px", display: "block" }} />
@@ -2150,7 +2154,7 @@ function CivicAdvisoriesFeed({
               background: isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.02)",
               borderRadius: 24,
               border: `1px dashed ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.12)"}`,
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontFamily: "'Nohemi', sans-serif",
             }}
           >
             <Megaphone size={36} style={{ opacity: 0.35, margin: "0 auto 12px", display: "block" }} />
@@ -2184,7 +2188,7 @@ function CivicAdvisoriesFeed({
             justifyContent: "center",
             gap: 6,
             flexShrink: 0,
-            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontFamily: "'Nohemi', sans-serif",
           }}
         >
           <Sparkles size={13} color="#f97316" />
@@ -2357,7 +2361,7 @@ function CivicAdvisoryCard({ post, isDark, session, onNavigateToAuth, onShareToa
 
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+              <span style={{ fontSize: 15, fontWeight: 650, color: "var(--text-primary)", letterSpacing: "0.01em" }}>
                 {post.agency}
               </span>
               <span
@@ -2425,7 +2429,7 @@ function CivicAdvisoryCard({ post, isDark, session, onNavigateToAuth, onShareToa
       {/* ── 2. POST TEXT CONTENT WITH INLINE 'See More...' ── */}
       <div style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.55 }}>
         {post.title && (
-          <div style={{ fontWeight: 800, color: "var(--text-primary)", marginBottom: 4, fontSize: 15 }}>
+          <div style={{ fontWeight: 650, color: "var(--text-primary)", marginBottom: 4, fontSize: 15, letterSpacing: "0.015em", lineHeight: 1.35 }}>
             {post.title}
           </div>
         )}
@@ -2668,7 +2672,7 @@ function CivicAdvisoryCard({ post, isDark, session, onNavigateToAuth, onShareToa
                     gap: 6,
                     whiteSpace: "nowrap",
                     boxShadow: "0 2px 8px rgba(249, 115, 22, 0.3)",
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    fontFamily: "'Nohemi', sans-serif",
                   }}
                 >
                   <LogIn size={13} />
@@ -2700,7 +2704,7 @@ function CivicAdvisoryCard({ post, isDark, session, onNavigateToAuth, onShareToa
                       outline: "none",
                       fontSize: 12.5,
                       color: "var(--text-primary)",
-                      fontFamily: "'Plus Jakarta Sans', sans-serif",
+                      fontFamily: "'Nohemi', sans-serif",
                     }}
                   />
                   <button
@@ -2813,10 +2817,11 @@ function HospitalMonitoringSection({ records = [], expanded, onToggle, isDark })
           <div>
             <h2 style={{
               fontSize: 15,
-              fontWeight: 800,
+              fontWeight: 650,
               color: 'var(--text-primary)',
               margin: 0,
-              lineHeight: 1.2,
+              lineHeight: 1.25,
+              letterSpacing: "0.015em",
             }}>
               Hospital Monitoring
             </h2>
@@ -2971,10 +2976,11 @@ function BFPOperationsSection({ operations, expanded, onToggle, isDark }) {
           <div>
             <h2 style={{
               fontSize: 15,
-              fontWeight: 800,
+              fontWeight: 650,
               color: 'var(--text-primary)',
               margin: 0,
-              lineHeight: 1.2,
+              lineHeight: 1.25,
+              letterSpacing: "0.015em",
             }}>
               Wildfire Response
             </h2>
@@ -3053,10 +3059,11 @@ function CDRRMOOperationsSection({ operations, expanded, onToggle, isDark }) {
           <div>
             <h2 style={{
               fontSize: 15,
-              fontWeight: 800,
+              fontWeight: 650,
               color: 'var(--text-primary)',
               margin: 0,
-              lineHeight: 1.2,
+              lineHeight: 1.25,
+              letterSpacing: "0.015em",
             }}>
               CDRRMO Operations
             </h2>
@@ -3137,10 +3144,11 @@ function AgricultureDamagesSection({ damages, expanded, onToggle, isDark }) {
           <div>
             <h2 style={{
               fontSize: 15,
-              fontWeight: 800,
+              fontWeight: 650,
               color: 'var(--text-primary)',
               margin: 0,
-              lineHeight: 1.2,
+              lineHeight: 1.25,
+              letterSpacing: "0.015em",
             }}>
               Agricultural Damages
             </h2>
@@ -3251,10 +3259,11 @@ function InterruptionsSection({ waterInterruptions, powerInterruptions, expanded
           <div>
             <h2 style={{
               fontSize: 15,
-              fontWeight: 800,
+              fontWeight: 650,
               color: 'var(--text-primary)',
               margin: 0,
-              lineHeight: 1.2,
+              lineHeight: 1.25,
+              letterSpacing: "0.015em",
             }}>
               Scheduled Interruptions
             </h2>

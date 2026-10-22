@@ -108,7 +108,7 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
       <div className="hide-scroll" style={{ padding: "0 22px", paddingBottom: 110, flex: 1, overflowY: "auto" }}>
         <h1
           style={{
-            fontFamily: "Nunito, sans-serif",
+            fontFamily: "'Nohemi', sans-serif",
             fontWeight: 900,
             fontSize: 24,
             letterSpacing: -0.5,

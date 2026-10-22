@@ -208,7 +208,7 @@ export default function PinLocationModal({
           background: "rgba(0, 0, 0, 0.65)",
           backdropFilter: "blur(8px)",
           WebkitBackdropFilter: "blur(8px)",
-          fontFamily: "'Nunito', sans-serif",
+          fontFamily: "'Nohemi', sans-serif",
         }}
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose();

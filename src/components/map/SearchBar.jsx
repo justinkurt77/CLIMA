@@ -273,7 +273,7 @@ export default function SearchBar({
                   border: "none",
                   outline: "none",
                   background: "transparent",
-                  fontFamily: "Nunito, sans-serif",
+                  fontFamily: "'Nohemi', sans-serif",
                   fontSize: isMobile ? 13.5 : 14.5,
                   fontWeight: 700,
                   color: isDark ? "#ffffff" : "#09090b",
@@ -365,7 +365,7 @@ export default function SearchBar({
                       fontSize: 12,
                       color: isDark ? "#a1a1aa" : "#71717a",
                       fontWeight: 600,
-                      fontFamily: "Nunito, sans-serif",
+                      fontFamily: "'Nohemi', sans-serif",
                     }}
                   >
                     Naghahanap ng barangay…
@@ -427,7 +427,7 @@ export default function SearchBar({
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
-                          fontFamily: "Nunito, sans-serif",
+                          fontFamily: "'Nohemi', sans-serif",
                         }}
                       >
                         {feat.name}
@@ -437,7 +437,7 @@ export default function SearchBar({
                           fontSize: 11,
                           color: isDark ? "#a1a1aa" : "#71717a",
                           marginTop: 1,
-                          fontFamily: "Nunito, sans-serif",
+                          fontFamily: "'Nohemi', sans-serif",
                         }}
                       >
                         Palayan City, Nueva Ecija

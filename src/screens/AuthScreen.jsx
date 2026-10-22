@@ -522,7 +522,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
       >
         <div
           style={{
-            fontFamily: "'Baloo 2', cursive",
+            fontFamily: "'Nohemi', sans-serif",
             fontSize: 30,
             fontWeight: 900,
             lineHeight: 1,

@@ -947,34 +947,6 @@ export default function HomeScreen({
               </button>
             </div>
 
-            {/* Admin Console Shortcut Pill Button */}
-            {isUserAdmin && (
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setActiveScreen("admin")}
-                className="desktop-admin-badge-btn"
-                title={isUserSuperadmin ? "Go to Superadmin Console" : "Go to Admin Console"}
-                id="home-desktop-admin-btn"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 7,
-                  padding: "8px 14px",
-                  borderRadius: 14,
-                  background: isDark ? "rgba(245, 158, 11, 0.14)" : "rgba(245, 158, 11, 0.12)",
-                  border: "1px solid rgba(245, 158, 11, 0.38)",
-                  color: "#f59e0b",
-                  fontSize: 13,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(245, 158, 11, 0.15)",
-                }}
-              >
-                <Shield size={16} strokeWidth={2.4} />
-                <span>{isUserSuperadmin ? "Superadmin" : "Admin Console"}</span>
-              </motion.button>
-            )}
 
             {/* Download / Report Action Pill Button */}
             <motion.button
@@ -1196,7 +1168,7 @@ export default function HomeScreen({
                   <span
                     style={{
                       fontSize: 11,
-                      fontWeight: 800,
+                      fontWeight: 500,
                       padding: "2px 7px",
                       borderRadius: 8,
                       background: "rgba(249, 115, 22, 0.12)",
@@ -1263,7 +1235,7 @@ export default function HomeScreen({
                               <span
                                 style={{
                                   fontSize: 10,
-                                  fontWeight: 800,
+                                  fontWeight: 500,
                                   color: "var(--accent-orange)",
                                   background: "rgba(249, 115, 22, 0.15)",
                                   padding: "1px 6px",
@@ -1429,14 +1401,14 @@ export default function HomeScreen({
                 gap: 5,
                 fontSize: 12,
                 color: "var(--text-muted)",
-                fontWeight: 600,
+                fontWeight: 400,
                 marginBottom: 4,
               }}
             >
               <MapPin size={13} color="var(--accent-orange)" strokeWidth={2.4} />
               <span>Brgy. {selectedBarangay}, Palayan City</span>
             </div>
-            <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--text-primary)", letterSpacing: -0.3 }}>
+            <p style={{ margin: 0, fontSize: 18, fontWeight: 500, color: "var(--text-primary)", letterSpacing: -0.3 }}>
               {greeting}, {displayName}!
             </p>
           </div>
@@ -1522,7 +1494,7 @@ export default function HomeScreen({
                 borderRadius: 22,
                 padding: "9px 18px",
                 fontSize: 13,
-                fontWeight: 800,
+                fontWeight: 500,
                 cursor: "pointer",
                 boxShadow: "0 4px 14px var(--accent-glow)",
                 flexShrink: 0,
@@ -1572,7 +1544,7 @@ export default function HomeScreen({
                     style={{
                       margin: 0,
                       fontSize: 16,
-                      fontWeight: 800,
+                      fontWeight: 500,
                       color: "var(--text-primary)",
                       letterSpacing: -0.2,
                     }}
@@ -1659,7 +1631,7 @@ export default function HomeScreen({
                                       background: getCategoryColor(advisory.category) + "20",
                                       color: getCategoryColor(advisory.category),
                                       fontSize: 10,
-                                      fontWeight: 800,
+                                      fontWeight: 500,
                                       textTransform: "uppercase",
                                       letterSpacing: 0.3,
                                     }}
@@ -1670,7 +1642,7 @@ export default function HomeScreen({
                                     style={{
                                       fontSize: 10,
                                       color: "var(--text-muted)",
-                                      fontWeight: 600,
+                                      fontWeight: 400,
                                     }}
                                   >
                                     {new Date(advisory.published_at).toLocaleDateString()}
@@ -1680,7 +1652,7 @@ export default function HomeScreen({
                                   style={{
                                     margin: "0 0 6px",
                                     fontSize: 14,
-                                    fontWeight: 800,
+                                    fontWeight: 500,
                                     color: "var(--text-primary)",
                                     lineHeight: 1.3,
                                   }}
@@ -1719,11 +1691,11 @@ export default function HomeScreen({
         <div style={{ padding: "14px 16px 0" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, padding: "0 2px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-primary)" }}>Palayan Barangays</span>
+              <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>Palayan Barangays</span>
               <span
                 style={{
                   fontSize: 10,
-                  fontWeight: 800,
+                  fontWeight: 500,
                   padding: "2px 6px",
                   borderRadius: 6,
                   background: "rgba(249, 115, 22, 0.12)",
@@ -1739,7 +1711,7 @@ export default function HomeScreen({
                 background: "none",
                 border: "none",
                 fontSize: 11,
-                fontWeight: 700,
+                fontWeight: 400,
                 color: "var(--accent-orange)",
                 cursor: "pointer",
                 padding: 0,
@@ -1771,7 +1743,7 @@ export default function HomeScreen({
                     borderRadius: 20,
                     whiteSpace: "nowrap",
                     fontSize: 12,
-                    fontWeight: isCurrent ? 800 : 600,
+                    fontWeight: isCurrent ? 500 : 400,
                     cursor: "pointer",
                     background: isCurrent
                       ? "var(--accent-orange)"
@@ -1883,7 +1855,7 @@ export default function HomeScreen({
                     <div
                       style={{
                         fontSize: 74,
-                        fontWeight: 900,
+                        fontWeight: 200,
                         lineHeight: 1,
                         letterSpacing: -3.5,
                         color: "#ffffff",
@@ -1892,10 +1864,10 @@ export default function HomeScreen({
                     >
                       {currentTemp != null ? `${currentTemp}°` : "--"}
                     </div>
-                    <div style={{ marginTop: 8, fontSize: 18, fontWeight: 700, color: "#ffffff", textShadow: "0 2px 8px rgba(0, 0, 0, 0.6)" }}>
+                    <div style={{ marginTop: 8, fontSize: 18, fontWeight: 400, color: "#ffffff", textShadow: "0 2px 8px rgba(0, 0, 0, 0.6)" }}>
                       {weatherInfo.msg}
                     </div>
-                    <div style={{ marginTop: 4, fontSize: 12, color: "#ffffff", fontWeight: 700, textShadow: "0 1px 6px rgba(0, 0, 0, 0.6)" }}>
+                    <div style={{ marginTop: 4, fontSize: 12, color: "#ffffff", fontWeight: 300, textShadow: "0 1px 6px rgba(0, 0, 0, 0.6)" }}>
                       Brgy. {selectedBarangay}, Palayan City
                     </div>
 
@@ -1907,7 +1879,7 @@ export default function HomeScreen({
                           padding: "4px 10px",
                           borderRadius: 12,
                           fontSize: 12,
-                          fontWeight: 700,
+                          fontWeight: 400,
                           color: "#ffffff",
                         }}
                       >
@@ -1920,7 +1892,7 @@ export default function HomeScreen({
                           padding: "4px 10px",
                           borderRadius: 12,
                           fontSize: 12,
-                          fontWeight: 700,
+                          fontWeight: 400,
                           color: "rgba(255, 255, 255, 0.7)",
                         }}
                       >
@@ -1939,7 +1911,7 @@ export default function HomeScreen({
                         padding: "6px 12px",
                         borderRadius: 14,
                         fontSize: 11,
-                        fontWeight: 800,
+                        fontWeight: 500,
                         letterSpacing: 0.3,
                         marginBottom: 8,
                       }}
@@ -1955,10 +1927,10 @@ export default function HomeScreen({
                         textAlign: "center",
                       }}
                     >
-                      <div style={{ fontSize: 9, color: "rgba(255, 255, 255, 0.7)", fontWeight: 800, letterSpacing: 0.5, marginBottom: 4 }}>
+                      <div style={{ fontSize: 9, color: "rgba(255, 255, 255, 0.7)", fontWeight: 500, letterSpacing: 0.5, marginBottom: 4 }}>
                         HEAT INDEX
                       </div>
-                      <div style={{ fontSize: 20, fontWeight: 900, color: "#ffffff" }}>
+                      <div style={{ fontSize: 20, fontWeight: 500, color: "#ffffff" }}>
                         {currentTemp != null ? `${currentTemp + 6}°C` : "--"}
                       </div>
                     </div>
@@ -2051,11 +2023,11 @@ export default function HomeScreen({
                       flexShrink: 0,
                     }}
                   >
-                    <span style={{ fontSize: 11, color: isFirst ? "var(--text-primary)" : "var(--text-muted)", fontWeight: isFirst ? 700 : 600 }}>
+                    <span style={{ fontSize: 11, color: isFirst ? "var(--text-primary)" : "var(--text-muted)", fontWeight: isFirst ? 500 : 400 }}>
                       {slot.time}
                     </span>
                     <SlotIcon size={20} color={isFirst ? "var(--text-primary)" : "var(--text-muted)"} strokeWidth={1.8} />
-                    <span style={{ fontSize: 14, fontWeight: 800, color: isFirst ? "var(--text-primary)" : "var(--text-secondary)" }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: isFirst ? "var(--text-primary)" : "var(--text-secondary)" }}>
                       {slot.temp}°
                     </span>
                   </div>
@@ -2095,7 +2067,7 @@ export default function HomeScreen({
                   <span
                     style={{
                       fontSize: 13,
-                      fontWeight: d.isToday ? 800 : 600,
+                      fontWeight: d.isToday ? 500 : 400,
                       color: d.isToday ? "var(--text-primary)" : "var(--text-secondary)",
                       width: 52,
                     }}
@@ -2109,7 +2081,7 @@ export default function HomeScreen({
                         style={{
                           fontSize: 10,
                           color: "var(--text-primary)",
-                          fontWeight: 700,
+                          fontWeight: 500,
                           background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)",
                           padding: "2px 6px",
                           borderRadius: 6,
@@ -2120,10 +2092,10 @@ export default function HomeScreen({
                     )}
                   </div>
                   <div style={{ display: "flex", gap: 14 }}>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
                       {d.high}°
                     </span>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-muted)" }}>
+                    <span style={{ fontSize: 14, fontWeight: 300, color: "var(--text-muted)" }}>
                       {d.low}°
                     </span>
                   </div>

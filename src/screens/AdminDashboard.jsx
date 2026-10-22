@@ -13,7 +13,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect from "../components/ui/CustomSelect";
 import BarangayMultiSelect from "../components/ui/BarangayMultiSelect";
-import { parseBarangayList } from "../lib/palayanBarangays";
+import { PALAYAN_CITY_BARANGAYS, parseBarangayList } from "../lib/palayanBarangays";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
@@ -30,6 +30,7 @@ import { usePaginatedCDRRMOOps } from "../hooks/usePaginatedCDRRMOOps";
 import { usePaginatedBFPOps } from "../hooks/usePaginatedBFPOps";
 import AdminOverviewCommand from "../components/dashboard/AdminOverviewCommand";
 import ElNinoMonitoringDashboard from "../components/dashboard/ElNinoMonitoringDashboard";
+import SecurityConfirmModal from "../components/ui/SecurityConfirmModal";
 import { getOutageEndTime, isPowerOutageActive } from "../hooks/usePowerInterruptionAdvisories";
 import { getWaterInterruptionEndTime, isWaterInterruptionActive } from "../hooks/useWaterInterruptionAdvisories";
 
@@ -109,7 +110,7 @@ function getTheme(dept, isDark) {
 }
 
 const makeStyles = (T, isDark) => ({
-  font: "var(--font-sans, -apple-system, BlinkMacSystemFont, 'Inter', 'Outfit', sans-serif)",
+  font: "var(--font-sans, 'Nohemi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif)",
   ...T,
   isDark,
   green: isDark ? "#22c55e" : "#16a34a",
@@ -147,7 +148,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
     position: "absolute",
     top: 68,
     bottom: 14,
-    left: 88,
+    left: 102,
     right: 14,
     borderRadius: 22,
     background: isDark ? "rgba(18, 18, 20, 0.94)" : "rgba(255, 255, 255, 0.94)",
@@ -267,7 +268,51 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
     setShowModal(true);
   };
 
-  const showConfirmModal = (title, message, onConfirm, confirmText = "Confirm", cancelText = "Cancel") => {
+  const [securityModalConfig, setSecurityModalConfig] = useState({
+    isOpen: false,
+    title: "Security Confirmation",
+    message: "",
+    itemName: "",
+    confirmText: "Verify & Delete",
+    onConfirmed: null,
+  });
+
+  const showSecurityConfirmModal = useCallback(({
+    title = "Security Confirmation",
+    message = "Deleting this item is a sensitive, permanent action. Please enter your admin password to authenticate and proceed.",
+    itemName = "",
+    confirmText = "Verify & Delete",
+    onConfirmed,
+  }) => {
+    setSecurityModalConfig({
+      isOpen: true,
+      title,
+      message,
+      itemName,
+      confirmText,
+      onConfirmed,
+    });
+  }, []);
+
+  const showConfirmModal = (title, message, onConfirm, confirmText = "Confirm", cancelText = "Cancel", options = {}) => {
+    const isDeletionAction =
+      options.requiresPassword ||
+      title.toLowerCase().includes("delete") ||
+      title.toLowerCase().includes("revoke") ||
+      title.toLowerCase().includes("clear") ||
+      confirmText.toLowerCase().includes("delete");
+
+    if (isDeletionAction) {
+      showSecurityConfirmModal({
+        title: title || "Security Confirmation",
+        message: message || "Deleting this record requires admin password verification.",
+        itemName: options.itemName || "",
+        confirmText: confirmText === "Confirm" ? "Verify & Delete" : confirmText,
+        onConfirmed: onConfirm,
+      });
+      return;
+    }
+
     setModalConfig({
       type: "confirm",
       title,
@@ -467,7 +512,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
           top: 0,
           bottom: 0,
           left: 0,
-          width: 72,
+          width: 86,
           background: isDark ? "rgba(10, 10, 12, 0.96)" : "rgba(255, 255, 255, 0.96)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
@@ -486,8 +531,8 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             onClick={() => setActiveTab("overview")}
             title="CLIMA GIS Command"
             style={{
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               padding: 0,
               border: "none",
               background: "transparent",
@@ -502,8 +547,8 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
               src="/logo.png"
               alt="CLIMA Logo"
               style={{
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 objectFit: "contain",
                 filter: "drop-shadow(0 2px 10px rgba(245, 158, 11, 0.5))",
               }}
@@ -516,8 +561,8 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             }}
             title={currentUser?.email || (isSuperadmin ? "Superadmin" : "Admin")}
             style={{
-              width: 38,
-              height: 38,
+              width: 42,
+              height: 42,
               borderRadius: "50%",
               background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)",
               border: "1.5px solid rgba(245, 158, 11, 0.4)",
@@ -527,7 +572,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
               cursor: isSuperadmin ? "pointer" : "default",
               color: "#f59e0b",
               fontWeight: 800,
-              fontSize: 13,
+              fontSize: 14,
             }}
           >
             {(currentUser?.email?.[0] || (isSuperadmin ? "S" : adminDepartment?.name?.[0]) || "A").toUpperCase()}
@@ -556,9 +601,9 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                 title={tab.label}
                 aria-label={tab.label}
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 14,
+                  width: 48,
+                  height: 48,
+                  borderRadius: 15,
                   border: "none",
                   background: isActive ? "linear-gradient(135deg, #f59e0b, #f97316)" : "transparent",
                   color: isActive ? "#ffffff" : isDark ? "#a1a1aa" : "#71717a",
@@ -596,9 +641,9 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             onClick={toggleTheme}
             title={isDark ? "Light Mode" : "Dark Mode"}
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
+              width: 36,
+              height: 36,
+              borderRadius: 10,
               border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"}`,
               background: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
               color: isDark ? "#f59e0b" : "#d97706",
@@ -608,16 +653,16 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
               justifyContent: "center",
             }}
           >
-            {isDark ? <Sun size={14} /> : <Moon size={14} />}
+            {isDark ? <Sun size={15} /> : <Moon size={15} />}
           </button>
 
           <button
             onClick={() => fetchData()}
             title="Refresh Telemetry"
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
+              width: 36,
+              height: 36,
+              borderRadius: 10,
               border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"}`,
               background: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
               color: isDark ? "#a1a1aa" : "#71717a",
@@ -627,7 +672,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
               justifyContent: "center",
             }}
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={15} />
           </button>
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, textAlign: "center" }}>
@@ -643,12 +688,12 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             onClick={onLogout}
             title="Sign Out"
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              border: "1px solid rgba(239, 68, 68, 0.3)",
-              background: "rgba(239, 68, 68, 0.12)",
-              color: "#ef4444",
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              border: `1px solid ${isDark ? "rgba(239, 68, 68, 0.35)" : "rgba(220, 38, 38, 0.3)"}`,
+              background: isDark ? "rgba(239, 68, 68, 0.14)" : "rgba(239, 68, 68, 0.08)",
+              color: isDark ? "#ef4444" : "#dc2626",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -656,7 +701,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
               transition: "all 0.15s ease",
             }}
           >
-            <LogOut size={13} />
+            <LogOut size={14} />
           </button>
         </div>
       </aside>
@@ -666,7 +711,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
         style={{
           position: "absolute",
           top: 14,
-          left: 88,
+          left: 102,
           right: 14,
           height: 44,
           zIndex: 40,
@@ -846,7 +891,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             style={floatingTabStyle}
           >
             <BackToMapButton />
-            <AdvisoriesTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} />
+            <AdvisoriesTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} showSecurityConfirmModal={showSecurityConfirmModal} />
           </motion.div>
 
           <motion.div
@@ -1036,7 +1081,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                 style={floatingTabStyle}
               >
                 <BackToMapButton />
-                <ActivityLogsTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} isSuperadmin={isSuperadmin} />
+                <ActivityLogsTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} isSuperadmin={isSuperadmin} showSecurityConfirmModal={showSecurityConfirmModal} />
               </motion.div>
             </>
           )}
@@ -1138,6 +1183,19 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Security Confirmation Modal for Deletions */}
+      <SecurityConfirmModal
+        isOpen={securityModalConfig.isOpen}
+        onClose={() => setSecurityModalConfig((prev) => ({ ...prev, isOpen: false }))}
+        onConfirmed={securityModalConfig.onConfirmed}
+        title={securityModalConfig.title}
+        message={securityModalConfig.message}
+        itemName={securityModalConfig.itemName}
+        confirmText={securityModalConfig.confirmText}
+        isDark={S.isDark}
+        currentUserEmail={currentUser?.email}
+      />
     </div>
   );
 }
@@ -1308,6 +1366,7 @@ function OverviewTab({
         isSuperadmin={isSuperadmin}
         adminDepartment={adminDepartment}
         currentUser={currentUser}
+        leftInset={98}
       />
 
       {/* Floating Detailed Analytics Panel when opened */}
@@ -1321,7 +1380,7 @@ function OverviewTab({
               position: "absolute",
               top: 68,
               bottom: 14,
-              left: 84,
+              left: 102,
               right: 14,
               borderRadius: 22,
               background: "rgba(14, 23, 14, 0.94)",
@@ -3475,7 +3534,7 @@ function DashboardReportModal({ report, S, onClose, onStatusChange }) {
 }
 
 /* ── Activity Logs Tab ── */
-function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle, isSuperadmin = true }) {
+function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle, isSuperadmin = true, showSecurityConfirmModal }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [usersMap, setUsersMap] = useState({});
@@ -3582,20 +3641,38 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle, isSuperadmin =
     }
   };
 
-  const handleDeleteSingle = async (logId) => {
-    if (!window.confirm("Permanently delete this audit log entry?")) return;
-    try {
+  const handleDeleteSingle = (logId) => {
+    const proceedDelete = async () => {
       try {
-        await fetch(`/api/admin/audit-logs/${logId}`, { method: "DELETE" });
-      } catch {
         try {
-          await fetch(`http://localhost:3001/api/admin/audit-logs/${logId}`, { method: "DELETE" });
-        } catch {}
+          await fetch(`/api/admin/audit-logs/${logId}`, { method: "DELETE" });
+        } catch {
+          try {
+            await fetch(`http://localhost:3001/api/admin/audit-logs/${logId}`, { method: "DELETE" });
+          } catch {}
+        }
+        await supabase.from("audit_logs").delete().eq("id", logId);
+        setLogs(prev => prev.filter(l => l.id !== logId));
+        setFeedbackMsg({ type: "success", text: "Audit log entry deleted successfully." });
+        setTimeout(() => setFeedbackMsg(null), 3500);
+      } catch (err) {
+        logger.error("Failed to delete log entry:", err);
+        setFeedbackMsg({ type: "error", text: "Failed to delete log: " + (err.message || "Error") });
       }
-      await supabase.from("audit_logs").delete().eq("id", logId);
-      setLogs(prev => prev.filter(l => l.id !== logId));
-    } catch (err) {
-      logger.error("Failed to delete log entry:", err);
+    };
+
+    if (showSecurityConfirmModal) {
+      showSecurityConfirmModal({
+        title: "Delete Audit Log",
+        message: "Deleting an audit log entry permanently removes compliance history. Please enter your admin password to authenticate and proceed.",
+        itemName: `Audit Log #${logId.slice(0, 8)}`,
+        confirmText: "Verify & Delete",
+        onConfirmed: proceedDelete,
+      });
+    } else {
+      if (window.confirm("Permanently delete this audit log entry?")) {
+        proceedDelete();
+      }
     }
   };
 
@@ -3685,7 +3762,19 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle, isSuperadmin =
 
             {isSuperadmin && logs.length > 0 && (
               <button
-                onClick={() => setShowClearModal(true)}
+                onClick={() => {
+                  if (showSecurityConfirmModal) {
+                    showSecurityConfirmModal({
+                      title: "Clear All Audit Logs",
+                      message: "This will permanently purge all historical audit trail entries from the system database. This action cannot be undone. Please enter your admin password to proceed.",
+                      itemName: `All Audit Logs (${logs.length} entries)`,
+                      confirmText: "Verify & Purge All",
+                      onConfirmed: handleClearLogs,
+                    });
+                  } else {
+                    setShowClearModal(true);
+                  }
+                }}
                 style={{
                   padding: "8px 14px",
                   borderRadius: 8,
@@ -3988,7 +4077,7 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle, isSuperadmin =
 
 
 /* ── Advisories Tab (Phase 3) - REDESIGNED WITH BETTER WORKFLOW ── */
-function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, canCreate, canEdit, canDelete }) {
+function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, canCreate, canEdit, canDelete, showSecurityConfirmModal }) {
   const [advisories, setAdvisories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -4048,6 +4137,15 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
   };
 
   const showConfirmModal = (title, message, onConfirm, confirmText = "Confirm") => {
+    if (showSecurityConfirmModal && (title.toLowerCase().includes("delete") || confirmText.toLowerCase().includes("delete"))) {
+      showSecurityConfirmModal({
+        title,
+        message,
+        confirmText: "Verify & Delete",
+        onConfirmed: onConfirm,
+      });
+      return;
+    }
     setModalConfig({
       title,
       message,
@@ -5216,6 +5314,7 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
   const [isExpanded, setIsExpanded] = useState(true);
   const [editId, setEditId] = useState(null);
   const [expandedDays, setExpandedDays] = useState({});
+  const [barangayError, setBarangayError] = useState(false);
   const [formData, setFormData] = useState({
     operation_date: new Date().toISOString().split('T')[0],
     operation_time: "",
@@ -5266,12 +5365,25 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
         return;
       }
 
+      const selectedList = parseBarangayList(formData.location);
+      if (selectedList.length === 0 && !formData.location.trim()) {
+        setBarangayError(true);
+        showErrorModal(
+          "Location Required",
+          "Please select at least one Palayan City barangay from the dropdown checklist."
+        );
+        return;
+      }
+      setBarangayError(false);
+
+      const finalLocation = selectedList.length > 0 ? selectedList.join(", ") : formData.location.trim();
+
       const payload = {
         operation_date: formData.operation_date,
         operation_time: formData.operation_time,
         operation_type: formData.operation_type,
         description: formData.description || null,
-        location: formData.location,
+        location: finalLocation,
         personnel_deployed: parseInt(formData.personnel_deployed) || 0,
         beneficiaries: parseInt(formData.beneficiaries) || 0
       };
@@ -5287,6 +5399,7 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
       }
       
       setEditId(null);
+      setBarangayError(false);
       setFormData({
         operation_date: new Date().toISOString().split('T')[0],
         operation_time: "",
@@ -5304,12 +5417,13 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
   };
 
   const editRecord = (record) => {
+    setBarangayError(false);
     setFormData({
       operation_date: record.operation_date,
       operation_time: record.operation_time,
       operation_type: record.operation_type,
       description: record.description || "",
-      location: record.location,
+      location: record.location || "",
       personnel_deployed: record.personnel_deployed,
       beneficiaries: record.beneficiaries
     });
@@ -5590,8 +5704,31 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                       </select>
                     </div>
                     <div style={{ gridColumn: "1 / -1" }}>
-                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Location</label>
-                      <input type="text" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} required placeholder="e.g., Brgy. Singalat" style={inputStyle} />
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block" }}>
+                          Location (Palayan City Barangays) *
+                        </label>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", display: "flex", alignItems: "center", gap: 4 }}>
+                          <ShieldAlert size={12} /> CDRRMO Response Area
+                        </span>
+                      </div>
+                      <BarangayMultiSelect
+                        selected={parseBarangayList(formData.location)}
+                        onChange={(newList) => {
+                          if (newList.length > 0) setBarangayError(false);
+                          setFormData({ ...formData, location: newList.join(", ") });
+                        }}
+                        error={barangayError}
+                        isDark={S.isDark}
+                        accent="#f59e0b"
+                        placeholder="Select Palayan barangay(s) from dropdown checklist..."
+                      />
+                      {barangayError && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, color: "#ef4444", fontSize: 11.5, fontWeight: 700, marginTop: 5 }}>
+                          <AlertCircle size={13} strokeWidth={2.4} />
+                          <span>Please select at least one Palayan City barangay</span>
+                        </div>
+                      )}
                     </div>
                     <div style={{ gridColumn: "1 / -1" }}>
                       <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Description</label>
@@ -5766,6 +5903,7 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
   const [isExpanded, setIsExpanded] = useState(true);
   const [editId, setEditId] = useState(null);
   const [expandedDays, setExpandedDays] = useState({});
+  const [barangayError, setBarangayError] = useState(false);
   const [formData, setFormData] = useState({
     operation_date: new Date().toISOString().split('T')[0],
     operation_time: "",
@@ -5818,12 +5956,25 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
         return;
       }
 
+      const selectedList = parseBarangayList(formData.location);
+      if (selectedList.length === 0 && !formData.location.trim()) {
+        setBarangayError(true);
+        showErrorModal(
+          "Location Required",
+          "Please select at least one Palayan City barangay from the dropdown checklist."
+        );
+        return;
+      }
+      setBarangayError(false);
+
+      const finalLocation = selectedList.length > 0 ? selectedList.join(", ") : formData.location.trim();
+
       const payload = {
         operation_date: formData.operation_date,
         operation_time: formData.operation_time,
         operation_type: formData.operation_type,
         description: formData.description || null,
-        location: formData.location,
+        location: finalLocation,
         personnel_deployed: parseInt(formData.personnel_deployed) || 0,
         fire_trucks_dispatched: parseInt(formData.fire_trucks_dispatched) || 0,
         casualties: parseInt(formData.casualties) || 0,
@@ -5841,6 +5992,7 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
       }
       
       setEditId(null);
+      setBarangayError(false);
       setFormData({
         operation_date: new Date().toISOString().split('T')[0],
         operation_time: "",
@@ -5860,12 +6012,13 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
   };
 
   const editRecord = (record) => {
+    setBarangayError(false);
     setFormData({
       operation_date: record.operation_date,
       operation_time: record.operation_time,
       operation_type: record.operation_type,
       description: record.description || "",
-      location: record.location,
+      location: record.location || "",
       personnel_deployed: record.personnel_deployed,
       fire_trucks_dispatched: record.fire_trucks_dispatched,
       casualties: record.casualties,
@@ -6152,8 +6305,31 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
                       </select>
                     </div>
                     <div style={{ gridColumn: "1 / -1" }}>
-                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Location</label>
-                      <input type="text" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} required placeholder="e.g., Brgy. Atate" style={inputStyle} />
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block" }}>
+                          Location (Palayan City Barangays) *
+                        </label>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", display: "flex", alignItems: "center", gap: 4 }}>
+                          <Flame size={12} /> BFP Response Area
+                        </span>
+                      </div>
+                      <BarangayMultiSelect
+                        selected={parseBarangayList(formData.location)}
+                        onChange={(newList) => {
+                          if (newList.length > 0) setBarangayError(false);
+                          setFormData({ ...formData, location: newList.join(", ") });
+                        }}
+                        error={barangayError}
+                        isDark={S.isDark}
+                        accent="#ef4444"
+                        placeholder="Select Palayan barangay(s) from dropdown checklist..."
+                      />
+                      {barangayError && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, color: "#ef4444", fontSize: 11.5, fontWeight: 700, marginTop: 5 }}>
+                          <AlertCircle size={13} strokeWidth={2.4} />
+                          <span>Please select at least one Palayan City barangay</span>
+                        </div>
+                      )}
                     </div>
                     <div style={{ gridColumn: "1 / -1" }}>
                       <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4 }}>Description</label>
@@ -7617,7 +7793,6 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
           { label: "Active Issues", value: activeCount, sub: activeCount > 0 ? "Currently ongoing" : "Water supply normal", icon: Droplet, color: activeCount > 0 ? "#ef4444" : "#0284c7", bg: activeCount > 0 ? "rgba(239, 68, 68, 0.12)" : "rgba(2, 132, 199, 0.12)" },
           { label: "Affected Days", value: daysWithInterruptions, sub: "Last 30 days", icon: Calendar, color: "#0284c7", bg: "rgba(2, 132, 199, 0.12)" },
           { label: "Total Incidents", value: recent.length, sub: "Recorded events", icon: Droplet, color: "#38bdf8", bg: "rgba(56, 189, 248, 0.12)" },
-          { label: "Households", value: totalHouseholds.toLocaleString(), sub: "Affected", icon: Home, color: "#a855f7", bg: "rgba(168, 85, 247, 0.12)" },
           { label: "Total Duration", value: `${totalDurationHours.toFixed(1)}h`, sub: "Hours cumulative", icon: Clock, color: "#f59e0b", bg: "rgba(245, 158, 11, 0.12)" },
           { label: "PCWD / Balibago", value: `${pcwdCount} / ${balibagoCount}`, sub: "Provider split", icon: Activity, color: "#22c55e", bg: "rgba(34, 197, 94, 0.12)" },
         ].map(item => {
@@ -8558,7 +8733,6 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
           { label: "Active Outages", value: activeCount, sub: activeCount > 0 ? "Currently ongoing" : "Grid normal", icon: Zap, color: activeCount > 0 ? "#ef4444" : "#10b981", bg: activeCount > 0 ? "rgba(239, 68, 68, 0.12)" : "rgba(16, 185, 129, 0.12)" },
           { label: "Outage Days", value: daysWithOutages, sub: "Last 30 days", icon: Calendar, color: "#eab308", bg: "rgba(234, 179, 8, 0.12)" },
           { label: "Total Outages", value: totalOutages, sub: "Incidents", icon: Zap, color: "#ef4444", bg: "rgba(239, 68, 68, 0.12)" },
-          { label: "Households", value: totalHouseholds.toLocaleString(), sub: "Affected", icon: Home, color: "#a855f7", bg: "rgba(168, 85, 247, 0.12)" },
           { label: "Total Duration", value: `${(totalDurationMins / 60).toFixed(1)}h`, sub: "Hours cumulative", icon: Clock, color: "#f97316", bg: "rgba(249, 115, 22, 0.12)" },
           { label: "Avg Outages/Day", value: avgOutages, sub: "Active days", icon: Activity, color: "#38bdf8", bg: "rgba(56, 189, 248, 0.12)" },
         ].map(item => {

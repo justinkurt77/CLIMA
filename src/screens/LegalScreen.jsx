@@ -109,7 +109,7 @@ function LegalScreen() {
             style={{
               fontSize: 28,
               fontWeight: 800,
-              fontFamily: "Baloo 2, cursive",
+              fontFamily: "'Nohemi', sans-serif",
               color: "var(--text-primary)",
               marginBottom: 12,
               marginTop: idx > 0 ? 24 : 0,
@@ -480,7 +480,7 @@ function LegalScreen() {
           style={{
             fontSize: 20,
             fontWeight: 800,
-            fontFamily: "Baloo 2, cursive",
+            fontFamily: "'Nohemi', sans-serif",
             color: "var(--text-primary)",
             margin: 0,
           }}

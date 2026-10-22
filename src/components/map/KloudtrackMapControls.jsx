@@ -298,7 +298,7 @@ export function KloudtrackMapControls({
             WebkitBackdropFilter: "blur(16px)",
             boxShadow: `0 6px 20px ${currentConfig.glowColor}`,
             cursor: "pointer",
-            fontFamily: "Nunito, sans-serif",
+            fontFamily: "'Nohemi', sans-serif",
             whiteSpace: "nowrap",
             flexShrink: 0,
             transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
@@ -328,7 +328,8 @@ export function KloudtrackMapControls({
                 className="kloud-metric-label"
                 style={{
                   fontSize: 13,
-                  fontWeight: 800,
+                  fontWeight: 600,
+                  letterSpacing: "0.02em",
                   color: isDark ? "#ffffff" : "#09090b",
                   whiteSpace: "nowrap",
                 }}
@@ -340,7 +341,8 @@ export function KloudtrackMapControls({
             <span
               style={{
                 fontSize: isMobile ? 11 : 11.5,
-                fontWeight: 800,
+                fontWeight: 650,
+                letterSpacing: "0.02em",
                 color: currentConfig.color,
                 background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
                 padding: "2px 8px",
@@ -394,13 +396,13 @@ export function KloudtrackMapControls({
                   ? "0 16px 40px rgba(0,0,0,0.6)"
                   : "0 16px 40px rgba(0,0,0,0.15)",
                 width: 270,
-                fontFamily: "Nunito, sans-serif",
+                fontFamily: "'Nohemi', sans-serif",
               }}
             >
               <div
                 style={{
                   fontSize: 11,
-                  fontWeight: 800,
+                  fontWeight: 650,
                   color: isDark ? "#a1a1aa" : "#71717a",
                   textTransform: "uppercase",
                   letterSpacing: "0.06em",
@@ -411,7 +413,7 @@ export function KloudtrackMapControls({
                 }}
               >
                 <span>IoT Weather Metric</span>
-                <span style={{ fontSize: 10, color: currentConfig.color, fontWeight: 700 }}>
+                <span style={{ fontSize: 10, color: currentConfig.color, fontWeight: 600, letterSpacing: "0.02em" }}>
                   Live Telemetry
                 </span>
               </div>
@@ -473,9 +475,10 @@ export function KloudtrackMapControls({
                           <div
                             style={{
                               fontSize: 12,
-                              fontWeight: isActive ? 800 : 700,
+                              fontWeight: isActive ? 650 : 550,
+                              letterSpacing: "0.015em",
                               color: isDark ? "#ffffff" : "#09090b",
-                              lineHeight: 1.2,
+                              lineHeight: 1.25,
                             }}
                           >
                             {metric.label}
@@ -483,7 +486,8 @@ export function KloudtrackMapControls({
                           <div
                             style={{
                               fontSize: 10,
-                              fontWeight: 600,
+                              fontWeight: 500,
+                              letterSpacing: "0.01em",
                               color: metric.color,
                               lineHeight: 1.2,
                             }}
@@ -497,7 +501,8 @@ export function KloudtrackMapControls({
                         <span
                           style={{
                             fontSize: 11,
-                            fontWeight: 800,
+                            fontWeight: 650,
+                            letterSpacing: "0.015em",
                             color: metric.color,
                             background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
                             padding: "2px 7px",
@@ -547,7 +552,7 @@ export function KloudtrackMapControls({
               ? "0 6px 20px rgba(0,0,0,0.5)"
               : "0 6px 20px rgba(0,0,0,0.08)",
             cursor: "pointer",
-            fontFamily: "Nunito, sans-serif",
+            fontFamily: "'Nohemi', sans-serif",
             whiteSpace: "nowrap",
             flexShrink: 0,
             transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
@@ -573,11 +578,12 @@ export function KloudtrackMapControls({
             </div>
 
             {!isMobile && (
-              <div className="kloud-scale-text-block" style={{ textAlign: "left", lineHeight: 1.2 }}>
+              <div className="kloud-scale-text-block" style={{ textAlign: "left", lineHeight: 1.25 }}>
                 <div
                   style={{
                     fontSize: 12,
-                    fontWeight: 800,
+                    fontWeight: 600,
+                    letterSpacing: "0.02em",
                     color: isDark ? "#ffffff" : "#09090b",
                     whiteSpace: "nowrap",
                   }}
@@ -587,7 +593,8 @@ export function KloudtrackMapControls({
                 <div
                   style={{
                     fontSize: 10.5,
-                    fontWeight: 700,
+                    fontWeight: 500,
+                    letterSpacing: "0.015em",
                     color: currentConfig.statusColor,
                     whiteSpace: "nowrap",
                   }}
@@ -640,7 +647,7 @@ export function KloudtrackMapControls({
                   ? "0 16px 40px rgba(0,0,0,0.6)"
                   : "0 16px 40px rgba(0,0,0,0.15)",
                 width: 290,
-                fontFamily: "Nunito, sans-serif",
+                fontFamily: "'Nohemi', sans-serif",
               }}
             >
               {/* Station Switcher (if > 1 station) */}
@@ -727,7 +734,8 @@ export function KloudtrackMapControls({
                 <span
                   style={{
                     fontSize: 12.5,
-                    fontWeight: 800,
+                    fontWeight: 650,
+                    letterSpacing: "0.015em",
                     color: isDark ? "#ffffff" : "#09090b",
                   }}
                 >
@@ -736,7 +744,8 @@ export function KloudtrackMapControls({
                 <span
                   style={{
                     fontSize: 10.5,
-                    fontWeight: 800,
+                    fontWeight: 650,
+                    letterSpacing: "0.015em",
                     color: currentConfig.statusColor,
                     background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
                     padding: "2px 7px",
@@ -778,7 +787,8 @@ export function KloudtrackMapControls({
                   display: "flex",
                   justifyContent: "space-between",
                   fontSize: 9,
-                  fontWeight: 700,
+                  fontWeight: 600,
+                  letterSpacing: "0.01em",
                   color: isDark ? "#a1a1aa" : "#71717a",
                   marginBottom: 8,
                 }}
@@ -788,7 +798,7 @@ export function KloudtrackMapControls({
                     key={idx}
                     style={{
                       color: lvl.active ? (isDark ? "#ffffff" : "#09090b") : "inherit",
-                      fontWeight: lvl.active ? 900 : 700,
+                      fontWeight: lvl.active ? 700 : 500,
                     }}
                   >
                     {lvl.range}

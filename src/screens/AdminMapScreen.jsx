@@ -134,7 +134,7 @@ export default function AdminMapScreen({
         height: "100%",
         background: Z[50],
         color: Z[950],
-        fontFamily: "'Nunito', -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily: "'Nohemi', -apple-system, BlinkMacSystemFont, sans-serif",
         overflow: "hidden",
         borderRadius: "inherit",
         zIndex: 50,
