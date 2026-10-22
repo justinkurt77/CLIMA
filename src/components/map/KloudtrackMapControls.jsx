@@ -298,7 +298,7 @@ export function KloudtrackMapControls({
             WebkitBackdropFilter: "blur(16px)",
             boxShadow: `0 6px 20px ${currentConfig.glowColor}`,
             cursor: "pointer",
-            fontFamily: "'Nohemi', sans-serif",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
             whiteSpace: "nowrap",
             flexShrink: 0,
             transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
@@ -396,7 +396,7 @@ export function KloudtrackMapControls({
                   ? "0 16px 40px rgba(0,0,0,0.6)"
                   : "0 16px 40px rgba(0,0,0,0.15)",
                 width: 270,
-                fontFamily: "'Nohemi', sans-serif",
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
               }}
             >
               <div
@@ -552,7 +552,7 @@ export function KloudtrackMapControls({
               ? "0 6px 20px rgba(0,0,0,0.5)"
               : "0 6px 20px rgba(0,0,0,0.08)",
             cursor: "pointer",
-            fontFamily: "'Nohemi', sans-serif",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
             whiteSpace: "nowrap",
             flexShrink: 0,
             transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
@@ -647,7 +647,7 @@ export function KloudtrackMapControls({
                   ? "0 16px 40px rgba(0,0,0,0.6)"
                   : "0 16px 40px rgba(0,0,0,0.15)",
                 width: 290,
-                fontFamily: "'Nohemi', sans-serif",
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
               }}
             >
               {/* Station Switcher (if > 1 station) */}

@@ -11,7 +11,7 @@
   z-index: 10 !important;
   overflow: hidden !important;
   background: #000000 !important;
-  font-family: 'Nohemi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #ffffff;
   isolation: isolate;
   transition: background-color 0.25s ease, color 0.25s ease;

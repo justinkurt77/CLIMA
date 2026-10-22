@@ -1,80 +1,16 @@
-/* ── Nohemi Custom Typeface (Weights: 100 - 900) ─────────────────── */
+/* ── Primary Typeface: Plus Jakarta Sans ─────────────────────────────────── */
+/* Seamless fallback/alias: any component requesting 'Nohemi' resolves cleanly to Plus Jakarta Sans */
 @font-face {
   font-family: 'Nohemi';
-  src: url('/fonts/nohemi/Nohemi-Thin.ttf') format('truetype');
-  font-weight: 100;
+  src: local('Plus Jakarta Sans');
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 
-@font-face {
-  font-family: 'Nohemi';
-  src: url('/fonts/nohemi/Nohemi-ExtraLight.ttf') format('truetype');
-  font-weight: 200;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Nohemi';
-  src: url('/fonts/nohemi/Nohemi-Light.ttf') format('truetype');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Nohemi';
-  src: url('/fonts/nohemi/Nohemi-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Nohemi';
-  src: url('/fonts/nohemi/Nohemi-Medium.ttf') format('truetype');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Nohemi';
-  src: url('/fonts/nohemi/Nohemi-SemiBold.ttf') format('truetype');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Nohemi';
-  src: url('/fonts/nohemi/Nohemi-SemiBold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Nohemi';
-  src: url('/fonts/nohemi/Nohemi-Bold.ttf') format('truetype');
-  font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Nohemi';
-  src: url('/fonts/nohemi/Nohemi-Bold.ttf') format('truetype');
-  font-weight: 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* Explicit aliases for direct targeting */
 @font-face {
   font-family: 'Nohemi ExtraLight';
-  src: url('/fonts/nohemi/Nohemi-ExtraLight.ttf') format('truetype');
+  src: local('Plus Jakarta Sans');
   font-weight: 200;
   font-style: normal;
   font-display: swap;
@@ -82,7 +18,7 @@
 
 @font-face {
   font-family: 'Nohemi Light';
-  src: url('/fonts/nohemi/Nohemi-Light.ttf') format('truetype');
+  src: local('Plus Jakarta Sans');
   font-weight: 300;
   font-style: normal;
   font-display: swap;
@@ -91,10 +27,10 @@
 :root,
 html.light {
   color-scheme: light;
-  --font-sans: 'Nohemi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-family: 'Nohemi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-weight-body: 200;
-  --font-weight-title: 300;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-weight-body: 400;
+  --font-weight-title: 600;
   --red: #f59e0b;
   --red-dark: #d97706;
   --yellow: #fef08a;
@@ -141,10 +77,10 @@ html.light {
 html.dark,
 [data-theme="dark"] {
   color-scheme: dark;
-  --font-sans: 'Nohemi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-family: 'Nohemi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-weight-body: 200;
-  --font-weight-title: 300;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-weight-body: 400;
+  --font-weight-title: 600;
   --red: #f59e0b;
   --red-dark: #d97706;
   --yellow: #fef08a;
@@ -263,8 +199,8 @@ html.dark option,
   padding: 0;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
-  font-family: 'Nohemi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-weight: 200;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 400;
 }
 
 html,
@@ -275,7 +211,7 @@ input,
 select,
 textarea,
 optgroup {
-  font-family: 'Nohemi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
 }
 
 html,
@@ -290,9 +226,9 @@ body,
 }
 
 body {
-  font-family: 'Nohemi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-  font-weight: 200;
-  letter-spacing: 0.015em;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-weight: 400;
+  letter-spacing: -0.01em;
   background: var(--bg-app);
   overscroll-behavior: none;
 }
@@ -304,7 +240,7 @@ h1, h2, h3, h4, h5, h6,
 .mine-title,
 .empty-title {
   font-weight: 600;
-  letter-spacing: 0.015em;
+  letter-spacing: -0.02em;
 }
 
 strong, b {
@@ -451,7 +387,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .app-logo {
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.5px;
@@ -571,7 +507,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .cta-text h3 {
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 700;
   color: var(--dark);
   font-size: 18px;
@@ -594,7 +530,7 @@ html.light body:has(.app-shell.admin-mode),
 
 /* SECTION TITLE */
 .section-title {
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 17px;
   font-weight: 700;
   color: var(--dark);
@@ -665,7 +601,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .stat-num {
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 24px;
   font-weight: 800;
   color: var(--yellow);
@@ -880,7 +816,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .map-title {
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 18px;
   font-weight: 800;
   color: var(--dark);
@@ -922,7 +858,7 @@ html.light body:has(.app-shell.admin-mode),
 .map-container .leaflet-popup-content-wrapper {
   border-radius: 14px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 .map-container .leaflet-popup-tip {
@@ -1072,7 +1008,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .modal-title {
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 22px;
   font-weight: 800;
   color: var(--dark);
@@ -1100,7 +1036,7 @@ html.light body:has(.app-shell.admin-mode),
   border: 2px solid var(--light-gray);
   border-radius: 12px;
   padding: 12px 14px;
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 14px;
   color: var(--dark);
   outline: none;
@@ -1151,7 +1087,7 @@ html.light body:has(.app-shell.admin-mode),
   border: none;
   border-radius: 14px;
   padding: 16px;
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 17px;
   font-weight: 700;
   cursor: pointer;
@@ -1191,7 +1127,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .profile-name {
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 22px;
   font-weight: 800;
   color: white;
@@ -1227,7 +1163,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .pstat-num {
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 22px;
   font-weight: 800;
   color: var(--red);
@@ -1298,7 +1234,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .mine-title {
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 22px;
   font-weight: 800;
   color: white;
@@ -1326,7 +1262,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .empty-title {
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 700;
   color: var(--dark);
   margin-bottom: 4px;
@@ -1454,7 +1390,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .map-loading-text {
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 700;
   color: var(--gray);
   font-size: 14px;
@@ -1637,7 +1573,7 @@ html.light body:has(.app-shell.admin-mode),
 
 /* Name inside pill */
 .profile-name-green {
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 20px;
   font-weight: 800;
   color: var(--text-primary);
@@ -1663,7 +1599,7 @@ html.light body:has(.app-shell.admin-mode),
 }
 
 .pstat-num-green {
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 20px;
   font-weight: 800;
   color: var(--text-primary);
@@ -3458,9 +3394,9 @@ html.light .normal-dot,
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-medium);
   color: var(--text-primary);
-  font-family: 'Nohemi', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -3560,8 +3496,8 @@ html.light .normal-dot,
 
 /* ── Aesthetic Mobile/Social-Style Advisory Feed (Inspired by Modern App Card) ── */
 .aesthetic-post-card {
-  font-family: 'Nohemi', -apple-system, BlinkMacSystemFont, sans-serif;
-  letter-spacing: 0.012em;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0.005em;
   border-radius: 28px;
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.06);
@@ -3707,8 +3643,8 @@ html.dark .aesthetic-post-card,
   padding: 7px 15px;
   border-radius: 999px;
   font-size: 13px;
-  font-weight: 700;
-  font-family: 'Nohemi', sans-serif;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   border: none;
   cursor: pointer;
   background: #f4f4f5;
