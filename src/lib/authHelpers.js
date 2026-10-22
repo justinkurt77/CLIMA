@@ -41,15 +41,20 @@ export function getUserProfile(user) {
   const avatarUrl = meta.avatar_url || meta.picture || null;
   const email = user.email || meta.email || "";
 
-  // A profile is complete only if:
+  // A profile is complete if:
   // 1. Explicitly marked complete via profile_completed: true, OR
-  // 2. An admin or superadmin account, OR
-  // 3. (Legacy non-Google accounts) already has explicit first_name
+  // 2. An admin or superadmin account (in user_metadata or app_metadata), OR
+  // 3. User has first name, full name, or name set from any provider (OAuth, email, etc.)
   const isComplete = Boolean(
     meta.profile_completed === true ||
     meta.role === "admin" ||
     meta.role === "superadmin" ||
-    (!isGoogle && meta.first_name)
+    user.app_metadata?.role === "admin" ||
+    user.app_metadata?.role === "superadmin" ||
+    Boolean(firstName && firstName.trim().length > 0) ||
+    Boolean(meta.full_name && meta.full_name.trim().length > 0) ||
+    Boolean(meta.name && meta.name.trim().length > 0) ||
+    Boolean(meta.first_name && meta.first_name.trim().length > 0)
   );
 
   return {

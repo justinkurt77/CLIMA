@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldAlert, Lock, Eye, EyeOff, AlertCircle, X, Loader2, Trash2 } from "lucide-react";
 import { verifyAdminPassword } from "../../lib/adminAuthVerify";
@@ -24,10 +25,13 @@ export default function SecurityConfirmModal({
   const [isVerifying, setIsVerifying] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const inputRef = useRef(null);
+  const openTimeRef = useRef(0);
+  const mouseDownTargetRef = useRef(null);
 
   // Reset state whenever modal opens or closes
   useEffect(() => {
     if (isOpen) {
+      openTimeRef.current = Date.now();
       setPassword("");
       setShowPassword(false);
       setErrorMessage("");
@@ -37,12 +41,22 @@ export default function SecurityConfirmModal({
         if (inputRef.current) {
           inputRef.current.focus();
         }
-      }, 100);
+      }, 150);
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  // Handle Escape key dismissal
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && !isVerifying) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, isVerifying, onClose]);
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
@@ -62,12 +76,12 @@ export default function SecurityConfirmModal({
         return;
       }
 
-      // Password verified successfully: proceed with action
-      setIsVerifying(false);
-      onClose();
+      // Password verified successfully: execute confirmed action while maintaining verifying state
       if (onConfirmed) {
         await onConfirmed();
       }
+      setIsVerifying(false);
+      onClose();
     } catch (err) {
       setErrorMessage(err?.message || "Failed to verify admin password.");
       setIsVerifying(false);
@@ -81,46 +95,64 @@ export default function SecurityConfirmModal({
   const inputBg = isDark ? "#18181b" : "#f4f4f6";
   const inputBorder = errorMessage ? "#ef4444" : isDark ? "rgba(255, 255, 255, 0.16)" : "rgba(0, 0, 0, 0.16)";
 
-  return (
+  const modalContent = (
     <AnimatePresence>
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 99999,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 16,
-          background: "rgba(0, 0, 0, 0.72)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          fontFamily: "'Nohemi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        }}
-        onClick={(e) => {
-          if (e.target === e.currentTarget && !isVerifying) {
-            onClose();
-          }
-        }}
-      >
+      {isOpen && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: 16 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
+          key="security-modal-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
           style={{
-            position: "relative",
-            width: "100%",
-            maxWidth: 440,
-            background: bgModal,
-            border: `1px solid ${borderModal}`,
-            borderRadius: 22,
-            boxShadow: isDark ? "0 25px 60px rgba(0, 0, 0, 0.85)" : "0 20px 50px rgba(0, 0, 0, 0.15)",
-            overflow: "hidden",
-            color: textColor,
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+            background: "rgba(0, 0, 0, 0.72)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            fontFamily: "'Nohemi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           }}
-          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => {
+            mouseDownTargetRef.current = e.target;
+          }}
+          onClick={(e) => {
+            // Guard 1: Ignore clicks within 400ms of opening to eliminate event bubbling / trigger tap-through
+            if (Date.now() - openTimeRef.current < 400) return;
+            // Guard 2: Mouse down must have explicitly started on the backdrop, not on the modal card
+            if (
+              mouseDownTargetRef.current === e.currentTarget &&
+              e.target === e.currentTarget &&
+              !isVerifying
+            ) {
+              onClose();
+            }
+          }}
         >
+          <motion.div
+            key="security-modal-container"
+            initial={{ opacity: 0, scale: 0.94, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.94, y: 16 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            style={{
+              position: "relative",
+              width: "100%",
+              maxWidth: 440,
+              background: bgModal,
+              border: `1px solid ${borderModal}`,
+              borderRadius: 22,
+              boxShadow: isDark ? "0 25px 60px rgba(0, 0, 0, 0.85)" : "0 20px 50px rgba(0, 0, 0, 0.15)",
+              overflow: "hidden",
+              color: textColor,
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
           {/* Header Bar with Alert Icon */}
           <div
             style={{
@@ -398,7 +430,11 @@ export default function SecurityConfirmModal({
             </div>
           </form>
         </motion.div>
-      </div>
-    </AnimatePresence>
+      </motion.div>
+    )}
+  </AnimatePresence>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(modalContent, document.body);
 }

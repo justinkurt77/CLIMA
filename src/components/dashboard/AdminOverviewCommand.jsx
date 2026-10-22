@@ -38,6 +38,7 @@ import {
   Landmark,
   AlertTriangle,
   Droplet,
+  RefreshCw,
 } from "lucide-react";
 import { PinMarker } from "../map/MapPins";
 import { useLiveOpsData, getHeatRisk } from "../../hooks/useLiveOpsData";
@@ -130,6 +131,9 @@ export default function AdminOverviewCommand({
   adminDepartment,
   currentUser,
   leftInset = 98,
+  toggleTheme,
+  fetchData,
+  loading = false,
 }) {
   const Z = useMemo(() => getZTokens(isDark), [isDark]);
   const now = useNow();
@@ -1538,14 +1542,69 @@ export default function AdminOverviewCommand({
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
-                      gap: 6,
-                      padding: "3px 10px 3px 4px",
+                      gap: 4,
+                      padding: "2px 8px 2px 4px",
                       borderRadius: 9999,
                       background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)",
                       border: `1px solid ${Z[300]}`,
                       boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.3)" : "0 1px 3px rgba(0,0,0,0.05)",
                     }}
                   >
+                    {/* Refresh Telemetry Button */}
+                    {fetchData && (
+                      <button
+                        onClick={fetchData}
+                        title="Refresh Telemetry"
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: "50%",
+                          border: "none",
+                          background: "transparent",
+                          color: Z[700],
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: 0,
+                          transition: "color 0.15s ease",
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.color = "#f59e0b"}
+                        onMouseLeave={e => e.currentTarget.style.color = Z[700]}
+                      >
+                        <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
+                      </button>
+                    )}
+
+                    {/* Darkmode Toggle Button */}
+                    {toggleTheme && (
+                      <button
+                        onClick={toggleTheme}
+                        title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: "50%",
+                          border: "none",
+                          background: "transparent",
+                          color: isDark ? "#f59e0b" : "#d97706",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: 0,
+                          transition: "color 0.15s ease",
+                        }}
+                      >
+                        {isDark ? <Sun size={11} /> : <Moon size={11} />}
+                      </button>
+                    )}
+
+                    {/* Subtle Divider */}
+                    {(fetchData || toggleTheme) && (
+                      <div style={{ width: 1, height: 14, background: Z[300], margin: "0 2px" }} />
+                    )}
+
                     <div
                       style={{
                         width: 20,

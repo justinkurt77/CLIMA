@@ -74,7 +74,7 @@ export default function AdminMapScreen({
   adminDepartment,
   currentUser,
 }) {
-  const { isDark } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const Z = useMemo(() => getZTokens(isDark), [isDark]);
   const [reports, setReports] = useState([]);
   const [detailReport, setDetailReport] = useState(null);
@@ -148,6 +148,8 @@ export default function AdminMapScreen({
         adminDepartment={adminDepartment}
         currentUser={currentUser}
         leftInset={14}
+        toggleTheme={toggleTheme}
+        fetchData={fetchReports}
       />
 
       <header

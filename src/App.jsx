@@ -101,6 +101,39 @@ function App() {
     return () => clearTimeout(timer);
   }, [activeScreen, tabLoading]);
 
+  const handleAdminLogout = useCallback(async () => {
+    setIsAdminAuthenticated(false);
+    setAdminUser(null);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      logger.error("Error signing out admin:", err);
+    }
+    if (typeof window !== "undefined") {
+      if (
+        window.location.pathname === "/admin" ||
+        window.location.hash.includes("admin") ||
+        window.location.search.includes("admin")
+      ) {
+        window.history.pushState({}, "", "/");
+      }
+    }
+    handleTabChange("home");
+  }, [handleTabChange]);
+
+  const handleNavigateToCitizenApp = useCallback(() => {
+    if (typeof window !== "undefined") {
+      if (
+        window.location.pathname === "/admin" ||
+        window.location.hash.includes("admin") ||
+        window.location.search.includes("admin")
+      ) {
+        window.history.pushState({}, "", "/");
+      }
+    }
+    handleTabChange("home");
+  }, [handleTabChange]);
+
   // Capturing original pushState outside of effect to avoid double overrides
   useEffect(() => {
     const originalPushState = window.history.pushState;
@@ -131,10 +164,15 @@ function App() {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        const syncedSession = await syncGoogleUserProfile(supabase, session);
-        setSession(syncedSession);
-        const p = getUserProfile(syncedSession.user);
-        if (!p?.isComplete && !syncedSession.user.user_metadata?.role?.includes('admin')) {
+        setSession(session);
+        syncGoogleUserProfile(supabase, session).then((syncedSession) => {
+          if (syncedSession) setSession(syncedSession);
+        }).catch((err) => {
+          logger.warn("Background profile sync error:", err);
+        });
+
+        const p = getUserProfile(session.user);
+        if (!p?.isComplete && !session.user.user_metadata?.role?.includes('admin')) {
           setActiveScreen('profile');
         }
       } else {
@@ -146,10 +184,15 @@ function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        const syncedSession = await syncGoogleUserProfile(supabase, session);
-        setSession(syncedSession);
-        const p = getUserProfile(syncedSession.user);
-        if (!p?.isComplete && !syncedSession.user.user_metadata?.role?.includes('admin')) {
+        setSession(session);
+        syncGoogleUserProfile(supabase, session).then((syncedSession) => {
+          if (syncedSession) setSession(syncedSession);
+        }).catch((err) => {
+          logger.warn("Background auth state profile sync error:", err);
+        });
+
+        const p = getUserProfile(session.user);
+        if (!p?.isComplete && !session.user.user_metadata?.role?.includes('admin')) {
           setActiveScreen('profile');
         }
       } else {
@@ -560,12 +603,8 @@ function App() {
                   }} />
                 ) : (
                   <AdminDashboard
-                    onLogout={() => {
-                      setIsAdminAuthenticated(false);
-                      setAdminUser(null);
-                      supabase.auth.signOut();
-                    }}
-                    onViewCitizenApp={() => handleTabChange("home")}
+                    onLogout={handleAdminLogout}
+                    onViewCitizenApp={handleNavigateToCitizenApp}
                     onMapOverview={() => setActiveScreen("admin-map")}
                     isSuperadmin={adminUser?.isSuperadmin}
                     adminCategories={adminUser?.adminCategories}
@@ -635,12 +674,8 @@ function App() {
                 ) : (
                   <AdminMapScreen
                     onBackToDashboard={() => setActiveScreen("admin")}
-                    onViewCitizenApp={() => handleTabChange("home")}
-                    onLogout={() => {
-                      setIsAdminAuthenticated(false);
-                      setAdminUser(null);
-                      supabase.auth.signOut();
-                    }}
+                    onViewCitizenApp={handleNavigateToCitizenApp}
+                    onLogout={handleAdminLogout}
                     isSuperadmin={adminUser?.isSuperadmin}
                     adminCategories={adminUser?.adminCategories}
                     adminDepartment={adminUser?.adminDepartment}

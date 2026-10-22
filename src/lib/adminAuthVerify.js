@@ -1,9 +1,34 @@
+import { createClient } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 import { logger } from "./logger";
 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://placeholder.supabase.co";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "placeholder-anon-key";
+
+// Standalone verification client configured with persistSession: false
+// Ensures verifying an admin password never mutates the active app session or triggers onAuthStateChange listeners
+let verifyClientInstance = null;
+function getVerifyClient() {
+  if (!verifyClientInstance && supabaseUrl && supabaseAnonKey) {
+    try {
+      verifyClientInstance = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+          storageKey: "clima-auth-verify-transient",
+        },
+      });
+    } catch (err) {
+      logger.error("Failed to initialize verify client:", err);
+    }
+  }
+  return verifyClientInstance;
+}
+
 /**
  * Verify admin password before sensitive actions (such as deleting logs or records).
- * Re-authenticates against Supabase auth.
+ * Re-authenticates against Supabase auth without resetting the application session.
  * Supports demo / local testing admin fallbacks seamlessly.
  */
 export async function verifyAdminPassword(password, currentUserEmail = null) {
@@ -46,10 +71,16 @@ export async function verifyAdminPassword(password, currentUserEmail = null) {
     return { success: true };
   }
 
-  // 3. Re-authenticate with Supabase Auth using current admin's email
+  // 3. Re-authenticate with Supabase Auth using isolated client to avoid triggering onAuthStateChange in App.jsx
   if (email && email !== "superadmin@palayan.gov.ph") {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const client = getVerifyClient();
+      if (!client) {
+        if (validDemoPasswords.includes(trimmed)) return { success: true };
+        return { success: false, error: "Authentication verification service unavailable." };
+      }
+
+      const { data, error } = await client.auth.signInWithPassword({
         email,
         password: trimmed,
       });
@@ -76,14 +107,17 @@ export async function verifyAdminPassword(password, currentUserEmail = null) {
     const { data: { session } } = await supabase.auth.getSession();
     const sessionEmail = session?.user?.email;
     if (sessionEmail) {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: sessionEmail,
-        password: trimmed,
-      });
-      if (error) {
-        return { success: false, error: "Incorrect admin password. Deletion rejected." };
+      const client = getVerifyClient();
+      if (client) {
+        const { data, error } = await client.auth.signInWithPassword({
+          email: sessionEmail,
+          password: trimmed,
+        });
+        if (error) {
+          return { success: false, error: "Incorrect admin password. Deletion rejected." };
+        }
+        return { success: true, user: data?.user };
       }
-      return { success: true, user: data?.user };
     }
   } catch (_) {}
 

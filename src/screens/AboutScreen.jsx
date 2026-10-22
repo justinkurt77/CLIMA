@@ -3,8 +3,13 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import {
   Info,
   Shield,
+  ShieldCheck,
   Cloud,
   MapPin,
+  Mail,
+  Phone,
+  AlertTriangle,
+  Eye,
   Database,
   Code,
   ExternalLink,
@@ -855,8 +860,14 @@ export default function AboutScreen() {
                   e.currentTarget.style.borderColor = isDark ? 'rgba(56, 189, 248, 0.4)' : 'rgba(56, 189, 248, 0.35)';
                 }}
               >
-                <span>🇵🇭 Datos ng Pilipino, Protektado Ko! 👁️</span>
-                <span style={{ fontSize: 11, opacity: 0.8 }}>(View NPC Seal)</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                  <ShieldCheck size={16} color={isDark ? '#38bdf8' : '#0284c7'} />
+                  <span>Datos ng Pilipino, Protektado Ko!</span>
+                </span>
+                <span style={{ fontSize: 11, opacity: 0.85, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Eye size={13} />
+                  (View NPC Seal)
+                </span>
               </button>
 
               {/* Legal Modals Action Row */}
@@ -927,9 +938,25 @@ export default function AboutScreen() {
                   lineHeight: 1.6,
                 }}
               >
-                📍 2nd Floor, City Hall, Brgy. Singalat, Palayan City • ✉️ ict@palayancity.gov.ph • 📞 09288038973
-                <div style={{ marginTop: 4, color: '#f97316', fontWeight: 700 }}>
-                  ⚠️ In active emergencies, dial the Hotline button directly from the main dashboard.
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: '6px 14px' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <MapPin size={13} color={isDark ? '#38bdf8' : '#0284c7'} style={{ flexShrink: 0 }} />
+                    <span>2nd Floor, City Hall, Brgy. Singalat, Palayan City</span>
+                  </span>
+                  <span style={{ opacity: 0.35 }}>•</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Mail size={13} color={isDark ? '#38bdf8' : '#0284c7'} style={{ flexShrink: 0 }} />
+                    <span>ict@palayancity.gov.ph</span>
+                  </span>
+                  <span style={{ opacity: 0.35 }}>•</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Phone size={13} color={isDark ? '#38bdf8' : '#0284c7'} style={{ flexShrink: 0 }} />
+                    <span>09288038973</span>
+                  </span>
+                </div>
+                <div style={{ marginTop: 8, color: '#f97316', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <AlertTriangle size={13} color="#f97316" style={{ flexShrink: 0 }} />
+                  <span>In active emergencies, dial the Hotline button directly from the main dashboard.</span>
                 </div>
               </div>
             </div>

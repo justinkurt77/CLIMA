@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useInView } from "react-intersection-observer";
 import { supabase } from "../lib/supabase";
 import DOMPurify from "dompurify";
@@ -8,10 +9,17 @@ import {
   MapPin, Calendar, Phone, AlertCircle, AlertTriangle, ChevronRight, ChevronDown, ChevronUp, Navigation,
   ShieldAlert, Activity, Megaphone, HeartPulse, Tent, Truck, Flame, Droplet, Zap, Sprout, Wifi,
   Sun, Moon, Bell, Menu, Layers, ThermometerSun, DollarSign, LifeBuoy,
-  Home, Wrench, TrendingDown, ArrowLeft
+  Home, Wrench, TrendingDown, ArrowLeft, Mail, UserCheck, UserPlus, Shield, ShieldCheck, User as UserIcon, Filter, Briefcase,
+  Settings, Key, Tag, Folder, FolderPlus, Eye, SlidersHorizontal, CheckSquare, Square, Info
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect from "../components/ui/CustomSelect";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Avatar, AvatarFallback } from "../components/ui/avatar";
+import UserCombobox from "../components/ui/UserCombobox";
 import BarangayMultiSelect from "../components/ui/BarangayMultiSelect";
 import { PALAYAN_CITY_BARANGAYS, parseBarangayList } from "../lib/palayanBarangays";
 import jsPDF from "jspdf";
@@ -97,11 +105,22 @@ function buildTheme(accent, name = "", isDark = true) {
   };
 }
 
-/* Fallback colors for known offices (used if no accent_color saved in DB) */
+/* Fallback colors for known agencies (used if no accent_color saved in DB) */
 const DEPT_DEFAULTS = {
-  CDRRMO: "#dc2626", ENRO: "#16a34a", "CITY TRAFFIC": "#2563eb",
-  "CITY VET OFFICE": "#d97706", ENGINEERING: "#7c3aed", "GENERAL SERVICES": "#0891b2",
+  PCH: "#0891b2",
+  CDRRMO: "#dc2626",
+  BFP: "#ef4444",
+  AGRI: "#16a34a",
+  PCWD: "#2563eb",
+  NEECO: "#f59e0b",
+  ENRO: "#16a34a",
+  "CITY TRAFFIC": "#2563eb",
+  "CITY VET OFFICE": "#d97706",
+  ENGINEERING: "#7c3aed",
+  "GENERAL SERVICES": "#0891b2",
 };
+
+const ORDERED_AGENCIES = ["PCH", "CDRRMO", "BFP", "AGRI", "PCWD", "NEECO"];
 
 function getTheme(dept, isDark) {
   const name = typeof dept === "string" ? dept : dept?.name;
@@ -214,22 +233,22 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
           gap: 8,
           padding: "8px 18px",
           borderRadius: 9999,
-          background: S.accent,
+          background: "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)",
           color: "#ffffff",
           border: "none",
           fontSize: 13,
           fontWeight: 800,
           cursor: "pointer",
-          boxShadow: `0 4px 14px ${S.accent}55`,
+          boxShadow: "0 4px 14px rgba(234, 88, 12, 0.35)",
           transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = "translateY(-1px)";
-          e.currentTarget.style.boxShadow = `0 6px 20px ${S.accent}77`;
+          e.currentTarget.style.boxShadow = "0 6px 20px rgba(234, 88, 12, 0.45)";
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = `0 4px 14px ${S.accent}55`;
+          e.currentTarget.style.boxShadow = "0 4px 14px rgba(234, 88, 12, 0.35)";
         }}
       >
         <ArrowLeft size={16} strokeWidth={2.4} />
@@ -255,16 +274,89 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
   const [showModal, setShowModal] = useState(false);
   const [modalConfig, setModalConfig] = useState({ type: "success", title: "", message: "", onConfirm: null, confirmText: "OK", cancelText: "Cancel" });
 
+  // Global toast notification state
+  const [toasts, setToasts] = useState([]);
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const showToast = useCallback((toastOrMessage, type = "success") => {
+    const id = Date.now() + Math.random().toString(36).substring(2, 7);
+    let toastObj;
+    if (typeof toastOrMessage === "string") {
+      toastObj = {
+        id,
+        type,
+        title: type === "success" ? "Success" : type === "error" ? "Error" : "Notice",
+        message: toastOrMessage,
+      };
+    } else {
+      toastObj = {
+        id,
+        type: toastOrMessage.type || type,
+        title: toastOrMessage.title || (toastOrMessage.type === "error" ? "Error" : "Success"),
+        message: toastOrMessage.message || toastOrMessage.text || "",
+      };
+    }
+    setToasts((prev) => [...prev, toastObj]);
+    setTimeout(() => {
+      removeToast(id);
+    }, 4500);
+  }, [removeToast]);
+
   const mainRef = useRef(null);
 
+  // Global modal state for all tabs
+  const [modalLoading, setModalLoading] = useState(false);
+  const isExecutingConfirmAction = useRef(false);
+  const modalOpenTimeRef = useRef(0);
+  const modalMouseDownTargetRef = useRef(null);
+
+  useEffect(() => {
+    if (showModal) {
+      modalOpenTimeRef.current = Date.now();
+    }
+  }, [showModal]);
+
   // Global modal helper functions
-  const showSuccessModal = (title, message) => {
-    setModalConfig({ type: "success", title, message, onConfirm: () => setShowModal(false), confirmText: "OK" });
-    setShowModal(true);
+  const showSuccessModal = (titleOrMessage, maybeMessage) => {
+    const title = maybeMessage ? titleOrMessage : "Success";
+    const message = maybeMessage !== undefined ? maybeMessage : titleOrMessage;
+
+    // Trigger toast notification for sleek non-intrusive feedback across all modules
+    showToast({ 
+      type: "success", 
+      title, 
+      message: message || title 
+    });
+
+    // Close any modal cleanly so no blocking popup is shown across any module
+    setShowModal(false);
   };
 
-  const showErrorModal = (title, message) => {
-    setModalConfig({ type: "error", title, message, onConfirm: () => setShowModal(false), confirmText: "OK" });
+  const showErrorModal = (titleOrMessage, maybeMessage) => {
+    const title = maybeMessage ? titleOrMessage : "Error";
+    const message = maybeMessage !== undefined ? maybeMessage : titleOrMessage;
+
+    showToast({ 
+      type: "error", 
+      title, 
+      message: message || title 
+    });
+
+    if (isExecutingConfirmAction.current) {
+      setShowModal(false);
+      return;
+    }
+
+    setModalConfig({ 
+      type: "error", 
+      title, 
+      message, 
+      onConfirm: () => setShowModal(false), 
+      confirmText: "OK" 
+    });
     setShowModal(true);
   };
 
@@ -313,18 +405,42 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
       return;
     }
 
+    isExecutingConfirmAction.current = false;
     setModalConfig({
       type: "confirm",
       title,
       message,
-      onConfirm: () => {
-        setShowModal(false);
-        onConfirm();
-      },
+      onConfirmAction: onConfirm,
       confirmText,
       cancelText
     });
     setShowModal(true);
+  };
+
+  const handleModalConfirm = async () => {
+    if (modalLoading) return;
+    if (modalConfig.type !== "confirm") {
+      setShowModal(false);
+      return;
+    }
+
+    if (!modalConfig.onConfirmAction) {
+      setShowModal(false);
+      return;
+    }
+
+    setModalLoading(true);
+    isExecutingConfirmAction.current = true;
+    try {
+      await modalConfig.onConfirmAction();
+      setShowModal(false);
+    } catch (err) {
+      setShowModal(false);
+      showErrorModal("Action Failed", err?.message || "An unexpected error occurred.");
+    } finally {
+      isExecutingConfirmAction.current = false;
+      setModalLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -468,7 +584,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
     { id: "power", label: "Power Utility", icon: <Zap size={18} />, module: "power" },
     ...(isSuperadmin ? [
       { id: "users", label: "Users", icon: <Users size={18} />, module: "users" },
-      { id: "settings", label: "Offices & Categories", icon: <Building size={18} />, module: "settings" },
+      { id: "settings", label: "Categories", icon: <Layers size={18} />, module: "settings" },
       { id: "logs", label: "Activity Logs", icon: <Activity size={18} />, module: "logs" },
     ] : []),
   ];
@@ -635,45 +751,8 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
           })}
         </div>
 
-        {/* Bottom: Theme, Refresh, Logout, Updated Status */}
+        {/* Bottom: Updated Status & Sign Out */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-          <button
-            onClick={toggleTheme}
-            title={isDark ? "Light Mode" : "Dark Mode"}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"}`,
-              background: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
-              color: isDark ? "#f59e0b" : "#d97706",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {isDark ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
-
-          <button
-            onClick={() => fetchData()}
-            title="Refresh Telemetry"
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)"}`,
-              background: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
-              color: isDark ? "#a1a1aa" : "#71717a",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <RefreshCw size={15} />
-          </button>
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, textAlign: "center" }}>
             <span style={{ fontSize: 9, fontWeight: 800, color: "#f59e0b", textTransform: "uppercase", letterSpacing: "0.04em" }}>
@@ -740,21 +819,6 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
           <span style={{ fontSize: 13, fontWeight: 900, color: S.text, letterSpacing: "-0.01em" }}>
             Palayan Command
           </span>
-          <span
-            style={{
-              fontSize: 10,
-              fontWeight: 800,
-              padding: "2px 8px",
-              borderRadius: 9999,
-              background: "rgba(245, 158, 11, 0.18)",
-              color: "#f59e0b",
-              border: "1px solid rgba(245, 158, 11, 0.35)",
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-            }}
-          >
-            LIVE
-          </span>
           <span style={{ fontSize: 11, color: S.textSecondary, fontWeight: 700 }}>
             {isSuperadmin ? "Superadmin Portal" : (adminDepartment?.name || "Operations Lead")}
           </span>
@@ -786,31 +850,91 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
         </div>
 
 
-        {/* Right: Search, Notifications, Avatar Pill (hidden on overview since it is integrated beside Palayan City in inspector) */}
+        {/* Right: Theme Toggle, Reload & Profile Capsule Island */}
         {activeTab !== "overview" ? (
           <div
             style={{
               pointerEvents: "auto",
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              gap: 4,
               background: isDark ? "rgba(18, 18, 20, 0.92)" : "rgba(255, 255, 255, 0.92)",
               backdropFilter: "blur(20px)",
               WebkitBackdropFilter: "blur(20px)",
               borderRadius: 9999,
-              padding: "4px 8px",
+              padding: "4px 8px 4px 6px",
               border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
               boxShadow: isDark ? "0 10px 30px rgba(0, 0, 0, 0.5)" : "0 8px 24px rgba(0, 0, 0, 0.06)",
             }}
           >
+            {/* Reload / Refresh Telemetry Button */}
+            <button
+              onClick={() => fetchData()}
+              title="Refresh Telemetry"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                border: "none",
+                background: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)",
+                color: isDark ? "#a1a1aa" : "#71717a",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#f59e0b";
+                e.currentTarget.style.background = isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = isDark ? "#a1a1aa" : "#71717a";
+                e.currentTarget.style.background = isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)";
+              }}
+            >
+              <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            </button>
+
+            {/* Dark Mode Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                border: "none",
+                background: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)",
+                color: isDark ? "#f59e0b" : "#d97706",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)";
+              }}
+            >
+              {isDark ? <Sun size={13} /> : <Moon size={13} />}
+            </button>
+
+            {/* Subtle Divider */}
+            <div style={{ width: 1, height: 16, background: isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.1)", margin: "0 2px" }} />
+
+            {/* Profile Avatar & Name */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
-                padding: "2px 10px 2px 4px",
+                gap: 7,
+                padding: "2px 8px 2px 2px",
                 borderRadius: 9999,
-                background: "rgba(255, 255, 255, 0.06)",
+                background: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)",
               }}
             >
               <div
@@ -825,11 +949,22 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                   justifyContent: "center",
                   fontWeight: 900,
                   fontSize: 11,
+                  boxShadow: "0 2px 6px rgba(234, 88, 12, 0.35)",
                 }}
               >
                 {(currentUser?.email?.[0] || (isSuperadmin ? "S" : adminDepartment?.name?.[0]) || "A").toUpperCase()}
               </div>
-              <span style={{ fontSize: 11, fontWeight: 800, color: "#ffffff", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <span
+                style={{
+                  fontSize: 11.5,
+                  fontWeight: 800,
+                  color: isDark ? "#ffffff" : S.text,
+                  maxWidth: 100,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {currentUser?.email?.split("@")[0] || (isSuperadmin ? "Superadmin" : "Admin")}
               </span>
             </div>
@@ -857,6 +992,8 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
               isSuperadmin={isSuperadmin}
               adminDepartment={adminDepartment}
               currentUser={currentUser}
+              toggleTheme={toggleTheme}
+              fetchData={fetchData}
             />
           </motion.div>
 
@@ -891,7 +1028,24 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
             style={floatingTabStyle}
           >
             <BackToMapButton />
-            <AdvisoriesTab S={S} cardStyle={cardStyle} inputStyle={inputStyle} selectStyle={selectStyle} btnPrimary={btnPrimary} btnDanger={btnDanger} isSuperadmin={isSuperadmin} adminDepartment={adminDepartment} canCreate={canCreate} canEdit={canEdit} canDelete={canDelete} showSecurityConfirmModal={showSecurityConfirmModal} />
+            <AdvisoriesTab 
+              S={S} 
+              cardStyle={cardStyle} 
+              inputStyle={inputStyle} 
+              selectStyle={selectStyle} 
+              btnPrimary={btnPrimary} 
+              btnDanger={btnDanger} 
+              isSuperadmin={isSuperadmin} 
+              adminDepartment={adminDepartment} 
+              canCreate={canCreate} 
+              canEdit={canEdit} 
+              canDelete={canDelete} 
+              showSecurityConfirmModal={showSecurityConfirmModal}
+              showSuccessModal={showSuccessModal}
+              showErrorModal={showErrorModal}
+              showConfirmModal={showConfirmModal}
+              showToast={showToast}
+            />
           </motion.div>
 
           <motion.div
@@ -1047,6 +1201,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                   showSuccessModal={showSuccessModal}
                   showErrorModal={showErrorModal}
                   showConfirmModal={showConfirmModal}
+                  showToast={showToast}
                 />
               </motion.div>
 
@@ -1070,6 +1225,7 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                   showSuccessModal={showSuccessModal}
                   showErrorModal={showErrorModal}
                   showConfirmModal={showConfirmModal}
+                  showToast={showToast}
                   isSuperadmin={isSuperadmin}
                 />
               </motion.div>
@@ -1100,27 +1256,41 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
       )}
 
       {/* Global Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.5)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 9999
-            }}
-            onClick={() => modalConfig.type !== "confirm" && setShowModal(false)}
-          >
+      {typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {showModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: "fixed",
+                inset: 0,
+                width: "100vw",
+                height: "100vh",
+                background: "rgba(0,0,0,0.65)",
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 99999
+              }}
+              onMouseDown={(e) => {
+                modalMouseDownTargetRef.current = e.target;
+              }}
+              onClick={(e) => {
+                if (Date.now() - modalOpenTimeRef.current < 400) return;
+                if (modalMouseDownTargetRef.current === e.currentTarget && e.target === e.currentTarget && modalConfig.type !== "confirm" && !modalLoading) {
+                  setShowModal(false);
+                }
+              }}
+            >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
+              onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
               style={{
                 background: S.card,
@@ -1140,10 +1310,14 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
               <p style={{ margin: "0 0 20px", fontSize: 14, color: S.textSecondary, lineHeight: 1.6 }}>
                 {modalConfig.message}
               </p>
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", alignItems: "center" }}>
                 {modalConfig.type === "confirm" && (
                   <button
-                    onClick={() => setShowModal(false)}
+                    type="button"
+                    disabled={modalLoading}
+                    onClick={() => {
+                      if (!modalLoading) setShowModal(false);
+                    }}
                     style={{
                       padding: "10px 20px",
                       borderRadius: 9999,
@@ -1152,16 +1326,19 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                       color: S.text,
                       fontSize: 13.5,
                       fontWeight: 700,
-                      cursor: "pointer",
+                      cursor: modalLoading ? "not-allowed" : "pointer",
+                      opacity: modalLoading ? 0.6 : 1,
                       fontFamily: S.font,
                       transition: "all 0.2s ease",
                     }}
                   >
-                    {modalConfig.cancelText}
+                    {modalConfig.cancelText || "Cancel"}
                   </button>
                 )}
                 <button
-                  onClick={modalConfig.onConfirm}
+                  type="button"
+                  disabled={modalLoading}
+                  onClick={modalConfig.type === "confirm" ? handleModalConfirm : (modalConfig.onConfirm || (() => setShowModal(false)))}
                   style={{
                     padding: "10px 22px",
                     borderRadius: 9999,
@@ -1170,19 +1347,32 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
                     color: "#fff",
                     fontSize: 13.5,
                     fontWeight: 800,
-                    cursor: "pointer",
+                    cursor: modalLoading ? "not-allowed" : "pointer",
+                    opacity: modalLoading ? 0.7 : 1,
                     fontFamily: S.font,
                     boxShadow: modalConfig.type === "error" ? `0 4px 14px ${S.red}55` : `0 4px 14px ${S.accent}55`,
                     transition: "all 0.2s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
                   }}
                 >
-                  {modalConfig.confirmText}
+                  {modalLoading && (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                      style={{ width: 14, height: 14, border: "2px solid #fff", borderTopColor: "transparent", borderRadius: "50%" }}
+                    />
+                  )}
+                  {modalLoading ? "Processing…" : (modalConfig.confirmText || "OK")}
                 </button>
               </div>
             </motion.div>
           </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Security Confirmation Modal for Deletions */}
       <SecurityConfirmModal
@@ -1196,6 +1386,137 @@ export default function AdminDashboard({ onLogout, onMapOverview, isSuperadmin, 
         isDark={S.isDark}
         currentUserEmail={currentUser?.email}
       />
+
+      {/* Global Floating Toast Container (Minimalist Shadcn Style) */}
+      <div
+        style={{
+          position: "fixed",
+          top: 20,
+          right: 20,
+          zIndex: 10001,
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          pointerEvents: "none",
+          maxWidth: 380,
+          width: "calc(100% - 40px)",
+        }}
+      >
+        <AnimatePresence>
+          {toasts.map((toast) => {
+            const isSuccess = toast.type === "success";
+            const isError = toast.type === "error";
+            const isWarning = toast.type === "warning";
+
+            // Minimalist icon accent colors
+            const iconColor = isSuccess 
+              ? (isDark ? "#4ade80" : "#16a34a") 
+              : isError 
+                ? (isDark ? "#f87171" : "#dc2626") 
+                : isWarning 
+                  ? (isDark ? "#fbbf24" : "#d97706")
+                  : (isDark ? "#38bdf8" : "#0284c7");
+
+            return (
+              <motion.div
+                key={toast.id}
+                initial={{ opacity: 0, y: -10, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+                style={{
+                  pointerEvents: "auto",
+                  background: isDark ? "rgba(24, 24, 27, 0.96)" : "rgba(255, 255, 255, 0.98)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                  border: `1px solid ${isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)"}`,
+                  borderRadius: 12,
+                  padding: "12px 14px",
+                  boxShadow: isDark
+                    ? "0 10px 30px -4px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04)"
+                    : "0 10px 25px -4px rgba(0, 0, 0, 0.06), 0 4px 8px -2px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.03)",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 10,
+                  fontFamily: S.font,
+                  position: "relative",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1.5, color: iconColor }}>
+                  {isSuccess ? (
+                    <CheckCircle2 size={16} strokeWidth={2.2} />
+                  ) : isError ? (
+                    <AlertCircle size={16} strokeWidth={2.2} />
+                  ) : isWarning ? (
+                    <AlertTriangle size={16} strokeWidth={2.2} />
+                  ) : (
+                    <Info size={16} strokeWidth={2.2} />
+                  )}
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0, paddingRight: 4 }}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: isDark ? "#f4f4f5" : "#09090b",
+                      lineHeight: 1.35,
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    {toast.title}
+                  </div>
+                  {toast.message && (
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 400,
+                        color: isDark ? "#a1a1aa" : "#71717a",
+                        marginTop: 2,
+                        lineHeight: 1.45,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {toast.message}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => removeToast(toast.id)}
+                  aria-label="Close notification"
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: isDark ? "#71717a" : "#a1a1aa",
+                    cursor: "pointer",
+                    padding: 3,
+                    borderRadius: 6,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    transition: "color 0.15s ease, background 0.15s ease",
+                    marginTop: -1,
+                    marginRight: -2,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = isDark ? "#f4f4f5" : "#18181b";
+                    e.currentTarget.style.background = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = isDark ? "#71717a" : "#a1a1aa";
+                    e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  <X size={13} strokeWidth={2} />
+                </button>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
@@ -1246,7 +1567,11 @@ function OverviewTab({
   isSuperadmin,
   adminDepartment,
   currentUser,
+  toggleTheme,
+  fetchData,
 }) {
+  const themeContext = useTheme();
+  const activeToggleTheme = toggleTheme || themeContext?.toggleTheme;
   const [analyticsData, setAnalyticsData] = useState({
     hospitalRecords: [],
     cdrrmoRecords: [],
@@ -1367,6 +1692,9 @@ function OverviewTab({
         adminDepartment={adminDepartment}
         currentUser={currentUser}
         leftInset={98}
+        toggleTheme={activeToggleTheme}
+        fetchData={fetchData}
+        loading={loading}
       />
 
       {/* Floating Detailed Analytics Panel when opened */}
@@ -2296,22 +2624,100 @@ function ReportsTab({ reports, onUpdate, S, cardStyle, inputStyle, selectStyle, 
 }
 
 /* ── Users Tab ── */
-function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, showSuccessModal, showErrorModal, showConfirmModal }) {
+function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, showSuccessModal, showErrorModal, showConfirmModal, showToast }) {
   const isDark = S.isDark;
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [resetOpen, setResetOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [resetting, setResetting] = useState(false);
+
+  // Edit User Modal state
+  const [editingUser, setEditingUser] = useState(null);
+  const [editRole, setEditRole] = useState("admin");
+  const [editDept, setEditDept] = useState("All Agencies");
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Add Admin Modal state
+  const [addAdminModalOpen, setAddAdminModalOpen] = useState(false);
+
+  // Fallback-resilient toast trigger
+  const triggerToast = useCallback((toastOrMsg, type = "success") => {
+    if (showToast) {
+      showToast(toastOrMsg, type);
+    } else {
+      const text = typeof toastOrMsg === "string" ? toastOrMsg : (toastOrMsg.message || toastOrMsg.text);
+      setMsg({ type: (typeof toastOrMsg === "object" && toastOrMsg.type) ? toastOrMsg.type : type, text });
+    }
+  }, [showToast]);
+
+  // Open Edit User modal helper
+  const openEditModal = (user) => {
+    setEditingUser(user);
+    setEditRole(user.role === "admin" ? "admin" : (user.role === "superadmin" ? "superadmin" : "admin"));
+    if (user.assigned_department && user.assigned_department !== "Not Assigned" && user.assigned_department !== "None") {
+      const match = departments.find(d => d.name === user.assigned_department || d.id === user.assigned_department);
+      if (match) setEditDept(match.id);
+      else setEditDept(user.assigned_department);
+    } else {
+      setEditDept("All Agencies");
+    }
+  };
+
+  // Lock background scrolling when any modal in UsersTab is open
+  useEffect(() => {
+    if (editingUser || addAdminModalOpen || resetOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [editingUser, addAdminModalOpen, resetOpen]);
+
+  // Search & Filter for Directory
+  const [directorySearch, setDirectorySearch] = useState("");
+  const [directoryRoleFilter, setDirectoryRoleFilter] = useState("all");
+
+  // Orange gradient design tokens
+  const ORANGE_GRADIENT = "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)";
+  const ORANGE_SHADOW = "0 3px 12px rgba(234, 88, 12, 0.28)";
+
+  // Segmented action hub tab: 'create' | 'promote'
+  const [activeActionTab, setActiveActionTab] = useState("create");
+
   // Create new admin
   const [newEmail, setNewEmail] = useState("");
   const [newName, setNewName] = useState("");
-  const [newDept, setNewDept] = useState("All Departments");
+  const [newDept, setNewDept] = useState("All Agencies");
   const [creating, setCreating] = useState(false);
+
   // Assign existing
   const [assignEmail, setAssignEmail] = useState("");
-  const [assignDept, setAssignDept] = useState("All Departments");
+  const [assignDept, setAssignDept] = useState("All Agencies");
+  const [updatingUser, setUpdatingUser] = useState(false);
   const [msg, setMsg] = useState(null);
+
+  const promoteCardRef = useRef(null);
+
+  const agencyOptions = useMemo(() => {
+    const list = departments && departments.length > 0 ? departments : [];
+    const ordered = [];
+    ORDERED_AGENCIES.forEach(name => {
+      const match = list.find(d => d.name?.toUpperCase() === name);
+      if (match) {
+        ordered.push({ value: match.id, label: match.name });
+      } else {
+        ordered.push({ value: name, label: name });
+      }
+    });
+    list.forEach(d => {
+      if (!ORDERED_AGENCIES.includes(d.name?.toUpperCase())) {
+        ordered.push({ value: d.id, label: d.name });
+      }
+    });
+    return ordered;
+  }, [departments]);
 
   const sha256 = async (str) => {
     const buf = new TextEncoder().encode(str.toLowerCase().trim());
@@ -2321,78 +2727,122 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
 
   useEffect(() => { fetchUsers(); }, []);
   const fetchUsers = async () => { 
-    setLoading(true); 
-    const { data } = await supabase.rpc("get_auth_users"); 
-    if (data) {
+    if (users.length === 0) setLoading(true); 
+    try {
       const superadminsHashes = [
         '980f32df69a604ee31a4ca3a18cfea910de69ef3c496124dc8e19f76c4fa5686',
         'd9d660ee4195a6ac7e0b6a4a4aecbbbf9132683fa17e54383899a07b8671e484',
         '7932b2e116b076a54f452848eaabd5857f61bd957fe8a218faf216f24c9885bb'
       ];
       
-      // Load module permissions for all admins
-      const { data: permissions } = await supabase
-        .from('admin_module_permissions')
-        .select('user_id, module_name, can_view')
-        .eq('can_view', true);
-      
-      // Group permissions by user_id
+      // Load all profiles and admin permissions simultaneously
+      const [profilesRes, authUsersRes, permsRes] = await Promise.all([
+        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+        supabase.rpc("get_auth_users"),
+        supabase.from('admin_module_permissions').select('user_id, module_name, can_view').eq('can_view', true)
+      ]);
+
       const permissionsByUser = {};
-      permissions?.forEach(perm => {
-        if (!permissionsByUser[perm.user_id]) {
-          permissionsByUser[perm.user_id] = [];
-        }
+      permsRes.data?.forEach(perm => {
+        if (!permissionsByUser[perm.user_id]) permissionsByUser[perm.user_id] = [];
         permissionsByUser[perm.user_id].push(perm.module_name);
       });
-      
-      const mapped = await Promise.all(data.map(async (u) => {
-        const hash = await sha256(u.email || "");
-        if (superadminsHashes.includes(hash) || u.role === "superadmin") {
-          return { ...u, role: "superadmin", modulePermissions: [] };
+
+      // Merge profiles and auth users to guarantee every registered user is shown
+      const userMap = new Map();
+
+      (profilesRes.data || []).forEach(p => {
+        userMap.set(p.id, {
+          id: p.id,
+          email: p.email,
+          full_name: p.full_name || p.email,
+          role: p.role || 'user',
+          assigned_department: p.assigned_department,
+          created_at: p.created_at,
+          updated_at: p.updated_at,
+          is_admin: p.is_admin
+        });
+      });
+
+      (authUsersRes.data || []).forEach(u => {
+        if (userMap.has(u.id)) {
+          const existing = userMap.get(u.id);
+          userMap.set(u.id, {
+            ...existing,
+            full_name: u.full_name || existing.full_name,
+            role: u.role || existing.role,
+            assigned_department: u.assigned_department || existing.assigned_department
+          });
+        } else {
+          userMap.set(u.id, {
+            id: u.id,
+            email: u.email,
+            full_name: u.full_name || u.email,
+            role: u.role || 'admin',
+            assigned_department: u.assigned_department,
+            created_at: u.created_at || new Date().toISOString()
+          });
         }
-        return { 
-          ...u, 
+      });
+
+      const allUsers = Array.from(userMap.values());
+
+      const mapped = await Promise.all(allUsers.map(async (u) => {
+        const hash = await sha256(u.email || "");
+        const isSuper = superadminsHashes.includes(hash) || u.role === "superadmin";
+        return {
+          ...u,
+          role: isSuper ? "superadmin" : (u.role === "admin" ? "admin" : "user"),
           modulePermissions: permissionsByUser[u.id] || []
         };
       }));
+
+      // Sort: Superadmin first, then Admin, then Citizen
+      mapped.sort((a, b) => {
+        const order = { superadmin: 0, admin: 1, user: 2 };
+        const roleDiff = (order[a.role] ?? 2) - (order[b.role] ?? 2);
+        if (roleDiff !== 0) return roleDiff;
+        return (a.full_name || "").localeCompare(b.full_name || "");
+      });
+
       setUsers(mapped);
-    } else {
+    } catch (err) {
+      logger.error("Failed to load users:", err);
       setUsers([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false); 
   };
 
   const getCatsForDept = (deptId) => {
-    if (deptId === "All Departments") return ["All Categories"];
-    const cats = categories.filter(c => c.department_id === deptId).map(c => c.name);
+    if (deptId === "All Agencies" || deptId === "All Departments") return ["All Categories"];
+    const cats = categories.filter(c => c.department_id === deptId || c.departments?.name === deptId).map(c => c.name);
     return cats.length > 0 ? cats : ["__NONE__"];
   };
 
   const getDeptLabel = (deptId) => {
-    if (deptId === "All Departments") return "All Departments";
-    const d = departments.find(dep => dep.id === deptId);
-    return d ? d.name : "Unknown";
+    if (deptId === "All Agencies" || deptId === "All Departments") return "All Agencies";
+    const d = departments.find(dep => dep.id === deptId || dep.name === deptId);
+    return d ? d.name : (deptId || "Unknown");
   };
 
   const handleCreateAdmin = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!newEmail || !newName) return;
     
+    const deptLabel = getDeptLabel(newDept);
     setCreating(true);
     setMsg(null);
     
     try {
-      // Call our backend API instead of Supabase directly
       const response = await fetch('http://localhost:3001/api/admin/create', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: newEmail,
           full_name: newName,
-          assigned_categories: newDept === "All Departments" ? ["All Categories"] : getCatsForDept(newDept),
-          assigned_department: newDept === "All Departments" ? null : getDeptLabel(newDept)
+          assigned_categories: (newDept === "All Agencies" || newDept === "All Departments") ? ["All Categories"] : getCatsForDept(newDept),
+          assigned_department: (newDept === "All Agencies" || newDept === "All Departments") ? null : deptLabel
         })
       });
 
@@ -2402,74 +2852,198 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
         throw new Error(data.details || data.error || 'Failed to create admin');
       }
 
-      showSuccessModal(
-        "Admin Created!", 
-        `Admin account created for "${newName}". A welcome email with login credentials has been sent to ${newEmail}.`
-      );
+      const successMsg = `Admin account created for "${newName}". A welcome email with login credentials has been sent to ${newEmail}.`;
+      
+      showSuccessModal("Admin Created!", successMsg);
+      triggerToast({
+        type: "success",
+        title: "Admin Account Created",
+        message: `Admin account created for "${newName}" (${newEmail}) assigned to ${deptLabel}.`
+      });
       
       setNewEmail("");
       setNewName("");
-      setNewDept("All Departments");
-      fetchUsers();
+      setNewDept("All Agencies");
+      setAddAdminModalOpen(false);
+      await fetchUsers();
     } catch (err) {
       showErrorModal(
         "Creation Failed",
         err.message || "Failed to create admin. Make sure the backend server is running."
       );
+      triggerToast({
+        type: "error",
+        title: "Creation Failed",
+        message: err.message || "Failed to create admin."
+      });
     } finally {
       setCreating(false);
     }
   };
 
   const handleAssignExisting = async (e) => {
-    e.preventDefault();
-    if (!assignEmail) return;
-    const existing = users.find(u => u.email === assignEmail);
-    if (!existing) { setMsg({ type: "error", text: "User must register in the app first." }); return; }
+    if (e) e.preventDefault();
+    if (!assignEmail) {
+      triggerToast({ type: "error", title: "Missing Email", message: "Please select or enter a user email first." });
+      return;
+    }
+    const existing = users.find(u => u.email?.toLowerCase() === assignEmail.toLowerCase());
+    if (!existing) { 
+      triggerToast({ type: "error", title: "User Not Found", message: "User must be registered in the app first before being promoted." });
+      return; 
+    }
     
-    // Check if already an admin
     const isAlreadyAdmin = existing.role === 'admin' || existing.role === 'superadmin';
-    
     const cats = getCatsForDept(assignDept);
     const deptLabel = getDeptLabel(assignDept);
+    const action = isAlreadyAdmin ? 'updated' : 'promoted to admin';
+    const agencyText = (!deptLabel || deptLabel === 'All Agencies' || deptLabel === 'All Departments') ? '' : ` and assigned to ${deptLabel}`;
+
+    const confirmTitle = isAlreadyAdmin ? "Confirm Agency Assignment" : "Confirm Admin Promotion";
+    const confirmMessage = isAlreadyAdmin
+      ? `Are you sure you want to update the agency assignment for "${existing.full_name || assignEmail}" to "${deptLabel || 'All Agencies'}"?`
+      : `Are you sure you want to promote "${existing.full_name || assignEmail}" to Admin assigned to "${deptLabel || 'All Agencies'}"?`;
+    const actionButtonText = isAlreadyAdmin ? "Update Agency" : "Promote to Admin";
+
+    showConfirmModal(
+      confirmTitle,
+      confirmMessage,
+      async () => {
+        setUpdatingUser(true);
+
+        try {
+          await supabase.rpc("set_user_role", { 
+            target_user_id: existing.id, 
+            new_role: "admin", 
+            assigned_categories: cats, 
+            assigned_department: deptLabel 
+          });
+          
+          await fetchUsers();
+          
+          const successMsg = `"${existing.full_name || assignEmail}" ${action}${agencyText}.`;
+          
+          triggerToast({
+            type: "success",
+            title: isAlreadyAdmin ? "Agency Assignment Updated" : "User Promoted to Admin",
+            message: successMsg
+          });
+          
+          setAssignEmail(""); 
+          setAssignDept("All Agencies");
+          setAddAdminModalOpen(false);
+        } catch (error) {
+          logger.error('Error updating user:', error);
+          triggerToast({
+            type: "error",
+            title: "Update Failed",
+            message: `Failed to update user: ${error.message}`
+          });
+        } finally {
+          setUpdatingUser(false);
+        }
+      },
+      actionButtonText,
+      "Cancel"
+    );
+  };
+
+  const handleSaveEditUser = async (e) => {
+    if (e) e.preventDefault();
+    if (!editingUser) return;
     
+    setEditSaving(true);
     try {
-      await supabase.rpc("set_user_role", { target_user_id: existing.id, new_role: "admin", assigned_categories: cats, assigned_department: deptLabel });
-      
-      // Wait a moment for database to update, then refresh
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const isPromotingToAdmin = editRole === "admin";
+      const cats = isPromotingToAdmin ? getCatsForDept(editDept) : null;
+      const deptLabel = isPromotingToAdmin ? getDeptLabel(editDept) : null;
+      const targetRole = editRole === "user" ? null : editRole;
+
+      await supabase.rpc("set_user_role", {
+        target_user_id: editingUser.id,
+        new_role: targetRole,
+        assigned_categories: cats,
+        assigned_department: deptLabel
+      });
+
       await fetchUsers();
-      
-      // Different message based on whether they were already an admin
-      const action = isAlreadyAdmin ? 'updated' : 'promoted to admin';
-      const officeText = deptLabel === 'All Departments' ? '' : ` and assigned to ${deptLabel}`;
-      setMsg({ type: "success", text: `"${existing.full_name || assignEmail}" ${action}${officeText}.` });
-      
-      setAssignEmail(""); 
-      setAssignDept("All Departments");
+
+      const agencyInfo = (!deptLabel || deptLabel === "All Agencies" || deptLabel === "All Departments") 
+        ? "" 
+        : ` and assigned to ${deptLabel}`;
+      const actionText = editRole === "user" 
+        ? "demoted to regular citizen" 
+        : (editingUser.role === "admin" ? "updated" : "promoted to admin");
+
+      const successText = `"${editingUser.full_name || editingUser.email}" has been ${actionText}${agencyInfo}.`;
+
+      setEditingUser(null);
+
+      showSuccessModal(
+        editRole === "user" ? "Role Updated" : (editingUser.role === "admin" ? "Admin Assignment Updated" : "Admin Promoted"),
+        successText
+      );
+
+      triggerToast({
+        type: "success",
+        title: editRole === "user" ? "User Role Updated" : (editingUser.role === "admin" ? "Agency Assignment Updated" : "Admin Promotion Successful"),
+        message: successText
+      });
     } catch (error) {
-      logger.error('Error updating user:', error);
-      setMsg({ type: "error", text: `Failed to update user: ${error.message}` });
+      logger.error("Error editing user:", error);
+      showErrorModal("Update Failed", error.message || "Failed to update user privileges.");
+      triggerToast({
+        type: "error",
+        title: "Update Failed",
+        message: error.message || "Failed to update user."
+      });
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const selectForPromote = (user) => {
+    setAssignEmail(user.email);
+    if (user.assigned_department && user.assigned_department !== "Not Assigned") {
+      const match = departments.find(d => d.name === user.assigned_department || d.id === user.assigned_department);
+      if (match) setAssignDept(match.id);
+      else setAssignDept(user.assigned_department);
+    } else {
+      setAssignDept("All Agencies");
+    }
+    if (promoteCardRef.current) {
+      promoteCardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   };
 
   const revoke = async (id) => { 
+    const target = users.find(u => u.id === id);
+    const name = target ? (target.full_name || target.email) : "this user";
     showConfirmModal(
       "Revoke Admin Access",
-      "Are you sure you want to revoke admin access for this user?",
+      `Are you sure you want to revoke admin access for "${name}"? They will return to regular citizen access.`,
       async () => {
         try {
           await supabase.rpc("set_user_role", { target_user_id: id, new_role: null }); 
           await fetchUsers();
-          showSuccessModal("Success", "Admin access revoked successfully");
+          showSuccessModal("Success", `Admin access revoked for "${name}".`);
+          triggerToast({
+            type: "success",
+            title: "Access Revoked",
+            message: `Admin access revoked for "${name}".`
+          });
         } catch (error) {
           showErrorModal("Error", "Failed to revoke admin access");
+          triggerToast({
+            type: "error",
+            title: "Action Failed",
+            message: error.message || "Failed to revoke admin access"
+          });
         }
       },
       "Revoke"
     );
   };
-  const admins = users.filter(u => u.role === "admin");  // Only show regular admins, not superadmins
 
   const confirmReset = async () => {
     if (!selectedUser) return;
@@ -2481,157 +3055,823 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
         new_password: 'CLIMA123!'
       });
       if (error) throw error;
-      setMsg({ type: "success", text: `Password for "${selectedUser.full_name || selectedUser.email}" has been reset to CLIMA123!` });
+      const userName = selectedUser.full_name || selectedUser.email;
+      const msgText = `Password for "${userName}" has been reset to CLIMA123!`;
+      setMsg({ type: "success", text: msgText });
       setResetOpen(false);
       setSelectedUser(null);
+      showSuccessModal("Password Reset Successful", msgText);
+      triggerToast({
+        type: "success",
+        title: "Password Reset",
+        message: msgText
+      });
     } catch (err) {
       setMsg({ type: "error", text: err.message || "Failed to reset password." });
+      showErrorModal("Reset Failed", err.message || "Failed to reset password.");
+      triggerToast({
+        type: "error",
+        title: "Reset Failed",
+        message: err.message || "Failed to reset password."
+      });
     } finally {
       setResetting(false);
     }
   };
 
-  if (loading) return <p style={{ textAlign: "center", color: S.muted, padding: 40 }}>Loading users…</p>;
+  // Directory live filtering
+  const filteredUsers = useMemo(() => {
+    const q = directorySearch.trim().toLowerCase();
+    return users.filter(u => {
+      if (directoryRoleFilter === "citizens" && (u.role === "admin" || u.role === "superadmin")) return false;
+      if (directoryRoleFilter === "admins" && u.role !== "admin") return false;
+      if (directoryRoleFilter === "superadmins" && u.role !== "superadmin") return false;
+
+      if (!q) return true;
+      const name = (u.full_name || "").toLowerCase();
+      const email = (u.email || "").toLowerCase();
+      const agency = (u.assigned_department || "").toLowerCase();
+      return name.includes(q) || email.includes(q) || agency.includes(q);
+    });
+  }, [users, directorySearch, directoryRoleFilter]);
+
+  const citizenCount = useMemo(() => users.filter(u => u.role === "user").length, [users]);
+  const adminCount = useMemo(() => users.filter(u => u.role === "admin").length, [users]);
+  const superadminCount = useMemo(() => users.filter(u => u.role === "superadmin").length, [users]);
+
+  const selectedPromoteUser = useMemo(() => {
+    if (!assignEmail) return null;
+    return users.find(u => u.email?.toLowerCase() === assignEmail.toLowerCase());
+  }, [users, assignEmail]);
+
+  const getInitials = (name, email) => {
+    if (name) {
+      const parts = name.trim().split(" ");
+      if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+      return name.slice(0, 2).toUpperCase();
+    }
+    if (email) return email.slice(0, 2).toUpperCase();
+    return "U";
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "N/A";
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  if (loading) return (
+    <div style={{ textAlign: "center", padding: 60 }}>
+      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        style={{ width: 36, height: 36, border: `3px solid ${S.border}`, borderTopColor: S.accent, borderRadius: "50%", margin: "0 auto 16px" }} />
+      <p style={{ color: S.muted, fontWeight: 700, fontSize: 14 }}>Loading registered users & permissions…</p>
+    </div>
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Status Message */}
-      {msg && (
-        <div style={{
-          padding: "12px 16px", borderRadius: 10, fontSize: 13, fontWeight: 700, display: "flex", justifyContent: "space-between", alignItems: "center",
-          background: msg.type === "success" ? "#f0fdf4" : "#fef2f2",
-          color: msg.type === "success" ? "#16a34a" : "#dc2626",
-          border: `1px solid ${msg.type === "success" ? "#bbf7d0" : "#fecaca"}`,
-        }}>
-          {msg.text}
-          <button onClick={() => setMsg(null)} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex" }}><X size={14} color={msg.type === "success" ? "#16a34a" : "#dc2626"} /></button>
-        </div>
-      )}
 
-      {/* Create New Admin */}
-      <div style={{ ...cardStyle, position: "relative", zIndex: 10 }}>
-        <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Create New Admin</h3>
-        <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>Create a brand new admin account. They'll log in with the credentials you set.</p>
-        <form onSubmit={handleCreateAdmin} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Full Name</label>
-              <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Juan Dela Cruz" required style={inputStyle} />
+
+      {/* ── 1. Minimalist Interactive KPI Metrics Strip (Unified Card matching Image 2) ── */}
+      <div
+        style={{
+          ...cardStyle,
+          borderRadius: 22,
+          padding: "16px 20px",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+          gap: 12,
+          alignItems: "center",
+          boxShadow: isDark
+            ? "0 4px 20px rgba(0, 0, 0, 0.25)"
+            : "0 4px 24px -2px rgba(0, 0, 0, 0.05)",
+        }}
+      >
+        {[
+          { id: "all", label: "Total Registered", count: users.length, icon: Users, active: directoryRoleFilter === "all" },
+          { id: "citizens", label: "Citizens", count: citizenCount, icon: UserCheck, active: directoryRoleFilter === "citizens" },
+          { id: "admins", label: "Agency Admins", count: adminCount, icon: Briefcase, active: directoryRoleFilter === "admins" },
+          { id: "superadmins", label: "Superadmins", count: superadminCount, icon: ShieldCheck, active: directoryRoleFilter === "superadmins" },
+        ].map((item) => {
+          const IconComp = item.icon;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setDirectoryRoleFilter(item.id)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                padding: "10px 14px",
+                borderRadius: 16,
+                background: item.active
+                  ? (isDark ? "rgba(234, 88, 12, 0.12)" : "rgba(234, 88, 12, 0.05)")
+                  : "transparent",
+                border: item.active
+                  ? "1px solid rgba(234, 88, 12, 0.3)"
+                  : "1px solid transparent",
+                cursor: "pointer",
+                textAlign: "left",
+                fontFamily: S.font,
+                transition: "all 0.18s cubic-bezier(0.16, 1, 0.3, 1)",
+                outline: "none",
+              }}
+              onMouseEnter={(e) => {
+                if (!item.active) {
+                  e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.025)";
+                  e.currentTarget.style.borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!item.active) {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.borderColor = "transparent";
+                }
+              }}
+            >
+              {/* Circular Icon Pill with Warm Copper/Amber Accent */}
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  minWidth: 48,
+                  borderRadius: "50%",
+                  background: item.active
+                    ? (isDark ? "rgba(234, 88, 12, 0.18)" : "#fff7ed")
+                    : (isDark ? "rgba(255, 255, 255, 0.07)" : "#ffffff"),
+                  border: item.active
+                    ? "2px solid #ea580c"
+                    : (isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.05)"),
+                  boxShadow: item.active
+                    ? "0 2px 10px rgba(234, 88, 12, 0.25)"
+                    : (isDark ? "0 2px 8px rgba(0,0,0,0.25)" : "0 2px 10px rgba(0, 0, 0, 0.06)"),
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                }}
+              >
+                <IconComp
+                  size={20}
+                  style={{
+                    color: item.active
+                      ? "#ea580c"
+                      : (isDark ? "#fb923c" : "#b45309"),
+                    transition: "color 0.2s ease",
+                  }}
+                />
+              </div>
+
+              {/* Title & Count Vertical Stack */}
+              <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: S.muted,
+                    lineHeight: 1.3,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {item.label}
+                </span>
+                <span
+                  style={{
+                    fontSize: 22,
+                    fontWeight: 800,
+                    color: S.text,
+                    lineHeight: 1.2,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {Number(item.count).toLocaleString()}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── 2. Registered Users Directory (Complete List) ── */}
+      <div style={{ ...cardStyle, position: "relative", zIndex: 1, padding: 22 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 900, color: S.text }}>Registered Users Directory</h3>
+              <Badge variant="secondary" style={{ padding: "3px 10px", fontSize: 11.5, fontWeight: 800 }}>
+                {filteredUsers.length} of {users.length} users
+              </Badge>
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Email</label>
-              <input value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="admin@palayan.gov.ph" required type="email" style={inputStyle} />
-            </div>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted }}>
+              Full directory of citizen accounts and administrative officers registered on CLIMA.
+            </p>
           </div>
-          <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Assign to Office</label>
-              <CustomSelect
-                value={newDept}
-                onChange={setNewDept}
-                options={[{ value: "All Departments", label: "All Departments (Superadmin)" }, ...departments.map(d => ({ value: d.id, label: d.name }))]}
-                accent={S.accent}
-                isDark={S.isDark}
-              />
-            </div>
-            <button type="submit" disabled={creating} style={{ ...btnPrimary, height: 42, opacity: creating ? 0.6 : 1 }}>
-              <Plus size={16} /> {creating ? "Creating…" : "Create Admin"}
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveActionTab("create");
+                setAddAdminModalOpen(true);
+              }}
+              style={{
+                ...btnPrimary,
+                background: ORANGE_GRADIENT,
+                boxShadow: ORANGE_SHADOW,
+                padding: "8px 16px",
+                fontSize: 12.5,
+                fontWeight: 800,
+                borderRadius: 10,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                cursor: "pointer",
+              }}
+            >
+              <UserPlus size={14} />
+              <span>Create New Admin</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveActionTab("promote");
+                setAddAdminModalOpen(true);
+              }}
+              style={{
+                padding: "8px 15px",
+                borderRadius: 10,
+                border: `1px solid ${S.border}`,
+                background: S.cardSubtle,
+                color: S.text,
+                fontSize: 12.5,
+                fontWeight: 800,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                transition: "all 0.15s ease",
+              }}
+            >
+              <UserCheck size={14} />
+              <span>Promote / Reassign</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={fetchUsers}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: `1px solid ${S.border}`,
+                background: S.cardSubtle,
+                color: S.muted,
+                fontSize: 12.5,
+                fontWeight: 800,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                transition: "all 0.15s ease",
+              }}
+              title="Refresh Directory"
+            >
+              <RefreshCw size={13} />
             </button>
           </div>
-          <p style={{ margin: "8px 0 0", fontSize: 11, color: S.muted, fontStyle: "italic" }}>
-            📧 A welcome email with a temporary password will be sent to the admin.
-          </p>
-        </form>
-      </div>
-
-      {/* Assign Existing User */}
-      <div style={{ ...cardStyle, position: "relative", zIndex: 5 }}>
-        <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Promote/Update User</h3>
-        <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>Promote a citizen to admin, or update an existing admin's office assignment.</p>
-        <form onSubmit={handleAssignExisting} style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Email</label>
-            <input value={assignEmail} onChange={e => setAssignEmail(e.target.value)} placeholder="user@email.com" required style={inputStyle} />
-          </div>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Office</label>
-            <CustomSelect
-              value={assignDept}
-              onChange={setAssignDept}
-              options={[{ value: "All Departments", label: "All Departments" }, ...departments.map(d => ({ value: d.id, label: d.name }))]}
-              accent={S.accent}
-              isDark={S.isDark}
-            />
-          </div>
-          <button type="submit" style={btnPrimary}>Promote</button>
-        </form>
-      </div>
-
-      {/* Current Admins */}
-      <div style={{ ...cardStyle, position: "relative", zIndex: 1 }}>
-        <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Current Admins</h3>
-        <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>{admins.length} admin{admins.length !== 1 ? "s" : ""} configured</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {admins.map(u => {
-            // Show module permissions count
-            const moduleCount = u.modulePermissions?.length || 0;
-            const moduleLabel = u.role === 'superadmin' 
-              ? 'All Modules' 
-              : moduleCount === 0 
-                ? 'No Access' 
-                : `${moduleCount} Module${moduleCount > 1 ? 's' : ''}`;
-            
-            // Show assigned office/department
-            const assignedOffice = u.assigned_department || 'Not Assigned';
-            
-            return (
-              <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, border: `1px solid ${S.border}`, background: S.cardSubtle }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: S.accentBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Users size={18} color={S.accent} />
-                  </div>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: S.text }}>{u.full_name || "Admin"}</p>
-                    <p style={{ margin: "2px 0 0", fontSize: 12, color: S.muted }}>{u.email}</p>
-                    <p style={{ margin: "4px 0 0", fontSize: 11, color: "#16a34a", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={assignedOffice}>
-                      📍 {assignedOffice}
-                    </p>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <span style={{ 
-                    padding: "3px 10px", 
-                    borderRadius: 20, 
-                    background: moduleCount === 0 ? (isDark ? "rgba(239, 68, 68, 0.15)" : "#fef2f2") : (isDark ? "rgba(22, 163, 74, 0.15)" : "#f0fdf4"), 
-                    color: moduleCount === 0 ? "#ef4444" : "#16a34a", 
-                    fontSize: 10, 
-                    fontWeight: 800, 
-                    border: `1px solid ${moduleCount === 0 ? (isDark ? "rgba(239, 68, 68, 0.3)" : "#fecaca") : (isDark ? "rgba(22, 163, 74, 0.3)" : "#bbf7d0")}` 
-                  }}>
-                    {moduleLabel}
-                  </span>
-                  <span style={{ padding: "3px 10px", borderRadius: 20, background: S.accentBg, color: S.accent, fontSize: 10, fontWeight: 800 }}>{u.role}</span>
-                  {u.role !== "superadmin" && (
-                    <>
-                      <button onClick={() => { setSelectedUser(u); setResetOpen(true); }} style={{ ...btnDanger, color: "#d97706" }} title="Reset Password"><ShieldAlert size={16} /></button>
-                      <button onClick={() => revoke(u.id)} style={btnDanger} title="Revoke Access"><Trash2 size={16} /></button>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          {admins.length === 0 && <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No admins yet.</p>}
         </div>
+
+        {/* Search & Role Filter Toolbar */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+          {/* Live Search Input */}
+          <div style={{ position: "relative", flex: 1, minWidth: 260 }}>
+            <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: S.muted }} />
+            <input
+              value={directorySearch}
+              onChange={e => setDirectorySearch(e.target.value)}
+              placeholder="Search directory by name, email, or agency…"
+              style={{
+                ...inputStyle,
+                paddingLeft: 38,
+                paddingRight: directorySearch ? 32 : 12,
+                height: 40,
+                fontSize: 13,
+                borderRadius: 12,
+              }}
+            />
+            {directorySearch && (
+              <button
+                type="button"
+                onClick={() => setDirectorySearch("")}
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: S.muted,
+                  padding: 2,
+                  display: "flex",
+                }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Minimalist Role Filter Tabs */}
+          <div style={{
+            display: "inline-flex",
+            alignItems: "center",
+            padding: 3,
+            borderRadius: 9999,
+            background: S.cardSubtle,
+            border: `1px solid ${S.border}`,
+            gap: 2,
+          }}>
+            {[
+              { id: "all", label: "All Users", count: users.length },
+              { id: "citizens", label: "Citizens", count: citizenCount },
+              { id: "admins", label: "Admins", count: adminCount },
+              { id: "superadmins", label: "Superadmins", count: superadminCount },
+            ].map(tab => {
+              const active = directoryRoleFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setDirectoryRoleFilter(tab.id)}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: 9999,
+                    border: "none",
+                    background: active ? ORANGE_GRADIENT : "transparent",
+                    color: active ? "#ffffff" : S.muted,
+                    fontSize: 12,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    boxShadow: active ? "0 2px 8px rgba(234, 88, 12, 0.25)" : "none",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {tab.label} ({tab.count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Minimalist Users Directory Table */}
+        {filteredUsers.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px 20px", background: S.cardSubtle, borderRadius: 14, border: `1px dashed ${S.border}` }}>
+            <UserIcon size={36} style={{ margin: "0 auto 10px", color: S.muted, opacity: 0.4 }} />
+            <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: S.text }}>No users found</p>
+            <p style={{ margin: "4px 0 12px", fontSize: 12.5, color: S.muted }}>No user account matched your search criteria.</p>
+            {directorySearch && (
+              <button
+                type="button"
+                onClick={() => setDirectorySearch("")}
+                style={{
+                  ...btnPrimary,
+                  background: ORANGE_GRADIENT,
+                  boxShadow: ORANGE_SHADOW,
+                  padding: "6px 16px",
+                  fontSize: 12,
+                }}
+              >
+                Clear Search Filter
+              </button>
+            )}
+          </div>
+        ) : (
+          <div
+            style={{
+              border: `1px solid ${S.border}`,
+              borderRadius: 16,
+              background: isDark ? "rgba(255, 255, 255, 0.02)" : "#ffffff",
+              overflow: "hidden",
+            }}
+          >
+            <div style={{ overflowX: "auto" }}>
+              <div style={{ minWidth: 720 }}>
+                {/* Minimalist Column Header Row (displayed once at top) */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "minmax(340px, 2.6fr) minmax(170px, 1.3fr) minmax(130px, 1fr) minmax(110px, 0.8fr)",
+                    padding: "10px 18px",
+                    background: isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
+                    borderBottom: `1px solid ${S.border}`,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: S.muted,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.6,
+                    alignItems: "center",
+                  }}
+                >
+                  <span>User</span>
+                  <span>Assigned Agency</span>
+                  <span>Modules Access</span>
+                  <span style={{ textAlign: "right" }}>Actions</span>
+                </div>
+
+                {/* Directory Rows */}
+                {filteredUsers.map((u, index) => {
+                  const moduleCount = u.modulePermissions?.length || 0;
+                  const moduleLabel = u.role === 'superadmin' 
+                    ? 'All Modules' 
+                    : moduleCount === 0 
+                      ? 'No Access' 
+                      : `${moduleCount} Module${moduleCount > 1 ? 's' : ''}`;
+                  
+                  const rawAgency = u.assigned_department;
+                  const assignedAgency = (!rawAgency || rawAgency === 'All Departments' || rawAgency === 'All Agencies' || rawAgency === 'Not Assigned')
+                    ? (u.role === 'superadmin' ? 'All Agencies (Superadmin)' : 'None')
+                    : rawAgency;
+
+                  const isCitizen = u.role === 'user';
+                  const isAdmin = u.role === 'admin';
+                  const isSuper = u.role === 'superadmin';
+
+                  return (
+                    <div
+                      key={u.id || u.email}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "minmax(340px, 2.6fr) minmax(170px, 1.3fr) minmax(130px, 1fr) minmax(110px, 0.8fr)",
+                        padding: "10px 18px",
+                        alignItems: "center",
+                        borderBottom: index < filteredUsers.length - 1 ? `1px solid ${S.border}` : "none",
+                        background: "transparent",
+                        transition: "background 0.15s ease",
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.015)";
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = "transparent";
+                      }}
+                    >
+                      {/* Column 1: User Profile Info (All Inline & Minimalist) */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          minWidth: 0,
+                          paddingRight: 12,
+                        }}
+                        title={u.created_at ? `Joined ${formatDate(u.created_at)}` : undefined}
+                      >
+                        {/* Minimalist Avatar */}
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            minWidth: 32,
+                            borderRadius: "50%",
+                            background: isSuper
+                              ? (isDark ? "rgba(234, 88, 12, 0.14)" : "#fff7ed")
+                              : (isDark ? "rgba(255, 255, 255, 0.08)" : "#f1f5f9"),
+                            border: isSuper
+                              ? "1px solid rgba(234, 88, 12, 0.3)"
+                              : `1px solid ${S.border}`,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: 800,
+                            fontSize: 11.5,
+                            color: isSuper ? "#ea580c" : S.text,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {getInitials(u.full_name, u.email)}
+                        </div>
+
+                        {/* Name & Email Stack */}
+                        <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "nowrap" }}>
+                            <span
+                              style={{
+                                fontWeight: 800,
+                                fontSize: 13,
+                                color: S.text,
+                                letterSpacing: "-0.01em",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {u.full_name || "Citizen User"}
+                            </span>
+
+                            {/* Minimalist Inline Role Pill */}
+                            {isSuper ? (
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 3.5,
+                                  padding: "1.5px 7px",
+                                  borderRadius: 6,
+                                  fontSize: 10,
+                                  fontWeight: 750,
+                                  background: "rgba(234, 88, 12, 0.08)",
+                                  color: "#ea580c",
+                                  border: "1px solid rgba(234, 88, 12, 0.22)",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <ShieldCheck size={10} />
+                                <span>Superadmin</span>
+                              </span>
+                            ) : isAdmin ? (
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 3.5,
+                                  padding: "1.5px 7px",
+                                  borderRadius: 6,
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  color: S.muted,
+                                  background: isDark ? "rgba(255, 255, 255, 0.06)" : "#f1f5f9",
+                                  border: `1px solid ${S.border}`,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <Shield size={10} />
+                                <span>Admin</span>
+                              </span>
+                            ) : (
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  padding: "1.5px 7px",
+                                  borderRadius: 6,
+                                  fontSize: 10,
+                                  fontWeight: 600,
+                                  color: S.muted,
+                                  background: isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.03)",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                Citizen
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Email under Name */}
+                          <span
+                            style={{
+                              fontSize: 11.5,
+                              color: S.muted,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              minWidth: 0,
+                            }}
+                            title={u.email}
+                          >
+                            {u.email}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Column 2: Assigned Agency */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, paddingRight: 10 }}>
+                        <Building
+                          size={13}
+                          style={{
+                            flexShrink: 0,
+                            color: assignedAgency === 'None' ? S.muted : (isSuper ? "#ea580c" : S.muted),
+                            opacity: assignedAgency === 'None' ? 0.4 : 0.8,
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontSize: 12.5,
+                            fontWeight: assignedAgency === 'None' ? 500 : 700,
+                            color: assignedAgency === 'None' ? S.muted : (isSuper ? "#ea580c" : S.text),
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {assignedAgency}
+                        </span>
+                      </div>
+
+                      {/* Column 3: Modules Access */}
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        {isSuper ? (
+                          <span
+                            style={{
+                              fontSize: 11.5,
+                              fontWeight: 750,
+                              color: "#ea580c",
+                              background: "rgba(234, 88, 12, 0.08)",
+                              padding: "2.5px 8px",
+                              borderRadius: 6,
+                              border: "1px solid rgba(234, 88, 12, 0.2)",
+                            }}
+                          >
+                            All Modules
+                          </span>
+                        ) : isAdmin ? (
+                          <span
+                            style={{
+                              fontSize: 11.5,
+                              fontWeight: 650,
+                              color: moduleCount === 0 ? S.muted : S.text,
+                              background: moduleCount === 0 ? "transparent" : (isDark ? "rgba(255, 255, 255, 0.06)" : "#f1f5f9"),
+                              padding: moduleCount === 0 ? "0" : "2.5px 8px",
+                              borderRadius: 6,
+                              border: moduleCount === 0 ? "none" : `1px solid ${S.border}`,
+                            }}
+                          >
+                            {moduleLabel}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 12, color: S.muted }}>—</span>
+                        )}
+                      </div>
+
+                      {/* Column 4: Actions */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6 }}>
+                        {isCitizen && (
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(u)}
+                            style={{
+                              ...btnPrimary,
+                              background: ORANGE_GRADIENT,
+                              boxShadow: "0 2px 8px rgba(234, 88, 12, 0.2)",
+                              padding: "5px 12px",
+                              fontSize: 11.5,
+                              fontWeight: 700,
+                              gap: 4,
+                              height: 30,
+                              borderRadius: 8,
+                            }}
+                            title="Promote citizen to admin"
+                          >
+                            <UserCheck size={12} />
+                            <span>Promote</span>
+                          </button>
+                        )}
+
+                        {isAdmin && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(u)}
+                              style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: 8,
+                                border: `1px solid ${S.border}`,
+                                background: "transparent",
+                                color: S.text,
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                transition: "all 0.15s ease",
+                              }}
+                              title="Edit Admin Role & Agency Assignment"
+                              onMouseEnter={e => {
+                                e.currentTarget.style.color = "#ea580c";
+                                e.currentTarget.style.borderColor = "rgba(234, 88, 12, 0.4)";
+                                e.currentTarget.style.background = isDark ? "rgba(234, 88, 12, 0.1)" : "rgba(234, 88, 12, 0.05)";
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.color = S.text;
+                                e.currentTarget.style.borderColor = S.border;
+                                e.currentTarget.style.background = "transparent";
+                              }}
+                            >
+                              <Edit2 size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setSelectedUser(u); setResetOpen(true); }}
+                              style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: 8,
+                                border: `1px solid ${S.border}`,
+                                background: "transparent",
+                                color: S.muted,
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                transition: "all 0.15s ease",
+                              }}
+                              title="Reset Password"
+                              onMouseEnter={e => {
+                                e.currentTarget.style.color = "#d97706";
+                                e.currentTarget.style.borderColor = "rgba(217, 119, 6, 0.4)";
+                                e.currentTarget.style.background = isDark ? "rgba(217, 119, 6, 0.1)" : "rgba(217, 119, 6, 0.05)";
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.color = S.muted;
+                                e.currentTarget.style.borderColor = S.border;
+                                e.currentTarget.style.background = "transparent";
+                              }}
+                            >
+                              <Key size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                revoke(u.id);
+                              }}
+                              style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: 8,
+                                border: `1px solid ${S.border}`,
+                                background: "transparent",
+                                color: S.muted,
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                transition: "all 0.15s ease",
+                              }}
+                              title="Revoke Admin Access"
+                              onMouseEnter={e => {
+                                e.currentTarget.style.color = "#dc2626";
+                                e.currentTarget.style.borderColor = "rgba(220, 38, 38, 0.4)";
+                                e.currentTarget.style.background = isDark ? "rgba(220, 38, 38, 0.1)" : "rgba(220, 38, 38, 0.05)";
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.color = S.muted;
+                                e.currentTarget.style.borderColor = S.border;
+                                e.currentTarget.style.background = "transparent";
+                              }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </>
+                        )}
+
+                        {isSuper && (
+                          <span
+                            style={{
+                              fontSize: 10.5,
+                              fontWeight: 700,
+                              color: S.muted,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              padding: "3px 8px",
+                              borderRadius: 6,
+                              background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
+                            }}
+                            title="Root account is protected"
+                          >
+                            <ShieldCheck size={11} style={{ opacity: 0.6 }} />
+                            <span>Protected Root</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Reset Password Modal */}
-      <AnimatePresence>
+      {/* Modals for UsersTab rendered into document.body portal to guarantee full-screen overlay */}
+      {typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+        {/* Reset Password Modal */}
         {resetOpen && selectedUser && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={() => setResetOpen(false)}
-            style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setResetOpen(false);
+            }}
+            style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", zIndex: 99999, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={e => e.stopPropagation()}
@@ -2657,94 +3897,579 @@ function UsersTab({ categories, departments, S, cardStyle, inputStyle, selectSty
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
-    </div>
-  );
-}
 
-/* ── Dept Row Component for Smooth Color Picker ── */
-function DeptRow({ d, onColorChange, onNameChange, onDelete, S, btnDanger }) {
-  const initialColor = d.accent_color || DEPT_DEFAULTS[d.name] || "#373D20";
-  const [color, setColor] = useState(initialColor);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState(d.name);
+        {/* Edit User Modal */}
+        {editingUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setEditingUser(null)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              width: "100vw",
+              height: "100vh",
+              zIndex: 99999,
+              background: "rgba(0,0,0,0.65)",
+              backdropFilter: "blur(6px)",
+              WebkitBackdropFilter: "blur(6px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 20
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: S.card,
+                border: `1px solid ${S.borderMedium}`,
+                borderRadius: 20,
+                width: "100%",
+                maxWidth: 480,
+                padding: 24,
+                boxShadow: isDark ? "0 25px 60px rgba(0,0,0,0.75)" : "0 20px 60px rgba(0,0,0,0.2)",
+                fontFamily: S.font,
+                color: S.text
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 10,
+                    background: editingUser.role === 'user' ? `${S.accent}20` : "rgba(245, 158, 11, 0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: editingUser.role === 'user' ? S.accent : "#f59e0b"
+                  }}>
+                    {editingUser.role === 'user' ? <UserCheck size={20} /> : <Edit2 size={18} />}
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: S.text }}>
+                      {editingUser.role === 'user' ? "Promote Citizen to Admin" : "Edit Admin Role & Agency"}
+                    </h3>
+                    <p style={{ margin: "2px 0 0", fontSize: 12, color: S.muted }}>
+                      Configure administrative privileges and agency assignment
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: S.muted,
+                    cursor: "pointer",
+                    padding: 4,
+                    display: "flex",
+                    borderRadius: 6,
+                  }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
 
-  useEffect(() => {
-    setColor(initialColor);
-    setEditName(d.name);
-  }, [initialColor, d.name]);
+              {/* User preview card */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: 12,
+                borderRadius: 12,
+                background: S.cardSubtle,
+                border: `1px solid ${S.border}`,
+                marginBottom: 18
+              }}>
+                <Avatar className="h-11 w-11 text-xs font-black shrink-0">
+                  <AvatarFallback>{getInitials(editingUser.full_name, editingUser.email)}</AvatarFallback>
+                </Avatar>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontWeight: 800, fontSize: 14, color: S.text }}>
+                      {editingUser.full_name || "Citizen User"}
+                    </span>
+                    <Badge variant={editingUser.role === "admin" ? "warning" : "secondary"} className="text-[10px] font-black uppercase py-0.5">
+                      {editingUser.role === "admin" ? "Admin" : "Citizen"}
+                    </Badge>
+                  </div>
+                  <div style={{ fontSize: 12, color: S.muted, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+                    <Mail size={12} /> {editingUser.email}
+                  </div>
+                </div>
+              </div>
 
-  const handleChange = (e) => {
-    const newColor = e.target.value;
-    setColor(newColor);
-    onColorChange(d.id, newColor);
-  };
+              {/* Form Controls */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    Account Privilege Tier
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setEditRole("admin")}
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: 10,
+                        border: `1.5px solid ${editRole === "admin" ? S.accent : S.border}`,
+                        background: editRole === "admin" ? `${S.accent}12` : S.cardSubtle,
+                        color: editRole === "admin" ? S.accent : S.text,
+                        fontWeight: 800,
+                        fontSize: 13,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <Shield size={16} /> Admin Officer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditRole("user")}
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: 10,
+                        border: `1.5px solid ${editRole === "user" ? S.accent : S.border}`,
+                        background: editRole === "user" ? `${S.accent}12` : S.cardSubtle,
+                        color: editRole === "user" ? S.accent : S.text,
+                        fontWeight: 800,
+                        fontSize: 13,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <UserIcon size={16} /> Regular Citizen
+                    </button>
+                  </div>
+                </div>
 
-  const handleSaveName = () => {
-    if (editName.trim() && editName !== d.name) {
-      onNameChange(d.id, editName.trim());
-    }
-    setIsEditing(false);
-  };
+                {editRole === "admin" && (
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      Assigned Agency
+                    </label>
+                    <CustomSelect
+                      value={editDept}
+                      onChange={setEditDept}
+                      options={[{ value: "All Agencies", label: "All Agencies (Superadmin)" }, ...agencyOptions]}
+                      accent={S.accent}
+                      isDark={S.isDark}
+                    />
+                    <p style={{ margin: "6px 0 0", fontSize: 11, color: S.muted }}>
+                      Admin will have operational authority for incident reports belonging to this agency.
+                    </p>
+                  </div>
+                )}
 
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 12, border: `1.5px solid ${S.border}`, background: S.cardSubtle, boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
-      <input type="color" value={color} 
-        onChange={handleChange}
-        title="Change Office Color"
-        className="dept-color-picker"
-        style={{ width: 24, height: 24, border: "none", padding: 0, cursor: "pointer", background: "none" }} />
-      
-      {isEditing ? (
-        <input 
-          autoFocus
-          value={editName}
-          onChange={(e) => setEditName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); }}
-          style={{ flex: 1, fontSize: 13, fontWeight: 800, color: S.text, background: S.card, border: `1px solid ${S.border}`, borderRadius: 4, padding: "2px 6px", outline: "none" }}
-        />
-      ) : (
-        <span style={{ fontWeight: 800, fontSize: 13, color: S.text, flex: 1 }}>{d.name}</span>
+                {editRole === "user" && (
+                  <div style={{
+                    padding: 12,
+                    borderRadius: 10,
+                    background: isDark ? "rgba(239, 68, 68, 0.1)" : "#fef2f2",
+                    border: `1px solid ${isDark ? "rgba(239, 68, 68, 0.25)" : "#fecaca"}`,
+                    fontSize: 12,
+                    color: isDark ? "#fca5a5" : "#dc2626",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 8
+                  }}>
+                    <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span>Demoting this user to Regular Citizen will immediately revoke all administrative privileges, dashboard access, and agency assignments.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Buttons */}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22 }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  disabled={editSaving}
+                  style={{
+                    padding: "9px 18px",
+                    borderRadius: 10,
+                    border: `1px solid ${S.border}`,
+                    background: S.cardSubtle,
+                    color: S.text,
+                    fontSize: 13,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEditUser}
+                  disabled={editSaving}
+                  style={{
+                    ...btnPrimary,
+                    padding: "9px 20px",
+                    fontSize: 13,
+                    opacity: editSaving ? 0.6 : 1,
+                  }}
+                >
+                  {editSaving ? "Saving Changes…" : (editingUser.role === 'user' && editRole === 'admin' ? "Promote to Admin" : "Save Changes")}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Unified Admin Role & Agency Management Modal */}
+        {addAdminModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setAddAdminModalOpen(false);
+            }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              width: "100vw",
+              height: "100vh",
+              zIndex: 99999,
+              background: "rgba(0,0,0,0.65)",
+              backdropFilter: "blur(6px)",
+              WebkitBackdropFilter: "blur(6px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 20
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: S.card,
+                border: `1px solid ${S.borderMedium}`,
+                borderRadius: 20,
+                width: "100%",
+                maxWidth: 520,
+                padding: 24,
+                display: "flex",
+                flexDirection: "column",
+                boxShadow: isDark ? "0 25px 60px rgba(0,0,0,0.75)" : "0 20px 60px rgba(0,0,0,0.2)",
+                fontFamily: S.font,
+                color: S.text
+              }}
+            >
+              {/* Modal Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 10,
+                    background: "rgba(234, 88, 12, 0.12)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#ea580c"
+                  }}>
+                    {activeActionTab === "create" ? <UserPlus size={20} /> : <UserCheck size={20} />}
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 17, fontWeight: 900, color: S.text }}>
+                      {activeActionTab === "create" ? "Create New Admin" : "Promote / Reassign User"}
+                    </h3>
+                    <p style={{ margin: "2px 0 0", fontSize: 12, color: S.muted }}>
+                      {activeActionTab === "create"
+                        ? "Register a brand new administrator account on CLIMA"
+                        : "Assign administrative privileges to a citizen or update agency assignment"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAddAdminModalOpen(false)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: S.muted,
+                    cursor: "pointer",
+                    padding: 4,
+                    display: "flex",
+                    borderRadius: 6,
+                    outline: "none",
+                  }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Form Body */}
+              {activeActionTab === "create" ? (
+                <form onSubmit={handleCreateAdmin} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                        Full Name
+                      </label>
+                      <input
+                        value={newName}
+                        onChange={e => setNewName(e.target.value)}
+                        placeholder="e.g. Juan Dela Cruz"
+                        required
+                        style={{ ...inputStyle, height: 42 }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                        Official Email
+                      </label>
+                      <input
+                        value={newEmail}
+                        onChange={e => setNewEmail(e.target.value)}
+                        placeholder="admin@palayan.gov.ph"
+                        required
+                        type="email"
+                        style={{ ...inputStyle, height: 42 }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                        Assigned Agency
+                      </label>
+                      <CustomSelect
+                        value={newDept}
+                        onChange={setNewDept}
+                        options={[{ value: "All Agencies", label: "All Agencies (Superadmin)" }, ...agencyOptions]}
+                        accent={S.accent}
+                        isDark={S.isDark}
+                      />
+                    </div>
+
+                    <div style={{
+                      padding: 12,
+                      borderRadius: 10,
+                      background: S.cardSubtle,
+                      border: `1px solid ${S.border}`,
+                      fontSize: 12,
+                      color: S.muted,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8
+                    }}>
+                      <Mail size={15} style={{ flexShrink: 0, color: "#ea580c" }} />
+                      <span>A welcome email with automated temporary password will be sent automatically.</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4, paddingTop: 14, borderTop: `1px solid ${S.border}` }}>
+                    <button
+                      type="button"
+                      onClick={() => setAddAdminModalOpen(false)}
+                      disabled={creating}
+                      style={{
+                        padding: "9px 18px",
+                        borderRadius: 10,
+                        border: `1px solid ${S.border}`,
+                        background: S.cardSubtle,
+                        color: S.text,
+                        fontSize: 13,
+                        fontWeight: 800,
+                        cursor: "pointer",
+                        outline: "none",
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={creating}
+                      style={{
+                        ...btnPrimary,
+                        background: ORANGE_GRADIENT,
+                        boxShadow: ORANGE_SHADOW,
+                        padding: "9px 22px",
+                        fontSize: 13,
+                        opacity: creating ? 0.7 : 1,
+                        cursor: creating ? "not-allowed" : "pointer",
+                        outline: "none",
+                      }}
+                    >
+                      <Plus size={16} />
+                      <span>{creating ? "Creating Admin…" : "Create Admin Account"}</span>
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleAssignExisting} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                        Select Registered Citizen or Admin
+                      </label>
+                      <UserCombobox
+                        users={users}
+                        value={assignEmail}
+                        onChange={(email, user) => {
+                          setAssignEmail(email);
+                          if (user?.assigned_department && user.assigned_department !== "Not Assigned") {
+                            const match = departments.find(d => d.name === user.assigned_department || d.id === user.assigned_department);
+                            if (match) setAssignDept(match.id);
+                            else setAssignDept(user.assigned_department);
+                          }
+                        }}
+                        isDark={isDark}
+                        accent={S.accent}
+                        placeholder="Search registered citizen by name or email…"
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                        Designated Agency Assignment
+                      </label>
+                      <CustomSelect
+                        value={assignDept}
+                        onChange={setAssignDept}
+                        options={[{ value: "All Agencies", label: "All Agencies" }, ...agencyOptions]}
+                        accent={S.accent}
+                        isDark={S.isDark}
+                      />
+                    </div>
+
+                    <div style={{
+                      padding: 12,
+                      borderRadius: 10,
+                      background: S.cardSubtle,
+                      border: `1px solid ${S.border}`,
+                      fontSize: 12,
+                      color: S.muted,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8
+                    }}>
+                      <Shield size={15} style={{ flexShrink: 0, color: "#ea580c" }} />
+                      <span>Promoting a citizen grants immediate agency admin dashboard access and module permissions.</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4, paddingTop: 14, borderTop: `1px solid ${S.border}` }}>
+                    <button
+                      type="button"
+                      onClick={() => setAddAdminModalOpen(false)}
+                      disabled={updatingUser}
+                      style={{
+                        padding: "9px 18px",
+                        borderRadius: 10,
+                        border: `1px solid ${S.border}`,
+                        background: S.cardSubtle,
+                        color: S.text,
+                        fontSize: 13,
+                        fontWeight: 800,
+                        cursor: "pointer",
+                        outline: "none",
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={updatingUser}
+                      style={{
+                        ...btnPrimary,
+                        background: ORANGE_GRADIENT,
+                        boxShadow: ORANGE_SHADOW,
+                        padding: "9px 22px",
+                        fontSize: 13,
+                        opacity: updatingUser ? 0.7 : 1,
+                        cursor: updatingUser ? "not-allowed" : "pointer",
+                        outline: "none",
+                      }}
+                    >
+                      {updatingUser ? (
+                        <RefreshCw size={14} className="animate-spin" />
+                      ) : (
+                        <UserCheck size={15} />
+                      )}
+                      <span>
+                        {updatingUser
+                          ? (selectedPromoteUser?.role === 'admin' ? "Updating Agency…" : "Promoting to Admin…")
+                          : (selectedPromoteUser?.role === 'admin' ? "Update Agency Assignment" : "Promote to Admin")
+                        }
+                      </span>
+                    </button>
+                  </div>
+                </form>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+        </AnimatePresence>,
+        document.body
       )}
-
-      {isEditing ? (
-        <button onClick={handleSaveName} style={{ background: "none", border: "none", color: "#16a34a", cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center" }} title="Save Name">
-          <Check size={14} />
-        </button>
-      ) : (
-        <button onClick={() => setIsEditing(true)} style={{ background: "none", border: "none", color: S.muted, cursor: "pointer", padding: "6px 8px", display: "flex", alignItems: "center" }} title="Edit Name">
-          <Edit2 size={14} />
-        </button>
-      )}
-
-      <button onClick={() => onDelete(d.id)} style={{ ...btnDanger, padding: "6px 8px" }} title="Delete Office"><Trash2 size={14} /></button>
     </div>
   );
 }
 
 /* ── Settings Tab ── */
-function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, showSuccessModal, showErrorModal, showConfirmModal, isSuperadmin }) {
-  const [deptName, setDeptName] = useState("");
+function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, showSuccessModal, showErrorModal, showConfirmModal, showToast, isSuperadmin }) {
   const [catName, setCatName] = useState("");
   const [catGroup, setCatGroup] = useState("");
   const [catDept, setCatDept] = useState("");
-  const [deptColor, setDeptColor] = useState("#373D20");
   const [newGroupName, setNewGroupName] = useState("");
-  
+  const [isSubmittingCat, setIsSubmittingCat] = useState(false);
+  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
+  const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
+
+  // Search & Filter state for categories
+  const [categorySearch, setCategorySearch] = useState("");
+  const [selectedAgencyFilter, setSelectedAgencyFilter] = useState("ALL");
+
   // Module permissions state
   const [adminUsers, setAdminUsers] = useState([]);
+  const [adminSearch, setAdminSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
   const [userPermissions, setUserPermissions] = useState({});
   const [loadingPermissions, setLoadingPermissions] = useState(false);
 
-  // Simple debounce helper
-  const debounce = (func, delay) => {
-    let timer;
-    return (...args) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => func(...args), delay);
-    };
-  };
+  // Orange gradient design tokens (matching UsersTab)
+  const ORANGE_GRADIENT = "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)";
+  const ORANGE_SHADOW = "0 3px 12px rgba(234, 88, 12, 0.28)";
+
+  const agencyOptions = useMemo(() => {
+    const list = departments && departments.length > 0 ? departments : [];
+    const ordered = [];
+    ORDERED_AGENCIES.forEach(name => {
+      const match = list.find(d => d.name?.toUpperCase() === name);
+      if (match) {
+        ordered.push({ value: match.id, label: match.name, color: match.accent_color || DEPT_DEFAULTS[name] || "#f97316" });
+      } else {
+        ordered.push({ value: name, label: name, color: DEPT_DEFAULTS[name] || "#f97316" });
+      }
+    });
+    list.forEach(d => {
+      if (!ORDERED_AGENCIES.includes(d.name?.toUpperCase())) {
+        ordered.push({ value: d.id, label: d.name, color: d.accent_color || "#f97316" });
+      }
+    });
+    return ordered;
+  }, [departments]);
 
   // Load admin users with their permissions (superadmin only)
   useEffect(() => {
@@ -2755,80 +4480,117 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
 
   const loadAdminUsers = async () => {
     try {
-      // Fetch all admin users (exclude superadmins)
-      const { data: users, error: usersError } = await supabase
+      // 1. Fetch admin profiles
+      const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, full_name, email")
+        .select("id, full_name, email, assigned_department, role")
         .eq("role", "admin")
         .order("full_name");
 
-      if (usersError) throw usersError;
-      setAdminUsers(users || []);
+      if (profilesError) {
+        logger.warn("Profiles fetch warning:", profilesError);
+      }
+
+      // 2. Also query get_auth_users RPC to ensure complete administrator discovery
+      let rpcAdmins = [];
+      try {
+        const { data: rpcUsers } = await supabase.rpc("get_auth_users");
+        if (rpcUsers && Array.isArray(rpcUsers)) {
+          rpcAdmins = rpcUsers.filter(u => u.role === "admin");
+        }
+      } catch (e) {
+        logger.warn("get_auth_users RPC fallback:", e);
+      }
+
+      // Merge by user id (preferring non-empty values)
+      const adminMap = new Map();
+      (rpcAdmins || []).forEach(u => adminMap.set(u.id, {
+        id: u.id,
+        full_name: u.full_name || u.email,
+        email: u.email,
+        assigned_department: u.assigned_department,
+        role: "admin"
+      }));
+
+      (profiles || []).forEach(p => {
+        const existing = adminMap.get(p.id) || {};
+        adminMap.set(p.id, {
+          id: p.id,
+          full_name: p.full_name || existing.full_name || p.email,
+          email: p.email || existing.email,
+          assigned_department: p.assigned_department || existing.assigned_department,
+          role: "admin"
+        });
+      });
+
+      const adminsList = Array.from(adminMap.values());
+      setAdminUsers(adminsList);
 
       // Fetch all permissions
       const { data: perms, error: permsError } = await supabase
         .from("admin_module_permissions")
         .select("*");
 
-      if (permsError) throw permsError;
+      if (permsError) {
+        logger.warn("Permissions fetch warning:", permsError);
+      }
 
       // Group permissions by user_id
       const permsByUser = {};
       (perms || []).forEach(p => {
         if (!permsByUser[p.user_id]) permsByUser[p.user_id] = {};
         permsByUser[p.user_id][p.module_name] = {
-          can_view: p.can_view,
-          can_create: p.can_create,
-          can_edit: p.can_edit,
-          can_delete: p.can_delete
+          can_view: !!p.can_view,
+          can_create: !!p.can_create,
+          can_edit: !!p.can_edit,
+          can_delete: !!p.can_delete
         };
       });
       setUserPermissions(permsByUser);
     } catch (err) {
       logger.error("Error loading admin users:", err);
-      showErrorModal("Error", "Failed to load admin users");
+      showErrorModal("Error", "Failed to load admin users: " + (err?.message || "Unknown error"));
     }
   };
 
-  const MODULES = [
-    { name: "reports", label: "Citizen Reports", icon: "📝" },
-    { name: "advisories", label: "Advisory Broadcast", icon: "📢" },
-    { name: "hospital", label: "Hospital El Niño Data", icon: "🏥" },
-    { name: "cdrrmo", label: "CDRRMO Operations", icon: "🚨" },
-    { name: "bfp", label: "BFP Operations", icon: "🚒" },
-    { name: "agriculture", label: "Agriculture Damages", icon: "🌾" },
-    { name: "water", label: "Water Interruptions", icon: "💧" },
-    { name: "power", label: "Power Interruptions", icon: "⚡" },
-    { name: "users", label: "User Management", icon: "👥" },
-    { name: "settings", label: "Settings & Categories", icon: "⚙️" },
-    { name: "logs", label: "Activity Logs", icon: "📋" }
-  ];
+  const MODULES = useMemo(() => [
+    { name: "reports", label: "Citizen Reports", desc: "Citizen incident filings, dispatches & triage", icon: FileText },
+    { name: "advisories", label: "Advisory Broadcast", desc: "Public announcements & official warnings", icon: Megaphone },
+    { name: "hospital", label: "Hospital Monitoring", desc: "El Niño health impacts & hospital telemetry", icon: HeartPulse },
+    { name: "cdrrmo", label: "CDRRMO Operations", desc: "Disaster responses, relief & evacuations", icon: ShieldAlert },
+    { name: "bfp", label: "BFP Operations", desc: "Fire response, incidents & hazard inspections", icon: Flame },
+    { name: "agriculture", label: "Agriculture Damages", desc: "Farm damage assessments & drought monitoring", icon: Sprout },
+    { name: "water", label: "Water Interruptions", desc: "PCWD service notices & water tanker routing", icon: Droplet },
+    { name: "power", label: "Power Interruptions", desc: "NEECO grid blackouts & power restorations", icon: Zap },
+    { name: "users", label: "User Management", desc: "Citizen accounts & admin role assignments", icon: Users },
+    { name: "settings", label: "Settings & Categories", desc: "Issue categories, routing & system preferences", icon: Settings },
+    { name: "logs", label: "Activity Logs", desc: "Security audit logs & system history", icon: Activity }
+  ], []);
 
-  const ROLE_TEMPLATES = {
-    "Agriculture Admin": ["agriculture"],
-    "CDRRMO Admin": ["cdrrmo"],
-    "BFP Admin": ["bfp"],
-    "Hospital Admin": ["hospital"],
-    "Water Admin": ["water"],
-    "Power Admin": ["power"],
-    "Reports Manager": ["reports", "advisories"],
-    "Full Module Access": MODULES.map(m => m.name)
-  };
+  const ROLE_TEMPLATES = useMemo(() => ({
+    "Agriculture Admin": { modules: ["agriculture"], icon: Sprout, color: "#16a34a" },
+    "CDRRMO Admin": { modules: ["cdrrmo"], icon: ShieldAlert, color: "#dc2626" },
+    "BFP Admin": { modules: ["bfp"], icon: Flame, color: "#ef4444" },
+    "Hospital Admin": { modules: ["hospital"], icon: HeartPulse, color: "#0891b2" },
+    "Water Admin": { modules: ["water"], icon: Droplet, color: "#2563eb" },
+    "Power Admin": { modules: ["power"], icon: Zap, color: "#f59e0b" },
+    "Reports Manager": { modules: ["reports", "advisories"], icon: FileText, color: "#8b5cf6" },
+    "Full Module Access": { modules: MODULES.map(m => m.name), icon: Shield, color: "#10b981" }
+  }), [MODULES]);
 
   const applyTemplate = async (userId, templateName) => {
     if (!userId) return;
-    const modules = ROLE_TEMPLATES[templateName];
+    const templateConfig = ROLE_TEMPLATES[templateName];
+    const modules = templateConfig?.modules || templateConfig;
     if (!modules) return;
 
     setLoadingPermissions(true);
     try {
-      // Clear existing permissions for this user
       await supabase
         .from("admin_module_permissions")
         .delete()
         .eq("user_id", userId);
 
-      // Insert new permissions (all with full CRUD access)
       const newPerms = modules.map(module => ({
         user_id: userId,
         module_name: module,
@@ -2845,10 +4607,21 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
       if (error) throw error;
 
       await loadAdminUsers();
-      showSuccessModal("Applied", `${templateName} template applied successfully`);
+      setIsPresetModalOpen(false);
+      showSuccessModal("Template Applied", `Applied "${templateName}" access package successfully.`);
+      showToast?.({
+        type: "success",
+        title: "Template Applied",
+        message: `Applied "${templateName}" access package successfully.`
+      });
     } catch (err) {
       logger.error("Error applying template:", err);
       showErrorModal("Error", "Failed to apply template");
+      showToast?.({
+        type: "error",
+        title: "Template Error",
+        message: "Failed to apply access template."
+      });
     } finally {
       setLoadingPermissions(false);
     }
@@ -2860,23 +4633,20 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
       const currentPerms = userPermissions[userId]?.[moduleName] || {};
       const newValue = !currentPerms[permType];
 
-      // Check if permission record exists
       const { data: existing } = await supabase
         .from("admin_module_permissions")
         .select("id")
         .eq("user_id", userId)
         .eq("module_name", moduleName)
-        .single();
+        .maybeSingle();
 
       if (existing) {
-        // Update existing
         await supabase
           .from("admin_module_permissions")
           .update({ [permType]: newValue })
           .eq("user_id", userId)
           .eq("module_name", moduleName);
       } else {
-        // Insert new (default all to false except the one being toggled)
         await supabase
           .from("admin_module_permissions")
           .insert({
@@ -2898,10 +4668,61 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
     }
   };
 
+  const toggleAllModuleCrud = async (userId, moduleName) => {
+    setLoadingPermissions(true);
+    try {
+      const currentPerms = userPermissions[userId]?.[moduleName] || {};
+      const allActive = currentPerms.can_view && currentPerms.can_create && currentPerms.can_edit && currentPerms.can_delete;
+      const targetState = !allActive;
+
+      const { data: existing } = await supabase
+        .from("admin_module_permissions")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("module_name", moduleName)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from("admin_module_permissions")
+          .update({
+            can_view: targetState,
+            can_create: targetState,
+            can_edit: targetState,
+            can_delete: targetState
+          })
+          .eq("user_id", userId)
+          .eq("module_name", moduleName);
+      } else {
+        await supabase
+          .from("admin_module_permissions")
+          .insert({
+            user_id: userId,
+            module_name: moduleName,
+            can_view: targetState,
+            can_create: targetState,
+            can_edit: targetState,
+            can_delete: targetState
+          });
+      }
+
+      await loadAdminUsers();
+    } catch (err) {
+      logger.error("Error updating all permissions:", err);
+      showErrorModal("Error", "Failed to update module permissions");
+    } finally {
+      setLoadingPermissions(false);
+    }
+  };
+
+  const grantAllPermissions = async (userId) => {
+    await applyTemplate(userId, "Full Module Access");
+  };
+
   const revokeAllPermissions = async (userId) => {
     showConfirmModal(
-      "Revoke All Access",
-      "Remove all module permissions for this admin? They will no longer be able to access any modules.",
+      "Revoke All Module Permissions",
+      "Remove all operational module permissions for this admin officer? They will no longer be able to view, create, edit, or delete records in any module.",
       async () => {
         setLoadingPermissions(true);
         try {
@@ -2911,7 +4732,7 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
             .eq("user_id", userId);
           
           await loadAdminUsers();
-          showSuccessModal("Revoked", "All permissions removed successfully");
+          showSuccessModal("Revoked", "All module permissions removed successfully.");
         } catch (err) {
           logger.error("Error revoking permissions:", err);
           showErrorModal("Error", "Failed to revoke permissions");
@@ -2923,317 +4744,1330 @@ function SettingsTab({ departments, categories, onUpdate, S, cardStyle, inputSty
     );
   };
 
-  const debouncedUpdateColor = useRef(
-    debounce(async (id, color) => {
-      await supabase.from("departments").update({ accent_color: color }).eq("id", id);
-      onUpdate();
-    }, 400)
-  ).current;
-
-  const handleColorChange = (id, color) => {
-    debouncedUpdateColor(id, color);
-  };
-
-  const handleNameChange = async (id, newName) => {
-    await supabase.from("departments").update({ name: newName }).eq("id", id);
-    onUpdate();
-  };
-
-  const addDept = async (e) => { 
-    e.preventDefault(); 
-    if (!deptName) return; 
-    await supabase.from("departments").insert({ name: deptName, accent_color: deptColor }); 
-    setDeptName(""); 
-    setDeptColor("#373D20");
-    onUpdate(); 
-  };
-
   const addCat = async (e) => {
     e.preventDefault();
-    const resolvedGroup = catGroup === "__NEW__" ? newGroupName : catGroup;
-    if (!catName || !resolvedGroup) return;
-    const insert = { name: catName, group_name: resolvedGroup };
-    if (catDept) insert.department_id = catDept;
-    await supabase.from("categories").insert(insert);
-    setCatName(""); setCatGroup(""); setNewGroupName(""); onUpdate();
+    const resolvedGroup = catGroup === "__NEW__" ? newGroupName.trim() : catGroup.trim();
+    if (!catName.trim() || !resolvedGroup) return;
+
+    setIsSubmittingCat(true);
+    try {
+      const insert = { name: catName.trim(), group_name: resolvedGroup };
+      if (catDept) insert.department_id = catDept;
+      const { error } = await supabase.from("categories").insert(insert);
+      if (error) throw error;
+
+      setCatName(""); 
+      setCatGroup(""); 
+      setNewGroupName(""); 
+      setCatDept("");
+      setIsAddCategoryModalOpen(false);
+      onUpdate();
+      showToast?.({
+        type: "success",
+        title: "Category Created",
+        message: `Category "${insert.name}" created successfully.`
+      });
+    } catch (err) {
+      logger.error("Failed to add category:", err);
+      showErrorModal("Error", "Failed to add category: " + (err?.message || "Unknown error"));
+      showToast?.({
+        type: "error",
+        title: "Category Error",
+        message: err?.message || "Failed to add category."
+      });
+    } finally {
+      setIsSubmittingCat(false);
+    }
   };
 
-  const delDept = async (id) => { 
-    showConfirmModal(
-      "Delete Office",
-      "Are you sure you want to delete this office? This action cannot be undone.",
-      async () => {
-        try {
-          await supabase.from("departments").delete().eq("id", id); 
-          onUpdate();
-          showSuccessModal("Deleted", "Office deleted successfully");
-        } catch (error) {
-          showErrorModal("Error", "Failed to delete office");
-        }
-      },
-      "Delete"
-    );
-  };
-
-  const delCat = async (id) => { 
+  const delCat = async (id, name) => { 
     showConfirmModal(
       "Delete Category",
-      "Are you sure you want to delete this category? This action cannot be undone.",
+      `Are you sure you want to delete the category "${name || 'this category'}"? This action cannot be undone and may affect active report filings.`,
       async () => {
         try {
-          await supabase.from("categories").delete().eq("id", id); 
+          const { error } = await supabase.from("categories").delete().eq("id", id); 
+          if (error) throw error;
           onUpdate();
-          showSuccessModal("Deleted", "Category deleted successfully");
+          showToast?.({
+            type: "success",
+            title: "Category Deleted",
+            message: `Category "${name || ''}" deleted successfully.`
+          });
         } catch (error) {
-          showErrorModal("Error", "Failed to delete category");
+          logger.error("Failed to delete category:", error);
+          showErrorModal("Error", "Failed to delete category: " + (error?.message || "Unknown error"));
+          showToast?.({
+            type: "error",
+            title: "Delete Failed",
+            message: error?.message || "Failed to delete category."
+          });
         }
       },
-      "Delete"
+      "Delete",
+      "Cancel",
+      { itemName: name || "Category" }
     );
+  };
+
+  const [seedingCategories, setSeedingCategories] = useState(false);
+
+  const seedDefaultCategories = async () => {
+    setSeedingCategories(true);
+    try {
+      const getDeptId = (deptName) => {
+        const found = (departments || []).find(d => d.name?.toUpperCase() === deptName.toUpperCase());
+        return found ? found.id : null;
+      };
+
+      const defaultCats = [
+        { name: "Obstructed Sidewalks", group_name: "Public Safety", icon_name: "ShieldAlert", department_id: getDeptId("CDRRMO") },
+        { name: "Public Safety Concerns", group_name: "Public Safety", icon_name: "ShieldAlert", department_id: getDeptId("CDRRMO") },
+        { name: "Fire Hazard or Grassfire", group_name: "Public Safety", icon_name: "Flame", department_id: getDeptId("BFP") },
+        { name: "Drought & Crop Damage", group_name: "Agriculture", icon_name: "Sprout", department_id: getDeptId("AGRI") },
+        { name: "Livestock Heat Stress", group_name: "Agriculture", icon_name: "Dog", department_id: getDeptId("AGRI") },
+        { name: "Water Supply Interruption", group_name: "Utilities", icon_name: "Droplet", department_id: getDeptId("PCWD") },
+        { name: "Water Tanker Request", group_name: "Utilities", icon_name: "Truck", department_id: getDeptId("PCWD") },
+        { name: "Power Outage or Sparking Line", group_name: "Utilities", icon_name: "Zap", department_id: getDeptId("NEECO") },
+        { name: "Hospital Emergency Telemetry", group_name: "Health Services", icon_name: "HeartPulse", department_id: getDeptId("PCH") },
+        { name: "Heat Exhaustion / Stroke", group_name: "Health Services", icon_name: "HeartPulse", department_id: getDeptId("PCH") },
+        { name: "Streetlights for Repair", group_name: "General Services", icon_name: "Wrench", department_id: null },
+        { name: "Uncollected Garbage / Declogging", group_name: "General Services", icon_name: "Trash2", department_id: null }
+      ];
+
+      const { error } = await supabase.from("categories").insert(defaultCats);
+      if (error) throw error;
+      await onUpdate?.();
+      showSuccessModal("Categories Initialized", `${defaultCats.length} standard citizen categories have been loaded and linked.`);
+      showToast?.({
+        type: "success",
+        title: "Standard Categories Loaded",
+        message: `${defaultCats.length} standard categories initialized successfully.`
+      });
+    } catch (err) {
+      logger.error("Error seeding categories:", err);
+      showErrorModal("Error", "Failed to initialize categories: " + (err?.message || "Unknown error"));
+    } finally {
+      setSeedingCategories(false);
+    }
   };
 
   // Get unique group names for suggestions
-  const existingGroups = [...new Set(categories.map(c => c.group_name).filter(Boolean))];
+  const existingGroups = useMemo(() => {
+    return [...new Set(categories.map(c => c.group_name).filter(Boolean))];
+  }, [categories]);
+
+  // Filtered categories according to search and agency filter
+  const filteredCategories = useMemo(() => {
+    return categories.filter(c => {
+      const q = categorySearch.toLowerCase().trim();
+      const matchesSearch = !q || (
+        c.name?.toLowerCase().includes(q) ||
+        c.group_name?.toLowerCase().includes(q) ||
+        c.departments?.name?.toLowerCase().includes(q)
+      );
+
+      const deptName = c.departments?.name?.toUpperCase() || "";
+      const matchesAgency = selectedAgencyFilter === "ALL" 
+        ? true 
+        : selectedAgencyFilter === "UNASSIGNED" 
+          ? !c.department_id && !deptName
+          : deptName === selectedAgencyFilter;
+
+      return matchesSearch && matchesAgency;
+    });
+  }, [categories, categorySearch, selectedAgencyFilter]);
+
+  // Filtered admin users for module permissions
+  const filteredAdmins = useMemo(() => {
+    if (!adminSearch.trim()) return adminUsers;
+    const q = adminSearch.toLowerCase().trim();
+    return adminUsers.filter(u => 
+      u.full_name?.toLowerCase().includes(q) || 
+      u.email?.toLowerCase().includes(q) ||
+      (u.assigned_department || u.department)?.toLowerCase().includes(q)
+    );
+  }, [adminUsers, adminSearch]);
+
+  const activeAdminsCount = useMemo(() => {
+    return adminUsers.filter(u => {
+      const perms = userPermissions[u.id] || {};
+      return Object.values(perms).some(p => p.can_view || p.can_create || p.can_edit || p.can_delete);
+    }).length;
+  }, [adminUsers, userPermissions]);
+
+  const noAccessAdminsCount = adminUsers.length - activeAdminsCount;
+  const linkedCategoriesCount = useMemo(() => categories.filter(c => c.department_id || c.departments?.name).length, [categories]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Module Permissions Section (Superadmin Only) */}
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, paddingBottom: 40 }}>
+      {/* ── 1. Module Permissions Section (Superadmin Only) ── */}
       {isSuperadmin && (
-        <div style={cardStyle}>
-          <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Module Permissions</h3>
-          <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>
-            Assign module access to admin users. Each admin can be granted view, create, edit, and delete permissions for specific modules.
-          </p>
-
-          {/* Quick Templates */}
-          <div style={{
-            marginBottom: 20,
-            padding: 16,
-            background: S.isDark ? "rgba(245, 158, 11, 0.12)" : "#fefce8",
-            borderRadius: 12,
-            border: S.isDark ? "1px solid rgba(245, 158, 11, 0.25)" : "1px solid #fef08a",
-            position: "relative",
-            zIndex: 20,
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-              <span style={{ fontSize: 16 }}>⚡</span>
-              <span style={{ fontSize: 12, fontWeight: 900, color: S.isDark ? "#f59e0b" : "#854d0e", textTransform: "uppercase", letterSpacing: 0.5 }}>Quick Role Templates</span>
-            </div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-              <CustomSelect
-                value={selectedUser}
-                onChange={setSelectedUser}
-                options={[
-                  { value: "", label: "Select admin user first..." },
-                  ...adminUsers.map(u => ({ value: u.id, label: `${u.full_name} (${u.email})` }))
-                ]}
-                accent={S.isDark ? "#f59e0b" : "#854d0e"}
-                isDark={S.isDark}
-              />
-            </div>
-            {selectedUser && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {Object.keys(ROLE_TEMPLATES).map(template => (
-                  <button
-                    key={template}
-                    type="button"
-                    onClick={() => applyTemplate(selectedUser, template)}
-                    disabled={loadingPermissions}
-                    style={{
-                      padding: "6px 12px",
-                      borderRadius: 8,
-                      border: "1px solid #fbbf24",
-                      background: "#fffbeb",
-                      cursor: loadingPermissions ? "not-allowed" : "pointer",
-                      fontFamily: S.font,
-                      fontWeight: 700,
-                      fontSize: 12,
-                      color: "#92400e",
-                      transition: "all 0.15s",
-                      opacity: loadingPermissions ? 0.5 : 1
-                    }}
-                    onMouseEnter={e => !loadingPermissions && (e.currentTarget.style.background = "#fef3c7")}
-                    onMouseLeave={e => e.currentTarget.style.background = "#fffbeb"}
-                  >
-                    {template}
-                  </button>
-                ))}
+        <div style={{ ...cardStyle, position: "relative", zIndex: 10, padding: 22 }}>
+          {/* Section Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16, marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <div style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: "rgba(245, 158, 11, 0.12)",
+                border: "1px solid rgba(245, 158, 11, 0.25)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#ea580c",
+                flexShrink: 0
+              }}>
+                <Key size={19} />
               </div>
-            )}
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <h3 style={{ margin: 0, fontSize: 17, fontWeight: 900, color: S.text }}>Module Permissions & Access Control</h3>
+                  <Badge variant="outline" style={{ gap: 4, padding: "2.5px 8px", fontSize: 10.5, fontWeight: 800, background: "rgba(245, 158, 11, 0.12)", color: "#ea580c", border: "1px solid rgba(245, 158, 11, 0.3)" }}>
+                    <ShieldCheck size={12} />
+                    <span>Superadmin Only</span>
+                  </Badge>
+                </div>
+                <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted, maxWidth: 650 }}>
+                  Assign granular CRUD access (View, Create, Edit, Delete) to administrative officers across CLIMA operational modules.
+                </p>
+              </div>
+            </div>
+
+            {/* KPI Badges & Actions */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <Badge variant="secondary" style={{ gap: 6, padding: "5px 12px", fontSize: 11.5, fontWeight: 800 }}>
+                <Users size={12} style={{ opacity: 0.8 }} />
+                <span>{adminUsers.length} {adminUsers.length === 1 ? "Admin Officer" : "Admin Officers"}</span>
+              </Badge>
+              <Badge variant="outline" style={{ gap: 6, padding: "5px 12px", fontSize: 11.5, fontWeight: 800, color: "#16a34a", borderColor: "rgba(22, 163, 74, 0.3)", background: S.isDark ? "rgba(22, 163, 74, 0.1)" : "#f0fdf4" }}>
+                <CheckCircle2 size={12} />
+                <span>{activeAdminsCount} Configured</span>
+              </Badge>
+              {noAccessAdminsCount > 0 && (
+                <Badge variant="outline" style={{ gap: 6, padding: "5px 12px", fontSize: 11.5, fontWeight: 800, color: S.muted }}>
+                  <Clock size={12} style={{ opacity: 0.7 }} />
+                  <span>{noAccessAdminsCount} Pending</span>
+                </Badge>
+              )}
+              
+              <button
+                type="button"
+                onClick={() => setIsPresetModalOpen(true)}
+                style={{
+                  padding: "8px 15px",
+                  borderRadius: 10,
+                  border: `1px solid ${S.border}`,
+                  background: S.cardSubtle,
+                  color: S.text,
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <ShieldCheck size={14} style={{ color: "#ea580c" }} />
+                <span>Role Presets</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={loadAdminUsers}
+                disabled={loadingPermissions}
+                title="Reload Admin Permissions"
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 10,
+                  border: `1px solid ${S.border}`,
+                  background: S.cardSubtle,
+                  color: S.muted,
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  cursor: loadingPermissions ? "not-allowed" : "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  transition: "all 0.15s ease",
+                  opacity: loadingPermissions ? 0.6 : 1,
+                }}
+              >
+                <RefreshCw size={13} className={loadingPermissions ? "animate-spin" : ""} />
+              </button>
+            </div>
           </div>
 
-          {/* Admin Users List with Permissions */}
+          {/* Admin Search & Toolbar */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+            <div style={{ position: "relative", flex: 1, minWidth: 260 }}>
+              <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: S.muted }} />
+              <input
+                value={adminSearch}
+                onChange={e => setAdminSearch(e.target.value)}
+                placeholder="Search admin officers by name or email…"
+                style={{
+                  ...inputStyle,
+                  paddingLeft: 38,
+                  paddingRight: adminSearch ? 32 : 12,
+                  height: 40,
+                  fontSize: 13,
+                  borderRadius: 12,
+                }}
+              />
+              {adminSearch && (
+                <button
+                  type="button"
+                  onClick={() => setAdminSearch("")}
+                  style={{
+                    position: "absolute",
+                    right: 10,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    color: S.muted,
+                    cursor: "pointer",
+                    padding: 4,
+                    display: "flex",
+                    alignItems: "center"
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <Badge variant="secondary" style={{ padding: "4px 10px", fontSize: 11.5, fontWeight: 800 }}>
+              Showing {filteredAdmins.length} of {adminUsers.length} administrators
+            </Badge>
+          </div>
+
+          {/* Admin Users Table (Matching UsersTab) */}
           {adminUsers.length === 0 ? (
-            <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No admin users found.</p>
+            <div style={{
+              textAlign: "center",
+              padding: "40px 20px",
+              background: S.cardSubtle,
+              borderRadius: 14,
+              border: `1px dashed ${S.border}`
+            }}>
+              <Users size={32} style={{ color: S.muted, margin: "0 auto 10px", opacity: 0.6 }} />
+              <div style={{ fontWeight: 800, fontSize: 14, color: S.text }}>No Admin Users Found</div>
+              <p style={{ fontSize: 12.5, color: S.muted, maxWidth: 360, margin: "4px auto 0" }}>
+                There are currently no users with the &quot;admin&quot; role. You can promote registered users to admin in the Users tab.
+              </p>
+            </div>
+          ) : filteredAdmins.length === 0 ? (
+            <div style={{
+              textAlign: "center",
+              padding: "30px 20px",
+              background: S.cardSubtle,
+              borderRadius: 14,
+              border: `1px dashed ${S.border}`
+            }}>
+              <div style={{ fontWeight: 800, fontSize: 13.5, color: S.text }}>No admin matches &quot;{adminSearch}&quot;</div>
+              <button
+                type="button"
+                onClick={() => setAdminSearch("")}
+                style={{ marginTop: 8, fontSize: 12, color: "#ea580c", background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}
+              >
+                Clear Search Filter
+              </button>
+            </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {adminUsers.map(user => {
-                const perms = userPermissions[user.id] || {};
-                const moduleCount = Object.keys(perms).filter(m => perms[m].can_view).length;
-                
-                return (
-                  <ModulePermissionRow
-                    key={user.id}
-                    user={user}
-                    permissions={perms}
-                    modules={MODULES}
-                    moduleCount={moduleCount}
-                    onToggle={toggleModulePermission}
-                    onRevokeAll={revokeAllPermissions}
-                    S={S}
-                    btnDanger={btnDanger}
-                    loadingPermissions={loadingPermissions}
-                  />
-                );
-              })}
+            <div
+              style={{
+                border: `1px solid ${S.border}`,
+                borderRadius: 16,
+                background: S.isDark ? "rgba(255, 255, 255, 0.02)" : "#ffffff",
+                overflow: "hidden",
+              }}
+            >
+              <div style={{ overflowX: "auto" }}>
+                <div style={{ minWidth: 740 }}>
+                  {/* Table Header Row */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "minmax(320px, 2.4fr) minmax(170px, 1.2fr) minmax(160px, 1.1fr) minmax(230px, 1.4fr)",
+                      padding: "10px 18px",
+                      background: S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
+                      borderBottom: `1px solid ${S.border}`,
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: S.muted,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.6,
+                      alignItems: "center",
+                    }}
+                  >
+                    <span>Admin Officer</span>
+                    <span>Assigned Agency</span>
+                    <span>Modules Access</span>
+                    <span style={{ textAlign: "right" }}>Actions</span>
+                  </div>
+
+                  {/* Rows */}
+                  {filteredAdmins.map((user, idx) => {
+                    const perms = userPermissions[user.id] || {};
+                    const activeCount = Object.keys(perms).filter(m => perms[m].can_view || perms[m].can_create || perms[m].can_edit || perms[m].can_delete).length;
+
+                    return (
+                      <ModulePermissionRow
+                        key={user.id}
+                        user={user}
+                        permissions={perms}
+                        modules={MODULES}
+                        moduleCount={activeCount}
+                        onToggle={toggleModulePermission}
+                        onToggleAllModule={toggleAllModuleCrud}
+                        onGrantAll={grantAllPermissions}
+                        onRevokeAll={revokeAllPermissions}
+                        onApplyPresetTemplate={(uId) => {
+                          setSelectedUser(uId);
+                          setIsPresetModalOpen(true);
+                        }}
+                        isLast={idx === filteredAdmins.length - 1}
+                        S={S}
+                        btnDanger={btnDanger}
+                        loadingPermissions={loadingPermissions}
+                        ORANGE_GRADIENT={ORANGE_GRADIENT}
+                        ORANGE_SHADOW={ORANGE_SHADOW}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Offices Section */}
-      <div style={cardStyle}>
-        <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Offices</h3>
-        <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>Manage offices that handle citizen reports. Categories get routed to these offices.</p>
-        <form onSubmit={addDept} style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "flex-end" }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Office Name</label>
-            <input value={deptName} onChange={e => setDeptName(e.target.value)} placeholder="E.g. CDRRMO" required style={inputStyle} />
-          </div>
-          <div style={{ width: 80 }}>
-            <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase" }}>Theme</label>
-            <input type="color" value={deptColor} onChange={e => setDeptColor(e.target.value)} 
-              className="custom-color-picker"
-              style={{ ...inputStyle, padding: 0, height: 42, cursor: "pointer", border: "none" }} />
-          </div>
-          <button type="submit" style={{ ...btnPrimary, height: 42 }}><Plus size={16} /> Add</button>
-        </form>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {departments.map(d => (
-            <DeptRow key={d.id} d={d} onColorChange={handleColorChange} onNameChange={handleNameChange} onDelete={delDept} S={S} btnDanger={btnDanger} />
-          ))}
-          {departments.length === 0 && <p style={{ color: S.muted, fontSize: 13, padding: 12 }}>No offices added yet.</p>}
-        </div>
-      </div>
-
-      {/* Categories Section */}
-      <div style={{ ...cardStyle, position: "relative", zIndex: 10 }}>
-        <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 900 }}>Issue Categories</h3>
-        <p style={{ margin: "0 0 16px", fontSize: 13, color: S.muted }}>
-          Categories are what citizens select when filing reports. Each category belongs to a <strong>group</strong> (shown in the app) and is <strong>linked to an office</strong> (for routing).
-        </p>
-        <form onSubmit={addCat} style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-          <div style={{ display: "flex", gap: 8 }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Category Name</label>
-              <input value={catName} onChange={e => setCatName(e.target.value)} placeholder="E.g. Obstructed Sidewalks" required style={inputStyle} />
+      {/* ── 2. Issue Categories & Agency Routing Section ── */}
+      <div style={{ ...cardStyle, position: "relative", zIndex: 10, padding: 22 }}>
+        {/* Section Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16, marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+            <div style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              background: "rgba(245, 158, 11, 0.12)",
+              border: "1px solid rgba(245, 158, 11, 0.25)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#ea580c",
+              flexShrink: 0
+            }}>
+              <Tag size={19} />
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Group (shown in app)</label>
-              {catGroup === "__NEW__" ? (
-                <div style={{ display: "flex", gap: 6 }}>
-                  <input
-                    autoFocus
-                    value={newGroupName || ""}
-                    onChange={e => setNewGroupName(e.target.value)}
-                    placeholder="Type new group name…"
-                    required
-                    style={inputStyle}
-                  />
-                  <button type="button" onClick={() => { setCatGroup(""); setNewGroupName(""); }}
-                    style={{ padding: "8px 12px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.cardSubtle, cursor: "pointer", fontFamily: S.font, fontWeight: 700, fontSize: 12, color: S.muted }}>
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <CustomSelect
-                  value={catGroup}
-                  onChange={v => { if (v === "__NEW__") { setCatGroup("__NEW__"); setNewGroupName(""); } else setCatGroup(v); }}
-                  options={[
-                    ...existingGroups.map(g => ({ value: g, label: g })),
-                    { value: "__NEW__", label: "+ Create New Group" },
-                  ]}
-                  placeholder="Select or create group…"
-                  accent={S.accent}
-                />
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <h3 style={{ margin: 0, fontSize: 17, fontWeight: 900, color: S.text }}>Issue Categories & Agency Routing</h3>
+              </div>
+              <p style={{ margin: "4px 0 0", fontSize: 13, color: S.muted, maxWidth: 650 }}>
+                Categories are selected by citizens when filing incident reports. Each category belongs to a group and routes tickets directly to a designated agency.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Metrics & + Add Category Button */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <Badge variant="secondary" style={{ gap: 6, padding: "5px 12px", fontSize: 11.5, fontWeight: 800 }}>
+              <Tag size={12} style={{ opacity: 0.8 }} />
+              <span>{categories.length} {categories.length === 1 ? "Category" : "Categories"}</span>
+            </Badge>
+            <Badge variant="outline" style={{ gap: 6, padding: "5px 12px", fontSize: 11.5, fontWeight: 800 }}>
+              <Folder size={12} style={{ opacity: 0.8 }} />
+              <span>{existingGroups.length} {existingGroups.length === 1 ? "Group" : "Groups"}</span>
+            </Badge>
+            <Badge variant="outline" style={{ gap: 6, padding: "5px 12px", fontSize: 11.5, fontWeight: 800, color: "#16a34a", borderColor: "rgba(22, 163, 74, 0.3)", background: S.isDark ? "rgba(22, 163, 74, 0.1)" : "#f0fdf4" }}>
+              <CheckCircle2 size={12} />
+              <span>{linkedCategoriesCount} Routed</span>
+            </Badge>
+
+            <button
+              type="button"
+              onClick={() => setIsAddCategoryModalOpen(true)}
+              style={{
+                ...btnPrimary,
+                background: ORANGE_GRADIENT,
+                boxShadow: ORANGE_SHADOW,
+                padding: "8px 16px",
+                fontSize: 12.5,
+                fontWeight: 800,
+                borderRadius: 10,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                cursor: "pointer",
+              }}
+            >
+              <Plus size={14} />
+              <span>Add Category</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Search & Agency Filter Toolbar */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 18 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            {/* Search Input */}
+            <div style={{ position: "relative", flex: 1, minWidth: 260 }}>
+              <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: S.muted }} />
+              <input
+                value={categorySearch}
+                onChange={e => setCategorySearch(e.target.value)}
+                placeholder="Search categories by name, group, or routed agency…"
+                style={{
+                  ...inputStyle,
+                  paddingLeft: 38,
+                  paddingRight: categorySearch ? 32 : 12,
+                  height: 40,
+                  fontSize: 13,
+                  borderRadius: 12,
+                }}
+              />
+              {categorySearch && (
+                <button
+                  type="button"
+                  onClick={() => setCategorySearch("")}
+                  style={{
+                    position: "absolute",
+                    right: 10,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    color: S.muted,
+                    cursor: "pointer",
+                    padding: 4,
+                    display: "flex",
+                    alignItems: "center"
+                  }}
+                >
+                  <X size={14} />
+                </button>
               )}
             </div>
+
+            <Badge variant="secondary" style={{ padding: "4px 10px", fontSize: 11.5, fontWeight: 800 }}>
+              Showing {filteredCategories.length} of {categories.length} categories
+            </Badge>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Linked Office (for routing)</label>
+
+          {/* Agency Filter Chips */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: S.muted, textTransform: "uppercase", letterSpacing: 0.5, marginRight: 2 }}>
+              Agency Filter:
+            </span>
+            {["ALL", ...ORDERED_AGENCIES, "UNASSIGNED"].map(agency => {
+              const isSelected = selectedAgencyFilter === agency;
+
+              return (
+                <button
+                  key={agency}
+                  type="button"
+                  onClick={() => setSelectedAgencyFilter(agency)}
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: 9999,
+                    fontSize: 11.5,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    border: isSelected ? "none" : `1px solid ${S.border}`,
+                    background: isSelected ? ORANGE_GRADIENT : S.cardSubtle,
+                    color: isSelected ? "#ffffff" : S.muted,
+                    boxShadow: isSelected ? "0 2px 8px rgba(234, 88, 12, 0.25)" : "none",
+                  }}
+                >
+                  {agency === "ALL" ? "All Agencies" : agency === "UNASSIGNED" ? "Unassigned" : agency}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Categories Grouped by group_name */}
+        <CategoryGroupList
+          categories={filteredCategories}
+          allCategoriesCount={categories.length}
+          categorySearch={categorySearch}
+          selectedAgencyFilter={selectedAgencyFilter}
+          onResetFilters={() => { setCategorySearch(""); setSelectedAgencyFilter("ALL"); }}
+          S={S}
+          btnDanger={btnDanger}
+          delCat={delCat}
+          onSeedCategories={seedDefaultCategories}
+          seeding={seedingCategories}
+          ORANGE_GRADIENT={ORANGE_GRADIENT}
+          ORANGE_SHADOW={ORANGE_SHADOW}
+        />
+      </div>
+
+      {/* ── SettingsTab Global Modals (Portalled to document.body for full global screen overlay) ── */}
+      {typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {/* ── Modal 1: Add New Report Category Modal Popup ── */}
+          {isAddCategoryModalOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setIsAddCategoryModalOpen(false);
+              }}
+              style={{
+                position: "fixed",
+                inset: 0,
+                width: "100vw",
+                height: "100vh",
+                zIndex: 99999,
+                background: "rgba(0,0,0,0.65)",
+                backdropFilter: "blur(6px)",
+                WebkitBackdropFilter: "blur(6px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 20
+              }}
+            >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 15 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 15 }}
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: S.card,
+              border: `1px solid ${S.borderMedium}`,
+              borderRadius: 20,
+              width: "100%",
+              maxWidth: 520,
+              padding: 24,
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: S.isDark ? "0 25px 60px rgba(0,0,0,0.75)" : "0 20px 60px rgba(0,0,0,0.2)",
+              fontFamily: S.font,
+              color: S.text
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  background: "rgba(234, 88, 12, 0.12)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#ea580c",
+                  flexShrink: 0
+                }}>
+                  <FolderPlus size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 17, fontWeight: 900, color: S.text }}>
+                    Add New Report Category
+                  </h3>
+                  <p style={{ margin: "3px 0 0", fontSize: 12, color: S.muted }}>
+                    Define citizen reporting categories and bind them to responding municipal agencies.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddCategoryModalOpen(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: S.muted,
+                  cursor: "pointer",
+                  padding: 4,
+                  display: "flex",
+                  borderRadius: 6,
+                  outline: "none",
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={addCat} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Category Name */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Category Name <span style={{ color: "#ea580c" }}>*</span>
+                </label>
+                <input
+                  autoFocus
+                  value={catName}
+                  onChange={e => setCatName(e.target.value)}
+                  placeholder="E.g. Obstructed Sidewalks, Fallen Tree, Low Pressure…"
+                  required
+                  style={{ ...inputStyle, height: 42, fontSize: 13 }}
+                />
+              </div>
+
+              {/* Group (shown in app) */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Group (Shown in App) <span style={{ color: "#ea580c" }}>*</span>
+                </label>
+                {catGroup === "__NEW__" ? (
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input
+                      autoFocus
+                      value={newGroupName}
+                      onChange={e => setNewGroupName(e.target.value)}
+                      placeholder="Type new group name…"
+                      required
+                      style={{ ...inputStyle, height: 42, fontSize: 13 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setCatGroup(""); setNewGroupName(""); }}
+                      style={{
+                        padding: "0 14px",
+                        borderRadius: 10,
+                        border: `1px solid ${S.border}`,
+                        background: S.cardSubtle,
+                        cursor: "pointer",
+                        fontFamily: S.font,
+                        fontWeight: 700,
+                        fontSize: 12,
+                        color: S.muted,
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <CustomSelect
+                    value={catGroup}
+                    onChange={v => {
+                      if (v === "__NEW__") {
+                        setCatGroup("__NEW__");
+                        setNewGroupName("");
+                      } else {
+                        setCatGroup(v);
+                      }
+                    }}
+                    options={[
+                      { value: "", label: "Select existing group or create new…" },
+                      ...existingGroups.map(g => ({ value: g, label: g })),
+                      { value: "__NEW__", label: "+ Create New Group…" },
+                    ]}
+                    accent="#ea580c"
+                    isDark={S.isDark}
+                  />
+                )}
+              </div>
+
+              {/* Linked Agency (For routing) */}
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Linked Agency (Auto-Routing)
+                </label>
+                <CustomSelect
+                  value={catDept}
+                  onChange={setCatDept}
+                  options={[
+                    { value: "", label: "No agency linked (General / Triage)" },
+                    ...agencyOptions
+                  ]}
+                  accent="#ea580c"
+                  isDark={S.isDark}
+                />
+              </div>
+
+              {/* Modal Actions */}
+              <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10, marginTop: 8, paddingTop: 14, borderTop: `1px solid ${S.border}` }}>
+                <button
+                  type="button"
+                  onClick={() => setIsAddCategoryModalOpen(false)}
+                  style={{
+                    padding: "8px 18px",
+                    borderRadius: 10,
+                    border: `1px solid ${S.border}`,
+                    background: S.cardSubtle,
+                    color: S.muted,
+                    fontSize: 12.5,
+                    fontWeight: 750,
+                    cursor: "pointer"
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingCat || !catName.trim() || !(catGroup === "__NEW__" ? newGroupName.trim() : catGroup.trim())}
+                  style={{
+                    ...btnPrimary,
+                    background: ORANGE_GRADIENT,
+                    boxShadow: ORANGE_SHADOW,
+                    height: 40,
+                    padding: "0 22px",
+                    borderRadius: 10,
+                    opacity: (isSubmittingCat || !catName.trim() || !(catGroup === "__NEW__" ? newGroupName.trim() : catGroup.trim())) ? 0.6 : 1,
+                    cursor: (isSubmittingCat || !catName.trim() || !(catGroup === "__NEW__" ? newGroupName.trim() : catGroup.trim())) ? "not-allowed" : "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontWeight: 800,
+                    fontSize: 12.5,
+                  }}
+                >
+                  <Plus size={15} />
+                  <span>{isSubmittingCat ? "Creating…" : "Create Category"}</span>
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* ── Modal 2: Role Permission Presets Modal Popup ── */}
+      {isPresetModalOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsPresetModalOpen(false);
+          }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            width: "100vw",
+            height: "100vh",
+            zIndex: 99999,
+            background: "rgba(0,0,0,0.65)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20
+          }}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 15 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 15 }}
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: S.card,
+              border: `1px solid ${S.borderMedium}`,
+              borderRadius: 20,
+              width: "100%",
+              maxWidth: 580,
+              padding: 24,
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: S.isDark ? "0 25px 60px rgba(0,0,0,0.75)" : "0 20px 60px rgba(0,0,0,0.2)",
+              fontFamily: S.font,
+              color: S.text
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  background: "rgba(234, 88, 12, 0.12)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#ea580c",
+                  flexShrink: 0
+                }}>
+                  <ShieldCheck size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 17, fontWeight: 900, color: S.text }}>
+                    Role Permission Presets
+                  </h3>
+                  <p style={{ margin: "3px 0 0", fontSize: 12, color: S.muted }}>
+                    Quickly assign pre-configured module bundles with full CRUD privileges.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPresetModalOpen(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: S.muted,
+                  cursor: "pointer",
+                  padding: 4,
+                  display: "flex",
+                  borderRadius: 6,
+                  outline: "none",
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Target Admin Officer Selector */}
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                Target Admin Officer <span style={{ color: "#ea580c" }}>*</span>
+              </label>
               <CustomSelect
-                value={catDept}
-                onChange={setCatDept}
-                options={[{ value: "", label: "No office linked" }, ...departments.map(d => ({ value: d.id, label: d.name }))]}
-                accent={S.accent}
+                value={selectedUser}
+                onChange={setSelectedUser}
+                options={[
+                  { value: "", label: "Choose an admin officer to apply template…" },
+                  ...adminUsers.map(u => ({
+                    value: u.id,
+                    label: `${u.full_name || 'Admin'} (${u.email})`
+                  }))
+                ]}
+                accent="#ea580c"
+                isDark={S.isDark}
               />
             </div>
-            <button type="submit" style={{ ...btnPrimary, height: 42 }}><Plus size={16} /> Add Category</button>
-          </div>
-        </form>
 
-        {/* Categories grouped by group_name - collapsible */}
-        <CategoryGroupList categories={categories} S={S} btnDanger={btnDanger} delCat={delCat} />
-      </div>
+            {/* Presets Grid */}
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 800, color: S.muted, display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                Choose Preset Template:
+              </label>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 8 }}>
+                {Object.entries(ROLE_TEMPLATES).map(([templateName, config]) => {
+                  const IconComponent = config.icon || Shield;
+                  const moduleList = config.modules || [];
+
+                  return (
+                    <button
+                      key={templateName}
+                      type="button"
+                      onClick={() => {
+                        if (!selectedUser) {
+                          showToast?.({
+                            type: "warning",
+                            title: "Select Admin First",
+                            message: "Please choose an admin officer from the dropdown above first."
+                          });
+                          return;
+                        }
+                        applyTemplate(selectedUser, templateName);
+                      }}
+                      disabled={loadingPermissions}
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: 12,
+                        border: `1px solid ${S.border}`,
+                        background: S.cardSubtle,
+                        cursor: loadingPermissions ? "not-allowed" : "pointer",
+                        fontFamily: S.font,
+                        textAlign: "left",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        transition: "all 0.15s ease",
+                        opacity: loadingPermissions ? 0.6 : 1,
+                      }}
+                      onMouseEnter={e => {
+                        if (!loadingPermissions) {
+                          e.currentTarget.style.borderColor = config.color || "#ea580c";
+                          e.currentTarget.style.background = S.isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.03)";
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.borderColor = S.border;
+                        e.currentTarget.style.background = S.cardSubtle;
+                      }}
+                    >
+                      <div style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 8,
+                        background: `${config.color || "#ea580c"}18`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: config.color || "#ea580c",
+                        flexShrink: 0
+                      }}>
+                        <IconComponent size={16} />
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontWeight: 800, fontSize: 12.5, color: S.text, lineHeight: 1.2 }}>
+                          {templateName}
+                        </div>
+                        <div style={{ fontSize: 11, color: S.muted, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {moduleList.length === MODULES.length ? "All 11 Modules (Full Access)" : `${moduleList.length} Module${moduleList.length > 1 ? 's' : ''} CRUD Access`}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginTop: 18, paddingTop: 14, borderTop: `1px solid ${S.border}` }}>
+              <button
+                type="button"
+                onClick={() => setIsPresetModalOpen(false)}
+                style={{
+                  padding: "8px 18px",
+                  borderRadius: 10,
+                  border: `1px solid ${S.border}`,
+                  background: S.cardSubtle,
+                  color: S.muted,
+                  fontSize: 12.5,
+                  fontWeight: 750,
+                  cursor: "pointer"
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
 
 /* ── Collapsible Category Group List ── */
-function CategoryGroupList({ categories, S, btnDanger, delCat }) {
+function CategoryGroupList({
+  categories,
+  allCategoriesCount,
+  categorySearch,
+  selectedAgencyFilter,
+  onResetFilters,
+  S,
+  btnDanger,
+  delCat,
+  onSeedCategories,
+  seeding,
+  ORANGE_GRADIENT,
+  ORANGE_SHADOW
+}) {
   const [openGroups, setOpenGroups] = useState({});
 
-  const grouped = {};
-  categories.forEach(c => {
-    const g = c.group_name || "General";
-    if (!grouped[g]) grouped[g] = [];
-    grouped[g].push(c);
-  });
+  const grouped = useMemo(() => {
+    const map = {};
+    categories.forEach(c => {
+      const g = c.group_name || "General";
+      if (!map[g]) map[g] = [];
+      map[g].push(c);
+    });
+    return map;
+  }, [categories]);
 
-  const toggleGroup = (name) => setOpenGroups(prev => ({ ...prev, [name]: !prev[name] }));
-  const isOpen = (name) => openGroups[name] === undefined ? true : openGroups[name];
+  const isOpen = (name) => {
+    if (categorySearch && categorySearch.trim()) return true;
+    return Boolean(openGroups[name]);
+  };
+  const toggleGroup = (name) => setOpenGroups(prev => ({ ...prev, [name]: !isOpen(name) }));
+
+  if (allCategoriesCount === 0) {
+    return (
+      <div style={{
+        textAlign: "center",
+        padding: "48px 20px",
+        background: S.cardSubtle,
+        borderRadius: 14,
+        border: `1px dashed ${S.border}`
+      }}>
+        <Tag size={36} style={{ color: S.muted, margin: "0 auto 12px", opacity: 0.5 }} />
+        <div style={{ fontWeight: 800, fontSize: 16, color: S.text }}>No Categories Configured Yet</div>
+        <p style={{ fontSize: 13, color: S.muted, maxWidth: 460, margin: "6px auto 18px" }}>
+          Citizens choose from these categories when submitting incident reports. You can quickly initialize the standard Palayan City categories or use the form above to create custom ones.
+        </p>
+        {onSeedCategories && (
+          <button
+            type="button"
+            onClick={onSeedCategories}
+            disabled={seeding}
+            style={{
+              padding: "10px 22px",
+              borderRadius: 9999,
+              border: "none",
+              background: ORANGE_GRADIENT || "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)",
+              boxShadow: ORANGE_SHADOW || "0 3px 12px rgba(234, 88, 12, 0.28)",
+              color: "#ffffff",
+              fontSize: 13,
+              fontWeight: 800,
+              cursor: seeding ? "not-allowed" : "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              opacity: seeding ? 0.7 : 1,
+              transition: "all 0.15s ease"
+            }}
+          >
+            {seeding ? (
+              <>
+                <RefreshCw size={14} className="animate-spin" />
+                <span>Initializing Standard Categories…</span>
+              </>
+            ) : (
+              <>
+                <FolderPlus size={14} />
+                <span>Populate Standard City Categories (12)</span>
+              </>
+            )}
+          </button>
+        )}
+      </div>
+    );
+  }
 
   if (categories.length === 0) {
-    return <p style={{ textAlign: "center", color: S.muted, padding: 20 }}>No categories added yet. Add categories above for citizens to use.</p>;
+    return (
+      <div style={{
+        textAlign: "center",
+        padding: "36px 20px",
+        background: S.cardSubtle,
+        borderRadius: 14,
+        border: `1px dashed ${S.border}`
+      }}>
+        <div style={{ fontWeight: 800, fontSize: 14, color: S.text }}>
+          No categories found matching your filters
+        </div>
+        <p style={{ fontSize: 12.5, color: S.muted, margin: "4px 0 10px" }}>
+          {categorySearch && `Search query: "${categorySearch}". `}
+          {selectedAgencyFilter !== "ALL" && `Agency: ${selectedAgencyFilter}.`}
+        </p>
+        <button
+          type="button"
+          onClick={onResetFilters}
+          style={{
+            fontSize: 12,
+            fontWeight: 800,
+            color: "#ea580c",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            textDecoration: "underline"
+          }}
+        >
+          Reset All Filters
+        </button>
+      </div>
+    );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {Object.entries(grouped).map(([groupName, cats]) => {
         const open = isOpen(groupName);
+        const groupAgencies = [...new Set(cats.map(c => c.departments?.name).filter(Boolean))];
+
         return (
-          <div key={groupName} style={{ borderRadius: 14, border: `1px solid ${S.border}`, overflow: "hidden", background: S.cardSubtle }}>
-            <button type="button" onClick={() => toggleGroup(groupName)}
-              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", border: "none", background: open ? (S.accentBg || S.cardSubtle) : S.cardSubtle, cursor: "pointer", fontFamily: S.font, transition: "background 0.15s" }}
-              onMouseEnter={e => e.currentTarget.style.background = S.cardHover || S.accentBg}
-              onMouseLeave={e => e.currentTarget.style.background = open ? (S.accentBg || S.cardSubtle) : S.cardSubtle}>
+          <div
+            key={groupName}
+            style={{
+              borderRadius: 14,
+              border: `1px solid ${open ? (S.isDark ? "rgba(245, 158, 11, 0.35)" : "rgba(234, 88, 12, 0.3)") : S.border}`,
+              overflow: "hidden",
+              background: S.cardSubtle,
+              transition: "border-color 0.15s ease",
+            }}
+          >
+            {/* Group Header Button */}
+            <button
+              type="button"
+              onClick={() => toggleGroup(groupName)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "11px 16px",
+                border: "none",
+                borderBottom: open ? `1px solid ${S.border}` : "none",
+                background: S.cardSubtle,
+                cursor: "pointer",
+                fontFamily: S.font,
+                transition: "background 0.15s",
+                textAlign: "left"
+              }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <motion.span animate={{ rotate: open ? 0 : -90 }} transition={{ duration: 0.2 }} style={{ display: "flex", alignItems: "center", color: S.accent }}>
-                  <ChevronDown size={16} strokeWidth={2.5} />
-                </motion.span>
-                <span style={{ fontSize: 13, fontWeight: 900, color: S.accent, textTransform: "uppercase", letterSpacing: 0.5 }}>{groupName}</span>
-                <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 20, background: S.accent, color: "#fff", minWidth: 20, textAlign: "center" }}>{cats.length}</span>
+                <div style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: "50%",
+                  background: open ? "rgba(245, 158, 11, 0.12)" : (S.isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)"),
+                  border: `1px solid ${open ? "rgba(245, 158, 11, 0.3)" : S.border}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: open ? "#ea580c" : S.muted,
+                  flexShrink: 0
+                }}>
+                  <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} style={{ display: "flex", alignItems: "center" }}>
+                    <ChevronDown size={13} />
+                  </motion.div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  <Folder size={15} style={{ color: "#ea580c" }} />
+                  <span style={{ fontSize: 13.5, fontWeight: 900, color: S.text }}>
+                    {groupName}
+                  </span>
+                </div>
+                <Badge variant="secondary" style={{ fontSize: 10.5, fontWeight: 800, padding: "2px 8px" }}>
+                  {cats.length} {cats.length === 1 ? "Category" : "Categories"}
+                </Badge>
+              </div>
+
+              {/* Agency badges summary in group */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                {groupAgencies.map(agencyName => (
+                  <Badge
+                    key={agencyName}
+                    variant="outline"
+                    style={{
+                      fontSize: 10.5,
+                      fontWeight: 800,
+                      padding: "2px 8px",
+                      color: "#ea580c",
+                      borderColor: "rgba(245, 158, 11, 0.3)",
+                      background: "rgba(245, 158, 11, 0.06)",
+                      gap: 4
+                    }}
+                  >
+                    <Building size={10} style={{ opacity: 0.7 }} />
+                    <span>{agencyName}</span>
+                  </Badge>
+                ))}
               </div>
             </button>
+
+            {/* Collapsible Group Items */}
             <AnimatePresence initial={false}>
               {open && (
-                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }} style={{ overflow: "hidden" }}>
-                  <div style={{ padding: "4px 8px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
-                    {cats.map(c => (
-                      <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", borderRadius: 8, transition: "background 0.12s" }}
-                        onMouseEnter={e => e.currentTarget.style.background = S.cardHover || S.accentBg} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: S.accent, opacity: 0.4, flexShrink: 0 }} />
-                          <span style={{ fontWeight: 700, fontSize: 13, color: S.text }}>{c.name}</span>
-                          {c.departments?.name && (
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: S.isDark ? "rgba(22, 163, 74, 0.15)" : "#f0fdf4", color: "#16a34a", border: S.isDark ? "1px solid rgba(22, 163, 74, 0.3)" : "1px solid #bbf7d0" }}>→ {c.departments.name}</span>
-                          )}
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+                  style={{ overflow: "hidden" }}
+                >
+                  <div style={{
+                    background: S.isDark ? "rgba(0, 0, 0, 0.2)" : "#ffffff",
+                    display: "flex",
+                    flexDirection: "column"
+                  }}>
+                    {cats.map((c, idx) => {
+                      const agencyName = c.departments?.name;
+
+                      return (
+                        <div
+                          key={c.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "10px 16px",
+                            borderBottom: idx < cats.length - 1 ? `1px solid ${S.border}` : "none",
+                            background: "transparent",
+                            transition: "background 0.12s ease",
+                            gap: 12
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = S.isDark ? "rgba(255, 255, 255, 0.025)" : "rgba(0, 0, 0, 0.015)";
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = "transparent";
+                          }}
+                        >
+                          {/* Left: Indicator & Category Name */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ea580c", flexShrink: 0 }} />
+                            <span style={{ fontWeight: 800, fontSize: 13, color: S.text }}>
+                              {c.name}
+                            </span>
+                          </div>
+
+                          {/* Right: Agency Badge & Delete Button */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                            {agencyName ? (
+                              <Badge
+                                variant="outline"
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 750,
+                                  padding: "2px 9px",
+                                  gap: 5,
+                                  color: S.text,
+                                  borderColor: "rgba(245, 158, 11, 0.3)",
+                                  background: "rgba(245, 158, 11, 0.06)"
+                                }}
+                              >
+                                <Building size={11} style={{ opacity: 0.7, color: "#ea580c" }} />
+                                <span>{agencyName}</span>
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="secondary"
+                                style={{
+                                  fontSize: 10.5,
+                                  fontWeight: 700,
+                                  padding: "2px 8px",
+                                  color: S.muted
+                                }}
+                              >
+                                Unassigned
+                              </Badge>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                delCat(c.id, c.name);
+                              }}
+                              style={{
+                                padding: "5px 8px",
+                                borderRadius: 7,
+                                border: `1px solid ${S.border}`,
+                                background: S.cardSubtle,
+                                color: S.muted,
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                transition: "all 0.15s ease",
+                              }}
+                              title={`Delete category "${c.name}"`}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.4)";
+                                e.currentTarget.style.color = "#dc2626";
+                                e.currentTarget.style.background = S.isDark ? "rgba(239, 68, 68, 0.1)" : "#fef2f2";
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.borderColor = S.border;
+                                e.currentTarget.style.color = S.muted;
+                                e.currentTarget.style.background = S.cardSubtle;
+                              }}
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
                         </div>
-                        <button onClick={() => delCat(c.id)} style={btnDanger}><Trash2 size={14} /></button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </motion.div>
               )}
@@ -3245,59 +6079,305 @@ function CategoryGroupList({ categories, S, btnDanger, delCat }) {
   );
 }
 
-/* ── Module Permission Row (Collapsible per User) ── */
-function ModulePermissionRow({ user, permissions, modules, moduleCount, onToggle, onRevokeAll, S, btnDanger, loadingPermissions }) {
+/* ── Module Permission Row (Inline Table Row Matching UsersTab) ── */
+function ModulePermissionRow({
+  user,
+  permissions,
+  modules,
+  moduleCount,
+  onToggle,
+  onToggleAllModule,
+  onGrantAll,
+  onRevokeAll,
+  onApplyPresetTemplate,
+  isLast,
+  S,
+  btnDanger,
+  loadingPermissions,
+  ORANGE_GRADIENT,
+  ORANGE_SHADOW
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const permLabels = [
-    { key: "can_view", label: "View", color: "#3b82f6" },
-    { key: "can_create", label: "Create", color: "#10b981" },
-    { key: "can_edit", label: "Edit", color: "#f59e0b" },
-    { key: "can_delete", label: "Delete", color: "#ef4444" }
+  const permTypes = [
+    { key: "can_view", label: "View", icon: Eye, color: "#3b82f6" },
+    { key: "can_create", label: "Create", icon: Plus, color: "#10b981" },
+    { key: "can_edit", label: "Edit", icon: Edit2, color: "#f59e0b" },
+    { key: "can_delete", label: "Delete", icon: Trash2, color: "#ef4444" }
   ];
 
+  const initials = useMemo(() => {
+    if (user.full_name) {
+      const parts = user.full_name.trim().split(/\s+/);
+      if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    return (user.email?.[0] || "A").toUpperCase();
+  }, [user]);
+
+  const hasFullAccess = moduleCount === modules.length;
+
+  const rawAgency = user.assigned_department || user.department;
+  const assignedAgency = (!rawAgency || rawAgency === 'All Departments' || rawAgency === 'All Agencies' || rawAgency === 'Not Assigned')
+    ? (user.role === 'superadmin' ? 'All Agencies (Superadmin)' : 'None')
+    : rawAgency;
+
   return (
-    <div style={{ borderRadius: 14, border: `1px solid ${S.border}`, overflow: "hidden", background: S.cardSubtle }}>
-      {/* User Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: S.cardSubtle, borderBottom: isExpanded ? `1px solid ${S.border}` : "none" }}>
-        <button
-          type="button"
-          onClick={() => setIsExpanded(!isExpanded)}
-          style={{ display: "flex", alignItems: "center", gap: 12, border: "none", background: "transparent", cursor: "pointer", fontFamily: S.font, flex: 1, textAlign: "left" }}
-        >
-          <motion.span animate={{ rotate: isExpanded ? 0 : -90 }} transition={{ duration: 0.2 }} style={{ display: "flex", alignItems: "center", color: S.accent }}>
-            <ChevronDown size={16} strokeWidth={2.5} />
-          </motion.span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 900, color: S.text }}>{user.full_name}</div>
-            <div style={{ fontSize: 11, color: S.muted, marginTop: 2 }}>{user.email}</div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {moduleCount > 0 ? (
-              <span style={{ fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 20, background: S.isDark ? "rgba(22, 163, 74, 0.15)" : "#dcfce7", color: "#16a34a", border: S.isDark ? "1px solid rgba(22, 163, 74, 0.3)" : "1px solid #bbf7d0" }}>
-                {moduleCount} {moduleCount === 1 ? "Module" : "Modules"}
-              </span>
-            ) : (
-              <span style={{ fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 20, background: S.isDark ? "rgba(239, 68, 68, 0.15)" : "#fee2e2", color: "#ef4444", border: S.isDark ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid #fecaca" }}>
-                No Access
-              </span>
-            )}
-          </div>
-        </button>
-        {moduleCount > 0 && (
+    <div style={{
+      borderBottom: isLast && !isExpanded ? "none" : `1px solid ${S.border}`,
+      background: isExpanded ? (S.isDark ? "rgba(245, 158, 11, 0.04)" : "rgba(245, 158, 11, 0.02)") : "transparent",
+      transition: "background 0.15s ease",
+    }}>
+      {/* Main Table Row */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(320px, 2.4fr) minmax(170px, 1.2fr) minmax(160px, 1.1fr) minmax(230px, 1.4fr)",
+          padding: "10px 18px",
+          alignItems: "center",
+          transition: "background 0.15s ease",
+        }}
+        onMouseEnter={e => {
+          if (!isExpanded) e.currentTarget.style.background = S.isDark ? "rgba(255,255,255,0.025)" : "rgba(0,0,0,0.015)";
+        }}
+        onMouseLeave={e => {
+          if (!isExpanded) e.currentTarget.style.background = "transparent";
+        }}
+      >
+        {/* Column 1: Admin Officer Info (Chevron, Avatar, Name, Badge, Email) */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, paddingRight: 12 }}>
           <button
             type="button"
-            onClick={() => onRevokeAll(user.id)}
-            disabled={loadingPermissions}
-            style={{ ...btnDanger, marginLeft: 8, opacity: loadingPermissions ? 0.5 : 1, cursor: loadingPermissions ? "not-allowed" : "pointer" }}
-            title="Revoke all permissions"
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              background: isExpanded ? "rgba(245, 158, 11, 0.12)" : (S.isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)"),
+              border: `1px solid ${isExpanded ? "rgba(245, 158, 11, 0.3)" : S.border}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: isExpanded ? "#ea580c" : S.muted,
+              cursor: "pointer",
+              flexShrink: 0,
+              transition: "all 0.15s ease"
+            }}
+            title={isExpanded ? "Collapse module permissions" : "Expand module permissions"}
           >
-            <Trash2 size={14} />
+            <motion.div
+              animate={{ rotate: isExpanded ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+              style={{ display: "flex", alignItems: "center" }}
+            >
+              <ChevronDown size={14} />
+            </motion.div>
           </button>
-        )}
+
+          {/* Avatar */}
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              minWidth: 32,
+              borderRadius: "50%",
+              background: S.isDark ? "rgba(255, 255, 255, 0.08)" : "#f1f5f9",
+              border: `1px solid ${S.border}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 800,
+              fontSize: 11.5,
+              color: "#ea580c",
+              flexShrink: 0
+            }}
+          >
+            {initials}
+          </div>
+
+          {/* Name & Email Stack */}
+          <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "nowrap" }}>
+              <span style={{
+                fontWeight: 800,
+                fontSize: 13.5,
+                color: S.text,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis"
+              }}>
+                {user.full_name || "Admin Officer"}
+              </span>
+              <Badge variant="outline" style={{ gap: 3, padding: "1px 6px", fontSize: 10, fontWeight: 800, color: S.text, flexShrink: 0 }}>
+                <Shield size={10} />
+                <span>Admin</span>
+              </Badge>
+            </div>
+
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 11.5,
+              color: S.muted,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis"
+            }}>
+              <Mail size={11} style={{ opacity: 0.7, flexShrink: 0 }} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{user.email}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Column 2: Assigned Agency */}
+        <div style={{ minWidth: 0 }}>
+          <Badge
+            variant="outline"
+            style={{
+              gap: 5,
+              padding: "3px 10px",
+              fontSize: 11,
+              fontWeight: 700,
+              color: assignedAgency === 'None' ? S.muted : S.text,
+              borderColor: assignedAgency === 'None' ? S.border : "rgba(245, 158, 11, 0.3)",
+              background: assignedAgency === 'None' ? "transparent" : "rgba(245, 158, 11, 0.06)",
+            }}
+          >
+            <Building size={11} style={{ opacity: 0.7, color: assignedAgency === 'None' ? S.muted : "#ea580c" }} />
+            <span>{assignedAgency}</span>
+          </Badge>
+        </div>
+
+        {/* Column 3: Modules Access */}
+        <div style={{ minWidth: 0 }}>
+          <Badge
+            variant={moduleCount === 0 ? "outline" : hasFullAccess ? "success" : "secondary"}
+            style={{
+              fontSize: 11,
+              fontWeight: 750,
+              padding: "3px 10px",
+              color: moduleCount === 0 ? S.muted : hasFullAccess ? "#16a34a" : S.text,
+              borderColor: hasFullAccess ? "rgba(22, 163, 74, 0.3)" : S.border,
+              background: hasFullAccess ? (S.isDark ? "rgba(22, 163, 74, 0.12)" : "#f0fdf4") : "transparent",
+            }}
+          >
+            {moduleCount === 0 ? "No Modules Assigned" : hasFullAccess ? `Full Access (${modules.length})` : `${moduleCount} of ${modules.length} Active`}
+          </Badge>
+        </div>
+
+        {/* Column 4: Header Action Buttons */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, flexShrink: 0 }}>
+          {/* Configure button */}
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              padding: "5px 11px",
+              borderRadius: 8,
+              border: `1px solid ${isExpanded ? "rgba(245, 158, 11, 0.4)" : S.border}`,
+              background: isExpanded ? "rgba(245, 158, 11, 0.08)" : S.cardSubtle,
+              color: isExpanded ? "#ea580c" : S.text,
+              fontWeight: 750,
+              fontSize: 11.5,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              transition: "all 0.15s ease",
+            }}
+            title="View & configure granular CRUD permissions"
+          >
+            <SlidersHorizontal size={12} style={{ color: isExpanded ? "#ea580c" : S.muted }} />
+            <span>{isExpanded ? "Close" : "Configure"}</span>
+          </button>
+
+          {!hasFullAccess && (
+            <button
+              type="button"
+              onClick={() => onGrantAll(user.id)}
+              disabled={loadingPermissions}
+              style={{
+                padding: "5px 10px",
+                borderRadius: 8,
+                border: `1px solid ${S.border}`,
+                background: S.cardSubtle,
+                color: S.text,
+                cursor: loadingPermissions ? "not-allowed" : "pointer",
+                fontFamily: S.font,
+                fontWeight: 750,
+                fontSize: 11.5,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                transition: "all 0.15s ease",
+                opacity: loadingPermissions ? 0.5 : 1
+              }}
+              onMouseEnter={e => {
+                if (!loadingPermissions) {
+                  e.currentTarget.style.borderColor = "rgba(16, 185, 129, 0.4)";
+                  e.currentTarget.style.color = "#16a34a";
+                  e.currentTarget.style.background = S.isDark ? "rgba(16, 185, 129, 0.08)" : "#f0fdf4";
+                }
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = S.border;
+                e.currentTarget.style.color = S.text;
+                e.currentTarget.style.background = S.cardSubtle;
+              }}
+              title="Grant full CRUD access to all modules"
+            >
+              <CheckSquare size={12} style={{ color: "#16a34a" }} />
+              <span>Grant All</span>
+            </button>
+          )}
+
+          {moduleCount > 0 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRevokeAll(user.id);
+              }}
+              disabled={loadingPermissions}
+              style={{
+                padding: "5px 10px",
+                borderRadius: 8,
+                border: `1px solid ${S.border}`,
+                background: S.cardSubtle,
+                color: S.muted,
+                cursor: loadingPermissions ? "not-allowed" : "pointer",
+                fontFamily: S.font,
+                fontWeight: 750,
+                fontSize: 11.5,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                transition: "all 0.15s ease",
+                opacity: loadingPermissions ? 0.5 : 1
+              }}
+              onMouseEnter={e => {
+                if (!loadingPermissions) {
+                  e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.4)";
+                  e.currentTarget.style.color = "#dc2626";
+                  e.currentTarget.style.background = S.isDark ? "rgba(239, 68, 68, 0.08)" : "#fef2f2";
+                }
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = S.border;
+                e.currentTarget.style.color = S.muted;
+                e.currentTarget.style.background = S.cardSubtle;
+              }}
+              title="Revoke all module permissions"
+            >
+              <Trash2 size={12} style={{ color: "#dc2626" }} />
+              <span>Revoke All</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Expanded Module Permissions */}
+      {/* Expanded Module Permissions Matrix */}
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
@@ -3305,12 +6385,79 @@ function ModulePermissionRow({ user, permissions, modules, moduleCount, onToggle
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-            style={{ overflow: "hidden" }}
+            style={{
+              overflow: "hidden",
+              background: S.isDark ? "rgba(0, 0, 0, 0.25)" : "rgba(0, 0, 0, 0.015)",
+              borderTop: `1px solid ${S.border}`,
+            }}
           >
-            <div style={{ padding: "8px 12px" }}>
+            <div style={{ padding: "14px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
+              {/* Header Bar inside expanded panel */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 10,
+                paddingBottom: 6
+              }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: S.text }}>
+                  Configure Granular Module Permissions
+                </div>
+
+                {onApplyPresetTemplate && (
+                  <button
+                    type="button"
+                    onClick={() => onApplyPresetTemplate(user.id)}
+                    style={{
+                      padding: "4px 10px",
+                      borderRadius: 6,
+                      border: `1px solid ${S.border}`,
+                      background: S.card,
+                      color: S.text,
+                      cursor: "pointer",
+                      fontSize: 11,
+                      fontWeight: 750,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5
+                    }}
+                  >
+                    <ShieldCheck size={11} style={{ color: "#ea580c" }} />
+                    <span>Apply Preset Template…</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Table Column Legend */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "6px 14px",
+                background: S.isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)",
+                borderRadius: 8,
+                marginBottom: 2
+              }}>
+                <span style={{ fontSize: 11, fontWeight: 900, color: S.muted, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                  Module Name & Scope
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: S.muted, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                    CRUD Privileges
+                  </span>
+                  <span style={{ width: 68, textAlign: "center", fontSize: 11, fontWeight: 900, color: S.muted, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                    All CRUD
+                  </span>
+                </div>
+              </div>
+
+              {/* Module Rows */}
               {modules.map(module => {
                 const perms = permissions[module.name] || {};
                 const hasAnyPerm = perms.can_view || perms.can_create || perms.can_edit || perms.can_delete;
+                const hasAllPerms = perms.can_view && perms.can_create && perms.can_edit && perms.can_delete;
+                const ModuleIcon = module.icon || FileText;
 
                 return (
                   <div
@@ -3319,55 +6466,127 @@ function ModulePermissionRow({ user, permissions, modules, moduleCount, onToggle
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      padding: "10px 12px",
-                      borderRadius: 8,
-                      marginBottom: 4,
-                      background: hasAnyPerm ? (S.isDark ? "rgba(16, 185, 129, 0.12)" : "#f0fdf4") : "transparent",
-                      border: hasAnyPerm ? (S.isDark ? "1px solid rgba(16, 185, 129, 0.25)" : "1px solid #bbf7d0") : "1px solid transparent",
-                      transition: "all 0.15s"
+                      padding: "9px 14px",
+                      borderRadius: 10,
+                      background: hasAnyPerm
+                        ? (S.isDark ? "rgba(245, 158, 11, 0.06)" : "rgba(245, 158, 11, 0.04)")
+                        : (S.isDark ? "rgba(255, 255, 255, 0.02)" : "#ffffff"),
+                      border: hasAnyPerm
+                        ? (S.isDark ? "1px solid rgba(245, 158, 11, 0.25)" : "1px solid rgba(234, 88, 12, 0.2)")
+                        : `1px solid ${S.border}`,
+                      transition: "all 0.15s ease",
+                      gap: 12,
+                      flexWrap: "wrap"
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 220 }}>
-                      <span style={{ fontSize: 16 }}>{module.icon}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: S.text }}>{module.label}</span>
+                    {/* Left: Icon, Module Name & Description */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 220 }}>
+                      <div style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        background: hasAnyPerm
+                          ? "rgba(245, 158, 11, 0.12)"
+                          : (S.isDark ? "rgba(255, 255, 255, 0.05)" : "#f4f4f5"),
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: hasAnyPerm ? "#ea580c" : S.muted,
+                        flexShrink: 0
+                      }}>
+                        <ModuleIcon size={16} />
+                      </div>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: S.text }}>
+                            {module.label}
+                          </span>
+                          <span style={{
+                            width: 5,
+                            height: 5,
+                            borderRadius: "50%",
+                            background: hasAnyPerm ? "#ea580c" : S.muted,
+                            opacity: hasAnyPerm ? 1 : 0.4
+                          }} />
+                        </div>
+                        {module.desc && (
+                          <div style={{ fontSize: 11, color: S.muted, marginTop: 1 }}>
+                            {module.desc}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      {permLabels.map(({ key, label, color }) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => onToggle(user.id, module.name, key)}
-                          disabled={loadingPermissions}
-                          style={{
-                            padding: "4px 10px",
-                            borderRadius: 6,
-                            border: perms[key] ? `1.5px solid ${color}` : `1.5px solid ${S.border}`,
-                            background: perms[key] ? color : S.card,
-                            color: perms[key] ? "#fff" : S.muted,
-                            cursor: loadingPermissions ? "not-allowed" : "pointer",
-                            fontFamily: S.font,
-                            fontWeight: 700,
-                            fontSize: 11,
-                            transition: "all 0.15s",
-                            opacity: loadingPermissions ? 0.5 : 1,
-                            minWidth: 60
-                          }}
-                          onMouseEnter={e => {
-                            if (!loadingPermissions && !perms[key]) {
-                              e.currentTarget.style.background = S.cardHover || S.accentBg;
-                              e.currentTarget.style.borderColor = color;
-                            }
-                          }}
-                          onMouseLeave={e => {
-                            if (!perms[key]) {
-                              e.currentTarget.style.background = S.card;
-                              e.currentTarget.style.borderColor = S.border;
-                            }
-                          }}
-                        >
-                          {label}
-                        </button>
-                      ))}
+
+                    {/* Right: CRUD Buttons + Toggle All */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {permTypes.map(({ key, label, icon: PermIcon, color }) => {
+                          const isActive = !!perms[key];
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => onToggle(user.id, module.name, key)}
+                              disabled={loadingPermissions}
+                              style={{
+                                padding: "4px 9px",
+                                borderRadius: 7,
+                                border: isActive ? `1.5px solid ${color}` : `1px solid ${S.border}`,
+                                background: isActive ? color : S.card,
+                                color: isActive ? "#ffffff" : S.muted,
+                                cursor: loadingPermissions ? "not-allowed" : "pointer",
+                                fontFamily: S.font,
+                                fontWeight: 800,
+                                fontSize: 11,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                                transition: "all 0.15s ease",
+                                opacity: loadingPermissions ? 0.5 : 1,
+                                minWidth: 58,
+                                justifyContent: "center"
+                              }}
+                              title={`Toggle ${label} permission`}
+                            >
+                              <PermIcon size={11} />
+                              <span>{label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Quick Toggle All CRUD for this Module */}
+                      <button
+                        type="button"
+                        onClick={() => onToggleAllModule(user.id, module.name)}
+                        disabled={loadingPermissions}
+                        style={{
+                          padding: "4px 9px",
+                          borderRadius: 7,
+                          border: hasAllPerms
+                            ? "1px solid rgba(245, 158, 11, 0.4)"
+                            : `1px solid ${S.border}`,
+                          background: hasAllPerms
+                            ? (ORANGE_GRADIENT || "rgba(245, 158, 11, 0.14)")
+                            : S.cardSubtle,
+                          color: hasAllPerms ? "#ffffff" : S.muted,
+                          cursor: loadingPermissions ? "not-allowed" : "pointer",
+                          fontFamily: S.font,
+                          fontWeight: 800,
+                          fontSize: 11,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          transition: "all 0.15s ease",
+                          width: 64,
+                          justifyContent: "center",
+                          boxShadow: hasAllPerms ? (ORANGE_SHADOW || "0 2px 8px rgba(234, 88, 12, 0.25)") : "none"
+                        }}
+                        title={hasAllPerms ? "Disable all 4 CRUD permissions for this module" : "Enable all 4 CRUD permissions for this module"}
+                      >
+                        {hasAllPerms ? <CheckSquare size={12} /> : <Square size={12} />}
+                        <span>All</span>
+                      </button>
                     </div>
                   </div>
                 );
@@ -3410,12 +6629,12 @@ function DashboardReportModal({ report, S, onClose, onStatusChange }) {
   };
   const st = statusMap[status] || statusMap.pending;
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
-        style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: S.font, padding: 20 }}>
+        style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", zIndex: 99999, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: S.font, padding: 20 }}>
         <motion.div
           initial={{ scale: 0.92, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.92, opacity: 0, y: 30 }}
           transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
@@ -3522,7 +6741,7 @@ function DashboardReportModal({ report, S, onClose, onStatusChange }) {
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={() => setLightboxImg(null)}
-          style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-out", padding: 20 }}>
+          style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", zIndex: 100000, background: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-out", padding: 20 }}>
           <img src={lightboxImg} alt="Full view" style={{ maxWidth: "95%", maxHeight: "95vh", borderRadius: 12, objectFit: "contain", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }} />
           <button onClick={() => setLightboxImg(null)} style={{ position: "absolute", top: 24, right: 24, width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
             <X size={20} color="white" />
@@ -3531,6 +6750,9 @@ function DashboardReportModal({ report, S, onClose, onStatusChange }) {
       )}
     </AnimatePresence>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(modalContent, document.body);
 }
 
 /* ── Activity Logs Tab ── */
@@ -3997,12 +7219,13 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle, isSuperadmin =
       </div>
 
       {/* Confirmation Modal: Clear All Audit Logs */}
-      {showClearModal && (
+      {showClearModal && typeof document !== "undefined" && createPortal(
         <div style={{
           position: "fixed",
           inset: 0,
           background: "rgba(0,0,0,0.6)",
           backdropFilter: "blur(4px)",
+          WebkitBackdropFilter: "blur(4px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -4069,7 +7292,8 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle, isSuperadmin =
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -4077,7 +7301,24 @@ function ActivityLogsTab({ S, cardStyle, inputStyle, selectStyle, isSuperadmin =
 
 
 /* ── Advisories Tab (Phase 3) - REDESIGNED WITH BETTER WORKFLOW ── */
-function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDanger, isSuperadmin, adminDepartment, canCreate, canEdit, canDelete, showSecurityConfirmModal }) {
+function AdvisoriesTab({ 
+  S, 
+  cardStyle, 
+  inputStyle, 
+  selectStyle, 
+  btnPrimary, 
+  btnDanger, 
+  isSuperadmin, 
+  adminDepartment, 
+  canCreate, 
+  canEdit, 
+  canDelete, 
+  showSecurityConfirmModal,
+  showSuccessModal,
+  showErrorModal,
+  showConfirmModal,
+  showToast
+}) {
   const [advisories, setAdvisories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -4086,15 +7327,13 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
   const [submitting, setSubmitting] = useState(false);
   const [usersMap, setUsersMap] = useState({});
   const [filterStatus, setFilterStatus] = useState("All");
-  const [showModal, setShowModal] = useState(false);
-  const [modalConfig, setModalConfig] = useState({ title: "", message: "", onConfirm: null, confirmText: "Confirm", type: "info" });
 
   useEffect(() => {
     fetchAdvisories();
   }, [adminDepartment, isSuperadmin]);
 
   const fetchAdvisories = async () => {
-    setLoading(true);
+    if (advisories.length === 0) setLoading(true);
     try {
       let query = supabase.from("advisories").select("*, departments(name)").order("created_at", { ascending: false });
       
@@ -4112,51 +7351,6 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
     } finally {
       setLoading(false);
     }
-  };
-
-  const showSuccessModal = (message) => {
-    setModalConfig({
-      title: "Success",
-      message,
-      onConfirm: () => setShowModal(false),
-      confirmText: "OK",
-      type: "success"
-    });
-    setShowModal(true);
-  };
-
-  const showErrorModal = (message) => {
-    setModalConfig({
-      title: "Error",
-      message,
-      onConfirm: () => setShowModal(false),
-      confirmText: "OK",
-      type: "error"
-    });
-    setShowModal(true);
-  };
-
-  const showConfirmModal = (title, message, onConfirm, confirmText = "Confirm") => {
-    if (showSecurityConfirmModal && (title.toLowerCase().includes("delete") || confirmText.toLowerCase().includes("delete"))) {
-      showSecurityConfirmModal({
-        title,
-        message,
-        confirmText: "Verify & Delete",
-        onConfirmed: onConfirm,
-      });
-      return;
-    }
-    setModalConfig({
-      title,
-      message,
-      onConfirm: () => {
-        setShowModal(false);
-        onConfirm();
-      },
-      confirmText,
-      type: "warning"
-    });
-    setShowModal(true);
   };
 
   const handleSubmit = async (e) => {
@@ -4342,94 +7536,6 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{
-                position: "fixed",
-                inset: 0,
-                background: "rgba(0, 0, 0, 0.5)",
-                zIndex: 9998,
-                backdropFilter: "blur(4px)"
-              }}
-              onClick={() => setShowModal(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", duration: 0.3 }}
-              style={{
-                position: "fixed",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                background: S.card,
-                border: `1px solid ${S.border}`,
-                borderRadius: 16,
-                padding: 24,
-                maxWidth: 440,
-                width: "90%",
-                zIndex: 9999,
-                boxShadow: S.shadowCard
-              }}
-            >
-              <div style={{ marginBottom: 16 }}>
-                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: S.text, display: "flex", alignItems: "center", gap: 8 }}>
-                  {modalConfig.type === "success" && <CheckCircle2 size={22} color="#10b981" />}
-                  {modalConfig.type === "error" && <AlertTriangle size={22} color="#ef4444" />}
-                  {modalConfig.type === "warning" && <AlertTriangle size={22} color="#f59e0b" />}
-                  {modalConfig.title}
-                </h3>
-              </div>
-              <p style={{ margin: "0 0 24px", fontSize: 14, color: S.muted, lineHeight: 1.6 }}>
-                {modalConfig.message}
-              </p>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                {modalConfig.type !== "success" && modalConfig.type !== "error" && (
-                  <button
-                    onClick={() => setShowModal(false)}
-                    style={{
-                      padding: "10px 20px",
-                      borderRadius: 10,
-                      border: `1px solid ${S.border}`,
-                      background: S.cardSubtle,
-                      color: S.text,
-                      fontWeight: 800,
-                      cursor: "pointer",
-                      fontFamily: S.font,
-                      fontSize: 14
-                    }}
-                  >
-                    Cancel
-                  </button>
-                )}
-                <button
-                  onClick={modalConfig.onConfirm}
-                  style={{
-                    padding: "10px 20px",
-                    borderRadius: 10,
-                    border: "none",
-                    background: modalConfig.type === "error" ? "#ef4444" : modalConfig.type === "warning" ? "#f59e0b" : S.accent,
-                    color: "#ffffff",
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    fontFamily: S.font,
-                    fontSize: 14
-                  }}
-                >
-                  {modalConfig.confirmText}
-                </button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
       {showForm ? (
         <div style={cardStyle}>
@@ -4635,7 +7741,14 @@ function AdvisoriesTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                         )}
                         
                         {/* Delete button (always available for admins) */}
-                        <button onClick={() => handleDelete(adv.id, adv.title)} style={{ ...btnDanger, fontSize: 12, padding: "6px 12px" }}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(adv.id, adv.title);
+                          }}
+                          style={{ ...btnDanger, fontSize: 12, padding: "6px 12px" }}
+                        >
                           <Trash2 size={12} />
                         </button>
                       </div>
@@ -4675,7 +7788,7 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
   }, []);
 
   const fetchRecords = async () => {
-    setLoading(true);
+    if (records.length === 0) setLoading(true);
     try {
       const { data } = await supabase
         .from("hospital_daily_records")
@@ -5278,7 +8391,11 @@ function HospitalsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnDa
                                 <Edit2 size={13} /> Edit
                               </button>
                               <button 
-                                onClick={() => deleteRecord(record.id, record.record_date)} 
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteRecord(record.id, record.record_date);
+                                }} 
                                 style={btnDanger}
                               >
                                 <Trash2 size={14} />
@@ -5330,7 +8447,7 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
   }, []);
 
   const fetchRecords = async () => {
-    setLoading(true);
+    if (records.length === 0) setLoading(true);
     try {
       const { data } = await supabase
         .from("cdrrmo_operations")
@@ -5853,7 +8970,11 @@ function OperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, btnD
                                             <Edit2 size={11} /> Edit
                                           </button>
                                           <button
-                                            onClick={() => deleteRecord(record.id)}
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              deleteRecord(record.id);
+                                            }}
                                             style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}
                                           >
                                             <Trash2 size={12} />
@@ -5921,7 +9042,7 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
   }, []);
 
   const fetchRecords = async () => {
-    setLoading(true);
+    if (records.length === 0) setLoading(true);
     try {
       const { data } = await supabase
         .from("bfp_operations")
@@ -6462,7 +9583,11 @@ function BfpOperationsTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, b
                                             <Edit2 size={11} /> Edit
                                           </button>
                                           <button
-                                            onClick={() => deleteRecord(record.id)}
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              deleteRecord(record.id);
+                                            }}
                                             style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}
                                           >
                                             <Trash2 size={12} />
@@ -6546,7 +9671,7 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
   }, []);
 
   const fetchRecords = async () => {
-    setLoading(true);
+    if (records.length === 0) setLoading(true);
     try {
       const { data } = await supabase
         .from("agriculture_damage_reports")
@@ -7244,7 +10369,11 @@ function AgricultureDamagesTab({ S, cardStyle, inputStyle, selectStyle, btnPrima
                                             <Edit2 size={11} /> Edit
                                           </button>
                                           <button
-                                            onClick={() => deleteRecord(record.id)}
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              deleteRecord(record.id);
+                                            }}
                                             style={{ ...btnDanger, fontSize: 11, padding: "4px 8px" }}
                                           >
                                             <Trash2 size={12} />
@@ -7392,7 +10521,7 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   useEffect(() => { fetchRecords(); }, []);
 
   const fetchRecords = async () => {
-    setLoading(true);
+    if (records.length === 0) setLoading(true);
     try {
       const oneYearAgo = new Date();
       oneYearAgo.setDate(oneYearAgo.getDate() - 365);
@@ -8287,7 +11416,10 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                         {active ? (
                           <button
                             type="button"
-                            onClick={() => handleLiftInterruption(r)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLiftInterruption(r);
+                            }}
                             title="Lift water interruption and clear map highlights immediately"
                             style={{
                               background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
@@ -8350,7 +11482,10 @@ function WaterUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDelete(r.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(r.id);
+                          }}
                           style={{ ...btnDanger, fontSize: 11, padding: "5px 9px" }}
                         >
                           <Trash2 size={12} />
@@ -8401,7 +11536,7 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
   useEffect(() => { fetchRecords(); }, []);
 
   const fetchRecords = async () => {
-    setLoading(true);
+    if (records.length === 0) setLoading(true);
     try {
       // Fetch last 365 days of records to optimize query performance
       // while still providing sufficient history for View tab
@@ -9207,7 +12342,10 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                         {active ? (
                           <button
                             type="button"
-                            onClick={() => handleLiftOutage(r)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLiftOutage(r);
+                            }}
                             title="Lift power outage and clear map highlights immediately"
                             style={{
                               background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
@@ -9270,7 +12408,10 @@ function PowerUtilityTab({ S, cardStyle, inputStyle, selectStyle, btnPrimary, bt
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDelete(r.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(r.id);
+                          }}
                           style={{ ...btnDanger, fontSize: 11, padding: "5px 9px" }}
                         >
                           <Trash2 size={12} />

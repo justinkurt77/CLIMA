@@ -115,13 +115,22 @@ export default function AuthScreen({ onLoginSuccess, session }) {
 
       if (error) throw error;
 
-      if (!data.user.user_metadata?.first_name) {
+      const meta = data.user.user_metadata || {};
+      const hasName = Boolean(meta.first_name || meta.given_name || meta.full_name || meta.name);
+      const isAdmin = Boolean(
+        meta.role === 'admin' ||
+        meta.role === 'superadmin' ||
+        data.user.app_metadata?.role === 'admin' ||
+        data.user.app_metadata?.role === 'superadmin'
+      );
+
+      if (!hasName && !isAdmin && !meta.profile_completed) {
         setMode("complete");
       } else {
         setMode("success_login");
         setTimeout(() => {
-          onLoginSuccess(data.session);
-        }, 2000);
+          onLoginSuccess?.(data.session);
+        }, 1500);
       }
     } catch (err) {
       setError(

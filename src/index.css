@@ -3828,3 +3828,16 @@ html:not(.dark) .skeleton-box,
   transform: scale(0.95);
 }
 
+/* ── Minimalist Shadcn Badge System ────────────────────────────────────────── */
+[data-badge="true"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 9999px !important;
+  font-family: inherit !important;
+  line-height: 1.25 !important;
+  white-space: nowrap !important;
+  user-select: none;
+}
+
+
