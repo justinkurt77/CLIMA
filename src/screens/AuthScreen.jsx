@@ -18,8 +18,37 @@ import { motion, AnimatePresence } from "framer-motion";
 import GoogleIcon from "../components/ui/GoogleIcon";
 import { signInWithGoogle, getUserProfile } from "../lib/authHelpers";
 import { logger } from "../lib/logger";
+import { useTheme } from "../context/ThemeContext";
 
 export default function AuthScreen({ onLoginSuccess, session }) {
+  const { isDark } = useTheme();
+
+  const T = {
+    cardBg: isDark ? "#121214" : "#ffffff",
+    cardBorder: isDark ? "1px solid rgba(249, 115, 22, 0.25)" : "1px solid rgba(0, 0, 0, 0.08)",
+    cardShadow: isDark
+      ? "0 16px 48px rgba(0, 0, 0, 0.75)"
+      : "0 20px 48px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04)",
+    title: isDark ? "#ffffff" : "#09090b",
+    subtitle: isDark ? "#a1a1aa" : "#71717a",
+    inputBg: isDark ? "#18181b" : "#f4f4f5",
+    inputBgFocus: isDark ? "#202024" : "#ffffff",
+    inputBorder: isDark ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.12)",
+    inputText: isDark ? "#ffffff" : "#09090b",
+    iconColor: isDark ? "#71717a" : "#94a3b8",
+    divider: isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.08)",
+    dividerText: isDark ? "#71717a" : "#94a3b8",
+    errorBg: isDark ? "#27272a" : "#fef2f2",
+    errorText: isDark ? "#ffffff" : "#dc2626",
+    errorBorder: isDark ? "rgba(255, 255, 255, 0.2)" : "rgba(239, 68, 68, 0.25)",
+    noteBg: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.03)",
+    noteBorder: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)",
+    googleBtnBg: "#ffffff",
+    googleBtnText: "#18181b",
+    googleBtnBorder: isDark ? "1px solid rgba(255, 255, 255, 0.25)" : "1px solid rgba(0, 0, 0, 0.12)",
+    googleBtnShadow: isDark ? "0 4px 14px rgba(0, 0, 0, 0.35)" : "0 2px 8px rgba(0, 0, 0, 0.06)",
+  };
+
   const initialProfile = getUserProfile(session?.user);
   const [mode, setMode] = useState(
     session && !initialProfile?.isComplete ? "complete" : "login",
@@ -426,11 +455,12 @@ export default function AuthScreen({ onLoginSuccess, session }) {
   ) => (
     <div style={{ position: "relative", marginBottom: 14 }}>
       <div
-        style={{ position: "absolute", left: 14, top: 14, color: "#ffffff" }}
+        style={{ position: "absolute", left: 14, top: 14, color: T.iconColor }}
       >
         {icon}
       </div>
       <input
+        className="auth-input"
         type={isPassword && !showPasswordState ? "password" : type}
         placeholder={placeholder}
         value={value}
@@ -441,9 +471,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
           padding: "14px 16px 14px 44px",
           paddingRight: isPassword ? "44px" : "16px",
           borderRadius: 14,
-          border: "1px solid rgba(255, 255, 255, 0.15)",
-          background: "#18181b",
-          color: "#ffffff",
+          border: `1px solid ${T.inputBorder}`,
+          background: T.inputBg,
+          color: T.inputText,
           fontSize: 15,
           outline: "none",
           transition: "all 0.3s ease",
@@ -451,12 +481,12 @@ export default function AuthScreen({ onLoginSuccess, session }) {
         }}
         onFocus={(e) => {
           e.target.style.borderColor = "#f97316";
-          e.target.style.background = "#202024";
+          e.target.style.background = T.inputBgFocus;
           e.target.style.boxShadow = "0 0 0 3px rgba(249, 115, 22, 0.25)";
         }}
         onBlur={(e) => {
-          e.target.style.borderColor = "rgba(255, 255, 255, 0.15)";
-          e.target.style.background = "#18181b";
+          e.target.style.borderColor = T.inputBorder;
+          e.target.style.background = T.inputBg;
           e.target.style.boxShadow = "none";
         }}
       />
@@ -470,7 +500,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
             top: 14,
             background: "none",
             border: "none",
-            color: "#ffffff",
+            color: T.subtitle,
             cursor: "pointer",
             padding: 0,
             display: "flex",
@@ -530,18 +560,19 @@ export default function AuthScreen({ onLoginSuccess, session }) {
             delay: 0.1,
           }}
           style={{
-            background: "#121214",
-            border: "1px solid rgba(249, 115, 22, 0.25)",
+            background: T.cardBg,
+            border: T.cardBorder,
             width: "100%",
             maxWidth: 400,
             borderRadius: 24,
             padding: "28px 22px 32px",
-            boxShadow: "0 16px 48px rgba(0,0,0,0.75)",
+            boxShadow: T.cardShadow,
             display: "flex",
             flexDirection: "column",
             maxHeight: "88vh",
             overflowY: "auto",
             position: "relative",
+            transition: "background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease",
           }}
           className="hide-scroll"
         >
@@ -589,12 +620,12 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 />
               </div>
               <div>
-                <span style={{ color: "#ffffff", letterSpacing: 1.5 }}>CLIMA</span>
+                <span style={{ color: T.title, letterSpacing: 1.5 }}>CLIMA</span>
               </div>
             </div>
             <p
               style={{
-                color: "rgba(255, 255, 255, 0.7)",
+                color: T.subtitle,
                 fontSize: 11,
                 fontWeight: 600,
                 margin: 0,
@@ -621,13 +652,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     fontSize: 26,
                     fontWeight: 900,
-                    color: "#ffffff",
+                    color: T.title,
                     marginBottom: 8,
                   }}
                 >
                   Welcome back Palayano!
                 </h2>
-                <p style={{ color: "#a1a1aa", fontSize: 14, marginBottom: 20 }}>
+                <p style={{ color: T.subtitle, fontSize: 14, marginBottom: 20 }}>
                   Login to access your Palayan community.
                 </p>
 
@@ -636,9 +667,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#ffffff",
-                      background: "#27272a",
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      color: T.errorText,
+                      background: T.errorBg,
+                      border: `1px solid ${T.errorBorder}`,
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -711,7 +742,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                       setOtp("");
                     }}
                     style={{
-                      color: "#a1a1aa",
+                      color: T.subtitle,
                       cursor: "pointer",
                       fontWeight: 600,
                       fontSize: 14,
@@ -730,10 +761,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     gap: 12,
                   }}
                 >
-                  <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.12)" }} />
+                  <div style={{ flex: 1, height: 1, background: T.divider }} />
                   <span
                     style={{
-                      color: "#71717a",
+                      color: T.dividerText,
                       fontSize: 11,
                       fontWeight: 700,
                       textTransform: "uppercase",
@@ -742,12 +773,12 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   >
                     or continue with
                   </span>
-                  <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.12)" }} />
+                  <div style={{ flex: 1, height: 1, background: T.divider }} />
                 </div>
 
                 {/* Google Sign In Button */}
                 <motion.button
-                  whileHover={{ scale: 1.02, backgroundColor: "#f4f4f5" }}
+                  whileHover={{ scale: 1.02, backgroundColor: isDark ? "#f4f4f5" : "#f8f9fa" }}
                   whileTap={{ scale: 0.98 }}
                   type="button"
                   onClick={handleGoogleLogin}
@@ -756,17 +787,17 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     width: "100%",
                     padding: "13px 16px",
                     borderRadius: 14,
-                    background: "#ffffff",
-                    color: "#18181b",
+                    background: T.googleBtnBg,
+                    color: T.googleBtnText,
                     fontSize: 15,
                     fontWeight: 700,
-                    border: "1px solid rgba(255, 255, 255, 0.25)",
+                    border: T.googleBtnBorder,
                     cursor: loading || googleLoading ? "not-allowed" : "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 12,
-                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35)",
+                    boxShadow: T.googleBtnShadow,
                     opacity: loading || googleLoading ? 0.7 : 1,
                   }}
                 >
@@ -788,7 +819,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     textAlign: "center",
                     marginTop: 16,
                     fontSize: 14,
-                    color: "#71717a",
+                    color: T.subtitle,
                     fontWeight: 600,
                   }}
                 >
@@ -830,7 +861,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
-                    color: "#a1a1aa",
+                    color: T.subtitle,
                     fontWeight: 700,
                     padding: 0,
                     marginBottom: 20,
@@ -843,13 +874,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     fontSize: 26,
                     fontWeight: 900,
-                    color: "#ffffff",
+                    color: T.title,
                     marginBottom: 8,
                   }}
                 >
                   Create Account
                 </h2>
-                <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 20 }}>
+                <p style={{ color: T.subtitle, fontSize: 15, marginBottom: 20 }}>
                   Enter your email address to get a verification code.
                 </p>
 
@@ -858,9 +889,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#ffffff",
-                      background: "#27272a",
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      color: T.errorText,
+                      background: T.errorBg,
+                      border: `1px solid ${T.errorBorder}`,
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -874,7 +905,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
 
                 {/* Google Sign Up Button */}
                 <motion.button
-                  whileHover={{ scale: 1.02, backgroundColor: "#f4f4f5" }}
+                  whileHover={{ scale: 1.02, backgroundColor: isDark ? "#f4f4f5" : "#f8f9fa" }}
                   whileTap={{ scale: 0.98 }}
                   type="button"
                   onClick={handleGoogleLogin}
@@ -883,17 +914,17 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     width: "100%",
                     padding: "13px 16px",
                     borderRadius: 14,
-                    background: "#ffffff",
-                    color: "#18181b",
+                    background: T.googleBtnBg,
+                    color: T.googleBtnText,
                     fontSize: 15,
                     fontWeight: 700,
-                    border: "1px solid rgba(255, 255, 255, 0.25)",
+                    border: T.googleBtnBorder,
                     cursor: loading || googleLoading ? "not-allowed" : "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 12,
-                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35)",
+                    boxShadow: T.googleBtnShadow,
                     opacity: loading || googleLoading ? 0.7 : 1,
                     marginBottom: 16,
                   }}
@@ -920,10 +951,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     gap: 12,
                   }}
                 >
-                  <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.12)" }} />
+                  <div style={{ flex: 1, height: 1, background: T.divider }} />
                   <span
                     style={{
-                      color: "#71717a",
+                      color: T.dividerText,
                       fontSize: 11,
                       fontWeight: 700,
                       textTransform: "uppercase",
@@ -932,7 +963,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   >
                     or register with email code
                   </span>
-                  <div style={{ flex: 1, height: 1, background: "rgba(255, 255, 255, 0.12)" }} />
+                  <div style={{ flex: 1, height: 1, background: T.divider }} />
                 </div>
 
                 {renderInput(
@@ -1001,7 +1032,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
-                    color: "#a1a1aa",
+                    color: T.subtitle,
                     fontWeight: 700,
                     padding: 0,
                     marginBottom: 20,
@@ -1014,14 +1045,14 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     fontSize: 26,
                     fontWeight: 900,
-                    color: "#ffffff",
+                    color: T.title,
                     marginBottom: 8,
                   }}
                 >
                   Verify Email
                 </h2>
-                <p style={{ color: "#a1a1aa", fontSize: 14, marginBottom: 16 }}>
-                  We sent a verification code to <span style={{ color: "#ffffff", fontWeight: 700 }}>{email}</span>
+                <p style={{ color: T.subtitle, fontSize: 14, marginBottom: 16 }}>
+                  We sent a verification code to <span style={{ color: T.title, fontWeight: 700 }}>{email}</span>
                 </p>
 
                 {msg && (
@@ -1029,9 +1060,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#ffffff",
-                      background: "#27272a",
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      color: isDark ? "#ffffff" : "#047857",
+                      background: isDark ? "#27272a" : "#ecfdf5",
+                      border: isDark ? "1px solid rgba(255, 255, 255, 0.2)" : "1px solid rgba(16, 185, 129, 0.25)",
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -1048,9 +1079,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#ffffff",
-                      background: "#27272a",
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      color: T.errorText,
+                      background: T.errorBg,
+                      border: `1px solid ${T.errorBorder}`,
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -1107,10 +1138,10 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     marginTop: 18,
                     padding: "12px 14px",
                     borderRadius: 12,
-                    background: "rgba(255, 255, 255, 0.05)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    background: T.noteBg,
+                    border: `1px solid ${T.noteBorder}`,
                     fontSize: 12,
-                    color: "#a1a1aa",
+                    color: T.subtitle,
                     textAlign: "center",
                     lineHeight: 1.5,
                   }}
@@ -1172,7 +1203,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                       display: "flex",
                       alignItems: "center",
                       gap: 6,
-                      color: "#a1a1aa",
+                      color: T.subtitle,
                       fontWeight: 700,
                       padding: 0,
                       marginBottom: 20,
@@ -1186,13 +1217,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     fontSize: 26,
                     fontWeight: 900,
-                    color: "#ffffff",
+                    color: T.title,
                     marginBottom: 8,
                   }}
                 >
                   Complete Profile
                 </h2>
-                <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 28 }}>
+                <p style={{ color: T.subtitle, fontSize: 15, marginBottom: 28 }}>
                   {isOAuthUser
                     ? "Set up your profile details."
                     : "Set up your profile details and password."}
@@ -1203,9 +1234,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#ffffff",
-                      background: "#27272a",
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      color: T.errorText,
+                      background: T.errorBg,
+                      border: `1px solid ${T.errorBorder}`,
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -1340,7 +1371,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
-                    color: "#a1a1aa",
+                    color: T.subtitle,
                     fontWeight: 700,
                     padding: 0,
                     marginBottom: 20,
@@ -1354,8 +1385,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     width: 64,
                     height: 64,
-                    background: "rgba(255, 255, 255, 0.1)",
-                    border: "1px solid rgba(255, 255, 255, 0.18)",
+                    background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(249, 115, 22, 0.1)",
+                    border: isDark ? "1px solid rgba(255, 255, 255, 0.18)" : "1px solid rgba(249, 115, 22, 0.2)",
                     borderRadius: "50%",
                     display: "flex",
                     alignItems: "center",
@@ -1370,13 +1401,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     fontSize: 26,
                     fontWeight: 900,
-                    color: "#ffffff",
+                    color: T.title,
                     marginBottom: 8,
                   }}
                 >
                   Forgot Password?
                 </h2>
-                <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 28 }}>
+                <p style={{ color: T.subtitle, fontSize: 15, marginBottom: 28 }}>
                   Enter your email and we'll send you a code to reset your
                   password.
                 </p>
@@ -1386,9 +1417,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#ffffff",
-                      background: "#27272a",
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      color: T.errorText,
+                      background: T.errorBg,
+                      border: `1px solid ${T.errorBorder}`,
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -1465,7 +1496,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
-                    color: "#a1a1aa",
+                    color: T.subtitle,
                     fontWeight: 700,
                     padding: 0,
                     marginBottom: 20,
@@ -1479,14 +1510,14 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     fontSize: 26,
                     fontWeight: 900,
-                    color: "#ffffff",
+                    color: T.title,
                     marginBottom: 8,
                   }}
                 >
                   Verify Code
                 </h2>
-                <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 12 }}>
-                  Enter the 8-digit code sent to {email}
+                <p style={{ color: T.subtitle, fontSize: 15, marginBottom: 12 }}>
+                  Enter the 8-digit code sent to <span style={{ color: T.title, fontWeight: 700 }}>{email}</span>
                 </p>
 
                 {msg && (
@@ -1494,9 +1525,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#ffffff",
-                      background: "#27272a",
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      color: isDark ? "#ffffff" : "#047857",
+                      background: isDark ? "#27272a" : "#ecfdf5",
+                      border: isDark ? "1px solid rgba(255, 255, 255, 0.2)" : "1px solid rgba(16, 185, 129, 0.25)",
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -1513,9 +1544,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#ffffff",
-                      background: "#27272a",
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      color: T.errorText,
+                      background: T.errorBg,
+                      border: `1px solid ${T.errorBorder}`,
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -1582,8 +1613,8 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     width: 64,
                     height: 64,
-                    background: "rgba(255, 255, 255, 0.1)",
-                    border: "1px solid rgba(255, 255, 255, 0.18)",
+                    background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(249, 115, 22, 0.1)",
+                    border: isDark ? "1px solid rgba(255, 255, 255, 0.18)" : "1px solid rgba(249, 115, 22, 0.2)",
                     borderRadius: "50%",
                     display: "flex",
                     alignItems: "center",
@@ -1598,13 +1629,13 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     fontSize: 26,
                     fontWeight: 900,
-                    color: "#ffffff",
+                    color: T.title,
                     marginBottom: 8,
                   }}
                 >
                   Set New Password
                 </h2>
-                <p style={{ color: "#a1a1aa", fontSize: 15, marginBottom: 28 }}>
+                <p style={{ color: T.subtitle, fontSize: 15, marginBottom: 28 }}>
                   Create a strong new password for your account.
                 </p>
 
@@ -1613,9 +1644,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     style={{
-                      color: "#ffffff",
-                      background: "#27272a",
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      color: T.errorText,
+                      background: T.errorBg,
+                      border: `1px solid ${T.errorBorder}`,
                       padding: 14,
                       borderRadius: 16,
                       fontSize: 13,
@@ -1718,24 +1749,24 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     width: 80,
                     height: 80,
-                    background: "rgba(255, 255, 255, 0.1)",
-                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(16, 185, 129, 0.1)",
+                    border: isDark ? "1px solid rgba(255, 255, 255, 0.2)" : "1px solid rgba(16, 185, 129, 0.25)",
                     borderRadius: "50%",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     marginBottom: 24,
-                    boxShadow: "0 0 30px rgba(255, 255, 255, 0.15)",
+                    boxShadow: isDark ? "0 0 30px rgba(255, 255, 255, 0.15)" : "0 0 30px rgba(16, 185, 129, 0.15)",
                   }}
                 >
-                  <CheckCircle size={48} color="#ffffff" strokeWidth={2.2} />
+                  <CheckCircle size={48} color={isDark ? "#ffffff" : "#10b981"} strokeWidth={2.2} />
                 </motion.div>
 
                 <h2
                   style={{
                     fontSize: 28,
                     fontWeight: 900,
-                    color: "#ffffff",
+                    color: T.title,
                     marginBottom: 8,
                     lineHeight: 1.2,
                   }}
@@ -1744,7 +1775,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 </h2>
                 <p
                   style={{
-                    color: "#a1a1aa",
+                    color: T.subtitle,
                     fontSize: 15,
                     fontWeight: 600,
                     marginBottom: 24,
@@ -1814,24 +1845,24 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                   style={{
                     width: 80,
                     height: 80,
-                    background: "rgba(255, 255, 255, 0.1)",
-                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(16, 185, 129, 0.1)",
+                    border: isDark ? "1px solid rgba(255, 255, 255, 0.2)" : "1px solid rgba(16, 185, 129, 0.25)",
                     borderRadius: "50%",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     marginBottom: 24,
-                    boxShadow: "0 0 30px rgba(255, 255, 255, 0.15)",
+                    boxShadow: isDark ? "0 0 30px rgba(255, 255, 255, 0.15)" : "0 0 30px rgba(16, 185, 129, 0.15)",
                   }}
                 >
-                  <CheckCircle size={48} color="#ffffff" strokeWidth={2.2} />
+                  <CheckCircle size={48} color={isDark ? "#ffffff" : "#10b981"} strokeWidth={2.2} />
                 </motion.div>
 
                 <h2
                   style={{
                     fontSize: 28,
                     fontWeight: 900,
-                    color: "#ffffff",
+                    color: T.title,
                     marginBottom: 8,
                     lineHeight: 1.2,
                   }}
@@ -1842,7 +1873,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
                 </h2>
                 <p
                   style={{
-                    color: "#a1a1aa",
+                    color: T.subtitle,
                     fontSize: 15,
                     fontWeight: 600,
                     marginBottom: 24,
@@ -1864,6 +1895,9 @@ export default function AuthScreen({ onLoginSuccess, session }) {
         .hide-scroll::-webkit-scrollbar {
           width: 0px;
           background: transparent; /* make scrollbar invisible */
+        }
+        .auth-input::placeholder {
+          color: ${isDark ? "#71717a" : "#a1a1aa"};
         }
       `}</style>
     </div>
