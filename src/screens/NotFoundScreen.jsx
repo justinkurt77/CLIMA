@@ -219,7 +219,7 @@ export default function NotFoundScreen({ onNavigate }) {
               lineHeight: 1.6,
             }}
           >
-            <p style={{ margin: 0 }}>Climate Information Monitoring and Awareness</p>
+            <p style={{ margin: 0 }}>Climate &amp; Local Incident Monitoring Application</p>
             <p style={{ margin: '4px 0 0', fontWeight: 700 }}>Palayan City Government, Nueva Ecija</p>
           </div>
         </div>

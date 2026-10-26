@@ -280,8 +280,28 @@ export default function HomeScreen({
     let accumulatedDelta = 0;
     let resetTimer = null;
 
+    const isScrollableTarget = (target) => {
+      if (!target || !(target instanceof Element)) return false;
+      if (target.closest(".desktop-recent-list, .desktop-recent-card, .desktop-hourly-grid, [data-scrollable='true']")) {
+        return true;
+      }
+      let curr = target;
+      while (curr && curr !== el && curr !== document.body) {
+        const style = window.getComputedStyle(curr);
+        const overflowY = style.overflowY;
+        if ((overflowY === "auto" || overflowY === "scroll") && curr.scrollHeight > curr.clientHeight) {
+          return true;
+        }
+        curr = curr.parentElement;
+      }
+      return false;
+    };
+
     const handleWheel = (e) => {
       if (isTransitioning) return;
+
+      // Do not hijack scroll if cursor is inside an internal scrollable list or card
+      if (isScrollableTarget(e.target)) return;
 
       // When on Slide 1 and user scrolls down further at the bottom
       if (homePage === 1 && e.deltaY > 0) {
@@ -291,7 +311,7 @@ export default function HomeScreen({
           clearTimeout(resetTimer);
           resetTimer = setTimeout(() => { accumulatedDelta = 0; }, 300);
 
-          if (accumulatedDelta >= 40) {
+          if (accumulatedDelta >= 180) {
             isTransitioning = true;
             accumulatedDelta = 0;
             setSlideDirection("down");
@@ -309,7 +329,7 @@ export default function HomeScreen({
           clearTimeout(resetTimer);
           resetTimer = setTimeout(() => { accumulatedDelta = 0; }, 300);
 
-          if (accumulatedDelta >= 40) {
+          if (accumulatedDelta >= 180) {
             isTransitioning = true;
             accumulatedDelta = 0;
             setSlideDirection("up");
@@ -324,18 +344,20 @@ export default function HomeScreen({
     };
 
     let touchStartY = 0;
+    let isTouchOnScrollable = false;
     const handleTouchStart = (e) => {
       if (e.touches && e.touches[0]) {
         touchStartY = e.touches[0].clientY;
+        isTouchOnScrollable = isScrollableTarget(e.target);
       }
     };
 
     const handleTouchEnd = (e) => {
-      if (isTransitioning || !e.changedTouches || !e.changedTouches[0]) return;
+      if (isTransitioning || isTouchOnScrollable || !e.changedTouches || !e.changedTouches[0]) return;
       const touchEndY = e.changedTouches[0].clientY;
       const diffY = touchStartY - touchEndY; // positive = swiped up (scrolling down)
 
-      if (homePage === 1 && diffY > 50) {
+      if (homePage === 1 && diffY > 80) {
         const isAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 35;
         if (isAtBottom) {
           isTransitioning = true;
@@ -344,7 +366,7 @@ export default function HomeScreen({
           el.scrollTo({ top: 0, behavior: "instant" });
           setTimeout(() => { isTransitioning = false; }, 600);
         }
-      } else if (homePage === 2 && diffY < -50) {
+      } else if (homePage === 2 && diffY < -80) {
         const isAtTop = el.scrollTop <= 5;
         if (isAtTop) {
           isTransitioning = true;
@@ -1189,7 +1211,13 @@ export default function HomeScreen({
 
               <div
                 className="desktop-recent-list hide-scroll"
-                style={{ maxHeight: 185, overflowY: "auto", paddingRight: 2 }}
+                style={{
+                  maxHeight: 185,
+                  overflowY: "auto",
+                  paddingRight: 2,
+                  overscrollBehavior: "contain",
+                }}
+                onWheel={(e) => e.stopPropagation()}
               >
                 {filteredBarangays.map((bgy) => {
                   const isCurrent = selectedBarangay.toLowerCase() === bgy.name.toLowerCase();

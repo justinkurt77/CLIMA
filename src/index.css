@@ -2782,6 +2782,7 @@ html.light .desktop-bklit-badge-neg,
   flex-direction: column;
   gap: 12px;
   margin-top: 14px;
+  overscroll-behavior: contain;
 }
 
 .desktop-recent-item {

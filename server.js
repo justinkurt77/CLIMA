@@ -217,7 +217,7 @@ app.post('/api/admin/create', authLimiter, async (req, res) => {
             </div>
             <div class="content">
               <h2>Welcome, ${full_name}!</h2>
-              <p>Your admin account for the <strong>CLIMA System</strong> (Climate Information Monitoring and Awareness) has been created.</p>
+              <p>Your admin account for the <strong>CLIMA System</strong> (Climate &amp; Local Incident Monitoring Application) has been created.</p>
               
               <div class="credentials">
                 <p><strong>📧 Email:</strong> ${email}</p>
@@ -393,7 +393,7 @@ app.post('/api/auth/send-user-otp', authLimiter, async (req, res) => {
             </div>
 
             <div class="footer">
-              &copy; ${new Date().getFullYear()} City of Palayan &bull; Climate Information Monitoring & Awareness
+              &copy; ${new Date().getFullYear()} City of Palayan &bull; Climate &amp; Local Incident Monitoring Application
             </div>
           </div>
         </body>

@@ -1359,21 +1359,21 @@ export default function AdminOverviewCommand({
                   gap: 8,
                   padding: "6px 14px",
                   borderRadius: 9999,
-                  background: isDark ? "rgba(22, 16, 12, 0.94)" : "rgba(254, 243, 199, 0.92)",
-                  border: `1px solid ${conditions.risk?.border || "rgba(245, 158, 11, 0.3)"}`,
+                  background: isDark ? "rgba(18, 18, 20, 0.94)" : "rgba(255, 255, 255, 0.94)",
+                  border: `1px solid ${conditions.risk?.border || (isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0, 0, 0, 0.10)")}`,
                   boxShadow: "0 4px 14px rgba(0, 0, 0, 0.15)",
                   backdropFilter: "blur(18px)",
                   WebkitBackdropFilter: "blur(18px)",
                   flexShrink: 0,
                 }}
               >
-                <Flame size={15} color={conditions.risk?.color || "#f59e0b"} />
+                <Flame size={15} color={conditions.risk?.color || "#ef4444"} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: Z[700] }}>Heat Index</span>
                 <span
                   style={{
                     fontSize: 13,
                     fontWeight: 800,
-                    color: conditions.risk?.color || "#f59e0b",
+                    color: conditions.risk?.color || "#ef4444",
                   }}
                 >
                   {conditions.hero !== null && conditions.hero !== undefined

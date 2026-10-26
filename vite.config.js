@@ -10,7 +10,7 @@ export default defineConfig({
       registerType: "autoUpdate",
       devOptions: { enabled: true },
       manifest: {
-        name: "CLIMA - Climate Information Monitoring and Awareness",
+        name: "CLIMA - Climate & Local Incident Monitoring Application",
         short_name: "CLIMA",
         description: "Official disaster response platform of Palayan City Government, Nueva Ecija",
         theme_color: "#f5f3f0",

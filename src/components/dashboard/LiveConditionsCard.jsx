@@ -57,26 +57,26 @@ function LiveConditionsCard({
     switch (heatIndex) {
       case "Extreme Danger":
         return {
-          background: isDark ? "rgba(239, 68, 68, 0.16)" : "rgba(239, 68, 68, 0.1)",
-          color: isDark ? "#ef4444" : "#dc2626",
-          border: `1px solid ${isDark ? "rgba(239, 68, 68, 0.35)" : "rgba(220, 38, 38, 0.3)"}`,
+          background: isDark ? "rgba(153, 27, 27, 0.28)" : "rgba(254, 226, 226, 0.95)",
+          color: isDark ? "#fda4af" : "#991b1b",
+          border: `1px solid ${isDark ? "rgba(239, 68, 68, 0.5)" : "rgba(153, 27, 27, 0.45)"}`,
         };
       case "Danger":
         return {
-          background: isDark ? "rgba(251, 146, 60, 0.16)" : "rgba(255, 237, 213, 0.9)",
-          color: isDark ? "#fdba74" : "#ea580c",
-          border: `1px solid ${isDark ? "rgba(251, 146, 60, 0.35)" : "rgba(253, 186, 116, 0.75)"}`,
+          background: isDark ? "rgba(239, 68, 68, 0.16)" : "rgba(254, 226, 226, 0.9)",
+          color: isDark ? "#ef4444" : "#dc2626",
+          border: `1px solid ${isDark ? "rgba(239, 68, 68, 0.35)" : "rgba(252, 165, 165, 0.75)"}`,
         };
       case "Extreme Caution":
         return {
-          background: isDark ? "rgba(251, 191, 36, 0.16)" : "rgba(254, 243, 199, 0.9)",
-          color: isDark ? "#fde68a" : "#d97706",
-          border: `1px solid ${isDark ? "rgba(251, 191, 36, 0.35)" : "rgba(252, 211, 77, 0.75)"}`,
+          background: isDark ? "rgba(251, 146, 60, 0.16)" : "rgba(255, 237, 213, 0.9)",
+          color: isDark ? "#fb923c" : "#ea580c",
+          border: `1px solid ${isDark ? "rgba(251, 146, 60, 0.35)" : "rgba(253, 186, 116, 0.75)"}`,
         };
       case "Caution":
         return {
           background: isDark ? "rgba(250, 204, 21, 0.15)" : "rgba(254, 249, 195, 0.9)",
-          color: isDark ? "#fef08a" : "#ca8a04",
+          color: isDark ? "#fde047" : "#ca8a04",
           border: `1px solid ${isDark ? "rgba(250, 204, 21, 0.32)" : "rgba(253, 224, 71, 0.75)"}`,
         };
       case "Normal":

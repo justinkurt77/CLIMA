@@ -38,38 +38,38 @@ export function getHeatRisk(heatIndex, isDark = true) {
   if (hi >= 52) {
     return {
       label: "Extreme Danger",
-      // Authoritative emergency red
-      color: isDark ? "#ef4444" : "#dc2626",
-      bg: isDark ? "rgba(239, 68, 68, 0.16)" : "rgba(239, 68, 68, 0.1)",
-      border: isDark ? "rgba(239, 68, 68, 0.35)" : "rgba(220, 38, 38, 0.3)",
+      // Authoritative severe emergency deep crimson / maroon
+      color: isDark ? "#fda4af" : "#991b1b",
+      bg: isDark ? "rgba(153, 27, 27, 0.28)" : "rgba(254, 226, 226, 0.95)",
+      border: isDark ? "rgba(239, 68, 68, 0.5)" : "rgba(153, 27, 27, 0.45)",
       level: 4,
     };
   }
   if (hi >= 42) {
     return {
       label: "Danger",
-      // Soft pastel apricot / peach
-      color: isDark ? "#fdba74" : "#ea580c",
-      bg: isDark ? "rgba(251, 146, 60, 0.16)" : "rgba(255, 237, 213, 0.9)",
-      border: isDark ? "rgba(251, 146, 60, 0.35)" : "rgba(253, 186, 116, 0.75)",
+      // Emergency authoritative red (PAGASA 42°C-51°C)
+      color: isDark ? "#ef4444" : "#dc2626",
+      bg: isDark ? "rgba(239, 68, 68, 0.16)" : "rgba(254, 226, 226, 0.9)",
+      border: isDark ? "rgba(239, 68, 68, 0.35)" : "rgba(252, 165, 165, 0.75)",
       level: 3,
     };
   }
   if (hi >= 33) {
     return {
       label: "Extreme Caution",
-      // Soft pastel amber / butter
-      color: isDark ? "#fde68a" : "#d97706",
-      bg: isDark ? "rgba(251, 191, 36, 0.16)" : "rgba(254, 243, 199, 0.9)",
-      border: isDark ? "rgba(251, 191, 36, 0.35)" : "rgba(252, 211, 77, 0.75)",
+      // Warning vivid orange (PAGASA 33°C-41°C)
+      color: isDark ? "#fb923c" : "#ea580c",
+      bg: isDark ? "rgba(251, 146, 60, 0.16)" : "rgba(255, 237, 213, 0.9)",
+      border: isDark ? "rgba(251, 146, 60, 0.35)" : "rgba(253, 186, 116, 0.75)",
       level: 2,
     };
   }
   if (hi >= 27) {
     return {
       label: "Caution",
-      // Soft pastel lemon / cream
-      color: isDark ? "#fef08a" : "#ca8a04",
+      // Caution yellow (PAGASA 27°C-32°C)
+      color: isDark ? "#fde047" : "#ca8a04",
       bg: isDark ? "rgba(250, 204, 21, 0.15)" : "rgba(254, 249, 195, 0.9)",
       border: isDark ? "rgba(250, 204, 21, 0.32)" : "rgba(253, 224, 71, 0.75)",
       level: 1,

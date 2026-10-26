@@ -7,7 +7,7 @@ export const faqData = [
   {
     id: 1,
     question: 'What is CLIMA?',
-    answer: 'CLIMA (Climate Information Monitoring and Awareness) is the official disaster response and climate monitoring platform of the Palayan City Government, Nueva Ecija. It enables citizens to report incidents, receive emergency advisories, and access real-time weather and disaster-related information.'
+    answer: 'CLIMA (Climate & Local Incident Monitoring Application) is the official disaster response and climate monitoring platform of the Palayan City Government, Nueva Ecija. It enables citizens to report incidents, receive emergency advisories, and access real-time weather and disaster-related information.'
   },
   {
     id: 2,

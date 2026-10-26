@@ -507,77 +507,6 @@ export default function AuthScreen({ onLoginSuccess, session }) {
         overflow: "hidden",
       }}
     >
-      {/* Floating Header */}
-      <motion.div
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
-        style={{
-          position: "relative",
-          zIndex: 10,
-          background: "#f97316",
-          border: "1px solid rgba(255, 255, 255, 0.25)",
-          borderRadius: 28,
-          margin: "12px 14px 6px",
-          marginTop: "calc(12px + env(safe-area-inset-top, 0px))",
-          padding: "20px 16px",
-          boxShadow: "0 10px 30px rgba(249, 115, 22, 0.45)",
-          textAlign: "center",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 4,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "'Nohemi', sans-serif",
-            fontSize: 30,
-            fontWeight: 900,
-            lineHeight: 1,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              background: "transparent",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <img
-              src="/logo.webp"
-              alt="CLIMA Logo"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                filter: "drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2))",
-              }}
-            />
-          </div>
-          <div>
-            <span style={{ color: "#ffffff", letterSpacing: 1.5 }}>CLIMA</span>
-          </div>
-        </div>
-        <p
-          style={{
-            color: "rgba(255, 255, 255, 0.95)",
-            fontSize: 12,
-            fontWeight: 700,
-            margin: 0,
-            textAlign: "center",
-          }}
-        >
-          Climate Information Monitoring and Awareness
-        </p>
-      </motion.div>
-
       <div
         style={{
           position: "relative",
@@ -587,7 +516,7 @@ export default function AuthScreen({ onLoginSuccess, session }) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          padding: "0 16px",
+          padding: "16px",
         }}
       >
         {/* Animated Auth Card */}
@@ -610,12 +539,73 @@ export default function AuthScreen({ onLoginSuccess, session }) {
             boxShadow: "0 16px 48px rgba(0,0,0,0.75)",
             display: "flex",
             flexDirection: "column",
-            maxHeight: "80vh",
+            maxHeight: "88vh",
             overflowY: "auto",
             position: "relative",
           }}
           className="hide-scroll"
         >
+          {/* Header inside Login Box */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 4,
+              marginBottom: 20,
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "'Nohemi', sans-serif",
+                fontSize: 26,
+                fontWeight: 900,
+                lineHeight: 1,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  background: "transparent",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <img
+                  src="/logo.webp"
+                  alt="CLIMA Logo"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
+                    filter: "drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2))",
+                  }}
+                />
+              </div>
+              <div>
+                <span style={{ color: "#ffffff", letterSpacing: 1.5 }}>CLIMA</span>
+              </div>
+            </div>
+            <p
+              style={{
+                color: "rgba(255, 255, 255, 0.7)",
+                fontSize: 11,
+                fontWeight: 600,
+                margin: 0,
+                textAlign: "center",
+                letterSpacing: "0.2px",
+              }}
+            >
+              Climate &amp; Local Incident Monitoring Application
+            </p>
+          </div>
+
           <AnimatePresence mode="wait">
             {/* LOGIN MODE */}
             {mode === "login" && (
