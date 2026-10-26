@@ -26,33 +26,7 @@ import {
   Landmark,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
-
-const ICON_MAP = {
-  ShieldAlert,
-  Wrench,
-  Trash2,
-  Dog,
-  Construction,
-  TreePine,
-  CarFront,
-  ClipboardList,
-  Landmark,
-  Droplet,
-  Palmtree,
-  HeartPulse,
-  Zap,
-  water: Droplet,
-  recreation: Palmtree,
-  health: HeartPulse,
-  utility: Zap,
-  government: Landmark,
-  "💧": Droplet,
-  "🏖️": Palmtree,
-  "🏥": HeartPulse,
-  "⚡": Zap,
-  "🏛️": Landmark,
-  "⚫": Landmark,
-};
+import { ICON_MAP, resolveMapIcon } from "./MapPins";
 
 export function MapPopupContent({
   selectedReport,
@@ -140,12 +114,10 @@ export function MapPopupContent({
     ) {
       return Droplet;
     }
-    return (
-      ICON_MAP[selectedReport.icon] ||
-      ICON_MAP[selectedReport.filterType] ||
-      ICON_MAP[selectedReport.status] ||
-      ClipboardList
+    const resolved = resolveMapIcon(
+      selectedReport.icon || selectedReport.filterType || selectedReport.status
     );
+    return resolved.Component || ClipboardList;
   }, [selectedReport]);
 
   const hasPhotos = !!(selectedReport.photoPreviews || selectedReport.photoPreview);

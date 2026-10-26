@@ -15,16 +15,7 @@ import {
 
 import { useTheme } from "../../context/ThemeContext";
 import DOMPurify from 'dompurify';
-
-const ICON_MAP = {
-  ShieldAlert,
-  Wrench,
-  Trash2,
-  Dog,
-  Construction,
-  TreePine,
-  CarFront,
-};
+import { resolveMapIcon } from "../map/MapPins";
 
 export function getStatusMeta(status, isDark) {
   switch (status) {
@@ -110,12 +101,16 @@ const ReportCard = React.memo(function ReportCard({ report }) {
             color: "var(--text-primary)",
           }}
         >
-          {ICON_MAP[report.icon]
-            ? (() => {
-                const DynamicIcon = ICON_MAP[report.icon];
-                return <DynamicIcon size={20} color={isDark ? "#ffffff" : "#09090b"} />;
-              })()
-            : report.icon || "📝"}
+          {(() => {
+            const { Component: DynIcon, isEmoji, emojiText } = resolveMapIcon(report.icon);
+            if (DynIcon) {
+              return <DynIcon size={20} color={isDark ? "#ffffff" : "#09090b"} />;
+            }
+            if (isEmoji) {
+              return emojiText;
+            }
+            return "📝";
+          })()}
         </div>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>

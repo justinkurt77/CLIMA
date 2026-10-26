@@ -21,6 +21,7 @@ import { logger } from "../lib/logger";
 import { useTheme } from "../context/ThemeContext";
 import CustomSelect from "../components/ui/CustomSelect";
 import AdminOverviewCommand from "../components/dashboard/AdminOverviewCommand";
+import { resolveMapIcon } from "../components/map/MapPins";
 
 // Color design tokens: Black for dark mode, White for light mode, Orange-Yellow accents
 const getZTokens = (isDark) => ({
@@ -259,7 +260,8 @@ function ReportDetailModal({ report, onClose, onStatusChange }) {
   const [status, setStatus] = useState(report.status);
   const [updating, setUpdating] = useState(false);
   const [lightboxImg, setLightboxImg] = useState(null);
-  const DynIcon = (report.icon && ICON_MAP[report.icon]) || AlertCircle;
+  const resolved = resolveMapIcon(report.icon);
+  const DynIcon = resolved.Component || AlertCircle;
   const photos = report.photo_url
     ? report.photo_url.split(",").filter(Boolean)
     : [];
