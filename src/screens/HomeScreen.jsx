@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import DOMPurify from "dompurify";
 import {
   MapPin,
   ChevronRight,
@@ -21,10 +22,25 @@ import {
   Moon,
   Search,
   ArrowUp,
+  ArrowLeft,
+  ArrowRight,
+  Activity,
+  Loader2,
+  Shield,
 } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/logger";
+import { getUserProfile } from "../lib/authHelpers";
+import {
+  fetchKloudtechDashboard,
+  fetchKloudtechActiveStations,
+  adaptKloudtechTelemetry,
+  KLOUDTECH_BASE_URL,
+} from "../services/kloudtechService";
+import LazyKloudtechDashboard from "../components/LazyKloudtechDashboard";
+import LiveConditionsCard from "../components/dashboard/LiveConditionsCard";
 
 const WEATHER_ICONS = {
   Sun,
@@ -44,12 +60,46 @@ function getWeatherIcon(code, isDay = true) {
   return isDay ? "Sun" : "Moon";
 }
 
+const slideVariants = {
+  enter: (direction) => ({
+    opacity: 0,
+    y: direction === "down" ? 28 : -28,
+  }),
+  center: {
+    opacity: 1,
+    y: 0,
+  },
+  exit: (direction) => ({
+    opacity: 0,
+    y: direction === "down" ? -28 : 28,
+  }),
+};
+
 function getWeatherIconColor(iconName) {
   if (iconName === "Sun") return "#eab308";
   if (iconName === "CloudRain") return "#60a5fa";
   if (iconName === "CloudLightning") return "#f59e0b";
   if (iconName === "Moon") return "#a78bfa";
   return "#94a3b8";
+}
+
+function getWindDirectionText(dirOrDegree) {
+  if (!dirOrDegree) return "East-Southeast";
+  if (typeof dirOrDegree === "string") {
+    const COMPASS_NAMES = {
+      N: "North", NNE: "North-Northeast", NE: "Northeast", ENE: "East-Northeast",
+      E: "East", ESE: "East-Southeast", SE: "Southeast", SSE: "South-Southeast",
+      S: "South", SSW: "South-Southwest", SW: "Southwest", WSW: "West-Southwest",
+      W: "West", WNW: "West-Northwest", NW: "Northwest", NNW: "North-Northwest",
+    };
+    return COMPASS_NAMES[dirOrDegree.toUpperCase()] || dirOrDegree;
+  }
+  if (typeof dirOrDegree === "number") {
+    const sectors = ["North", "North-Northeast", "Northeast", "East-Northeast", "East", "East-Southeast", "Southeast", "South-Southeast", "South", "South-Southwest", "Southwest", "West-Southwest", "West", "West-Northwest", "Northwest", "North-Northwest"];
+    const idx = Math.round(dirOrDegree / 22.5) % 16;
+    return sectors[idx];
+  }
+  return "Variable Winds";
 }
 
 function getWeatherInfo(code, temp, high, low, isDay = true) {
@@ -65,6 +115,63 @@ function getWeatherInfo(code, temp, high, low, isDay = true) {
   if ([95, 96, 99].includes(code)) return { msg: "Thunderstorm", sub: "with lightning & gusts", icon: "CloudLightning", high: h, low: l };
   return { msg: "Partly cloudy", sub: "with pleasant breeze", icon: isDay ? "CloudSun" : "Moon", high: h, low: l };
 }
+
+/**
+ * Standard NOAA / Rothfusz heat index calculation from temperature (°C) and relative humidity (%)
+ */
+export function calculateHeatIndex(tempC, humidity) {
+  if (tempC == null || humidity == null) return tempC || 0;
+  const tF = (tempC * 9) / 5 + 32;
+  const rh = humidity;
+
+  if (tF < 80) {
+    const simpleHI = 0.5 * (tF + 61.0 + ((tF - 68.0) * 1.2) + (rh * 0.094));
+    const finalC = ((simpleHI - 32) * 5) / 9;
+    return Math.round(finalC * 10) / 10;
+  }
+
+  let hiF =
+    -42.379 +
+    2.04901523 * tF +
+    10.14333127 * rh -
+    0.22475541 * tF * rh -
+    0.00683783 * tF * tF -
+    0.05481717 * rh * rh +
+    0.00122874 * tF * tF * rh +
+    0.00085282 * tF * rh * rh -
+    0.00000199 * tF * tF * rh * rh;
+
+  if (rh < 13 && tF >= 80 && tF <= 112) {
+    hiF -= ((13 - rh) / 4) * Math.sqrt((17 - Math.abs(tF - 95)) / 17);
+  } else if (rh > 85 && tF >= 80 && tF <= 87) {
+    hiF += ((rh - 85) / 10) * ((87 - tF) / 5);
+  }
+
+  const hiC = ((hiF - 32) * 5) / 9;
+  return Math.round(hiC * 10) / 10;
+}
+
+export const PALAYAN_BARANGAYS = [
+  { name: "Singalat", lat: 15.5717, lng: 121.0949, desc: "Agri-residential corridor" },
+  { name: "Atate", lat: 15.5581, lng: 121.1121, desc: "Commercial & residential center" },
+  { name: "Caimito", lat: 15.5490, lng: 121.0875, desc: "City Hall & Capitol district" },
+  { name: "Ganaderia", lat: 15.5394, lng: 121.0903, desc: "Central community district" },
+  { name: "Caballero", lat: 15.5354, lng: 121.1066, desc: "Eastern agricultural corridor" },
+  { name: "Santolan", lat: 15.5340, lng: 121.0894, desc: "City proper urban sector" },
+  { name: "Manacnac", lat: 15.5286, lng: 121.0689, desc: "Western plains & farm lands" },
+  { name: "Malate", lat: 15.5450, lng: 121.0776, desc: "Riverside barangay zone" },
+  { name: "Aulo", lat: 15.5087, lng: 121.0939, desc: "Southern agricultural community" },
+  { name: "Mapait", lat: 15.5143, lng: 121.1108, desc: "Rolling hills & valley farms" },
+  { name: "Marcos Village", lat: 15.5906, lng: 121.1096, desc: "Northern settlement district" },
+  { name: "Imelda Valley", lat: 15.5742, lng: 121.1230, desc: "Eco-tourism & scenic valley" },
+  { name: "Sapang Buho", lat: 15.5875, lng: 121.1283, desc: "Upland watershed community" },
+  { name: "Popolon Pagas", lat: 15.5413, lng: 121.0471, desc: "Western boundary sector" },
+  { name: "Maligaya", lat: 15.4753, lng: 121.1040, desc: "Military reservation zone" },
+  { name: "Bagong Buhay", lat: 15.4590, lng: 121.1232, desc: "Resettlement community" },
+  { name: "Doña Josefa", lat: 15.4494, lng: 121.1081, desc: "Southern foothills district" },
+  { name: "Bo. Militar", lat: 15.4237, lng: 121.1008, desc: "Military base community" },
+  { name: "Langka", lat: 15.4277, lng: 121.1521, desc: "Southeastern boundary district" },
+];
 
 const DEFAULT_HOURLY = [
   { time: "Now", temp: 28, icon: "Sun", rain: null, active: true },
@@ -93,19 +200,206 @@ export default function HomeScreen({
   session,
   userLocation,
   setActiveScreen,
+  refreshTrigger = 0,
+  isAdmin = false,
+  isSuperadmin = false,
+  adminUser = null,
 }) {
   const { isDark, toggleTheme } = useTheme();
-  const [currentTemp, setCurrentTemp] = useState(28);
+
+  const isUserAdmin = Boolean(
+    isAdmin ||
+    isSuperadmin ||
+    adminUser?.isAdmin ||
+    session?.user?.user_metadata?.role === "admin" ||
+    session?.user?.user_metadata?.role === "superadmin" ||
+    session?.user?.user_metadata?.role?.includes("admin")
+  );
+  const isUserSuperadmin = Boolean(
+    isSuperadmin ||
+    adminUser?.isSuperadmin ||
+    session?.user?.user_metadata?.role === "superadmin"
+  );
+  const rootRef = useRef(null);
+  const headerRef = useRef(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isLoadingWeather, setIsLoadingWeather] = useState(true);
+  const [currentTemp, setCurrentTemp] = useState(null);
+  const [selectedBarangay, setSelectedBarangay] = useState("Popolon Pagas");
+  const [activeCoords, setActiveCoords] = useState({ lat: 15.5413, lng: 121.0471 });
+
+  // Smooth scroll listener for sticky header blur & scroll-to-top button
+  useEffect(() => {
+    const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+    if (!el) return;
+
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrolled = el.scrollTop > 18;
+          setIsScrolled((prev) => (prev !== scrolled ? scrolled : prev));
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    handleScroll();
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
   const [weatherInfo, setWeatherInfo] = useState({
-    msg: "Clear sky",
-    sub: "with bright sunshine",
-    icon: "Sun",
-    high: 31,
-    low: 24,
+    msg: "Syncing live weather...",
+    sub: "Live Meteorological Sensor • Palayan City",
+    icon: null,
+    high: null,
+    low: null,
   });
-  const [humidity, setHumidity] = useState(78);
-  const [windSpeed, setWindSpeed] = useState(12);
-  const [pressure, setPressure] = useState("1008 hPa");
+  const [humidity, setHumidity] = useState(85);
+  const [homePage, setHomePage] = useState(1); // 1 = Weather Overview, 2 = Telemetry Dashboard
+  const [slideDirection, setSlideDirection] = useState("down");
+
+  const navigateToSlide = useCallback((targetPage, direction = null) => {
+    if (targetPage === homePage) return;
+    const dir = direction || (targetPage > homePage ? "down" : "up");
+    setSlideDirection(dir);
+    setHomePage(targetPage);
+    const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+    if (el) {
+      el.scrollTo({ top: 0, behavior: "instant" });
+    }
+  }, [homePage]);
+
+  // Auto-slide transition when scrolling further past boundary
+  useEffect(() => {
+    const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+    if (!el) return;
+
+    let isTransitioning = false;
+    let accumulatedDelta = 0;
+    let resetTimer = null;
+
+    const isScrollableTarget = (target) => {
+      if (!target || !(target instanceof Element)) return false;
+      if (target.closest(".desktop-recent-list, .desktop-recent-card, .desktop-hourly-grid, [data-scrollable='true']")) {
+        return true;
+      }
+      let curr = target;
+      while (curr && curr !== el && curr !== document.body) {
+        const style = window.getComputedStyle(curr);
+        const overflowY = style.overflowY;
+        if ((overflowY === "auto" || overflowY === "scroll") && curr.scrollHeight > curr.clientHeight) {
+          return true;
+        }
+        curr = curr.parentElement;
+      }
+      return false;
+    };
+
+    const handleWheel = (e) => {
+      if (isTransitioning) return;
+
+      // Do not hijack scroll if cursor is inside an internal scrollable list or card
+      if (isScrollableTarget(e.target)) return;
+
+      // When on Slide 1 and user scrolls down further at the bottom
+      if (homePage === 1 && e.deltaY > 0) {
+        const isAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 35;
+        if (isAtBottom) {
+          accumulatedDelta += e.deltaY;
+          clearTimeout(resetTimer);
+          resetTimer = setTimeout(() => { accumulatedDelta = 0; }, 300);
+
+          if (accumulatedDelta >= 180) {
+            isTransitioning = true;
+            accumulatedDelta = 0;
+            setSlideDirection("down");
+            setHomePage(2);
+            el.scrollTo({ top: 0, behavior: "instant" });
+            setTimeout(() => { isTransitioning = false; }, 600);
+          }
+        }
+      }
+      // When on Slide 2 and user scrolls up at the top
+      else if (homePage === 2 && e.deltaY < 0) {
+        const isAtTop = el.scrollTop <= 5;
+        if (isAtTop) {
+          accumulatedDelta += Math.abs(e.deltaY);
+          clearTimeout(resetTimer);
+          resetTimer = setTimeout(() => { accumulatedDelta = 0; }, 300);
+
+          if (accumulatedDelta >= 180) {
+            isTransitioning = true;
+            accumulatedDelta = 0;
+            setSlideDirection("up");
+            setHomePage(1);
+            setTimeout(() => {
+              el.scrollTo({ top: el.scrollHeight, behavior: "instant" });
+            }, 60);
+            setTimeout(() => { isTransitioning = false; }, 600);
+          }
+        }
+      }
+    };
+
+    let touchStartY = 0;
+    let isTouchOnScrollable = false;
+    const handleTouchStart = (e) => {
+      if (e.touches && e.touches[0]) {
+        touchStartY = e.touches[0].clientY;
+        isTouchOnScrollable = isScrollableTarget(e.target);
+      }
+    };
+
+    const handleTouchEnd = (e) => {
+      if (isTransitioning || isTouchOnScrollable || !e.changedTouches || !e.changedTouches[0]) return;
+      const touchEndY = e.changedTouches[0].clientY;
+      const diffY = touchStartY - touchEndY; // positive = swiped up (scrolling down)
+
+      if (homePage === 1 && diffY > 80) {
+        const isAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 35;
+        if (isAtBottom) {
+          isTransitioning = true;
+          setSlideDirection("down");
+          setHomePage(2);
+          el.scrollTo({ top: 0, behavior: "instant" });
+          setTimeout(() => { isTransitioning = false; }, 600);
+        }
+      } else if (homePage === 2 && diffY < -80) {
+        const isAtTop = el.scrollTop <= 5;
+        if (isAtTop) {
+          isTransitioning = true;
+          setSlideDirection("up");
+          setHomePage(1);
+          setTimeout(() => {
+            el.scrollTo({ top: el.scrollHeight, behavior: "instant" });
+          }, 60);
+          setTimeout(() => { isTransitioning = false; }, 600);
+        }
+      }
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: true });
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchend", handleTouchEnd);
+      clearTimeout(resetTimer);
+    };
+  }, [homePage]);
+
+  const [windSpeed, setWindSpeed] = useState(1.2);
+  const [windDirection, setWindDirection] = useState("North");
+  const [rainChance, setRainChance] = useState(0);
+  const [currentHeatIndex, setCurrentHeatIndex] = useState(27.8);
+  const [pressure, setPressure] = useState("1007 hPa");
+  const [uvIndex, setUvIndex] = useState(0);
+  const [isDayTime, setIsDayTime] = useState(false);
+  const [liveHistory, setLiveHistory] = useState([]);
   const [hourlyForecast, setHourlyForecast] = useState(DEFAULT_HOURLY);
   const [weeklyForecast, setWeeklyForecast] = useState(DEFAULT_WEEKLY);
   const [showReports, setShowReports] = useState(false);
@@ -113,8 +407,129 @@ export default function HomeScreen({
   const [showSearchInput, setShowSearchInput] = useState(false);
   const [advisories, setAdvisories] = useState([]);
   const [showAdvisories, setShowAdvisories] = useState(true);
+  const [barangayWeathers, setBarangayWeathers] = useState({});
 
-  const firstName = session?.user?.user_metadata?.first_name;
+  // Fetch all barangays real-time weather via KloudTech SEA IoT & meteorological sensors
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAllBarangaysWeather = async () => {
+      const results = {};
+
+      // 1. First, attempt to query KloudTech SEA IoT telemetry (ONLY if live and authenticated)
+      try {
+        const ktRes = await fetchKloudtechDashboard();
+        if (ktRes.success && Array.isArray(ktRes.data) && ktRes.data.length > 0) {
+          ktRes.data.forEach((item) => {
+            const stName = item.station?.stationName || item.station?.city || "";
+            const tel = item.telemetry;
+            if (tel) {
+              const adapted = adaptKloudtechTelemetry(tel);
+              PALAYAN_BARANGAYS.forEach((bgy) => {
+                const bgyLower = bgy.name.toLowerCase();
+                const bgyWords = bgyLower.split(" ");
+                const isMatch =
+                  stName.toLowerCase().includes(bgyLower) ||
+                  (item.station?.address && item.station.address.toLowerCase().includes(bgyLower)) ||
+                  (Array.isArray(item.station?.barangays) && item.station.barangays.includes(bgy.name)) ||
+                  bgyWords.some((w) => w.length >= 4 && stName.toLowerCase().includes(w));
+
+                if (isMatch) {
+                  results[bgy.name] = {
+                    temp: adapted.temp,
+                    condition: adapted.condition || bgy.desc,
+                    isKloudtech: true,
+                  };
+                }
+              });
+            }
+          });
+        }
+      } catch (e) {
+        logger.warn("KloudTech telemetry fetch error:", e);
+      }
+
+      // 2. Fetch real-time weather for all remaining barangays
+      const pendingBarangays = PALAYAN_BARANGAYS.filter((bgy) => !results[bgy.name]);
+      if (pendingBarangays.length > 0) {
+        const chunks = [];
+        const chunkSize = 5;
+        for (let i = 0; i < pendingBarangays.length; i += chunkSize) {
+          chunks.push(pendingBarangays.slice(i, i + chunkSize));
+        }
+
+        for (const chunk of chunks) {
+          await Promise.all(
+            chunk.map(async (bgy) => {
+              try {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${bgy.lat}&longitude=${bgy.lng}&current=temperature_2m,weather_code,is_day`;
+                const res = await fetch(url);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data?.current) {
+                  const t = Math.round(data.current.temperature_2m);
+                  const isDay = data.current.is_day !== 0;
+                  const info = getWeatherInfo(data.current.weather_code, t, t + 2, t - 4, isDay);
+                  results[bgy.name] = {
+                    temp: t,
+                    condition: info.msg || bgy.desc,
+                  };
+                }
+              } catch (e) {
+                logger.error("Failed to fetch for", bgy.name);
+              }
+            })
+          );
+        }
+      }
+
+      if (isMounted) {
+        setBarangayWeathers(results);
+      }
+    };
+    
+    fetchAllBarangaysWeather();
+    return () => { isMounted = false; };
+  }, [refreshTrigger]);
+
+  const heroBgUrl = useMemo(() => {
+    if (isLoadingWeather || !weatherInfo.icon) {
+      return null;
+    }
+    const icon = weatherInfo.icon;
+    if (icon === "Sun" || icon === "CloudSun") {
+      return isDark ? "/sunny_dark.webp" : "/sunny.webp";
+    }
+    if (icon === "CloudRain" || icon === "CloudLightning") {
+      return isDark ? "/rainy_dark.webp" : "/rainy.webp";
+    }
+    if (icon === "Moon") {
+      return "/night.webp";
+    }
+    return isDark ? "/stormy_dark.webp" : "/stormy_clouds.webp";
+  }, [weatherInfo.icon, isDark, isLoadingWeather]);
+
+  const getHeroBackground = () => `url('${heroBgUrl}')`;
+
+  // Preload weather background images for immediate smooth cross-fading in both themes
+  useEffect(() => {
+    [
+      "/sunny.webp",
+      "/rainy.webp",
+      "/night.webp",
+      "/stormy_clouds.webp",
+      "/sunny_dark.webp",
+      "/rainy_dark.webp",
+      "/stormy_dark.webp",
+      "/wind_radar.webp",
+      "/wind_radar_light.webp",
+    ].forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
+
+  const userProfile = getUserProfile(session?.user);
+  const firstName = userProfile?.firstName;
   const displayName = firstName || "Palayano";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -126,110 +541,245 @@ export default function HomeScreen({
     day: "numeric",
   });
 
-  // Heat Index Label based on temperature
-  const heatIndex =
-    currentTemp >= 42 ? "Extreme Danger" :
-    currentTemp >= 38 ? "Danger" :
-    currentTemp >= 33 ? "Extreme Caution" :
-    currentTemp >= 27 ? "Caution" : "Normal";
+  // Heat Index Label based on physical sensor reading or calculated index
+  const heatIndex = useMemo(() => {
+    const val =
+      currentHeatIndex !== null && currentHeatIndex !== undefined
+        ? currentHeatIndex
+        : currentTemp >= 38 ? 45 : currentTemp >= 33 ? 38 : 28;
+    if (val >= 52) return "Extreme Danger";
+    if (val >= 42) return "Danger";
+    if (val >= 33) return "Extreme Caution";
+    if (val >= 27) return "Caution";
+    return "Normal";
+  }, [currentHeatIndex, currentTemp]);
+
+  // Filter Palayan barangays by search input
+  const filteredBarangays = useMemo(() => {
+    if (!searchQuery.trim()) return PALAYAN_BARANGAYS;
+    return PALAYAN_BARANGAYS.filter((b) =>
+      b.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+    );
+  }, [searchQuery]);
+
+  const handleSelectBarangay = (bgy) => {
+    setSelectedBarangay(bgy.name);
+    setActiveCoords({ lat: bgy.lat, lng: bgy.lng });
+    setIsLoadingWeather(true);
+  };
+
+  const handleSearchSubmit = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (filteredBarangays.length > 0) {
+      handleSelectBarangay(filteredBarangays[0]);
+      setShowSearchInput(false);
+      setSearchQuery("");
+    }
+  };
 
   useEffect(() => {
-    const lat = userLocation?.lat || 15.5398;
-    const lng = userLocation?.lng || 121.0827;
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,weather_code,is_day&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`;
+    const lat = activeCoords?.lat || userLocation?.lat || 15.5490;
+    const lng = activeCoords?.lng || userLocation?.lng || 121.0875;
 
-    fetch(url)
-      .then((r) => r.json())
-      .then((data) => {
-        if (!data) return;
+    // Atmospheric & forecast data fetch
+    const fetchOpenMeteo = (isKloudtechLive = false, liveTemp = null, liveIcon = null) => {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code,is_day,uv_index&hourly=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,uv_index,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max&past_days=1&timezone=Asia%2FManila`;
 
-        // 1. Current conditions
-        if (data.current) {
-          const cur = data.current;
-          const t = Math.round(cur.temperature_2m);
-          const code = cur.weather_code;
-          const isDay = cur.is_day !== 0;
+      fetch(url)
+        .then((r) => r.json())
+        .then((data) => {
+          if (!data) return;
 
-          setCurrentTemp(t);
-          setWindSpeed(Math.round(cur.wind_speed_10m) || 12);
-          if (cur.relative_humidity_2m !== undefined) {
-            setHumidity(Math.round(cur.relative_humidity_2m));
+          if (data.current && !isKloudtechLive) {
+            const cur = data.current;
+            const t = Math.round(cur.temperature_2m);
+            const code = cur.weather_code;
+            const isDay = cur.is_day !== 0;
+            setIsDayTime(isDay);
+
+            setCurrentTemp(t);
+            setWindSpeed(Math.round(cur.wind_speed_10m * 10) / 10 || 0.5);
+            if (cur.wind_direction_10m !== undefined) {
+              setWindDirection(getWindDirectionText(cur.wind_direction_10m));
+            }
+            if (cur.relative_humidity_2m !== undefined) {
+              setHumidity(Math.round(cur.relative_humidity_2m));
+            }
+            if (cur.surface_pressure !== undefined) {
+              setPressure(`${Math.round(cur.surface_pressure * 10) / 10} hPa`);
+            }
+            if (cur.uv_index !== undefined) {
+              setUvIndex(cur.uv_index);
+            }
+
+            const hi = calculateHeatIndex(cur.temperature_2m, cur.relative_humidity_2m);
+            setCurrentHeatIndex(hi);
+
+            const todayHigh = data.daily?.temperature_2m_max?.[0] !== undefined
+              ? Math.round(data.daily.temperature_2m_max[0])
+              : t + 2;
+            const todayLow = data.daily?.temperature_2m_min?.[0] !== undefined
+              ? Math.round(data.daily.temperature_2m_min[0])
+              : t - 4;
+
+            if (data.daily?.precipitation_probability_max?.[0] !== undefined) {
+              setRainChance(Math.round(data.daily.precipitation_probability_max[0]));
+            }
+
+            setWeatherInfo(getWeatherInfo(code, t, todayHigh, todayLow, isDay));
+            setIsLoadingWeather(false);
           }
-          if (cur.surface_pressure !== undefined) {
-            setPressure(`${Math.round(cur.surface_pressure)} hPa`);
+
+          if (data.hourly?.time && data.hourly?.temperature_2m) {
+            const currentTimeISO = data.current?.time || new Date().toISOString();
+            const currentHourPrefix = currentTimeISO.slice(0, 13);
+            let startIdx = data.hourly.time.findIndex((timeStr) => timeStr.startsWith(currentHourPrefix));
+            if (startIdx === -1) {
+              startIdx = data.hourly.time.length > 24 ? 24 : 0;
+            }
+
+            const slots = [];
+            for (let i = 0; i < 8; i++) {
+              const slotIdx = startIdx + i;
+              if (slotIdx >= data.hourly.time.length) break;
+              const timeStr = data.hourly.time[slotIdx];
+              const hourNum = parseInt(timeStr.slice(11, 13), 10);
+              const ampm = hourNum >= 12 ? "PM" : "AM";
+              const displayHour = hourNum % 12 === 0 ? 12 : hourNum % 12;
+              const isSlotDay = hourNum >= 6 && hourNum < 18;
+              const slotCode = data.hourly.weather_code?.[slotIdx] ?? 0;
+              const rainProb = data.hourly.precipitation_probability?.[slotIdx];
+
+              slots.push({
+                time: i === 0 ? "Now" : `${displayHour} ${ampm}`,
+                temp: i === 0 && liveTemp !== null ? liveTemp : Math.round(data.hourly.temperature_2m[slotIdx]),
+                icon: i === 0 && liveIcon ? liveIcon : getWeatherIcon(slotCode, isSlotDay),
+                rain: rainProb && rainProb > 20 ? `${Math.round(rainProb)}%` : null,
+                active: i === 0,
+              });
+            }
+            if (slots.length > 0) setHourlyForecast(slots);
+
+            // Construct 24-hour history slice for telemetry charts
+            const historySlice = [];
+            const historyStart = Math.max(0, startIdx - 23);
+            for (let i = historyStart; i <= startIdx; i++) {
+              const tStr = data.hourly.time[i];
+              const dObj = new Date(tStr);
+              const hourNum = dObj.getHours();
+              const dayNum = dObj.getDate();
+              const monthShort = dObj.toLocaleString("en-US", { month: "short" });
+              const timeLabel = `${dayNum} ${monthShort} ${String(hourNum).padStart(2, "0")}:00`;
+              const hourTemp = Math.round(data.hourly.temperature_2m[i] * 10) / 10;
+              const hourRh = Math.round(data.hourly.relative_humidity_2m?.[i] || 75);
+              const hourHI = calculateHeatIndex(hourTemp, hourRh);
+              const hourPres = Math.round((data.hourly.surface_pressure?.[i] || 1010) * 10) / 10;
+              const hourWind = Math.round((data.hourly.wind_speed_10m?.[i] || 5) * 10) / 10;
+              const hourUv = data.hourly.uv_index?.[i] !== undefined ? data.hourly.uv_index[i] : 0;
+
+              historySlice.push({
+                time: timeLabel,
+                temp: hourTemp,
+                heatIndex: hourHI,
+                humidity: hourRh,
+                pressure: hourPres,
+                wind: hourWind,
+                uv: hourUv,
+              });
+            }
+            if (historySlice.length > 0) {
+              setLiveHistory(historySlice);
+            }
           }
 
-          const todayHigh = data.daily?.temperature_2m_max?.[0] !== undefined
-            ? Math.round(data.daily.temperature_2m_max[0])
-            : t + 2;
-          const todayLow = data.daily?.temperature_2m_min?.[0] !== undefined
-            ? Math.round(data.daily.temperature_2m_min[0])
-            : t - 4;
+          if (data.daily?.time && data.daily?.weather_code) {
+            const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            const days = data.daily.time.slice(0, 7).map((dStr, idx) => {
+              const [year, month, day] = dStr.split("-").map(Number);
+              const dateObj = new Date(year, month - 1, day);
+              const dayName = dayNames[dateObj.getDay()];
+              const code = data.daily.weather_code[idx];
+              const iconName = getWeatherIcon(code, true);
+              const rainProb = data.daily.precipitation_probability_max?.[idx];
 
-          setWeatherInfo(getWeatherInfo(code, t, todayHigh, todayLow, isDay));
-        }
-
-        // 2. Next 8 Hourly Forecast Slots
-        if (data.hourly?.time && data.hourly?.temperature_2m) {
-          const currentTimeISO = data.current?.time || new Date().toISOString();
-          const currentHourPrefix = currentTimeISO.slice(0, 13);
-          let startIdx = data.hourly.time.findIndex((timeStr) => timeStr.startsWith(currentHourPrefix));
-          if (startIdx === -1) {
-            startIdx = new Date().getHours();
-          }
-
-          const slots = [];
-          for (let i = 0; i < 8; i++) {
-            const slotIdx = startIdx + i;
-            if (slotIdx >= data.hourly.time.length) break;
-            const timeStr = data.hourly.time[slotIdx];
-            const hourNum = parseInt(timeStr.slice(11, 13), 10);
-            const ampm = hourNum >= 12 ? "PM" : "AM";
-            const displayHour = hourNum % 12 === 0 ? 12 : hourNum % 12;
-            const isSlotDay = hourNum >= 6 && hourNum < 18;
-            const slotCode = data.hourly.weather_code?.[slotIdx] ?? 0;
-            const rainProb = data.hourly.precipitation_probability?.[slotIdx];
-
-            slots.push({
-              time: i === 0 ? "Now" : `${displayHour} ${ampm}`,
-              temp: Math.round(data.hourly.temperature_2m[slotIdx]),
-              icon: getWeatherIcon(slotCode, isSlotDay),
-              rain: rainProb && rainProb > 20 ? `${Math.round(rainProb)}%` : null,
-              active: i === 0,
+              return {
+                day: idx === 0 ? "Today" : dayName,
+                dayShort: dayName,
+                icon: iconName,
+                iconColor: getWeatherIconColor(iconName),
+                high: Math.round(data.daily.temperature_2m_max[idx]),
+                low: Math.round(data.daily.temperature_2m_min[idx]),
+                rain: rainProb && rainProb > 20 ? `${Math.round(rainProb)}%` : null,
+                isToday: idx === 0,
+              };
             });
+            if (days.length > 0) setWeeklyForecast(days);
           }
-          if (slots.length > 0) setHourlyForecast(slots);
-        }
+        })
+        .catch((err) => {
+          logger.warn("Forecast fetch error:", err);
+          setIsLoadingWeather(false);
+        })
+        .finally(() => {
+          setIsLoadingWeather(false);
+        });
+    };
 
-        // 3. 7-Day Weekly Forecast
-        if (data.daily?.time && data.daily?.weather_code) {
-          const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-          const days = data.daily.time.slice(0, 7).map((dStr, idx) => {
-            const [year, month, day] = dStr.split("-").map(Number);
-            const dateObj = new Date(year, month - 1, day);
-            const dayName = dayNames[dateObj.getDay()];
-            const code = data.daily.weather_code[idx];
-            const iconName = getWeatherIcon(code, true);
-            const rainProb = data.daily.precipitation_probability_max?.[idx];
-
-            return {
-              day: idx === 0 ? "Today" : dayName,
-              dayShort: dayName,
-              icon: iconName,
-              iconColor: getWeatherIconColor(iconName),
-              high: Math.round(data.daily.temperature_2m_max[idx]),
-              low: Math.round(data.daily.temperature_2m_min[idx]),
-              rain: rainProb && rainProb > 20 ? `${Math.round(rainProb)}%` : null,
-              isToday: idx === 0,
-            };
+    // Primary: Check KloudTech SEA IoT Telemetry first
+    const fetchWeather = async () => {
+      let isKloudtechLive = false;
+      try {
+        const ktRes = await fetchKloudtechDashboard();
+        if (ktRes.success && Array.isArray(ktRes.data) && ktRes.data.length > 0) {
+          const match = ktRes.data.find((item) => {
+            const stName = (item.station?.stationName || item.station?.city || "").toLowerCase();
+            const stAddress = (item.station?.address || "").toLowerCase();
+            const bgyList = item.station?.barangays || [];
+            const selLower = selectedBarangay.toLowerCase();
+            const selWords = selLower.split(" ");
+            return (
+              stName.includes(selLower) ||
+              stAddress.includes(selLower) ||
+              bgyList.includes(selectedBarangay) ||
+              selWords.some((w) => w.length >= 4 && (stName.includes(w) || stAddress.includes(w)))
+            );
           });
-          if (days.length > 0) setWeeklyForecast(days);
+
+          if (match && match.telemetry) {
+            const adapted = adaptKloudtechTelemetry(match.telemetry);
+            if (adapted.temp !== null) setCurrentTemp(Math.round(Number(adapted.temp)));
+            if (adapted.humidity !== null) setHumidity(Math.round(Number(adapted.humidity)));
+            if (adapted.windSpeed !== null) setWindSpeed(Math.round(Number(adapted.windSpeed) * 10) / 10);
+            if (adapted.windDirection) setWindDirection(getWindDirectionText(adapted.windDirection));
+            if (adapted.pressure) {
+              const pNum = parseFloat(adapted.pressure);
+              setPressure(!isNaN(pNum) ? `${pNum.toFixed(1)} hPa` : adapted.pressure);
+            }
+            if (adapted.heatIndex !== null) setCurrentHeatIndex(Math.round(Number(adapted.heatIndex) * 10) / 10);
+            if (adapted.precip === 0) setRainChance(0);
+
+            setWeatherInfo({
+              msg: adapted.condition,
+              sub: `KloudTech IoT • ${match.station?.stationName || "Live Sensor"}`,
+              icon: adapted.icon,
+              high: (adapted.temp || 30) + 2,
+              low: (adapted.temp || 30) - 4,
+            });
+            setIsLoadingWeather(false);
+            isKloudtechLive = true;
+            fetchOpenMeteo(true, adapted.temp, adapted.icon);
+            return;
+          }
         }
-      })
-      .catch((err) => {
-        console.warn("Open-Meteo forecast fetch error:", err);
-      });
-  }, [userLocation]);
+      } catch (err) {
+        logger.warn("KloudTech telemetry error:", err);
+      }
+
+      fetchOpenMeteo(false);
+    };
+
+    fetchWeather();
+  }, [userLocation, activeCoords, selectedBarangay, refreshTrigger]);
 
   // Fetch published advisories
   useEffect(() => {
@@ -246,15 +796,16 @@ export default function HomeScreen({
           setAdvisories(data);
         }
       } catch (err) {
-        console.error("Failed to fetch advisories:", err);
+        logger.error("Failed to fetch advisories:", err);
       }
     };
 
     fetchAdvisories();
 
     // Subscribe to real-time updates
+    const channelId = `public_advisories_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const subscription = supabase
-      .channel("public_advisories")
+      .channel(channelId)
       .on(
         "postgres_changes",
         {
@@ -270,7 +821,7 @@ export default function HomeScreen({
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      supabase.removeChannel(subscription);
     };
   }, []);
 
@@ -312,19 +863,70 @@ export default function HomeScreen({
     }
   };
 
+  const formattedRecordedAt = useMemo(() => {
+    const now = new Date();
+    return (
+      now.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }) +
+      " " +
+      now.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+    );
+  }, [currentTemp, humidity, pressure]);
+
+  const liveStationData = useMemo(() => {
+    return {
+      recordedAt: formattedRecordedAt,
+      heatIndex: currentHeatIndex,
+      temp: currentTemp,
+      humidity: humidity,
+      pressure: String(pressure).includes("hPa") ? pressure : `${parseFloat(pressure) || pressure} hPa`,
+      wind: `${Number(windSpeed || 0).toFixed(1)} kph ${windDirection?.charAt(0) || "N"}`,
+      uv: uvIndex,
+      light: isDayTime ? "52400.0 lux" : "0.0 lux",
+      precip: `${rainChance > 0 ? (rainChance * 0.1).toFixed(1) : "0.0"} mm`,
+      history: liveHistory,
+      isLive: true,
+    };
+  }, [
+    formattedRecordedAt,
+    currentHeatIndex,
+    currentTemp,
+    humidity,
+    pressure,
+    windSpeed,
+    windDirection,
+    uvIndex,
+    isDayTime,
+    rainChance,
+    liveHistory,
+  ]);
+
   return (
-    <div className="home-screen-root hide-scroll">
+    <div ref={rootRef} className="home-screen-root hide-scroll">
       {/* =========================================================================
           DESKTOP DASHBOARD (>= 1024px) - PIXEL PERFECT MATCH TO REFERENCE IMAGE
           ========================================================================= */}
       <div className="desktop-view-container">
         {/* TOP HEADER BAR */}
-        <header className="desktop-top-header">
+        <header
+          ref={headerRef}
+          className={`desktop-top-header ${isScrolled ? "scrolled-header" : ""}`}
+        >
+          {/* Frosted glass backdrop (smoothly activates on scroll) */}
+          <div className="desktop-header-backdrop" aria-hidden="true" />
+
           {/* Left: Location & Date */}
           <div className="desktop-header-location">
             <div className="desktop-loc-row">
               <MapPin size={17} strokeWidth={2.4} className="desktop-loc-pin" />
-              <span className="desktop-loc-city">Palayan City, Nueva Ecija, Philippines</span>
+              <span className="desktop-loc-city">Brgy. {selectedBarangay}, Palayan City</span>
             </div>
             <div className="desktop-loc-date">{formattedDate}</div>
           </div>
@@ -335,29 +937,38 @@ export default function HomeScreen({
             <div className="desktop-search-wrapper">
               <AnimatePresence>
                 {showSearchInput && (
-                  <motion.input
-                    initial={{ width: 0, opacity: 0 }}
-                    animate={{ width: 220, opacity: 1 }}
-                    exit={{ width: 0, opacity: 0 }}
-                    transition={{ duration: 0.25 }}
-                    type="text"
-                    placeholder="Search city or barangay..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="desktop-search-input"
-                    autoFocus
-                  />
+                  <form onSubmit={handleSearchSubmit} style={{ display: "inline-block" }}>
+                    <motion.input
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: 220, opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      type="text"
+                      placeholder="Search Palayan barangay..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="desktop-search-input"
+                      autoFocus
+                    />
+                  </form>
                 )}
               </AnimatePresence>
               <button
                 className="desktop-circle-btn"
-                onClick={() => setShowSearchInput((prev) => !prev)}
+                onClick={() => {
+                  if (showSearchInput && searchQuery.trim()) {
+                    handleSearchSubmit();
+                  } else {
+                    setShowSearchInput((prev) => !prev);
+                  }
+                }}
                 title="Search Location"
                 aria-label="Search"
               >
                 <Search size={18} strokeWidth={2.2} />
               </button>
             </div>
+
 
             {/* Download / Report Action Pill Button */}
             <motion.button
@@ -386,34 +997,115 @@ export default function HomeScreen({
           </div>
         </header>
 
-        {/* 2-COLUMN MAIN DASHBOARD GRID */}
-        <main className="desktop-main-grid">
+        <AnimatePresence mode="wait" custom={slideDirection}>
+          {homePage === 1 ? (
+            <motion.div
+              key="desktop-slide-1"
+              custom={slideDirection}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
+              {/* 2-COLUMN MAIN DASHBOARD GRID */}
+              <main className="desktop-main-grid">
           {/* ──── LEFT COLUMN (~62%) ──── */}
           <div className="desktop-left-column">
             {/* 1. HERO WEATHER CARD */}
-            <div className="desktop-hero-card">
-              {/* Left Side: Large Temperature & Conditions */}
-              <div className="desktop-hero-info">
-                <div className="desktop-hero-temp">{currentTemp}°</div>
-                <div className="desktop-hero-condition">{weatherInfo.msg}</div>
-                <div className="desktop-hero-subcondition">{weatherInfo.sub}</div>
-
-                <div className="desktop-hero-pills">
-                  <span className="desktop-pill">H {weatherInfo.high}°</span>
-                  <span className="desktop-pill">L {weatherInfo.low}°</span>
+            <motion.div 
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-20px" }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="desktop-hero-card"
+              style={{
+                backgroundColor: "#161922",
+              }}
+            >
+              {isLoadingWeather ? (
+                <div className="desktop-hero-loading-skeleton">
+                  <div className="desktop-hero-info">
+                    <div className="skeleton-box" style={{ width: 140, height: 84, borderRadius: 18, marginBottom: 14 }} />
+                    <div className="skeleton-box" style={{ width: 220, height: 26, borderRadius: 8, marginBottom: 8 }} />
+                    <div className="skeleton-box" style={{ width: 280, height: 16, borderRadius: 6, marginBottom: 20 }} />
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <div className="skeleton-box" style={{ width: 70, height: 28, borderRadius: 999 }} />
+                      <div className="skeleton-box" style={{ width: 70, height: 28, borderRadius: 999 }} />
+                    </div>
+                  </div>
+                  <div className="desktop-hero-glass-card" style={{ opacity: 0.85 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--accent-orange, #f97316)", marginBottom: 8 }}>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>Syncing live microclimate...</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 12 }}>
+                      Fetching live sensor metrics & forecast for Brgy. {selectedBarangay}...
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* Dynamic Animated Background Transition */}
+                  {heroBgUrl && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        overflow: "hidden",
+                        zIndex: 0,
+                        pointerEvents: "none",
+                      }}
+                    >
+                      <AnimatePresence initial={false}>
+                        <motion.div
+                          key={heroBgUrl}
+                          initial={{ opacity: 0, scale: 1.04 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.98 }}
+                          transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            backgroundImage: `url('${heroBgUrl}')`,
+                            backgroundPosition: "center 22%",
+                            backgroundSize: "cover",
+                            backgroundRepeat: "no-repeat",
+                          }}
+                        />
+                      </AnimatePresence>
+                    </div>
+                  )}
+                  {/* Left Side: Large Temperature & Conditions */}
+                  <div className="desktop-hero-info">
+                    <div className="desktop-hero-temp">{currentTemp != null ? `${currentTemp}°` : "--"}</div>
+                    <div className="desktop-hero-condition">{weatherInfo.msg}</div>
+                    <div className="desktop-hero-subcondition">{weatherInfo.sub}</div>
 
-              {/* Right Side: Frosted Glass Floating Card */}
-              <div className="desktop-hero-glass-card">
-                <p>
-                  With real time data and advanced technology, we provide reliable forecasts for any location around the world.
-                </p>
-              </div>
-            </div>
+                    <div className="desktop-hero-pills">
+                      <span className="desktop-pill">H {weatherInfo.high != null ? `${weatherInfo.high}°` : "--"}</span>
+                      <span className="desktop-pill">L {weatherInfo.low != null ? `${weatherInfo.low}°` : "--"}</span>
+                    </div>
+                  </div>
+
+                  {/* Right Side: Frosted Glass Floating Card */}
+                  <div className="desktop-hero-glass-card">
+                    <p>
+                      With real time data and advanced technology, we provide reliable forecasts for any location around the world.
+                    </p>
+                  </div>
+                </>
+              )}
+            </motion.div>
 
             {/* 2. HOURLY FORECAST ROW */}
-            <div className="desktop-hourly-card">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-20px" }}
+              transition={{ duration: 0.35, delay: 0.04, ease: [0.16, 1, 0.3, 1] }}
+              className="desktop-hourly-card"
+            >
               <div className="desktop-hourly-grid">
                 {hourlyForecast.map((slot, idx) => {
                   const SlotIcon = WEATHER_ICONS[slot.icon] || Cloud;
@@ -434,10 +1126,16 @@ export default function HomeScreen({
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
 
             {/* 3. 7-DAY FORECAST GRID */}
-            <div className="desktop-weekly-card">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-20px" }}
+              transition={{ duration: 0.35, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+              className="desktop-weekly-card"
+            >
               <div className="desktop-weekly-grid">
                 {weeklyForecast.map((slot, idx) => {
                   const SlotIcon = WEATHER_ICONS[slot.icon] || Sun;
@@ -460,162 +1158,182 @@ export default function HomeScreen({
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* ──── RIGHT COLUMN (~38%) ──── */}
           <div className="desktop-right-column">
             {/* 1. LIVE CONDITIONS CARD */}
-            <div className="desktop-card desktop-live-conditions-card">
+            <LiveConditionsCard
+              hourlyForecast={hourlyForecast}
+              currentTemp={currentTemp}
+              currentHeatIndex={currentHeatIndex}
+              heatIndex={heatIndex}
+              rainChance={rainChance}
+              humidity={humidity}
+              windSpeed={windSpeed}
+              pressure={pressure}
+              onOpenModal={onOpenModal}
+            />
+
+            {/* 2. PALAYAN BARANGAYS CARD */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-20px" }}
+              transition={{ duration: 0.35, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+              className="desktop-card desktop-recent-card"
+            >
               <div className="desktop-card-header">
-                <div className="desktop-card-title-row">
-                  <span className="desktop-card-title">Live Conditions</span>
-                  <ChevronRight size={17} className="desktop-chevron" />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className="desktop-card-title">Palayan Barangays</span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 500,
+                      padding: "2px 7px",
+                      borderRadius: 8,
+                      background: "rgba(249, 115, 22, 0.12)",
+                      color: "var(--accent-orange)",
+                    }}
+                  >
+                    {filteredBarangays.length} Areas
+                  </span>
                 </div>
-              </div>
-
-              {/* Sub header: Rate & Dangerous Tag */}
-              <div className="desktop-conditions-meta">
-                <div className="desktop-rate-val">
-                  <ArrowUp size={14} strokeWidth={2.6} />
-                  <span>23.8%</span>
-                </div>
-                <div className="desktop-danger-badge">{heatIndex}</div>
-              </div>
-
-              {/* Smooth Gradient Wave with Glowing Marker */}
-              <div className="desktop-wave-container">
-                <svg
-                  viewBox="0 0 320 80"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="desktop-wave-svg"
-                >
-                  <defs>
-                    <linearGradient id="liveWaveGrad" x1="0" y1="0" x2="320" y2="0" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor="#38bdf8" />
-                      <stop offset="50%" stopColor="#a855f7" />
-                      <stop offset="85%" stopColor="#f97316" />
-                      <stop offset="100%" stopColor="#ef4444" />
-                    </linearGradient>
-                    <filter id="glowFilter" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="3" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-
-                  {/* Flowing curve line matching screenshot */}
-                  <path
-                    d="M 6 62 C 60 62, 100 24, 160 30 C 215 36, 245 42, 275 22 C 290 12, 305 24, 316 28"
-                    stroke="url(#liveWaveGrad)"
-                    strokeWidth="3.2"
-                    strokeLinecap="round"
-                  />
-
-                  {/* Highlight marker dot on the wave */}
-                  <circle
-                    cx="275"
-                    cy="22"
-                    r="5.5"
-                    fill="#ffffff"
-                    stroke="#1e1e24"
-                    strokeWidth="2.5"
-                    filter="url(#glowFilter)"
-                  />
-                </svg>
-              </div>
-
-              {/* Bottom Sensor Stats (Humidity, Wind, Pressure) */}
-              <div className="desktop-conditions-stats">
-                <div className="desktop-stat-item">
-                  <div className="desktop-stat-label">
-                    <Droplets size={14} />
-                    <span>{humidity}%</span>
-                  </div>
-                  <div className="desktop-stat-sub">Humidity</div>
-                </div>
-
-                <div className="desktop-stat-item">
-                  <div className="desktop-stat-label">
-                    <Compass size={14} />
-                    <span>{windSpeed} km/h</span>
-                  </div>
-                  <div className="desktop-stat-sub">Wind</div>
-                </div>
-
-                <div className="desktop-stat-item">
-                  <div className="desktop-stat-label">
-                    <Gauge size={14} />
-                    <span>{pressure}</span>
-                  </div>
-                  <div className="desktop-stat-sub">Pressure</div>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. RECENTLY SEARCHED / RECENT REPORTS */}
-            <div className="desktop-card desktop-recent-card">
-              <div className="desktop-card-header">
-                <span className="desktop-card-title">Recently Searched</span>
                 <button
                   className="desktop-see-all-btn"
                   onClick={() => setActiveScreen("maps")}
+                  title="View barangays on map"
                 >
-                  See All &gt;
+                  Map &gt;
                 </button>
               </div>
 
-              <div className="desktop-recent-list">
-                {/* Item 1 */}
-                <div
-                  className="desktop-recent-item"
-                  onClick={() => setActiveScreen("maps")}
-                >
-                  <div className="desktop-recent-left">
-                    <div className="desktop-recent-icon-wrap">
-                      <CloudSun size={20} color="#eab308" strokeWidth={1.8} />
+              <div
+                className="desktop-recent-list hide-scroll"
+                style={{
+                  maxHeight: 185,
+                  overflowY: "auto",
+                  paddingRight: 2,
+                  overscrollBehavior: "contain",
+                }}
+                onWheel={(e) => e.stopPropagation()}
+              >
+                {filteredBarangays.map((bgy) => {
+                  const isCurrent = selectedBarangay.toLowerCase() === bgy.name.toLowerCase();
+                  return (
+                    <div
+                      key={bgy.name}
+                      className="desktop-recent-item"
+                      onClick={() => handleSelectBarangay(bgy)}
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: 14,
+                        cursor: "pointer",
+                        background: isCurrent
+                          ? isDark
+                            ? "rgba(249, 115, 22, 0.16)"
+                            : "rgba(249, 115, 22, 0.08)"
+                          : "transparent",
+                        border: isCurrent
+                          ? "1px solid rgba(249, 115, 22, 0.3)"
+                          : "1px solid transparent",
+                        transition: "all 0.2s ease",
+                      }}
+                      title={`Select Brgy. ${bgy.name}`}
+                    >
+                      <div className="desktop-recent-left">
+                        <div
+                          className="desktop-recent-icon-wrap"
+                          style={{
+                            background: isCurrent
+                              ? "var(--accent-orange)"
+                              : isDark
+                              ? "rgba(255, 255, 255, 0.06)"
+                              : "rgba(0, 0, 0, 0.04)",
+                            color: isCurrent ? "#ffffff" : "var(--text-secondary)",
+                          }}
+                        >
+                          <MapPin size={18} strokeWidth={2.2} />
+                        </div>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span className="desktop-recent-city">Brgy. {bgy.name}</span>
+                            {isCurrent && (
+                              <span
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 500,
+                                  color: "var(--accent-orange)",
+                                  background: "rgba(249, 115, 22, 0.15)",
+                                  padding: "1px 6px",
+                                  borderRadius: 6,
+                                  }}
+                              >
+                                Active
+                              </span>
+                            )}
+                          </div>
+                          <div className="desktop-recent-condition">
+                            {barangayWeathers[bgy.name]?.condition || bgy.desc}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="desktop-recent-temp">
+                        {barangayWeathers[bgy.name]?.temp !== undefined 
+                          ? `${barangayWeathers[bgy.name].temp}°` 
+                          : `${currentTemp}°`}
+                      </div>
                     </div>
-                    <div>
-                      <div className="desktop-recent-city">Liverpool, UK</div>
-                      <div className="desktop-recent-condition">Partly Cloudy</div>
-                    </div>
-                  </div>
-                  <div className="desktop-recent-temp">16°</div>
-                </div>
-
-                {/* Item 2 */}
-                <div
-                  className="desktop-recent-item"
-                  onClick={() => setActiveScreen("maps")}
-                >
-                  <div className="desktop-recent-left">
-                    <div className="desktop-recent-icon-wrap">
-                      <CloudRain size={20} color="#60a5fa" strokeWidth={1.8} />
-                    </div>
-                    <div>
-                      <div className="desktop-recent-city">Palermo, Italy</div>
-                      <div className="desktop-recent-condition">Rain/Thunder</div>
-                    </div>
-                  </div>
-                  <div className="desktop-recent-temp">-2°</div>
-                </div>
+                  );
+                })}
               </div>
-            </div>
+            </motion.div>
 
             {/* 3. WIND MAP / RADAR CARD */}
-            <div
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-20px" }}
+              transition={{ duration: 0.35, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
               className="desktop-card desktop-wind-card"
               onClick={() => setActiveScreen("maps")}
               title="Click to open interactive map"
             >
+              {/* Dynamic Animated Background Transition for Wind Radar */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  overflow: "hidden",
+                  zIndex: 0,
+                  pointerEvents: "none",
+                }}
+              >
+                <AnimatePresence initial={false}>
+                  <motion.div
+                    key={isDark ? "wind-dark" : "wind-light"}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.6, ease: "easeInOut" }}
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      backgroundImage: isDark ? "url('/wind_radar.webp')" : "url('/wind_radar_light.webp')",
+                      backgroundPosition: "center",
+                      backgroundSize: "cover",
+                      backgroundRepeat: "no-repeat",
+                    }}
+                  />
+                </AnimatePresence>
+              </div>
+
               <div className="desktop-wind-overlay">
                 <div className="desktop-wind-content">
-                  <div className="desktop-wind-title">Wind Map</div>
-                  <div className="desktop-wind-speed">{windSpeed} km/h</div>
-                  <div className="desktop-wind-direction">Northwest</div>
+                  <div className="desktop-wind-title">Wind & Atmosphere</div>
+                  <div className="desktop-wind-speed">{Number(windSpeed || 0).toFixed(1)} km/h</div>
+                  <div className="desktop-wind-direction">{windDirection}</div>
                 </div>
 
                 {/* Circular Pin Action Button */}
@@ -623,9 +1341,70 @@ export default function HomeScreen({
                   <MapPin size={20} strokeWidth={2.4} />
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </main>
+
+              {/* Minimal Slide Indicator */}
+              <div
+                className="slide-scroll-indicator"
+                onClick={() => navigateToSlide(2, "down")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: "20px 0 28px",
+                  color: "var(--text-muted)",
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "color 0.2s ease",
+                  userSelect: "none",
+                }}
+              >
+                <Activity size={14} color="var(--accent-orange)" strokeWidth={2.4} />
+                <span>Scroll down for Slide 2: Station Telemetry</span>
+                <ChevronDown size={14} strokeWidth={2.4} />
+              </div>
+            </motion.div>
+          ) : (
+            /* Page 2: Dedicated Station Telemetry Dashboard */
+            <motion.div
+              key="desktop-slide-2"
+              custom={slideDirection}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              className="desktop-page-two-container"
+            >
+              <LazyKloudtechDashboard isDark={isDark} liveData={liveStationData} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Floating Scroll-to-Top Command Button */}
+        <AnimatePresence>
+          {isScrolled && (
+            <motion.button
+              initial={{ opacity: 0, y: 16, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.9 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              onClick={() => {
+                const el = rootRef.current?.closest(".citizen-screen-view") || rootRef.current;
+                el?.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="desktop-scroll-top-btn"
+              title="Scroll back to top"
+            >
+              <ArrowUp size={15} strokeWidth={2.4} />
+              <span>Top</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* =========================================================================
@@ -650,20 +1429,59 @@ export default function HomeScreen({
                 gap: 5,
                 fontSize: 12,
                 color: "var(--text-muted)",
-                fontWeight: 600,
+                fontWeight: 400,
                 marginBottom: 4,
               }}
             >
-              <MapPin size={13} color="var(--text-primary)" strokeWidth={2.2} />
-              <span>Palayan City, Nueva Ecija</span>
+              <MapPin size={13} color="var(--accent-orange)" strokeWidth={2.4} />
+              <span>Brgy. {selectedBarangay}, Palayan City</span>
             </div>
-            <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "var(--text-primary)", letterSpacing: -0.3 }}>
+            <p style={{ margin: 0, fontSize: 18, fontWeight: 500, color: "var(--text-primary)", letterSpacing: -0.3 }}>
               {greeting}, {displayName}!
             </p>
           </div>
 
-          {/* Action Controls: Theme Toggle & Report Button */}
+          {/* Action Controls: Theme Toggle, Admin Button & Report Button */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            {/* Mobile Admin Console Button */}
+            {isUserAdmin && (
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={() => setActiveScreen("admin")}
+                id="home-mobile-admin-btn"
+                title={isUserSuperadmin ? "Superadmin Console" : "Admin Console"}
+                aria-label="Admin Console"
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "50%",
+                  background: isDark ? "rgba(245, 158, 11, 0.18)" : "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.4)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "#f59e0b",
+                  boxShadow: "0 2px 8px rgba(245, 158, 11, 0.18)",
+                  position: "relative",
+                }}
+              >
+                <Shield size={18} strokeWidth={2.4} />
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 2,
+                    right: 2,
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: "#f59e0b",
+                    boxShadow: "0 0 6px #f59e0b",
+                  }}
+                />
+              </motion.button>
+            )}
+
             <motion.button
               whileTap={{ scale: 0.92 }}
               onClick={toggleTheme}
@@ -704,7 +1522,7 @@ export default function HomeScreen({
                 borderRadius: 22,
                 padding: "9px 18px",
                 fontSize: 13,
-                fontWeight: 800,
+                fontWeight: 500,
                 cursor: "pointer",
                 boxShadow: "0 4px 14px var(--accent-glow)",
                 flexShrink: 0,
@@ -717,26 +1535,20 @@ export default function HomeScreen({
           </div>
         </div>
 
-        {/* ── MOBILE HERO WEATHER CARD ── */}
-        <div style={{ padding: "16px 16px 0" }}>
-          <div
-            style={{
-              borderRadius: 28,
-              padding: "26px 24px 22px",
-              background: isDark
-                ? "linear-gradient(150deg, #161619 0%, #0d0d0f 60%, #060607 100%)"
-                : "linear-gradient(150deg, #ffffff 0%, #f4f4f6 60%, #e9eaec 100%)",
-              border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.08)",
-              boxShadow: "var(--shadow-card)",
-              position: "relative",
-              overflow: "hidden",
-              transition: "all 0.25s ease",
-            }}
-          >
-
+        <AnimatePresence mode="wait" custom={slideDirection}>
+          {homePage === 1 ? (
+            <motion.div
+              key="mobile-slide-1"
+              custom={slideDirection}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
         {/* ── OFFICIAL ADVISORIES SECTION ── */}
         {advisories.length > 0 && (
-          <div style={{ padding: "16px 16px 0" }}>
+          <div style={{ padding: "14px 16px 0" }}>
             <div
               style={{
                 background: "var(--bg-card)",
@@ -760,7 +1572,7 @@ export default function HomeScreen({
                     style={{
                       margin: 0,
                       fontSize: 16,
-                      fontWeight: 800,
+                      fontWeight: 500,
                       color: "var(--text-primary)",
                       letterSpacing: -0.2,
                     }}
@@ -847,7 +1659,7 @@ export default function HomeScreen({
                                       background: getCategoryColor(advisory.category) + "20",
                                       color: getCategoryColor(advisory.category),
                                       fontSize: 10,
-                                      fontWeight: 800,
+                                      fontWeight: 500,
                                       textTransform: "uppercase",
                                       letterSpacing: 0.3,
                                     }}
@@ -858,7 +1670,7 @@ export default function HomeScreen({
                                     style={{
                                       fontSize: 10,
                                       color: "var(--text-muted)",
-                                      fontWeight: 600,
+                                      fontWeight: 400,
                                     }}
                                   >
                                     {new Date(advisory.published_at).toLocaleDateString()}
@@ -868,7 +1680,7 @@ export default function HomeScreen({
                                   style={{
                                     margin: "0 0 6px",
                                     fontSize: 14,
-                                    fontWeight: 800,
+                                    fontWeight: 500,
                                     color: "var(--text-primary)",
                                     lineHeight: 1.3,
                                   }}
@@ -883,9 +1695,12 @@ export default function HomeScreen({
                                     lineHeight: 1.5,
                                   }}
                                 >
-                                  {advisory.content.length > 120
-                                    ? advisory.content.substring(0, 120) + "..."
-                                    : advisory.content}
+                                  {/* Sanitize advisory content to prevent XSS */}
+                                  {DOMPurify.sanitize(
+                                    advisory.content.length > 120
+                                      ? advisory.content.substring(0, 120) + "..."
+                                      : advisory.content
+                                  )}
                                 </p>
                               </div>
                             </div>
@@ -899,130 +1714,297 @@ export default function HomeScreen({
             </div>
           </div>
         )}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative", zIndex: 1 }}>
-              <div>
-                <div
-                  style={{
-                    fontSize: 74,
-                    fontWeight: 900,
-                    lineHeight: 1,
-                    letterSpacing: -3.5,
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {currentTemp}°
-                </div>
-                <div style={{ marginTop: 8, fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>
-                  {weatherInfo.msg}
-                </div>
-                <div style={{ marginTop: 4, fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>
-                  Palayan City
-                </div>
 
-                <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-                  <span
-                    style={{
-                      background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)",
-                      border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.08)",
-                      padding: "4px 10px",
-                      borderRadius: 12,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "var(--text-primary)",
-                    }}
-                  >
-                    H {weatherInfo.high}°
-                  </span>
-                  <span
-                    style={{
-                      background: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.03)",
-                      border: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.05)",
-                      padding: "4px 10px",
-                      borderRadius: 12,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "var(--text-muted)",
-                    }}
-                  >
-                    L {weatherInfo.low}°
-                  </span>
-                </div>
-              </div>
-
-              {/* Heat Index Badge */}
-              <div style={{ textAlign: "right" }}>
-                <div
-                  style={{
-                    background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)",
-                    border: isDark ? "1px solid rgba(255, 255, 255, 0.2)" : "1px solid rgba(0, 0, 0, 0.12)",
-                    color: "var(--text-primary)",
-                    padding: "6px 12px",
-                    borderRadius: 14,
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: 0.3,
-                    marginBottom: 8,
-                  }}
-                >
-                  {heatIndex}
-                </div>
-                <div
-                  style={{
-                    background: isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.03)",
-                    border: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.06)",
-                    borderRadius: 14,
-                    padding: "8px 12px",
-                    textAlign: "center",
-                  }}
-                >
-                  <div style={{ fontSize: 9, color: "var(--text-muted)", fontWeight: 800, letterSpacing: 0.5, marginBottom: 4 }}>
-                    HEAT INDEX
-                  </div>
-                  <div style={{ fontSize: 20, fontWeight: 900, color: "var(--text-primary)" }}>
-                    {currentTemp + 6}°C
-                  </div>
-                </div>
-              </div>
+        {/* ── MOBILE PALAYAN BARANGAYS SELECTOR ── */}
+        <div style={{ padding: "14px 16px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, padding: "0 2px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)" }}>Palayan Barangays</span>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 500,
+                  padding: "2px 6px",
+                  borderRadius: 6,
+                  background: "rgba(249, 115, 22, 0.12)",
+                  color: "var(--accent-orange)",
+                }}
+              >
+                19 Areas
+              </span>
             </div>
-
-            {/* Sensor strip */}
-            <div
+            <button
+              onClick={() => setActiveScreen("maps")}
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: 8,
-                marginTop: 20,
-                paddingTop: 16,
-                borderTop: isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.06)",
-                position: "relative",
-                zIndex: 1,
+                background: "none",
+                border: "none",
+                fontSize: 11,
+                fontWeight: 400,
+                color: "var(--accent-orange)",
+                cursor: "pointer",
+                padding: 0,
               }}
             >
-              {[
-                { Icon: Droplets, label: "Humidity", val: `${humidity}%` },
-                { Icon: Wind, label: "Wind", val: `${windSpeed} km/h` },
-                { Icon: Gauge, label: "Pressure", val: pressure },
-              ].map(({ Icon, label, val }) => (
-                <div key={label} style={{ textAlign: "center" }}>
+              Map View ›
+            </button>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              overflowX: "auto",
+              paddingBottom: 4,
+            }}
+            className="hide-scroll"
+          >
+            {PALAYAN_BARANGAYS.map((bgy) => {
+              const isCurrent = selectedBarangay.toLowerCase() === bgy.name.toLowerCase();
+              return (
+                <button
+                  key={bgy.name}
+                  onClick={() => handleSelectBarangay(bgy)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "7px 13px",
+                    borderRadius: 20,
+                    whiteSpace: "nowrap",
+                    fontSize: 12,
+                    fontWeight: isCurrent ? 500 : 400,
+                    cursor: "pointer",
+                    background: isCurrent
+                      ? "var(--accent-orange)"
+                      : isDark
+                      ? "rgba(255, 255, 255, 0.06)"
+                      : "rgba(0, 0, 0, 0.04)",
+                    color: isCurrent ? "#ffffff" : "var(--text-secondary)",
+                    border: isCurrent
+                      ? "1px solid var(--accent-orange)"
+                      : isDark
+                      ? "1px solid rgba(255, 255, 255, 0.1)"
+                      : "1px solid rgba(0, 0, 0, 0.08)",
+                    boxShadow: isCurrent ? "0 2px 10px rgba(249, 115, 22, 0.3)" : "none",
+                    transition: "all 0.2s ease",
+                    flexShrink: 0,
+                  }}
+                >
+                  <MapPin size={12} strokeWidth={isCurrent ? 2.6 : 2} />
+                  <span>Brgy. {bgy.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── MOBILE HERO WEATHER CARD ── */}
+        <div style={{ padding: "14px 16px 0" }}>
+          <div
+            style={{
+              borderRadius: 28,
+              padding: "26px 24px 22px",
+              backgroundColor: "#161922",
+              border: isDark ? "1px solid rgba(255, 255, 255, 0.12)" : "1px solid rgba(0, 0, 0, 0.08)",
+              boxShadow: "var(--shadow-card)",
+              position: "relative",
+              overflow: "hidden",
+              minHeight: 180,
+            }}
+          >
+            {isLoadingWeather ? (
+              <div style={{ position: "relative", zIndex: 2 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div className="skeleton-box" style={{ width: 110, height: 68, borderRadius: 16, marginBottom: 12 }} />
+                    <div className="skeleton-box" style={{ width: 170, height: 22, borderRadius: 6, marginBottom: 8 }} />
+                    <div className="skeleton-box" style={{ width: 210, height: 14, borderRadius: 4, marginBottom: 14 }} />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <div className="skeleton-box" style={{ width: 58, height: 26, borderRadius: 999 }} />
+                      <div className="skeleton-box" style={{ width: 58, height: 26, borderRadius: 999 }} />
+                    </div>
+                  </div>
+                  <div className="skeleton-box" style={{ width: 90, height: 80, borderRadius: 14 }} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                  <div className="skeleton-box" style={{ height: 36, borderRadius: 8 }} />
+                  <div className="skeleton-box" style={{ height: 36, borderRadius: 8 }} />
+                  <div className="skeleton-box" style={{ height: 36, borderRadius: 8 }} />
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Dynamic Animated Background Transition */}
+                {heroBgUrl && (
                   <div
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 4,
-                      fontSize: 10,
-                      color: "var(--text-muted)",
-                      fontWeight: 700,
-                      marginBottom: 4,
+                      position: "absolute",
+                      inset: 0,
+                      overflow: "hidden",
+                      zIndex: 0,
+                      pointerEvents: "none",
                     }}
                   >
-                    <Icon size={12} color="var(--text-primary)" />
-                    {label}
+                    <AnimatePresence initial={false}>
+                      <motion.div
+                        key={heroBgUrl}
+                        initial={{ opacity: 0, scale: 1.04 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          backgroundImage: `url('${heroBgUrl}')`,
+                          backgroundPosition: "center 22%",
+                          backgroundSize: "cover",
+                          backgroundRepeat: "no-repeat",
+                        }}
+                      />
+                    </AnimatePresence>
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>{val}</div>
+                )}
+
+                {/* Soft gradient for text legibility */}
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: isDark
+                      ? "linear-gradient(180deg, rgba(10, 12, 16, 0.48) 0%, rgba(10, 12, 16, 0.15) 45%, rgba(10, 12, 16, 0.55) 100%)"
+                      : "linear-gradient(180deg, rgba(10, 12, 16, 0.28) 0%, rgba(10, 12, 16, 0.05) 45%, rgba(10, 12, 16, 0.35) 100%)",
+                    zIndex: 1,
+                    pointerEvents: "none",
+                    transition: "background 0.5s ease",
+                  }}
+                />
+                
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative", zIndex: 2 }}>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 74,
+                        fontWeight: 200,
+                        lineHeight: 1,
+                        letterSpacing: -3.5,
+                        color: "#ffffff",
+                        textShadow: "0 3px 12px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.7)",
+                      }}
+                    >
+                      {currentTemp != null ? `${currentTemp}°` : "--"}
+                    </div>
+                    <div style={{ marginTop: 8, fontSize: 18, fontWeight: 400, color: "#ffffff", textShadow: "0 2px 8px rgba(0, 0, 0, 0.6)" }}>
+                      {weatherInfo.msg}
+                    </div>
+                    <div style={{ marginTop: 4, fontSize: 12, color: "#ffffff", fontWeight: 300, textShadow: "0 1px 6px rgba(0, 0, 0, 0.6)" }}>
+                      Brgy. {selectedBarangay}, Palayan City
+                    </div>
+
+                    <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                      <span
+                        style={{
+                          background: "rgba(255, 255, 255, 0.1)",
+                          border: "1px solid rgba(255, 255, 255, 0.12)",
+                          padding: "4px 10px",
+                          borderRadius: 12,
+                          fontSize: 12,
+                          fontWeight: 400,
+                          color: "#ffffff",
+                        }}
+                      >
+                        H {weatherInfo.high != null ? `${weatherInfo.high}°` : "--"}
+                      </span>
+                      <span
+                        style={{
+                          background: "rgba(255, 255, 255, 0.05)",
+                          border: "1px solid rgba(255, 255, 255, 0.08)",
+                          padding: "4px 10px",
+                          borderRadius: 12,
+                          fontSize: 12,
+                          fontWeight: 400,
+                          color: "rgba(255, 255, 255, 0.7)",
+                        }}
+                      >
+                        L {weatherInfo.low != null ? `${weatherInfo.low}°` : "--"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Heat Index Badge */}
+                  <div style={{ textAlign: "right" }}>
+                    <div
+                      style={{
+                        background: "rgba(255, 255, 255, 0.1)",
+                        border: "1px solid rgba(255, 255, 255, 0.2)",
+                        color: "#ffffff",
+                        padding: "6px 12px",
+                        borderRadius: 14,
+                        fontSize: 11,
+                        fontWeight: 500,
+                        letterSpacing: 0.3,
+                        marginBottom: 8,
+                      }}
+                    >
+                      {heatIndex}
+                    </div>
+                    <div
+                      style={{
+                        background: "rgba(255, 255, 255, 0.04)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: 14,
+                        padding: "8px 12px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <div style={{ fontSize: 9, color: "rgba(255, 255, 255, 0.7)", fontWeight: 500, letterSpacing: 0.5, marginBottom: 4 }}>
+                        HEAT INDEX
+                      </div>
+                      <div style={{ fontSize: 20, fontWeight: 500, color: "#ffffff" }}>
+                        {currentTemp != null ? `${currentTemp + 6}°C` : "--"}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
+
+                {/* Sensor strip */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: 8,
+                    marginTop: 20,
+                    paddingTop: 16,
+                    borderTop: "1px solid rgba(255, 255, 255, 0.12)",
+                    position: "relative",
+                    zIndex: 1,
+                  }}
+                >
+                  {[
+                    { Icon: Droplets, label: "Humidity", val: `${Math.round(Number(humidity))}%` },
+                    { Icon: Wind, label: "Wind", val: `${Number(windSpeed || 0).toFixed(1)} km/h` },
+                    { Icon: Gauge, label: "Pressure", val: pressure },
+                  ].map(({ Icon, label, val }) => (
+                    <div key={label} style={{ textAlign: "center" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 4,
+                          fontSize: 10,
+                          color: "rgba(255, 255, 255, 0.7)",
+                          fontWeight: 700,
+                          marginBottom: 4,
+                        }}
+                      >
+                        <Icon size={12} color="#ffffff" />
+                        {label}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: "#ffffff" }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -1069,11 +2051,11 @@ export default function HomeScreen({
                       flexShrink: 0,
                     }}
                   >
-                    <span style={{ fontSize: 11, color: isFirst ? "var(--text-primary)" : "var(--text-muted)", fontWeight: isFirst ? 700 : 600 }}>
+                    <span style={{ fontSize: 11, color: isFirst ? "var(--text-primary)" : "var(--text-muted)", fontWeight: isFirst ? 500 : 400 }}>
                       {slot.time}
                     </span>
                     <SlotIcon size={20} color={isFirst ? "var(--text-primary)" : "var(--text-muted)"} strokeWidth={1.8} />
-                    <span style={{ fontSize: 14, fontWeight: 800, color: isFirst ? "var(--text-primary)" : "var(--text-secondary)" }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: isFirst ? "var(--text-primary)" : "var(--text-secondary)" }}>
                       {slot.temp}°
                     </span>
                   </div>
@@ -1113,7 +2095,7 @@ export default function HomeScreen({
                   <span
                     style={{
                       fontSize: 13,
-                      fontWeight: d.isToday ? 800 : 600,
+                      fontWeight: d.isToday ? 500 : 400,
                       color: d.isToday ? "var(--text-primary)" : "var(--text-secondary)",
                       width: 52,
                     }}
@@ -1127,7 +2109,7 @@ export default function HomeScreen({
                         style={{
                           fontSize: 10,
                           color: "var(--text-primary)",
-                          fontWeight: 700,
+                          fontWeight: 500,
                           background: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)",
                           padding: "2px 6px",
                           borderRadius: 6,
@@ -1138,10 +2120,10 @@ export default function HomeScreen({
                     )}
                   </div>
                   <div style={{ display: "flex", gap: 14 }}>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: "var(--text-primary)" }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
                       {d.high}°
                     </span>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-muted)" }}>
+                    <span style={{ fontSize: 14, fontWeight: 300, color: "var(--text-muted)" }}>
                       {d.low}°
                     </span>
                   </div>
@@ -1375,6 +2357,45 @@ export default function HomeScreen({
             )}
           </div>
         </div>
+
+              {/* Minimal Slide Indicator */}
+              <div
+                className="slide-scroll-indicator"
+                onClick={() => navigateToSlide(2, "down")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: "16px 0 24px",
+                  color: "var(--text-muted)",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+              >
+                <Activity size={14} color="var(--accent-orange)" strokeWidth={2.4} />
+                <span>Scroll down for Slide 2: Station Telemetry</span>
+                <ChevronDown size={14} strokeWidth={2.4} />
+              </div>
+            </motion.div>
+          ) : (
+            /* Mobile Page 2 View */
+            <motion.div
+              key="mobile-slide-2"
+              custom={slideDirection}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              style={{ padding: "16px 16px 40px", display: "flex", flexDirection: "column", gap: 16 }}
+            >
+              <LazyKloudtechDashboard isDark={isDark} liveData={liveStationData} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

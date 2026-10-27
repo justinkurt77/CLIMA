@@ -1,19 +1,37 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import CitizenNav from "./components/layout/CitizenNav";
 import HomeScreen from "./screens/HomeScreen";
-import MyReportsScreen from "./screens/MyReportsScreen";
 import ProfileScreen from "./screens/ProfileScreen";
-import EmergencyScreen from "./screens/EmergencyScreen";
+import AboutScreen from "./screens/AboutScreen";
 import ReportModal from "./components/ui/ReportModal";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
+import ElNinoMonitoringDashboard from "./components/dashboard/ElNinoMonitoringDashboard";
+import { logger } from "./lib/logger";
+import { useTheme } from "./context/ThemeContext";
+import TabSkeleton, {
+  HomeTabSkeleton,
+  MapTabSkeleton,
+  ElNinoTabSkeleton,
+  AboutTabSkeleton,
+  ProfileTabSkeleton,
+  LegalTabSkeleton,
+} from "./components/ui/TabSkeletons";
 
-// Lazy-load the map — only initialises Mapbox GL when user first taps "Maps"
+// New production components
+import ScrollProgressBar from "./components/ui/ScrollProgressBar";
+import ScrollToTopButton from "./components/ui/ScrollToTopButton";
+import FloatingContactButton from "./components/ui/FloatingContactButton";
+import CookieModal from "./components/ui/CookieModal";
+// Lazy-load the map - only initialises Mapbox GL when user first taps "Maps"
 const MapScreen = lazy(() => import("./screens/MapScreen"));
 const AdminDashboard = lazy(() => import("./screens/AdminDashboard"));
 const AdminMapScreen = lazy(() => import("./screens/AdminMapScreen"));
 const AdminLogin = lazy(() => import("./screens/AdminLogin"));
+const LegalScreen = lazy(() => import("./screens/LegalScreen"));
+const NotFoundScreen = lazy(() => import("./screens/NotFoundScreen"));
 
 import { supabase } from "./lib/supabase";
+import { syncGoogleUserProfile, getUserProfile, checkUserAdminRole } from "./lib/authHelpers";
 
 const GREEN = "#2d8119";
 function Toast({ message, onDone }) {
@@ -27,33 +45,108 @@ function Toast({ message, onDone }) {
 import { motion, AnimatePresence } from "framer-motion";
 
 function App() {
-  const [activeScreen, setActiveScreen] = useState(
-    window.location.pathname === "/admin" ? "admin" : "home",
-  );
+  const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const forcedSkeleton = urlParams?.get("skeleton");
+
+  const [activeScreen, setActiveScreen] = useState(() => {
+    const savedReturnTab =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem("clima_auth_return_tab")
+        : null;
+    if (
+      savedReturnTab &&
+      ["home", "about", "maps", "profile", "elnino"].includes(savedReturnTab)
+    ) {
+      sessionStorage.removeItem("clima_auth_return_tab");
+      return savedReturnTab;
+    }
+    if (forcedSkeleton && ["home", "about", "maps", "profile", "elnino"].includes(forcedSkeleton)) {
+      return forcedSkeleton;
+    }
+    const tabParam = urlParams?.get("tab");
+    if (tabParam && ["home", "about", "maps", "profile", "elnino", "legal", "admin"].includes(tabParam)) {
+      return tabParam;
+    }
+    const hash = typeof window !== "undefined" ? window.location.hash : "";
+    if (hash.includes("admin")) return "admin";
+    if (urlParams?.get("demo_admin") === "1" || urlParams?.get("admin") === "1") return "admin";
+    return window.location.pathname === "/admin" ? "admin" : "home";
+  });
   const isAdminView = activeScreen === "admin" || activeScreen === "admin-map";
 
   const [modalOpen, setModalOpen] = useState(false);
   const [toast, setToast] = useState(null);
+  const { isDark } = useTheme();
   const [userReports, setUserReports] = useState([]);
-  const [mapVisited, setMapVisited] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
-  const [isMapFullView, setIsMapFullView] = useState(false);
-  const [isNavMinimized, setIsNavMinimized] = useState(false);
   const [session, setSession] = useState(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [adminUser, setAdminUser] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [tabLoading, setTabLoading] = useState(false);
+  const [loadingTab, setLoadingTab] = useState(null);
+
+  const handleTabChange = useCallback((newScreen) => {
+    if (newScreen === activeScreen && !tabLoading) return;
+    setLoadingTab(newScreen);
+    setTabLoading(true);
+    setActiveScreen(newScreen);
+
+    // Micro-transition window showing the matching tab skeleton
+    const timer = setTimeout(() => {
+      setTabLoading(false);
+      setLoadingTab(null);
+    }, 420);
+    return () => clearTimeout(timer);
+  }, [activeScreen, tabLoading]);
+
+  const handleAdminLogout = useCallback(async () => {
+    setIsAdminAuthenticated(false);
+    setAdminUser(null);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      logger.error("Error signing out admin:", err);
+    }
+    if (typeof window !== "undefined") {
+      if (
+        window.location.pathname === "/admin" ||
+        window.location.hash.includes("admin") ||
+        window.location.search.includes("admin")
+      ) {
+        window.history.pushState({}, "", "/");
+      }
+    }
+    handleTabChange("home");
+  }, [handleTabChange]);
+
+  const handleNavigateToCitizenApp = useCallback(() => {
+    if (typeof window !== "undefined") {
+      if (
+        window.location.pathname === "/admin" ||
+        window.location.hash.includes("admin") ||
+        window.location.search.includes("admin")
+      ) {
+        window.history.pushState({}, "", "/");
+      }
+    }
+    handleTabChange("home");
+  }, [handleTabChange]);
 
   // Capturing original pushState outside of effect to avoid double overrides
   useEffect(() => {
     const originalPushState = window.history.pushState;
     const handleUrlChange = () => {
-      const isAdmin = window.location.pathname === "/admin";
+      const hash = window.location.hash;
+      const search = new URLSearchParams(window.location.search);
+      const isAdmin = window.location.pathname === "/admin" || hash.includes("admin") || search.get("tab") === "admin" || search.get("demo_admin") === "1";
       if (isAdmin) setActiveScreen("admin");
       else if (window.location.pathname === "/") setActiveScreen("home");
     };
 
     window.addEventListener("popstate", handleUrlChange);
+    window.addEventListener("hashchange", handleUrlChange);
 
     window.history.pushState = function () {
       originalPushState.apply(this, arguments);
@@ -62,76 +155,91 @@ function App() {
 
     return () => {
       window.removeEventListener("popstate", handleUrlChange);
+      window.removeEventListener("hashchange", handleUrlChange);
       window.history.pushState = originalPushState;
     };
   }, []);
 
   // Auth Listener
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        setSession(session);
+        syncGoogleUserProfile(supabase, session).then((syncedSession) => {
+          if (syncedSession) setSession(syncedSession);
+        }).catch((err) => {
+          logger.warn("Background profile sync error:", err);
+        });
+
+        const p = getUserProfile(session.user);
+        if (!p?.isComplete && !session.user.user_metadata?.role?.includes('admin')) {
+          setActiveScreen('profile');
+        }
+      } else {
+        setSession(null);
+      }
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        setSession(session);
+        syncGoogleUserProfile(supabase, session).then((syncedSession) => {
+          if (syncedSession) setSession(syncedSession);
+        }).catch((err) => {
+          logger.warn("Background auth state profile sync error:", err);
+        });
+
+        const p = getUserProfile(session.user);
+        if (!p?.isComplete && !session.user.user_metadata?.role?.includes('admin')) {
+          setActiveScreen('profile');
+        }
+      } else {
+        setSession(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Restore admin session on reload
+  // Synchronize admin authentication & permissions across both citizen and admin views
   useEffect(() => {
-    if (isAdminAuthenticated || !isAdminView) return;
+    let isCancelled = false;
 
-    const restoreAdmin = async () => {
+    const evaluateAdmin = async (user) => {
       try {
-        const { data: { session: current } } = await supabase.auth.getSession();
-        if (!current?.user) return;
-
-        const user = current.user;
-        const sha256 = async (str) => {
-          const buf = new TextEncoder().encode(str.toLowerCase().trim());
-          const hash = await crypto.subtle.digest("SHA-256", buf);
-          return Array.from(new Uint8Array(hash))
-            .map((b) => b.toString(16).padStart(2, "0"))
-            .join("");
-        };
-        const userEmailHash = await sha256(user.email || "");
-        const superadminsHashes = [
-          '980f32df69a604ee31a4ca3a18cfea910de69ef3c496124dc8e19f76c4fa5686',
-          'd9d660ee4195a6ac7e0b6a4a4aecbbbf9132683fa17e54383899a07b8671e484'
-        ];
-        const isSuper = superadminsHashes.includes(userEmailHash);
-        let isAdmin = user.user_metadata?.role === 'admin';
-        let assignedCategories = user.user_metadata?.assigned_categories || ["All Categories"];
-
-        if (!isSuper && !isAdmin) return; // not an admin, don't restore
-
-        let adminDepartment = null;
-        if (!isSuper && assignedCategories && !assignedCategories.includes("All Categories")) {
-          try {
-            const { data: cats } = await supabase
-              .from("categories")
-              .select("department_id, departments(id, name, accent_color)")
-              .in("name", assignedCategories)
-              .limit(1);
-            if (cats?.length > 0 && cats[0].departments) {
-              adminDepartment = cats[0].departments;
-            }
-          } catch (e) { console.error("Dept lookup failed", e); }
+        const adminCheck = await checkUserAdminRole(user, supabase);
+        if (isCancelled) return;
+        if (adminCheck.isAdmin) {
+          setIsAdminAuthenticated(true);
+          setAdminUser(adminCheck);
+        } else {
+          setIsAdminAuthenticated(false);
+          setAdminUser(null);
         }
-
-        setIsAdminAuthenticated(true);
-        setAdminUser({ isSuperadmin: isSuper, adminCategories: assignedCategories, adminDepartment });
       } catch (e) {
-        console.error("Admin session restore failed", e);
+        logger.error("Admin role evaluation failed", e);
       }
     };
 
-    restoreAdmin();
-  }, [isAdminView]);
+    if (session?.user) {
+      evaluateAdmin(session.user);
+    } else {
+      supabase.auth.getSession().then(({ data: { session: current } }) => {
+        if (isCancelled) return;
+        if (current?.user) {
+          evaluateAdmin(current.user);
+        } else {
+          evaluateAdmin(null);
+        }
+      });
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [session, isAdminView]);
 
   // Fetch reports from Supabase when session changes
   useEffect(() => {
@@ -175,7 +283,7 @@ function App() {
         });
         setUserReports(formatted);
       } catch (err) {
-        console.error("Error fetching reports:", err);
+        logger.error("Error fetching reports:", err);
       } finally {
         setIsLoadingReports(false);
       }
@@ -194,7 +302,7 @@ function App() {
           });
         },
         (err) => {
-          console.log("Location error:", err);
+          logger.info("Location error:", err);
           setUserLocation({ lat: 15.5398, lng: 121.0827 }); // Fallback to Palayan City
         },
         { enableHighAccuracy: false, timeout: 8000, maximumAge: 10000 },
@@ -211,15 +319,17 @@ function App() {
     }
   }, []);
 
-  useEffect(() => {
-    if (activeScreen === "home" && !mapVisited) setMapVisited(true);
-    // Reset map full view when switching screens to avoid disappearing UI
-    if (activeScreen !== "home") {
-      setIsMapFullView(false);
-    }
-  }, [activeScreen, mapVisited]);
 
-  const openModal = () => setModalOpen(true);
+  const openModal = () => {
+    // Check if user is authenticated before opening modal
+    const profile = getUserProfile(session?.user);
+    if (!session || !profile?.isComplete) {
+      // User not logged in or profile incomplete -> redirect to profile/auth
+      handleTabChange('profile');
+      return;
+    }
+    setModalOpen(true);
+  };
   const closeModal = () => setModalOpen(false);
 
   const handleSubmit = (newReport) => {
@@ -237,6 +347,9 @@ function App() {
     <div
       className={`app-shell ${isAdminView ? "admin-mode" : "citizen-mode"}`}
     >
+      {/* Scroll progress indicator */}
+      {!isAdminView && <ScrollProgressBar />}
+      
       {/* ADMIN LAYER (Handled as a screen now) */}
 
       {/* SCREENS LAYER */}
@@ -248,33 +361,46 @@ function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="citizen-screen-view"
+            className="citizen-screen-view home-screen-view hide-scroll"
             style={{
               zIndex: 10,
             }}
+            id="main-content"
           >
-            <HomeScreen
-              onOpenModal={openModal}
-              userReports={userReports}
-              session={session}
-              userLocation={userLocation}
-              setActiveScreen={setActiveScreen}
-            />
+            {(tabLoading && (loadingTab === "home" || !loadingTab)) || forcedSkeleton === "home" ? (
+              <HomeTabSkeleton />
+            ) : (
+              <HomeScreen
+                onOpenModal={openModal}
+                userReports={userReports}
+                session={session}
+                userLocation={userLocation}
+                setActiveScreen={handleTabChange}
+                refreshTrigger={refreshTrigger}
+                isAdmin={isAdminAuthenticated}
+                isSuperadmin={adminUser?.isSuperadmin}
+                adminUser={adminUser}
+              />
+            )}
           </motion.div>
         )}
 
-        {activeScreen === "emergency" && (
+        {activeScreen === "about" && (
           <motion.div
-            key="emergency"
+            key="about"
             variants={screenVariants}
             initial="initial"
             animate="animate"
             exit="exit"
             transition={screenVariants.transition}
-            className="screen active citizen-screen-view"
+            className="screen active citizen-screen-view hide-scroll"
             style={{ zIndex: 10, background: "transparent" }}
           >
-            <EmergencyScreen />
+            {(tabLoading && loadingTab === "about") || forcedSkeleton === "about" ? (
+              <AboutTabSkeleton />
+            ) : (
+              <AboutScreen />
+            )}
           </motion.div>
         )}
 
@@ -285,32 +411,30 @@ function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="citizen-screen-view"
+            className="citizen-screen-view hide-scroll"
             style={{
               zIndex: 10,
             }}
           >
             <ErrorBoundary>
-              <Suspense
-                fallback={
-                  <div className="map-loading" style={{ position: "relative", flex: 1 }}>
-                    <div style={{ fontSize: 34, marginBottom: 6 }}>🗺️</div>
-                    <div className="map-loading-text">Loading map...</div>
-                  </div>
-                }
-              >
-                <MapScreen
-                  onOpenModal={openModal}
-                  userReports={userReports}
-                  showMapUI={true}
-                  userLocation={userLocation}
-                  isMapFullView={true}
-                  onMapDoubleClick={() => {}}
-                  onPinClick={() => {}}
-                  isNavMinimized={false}
-                  isAdmin={false}
-                  activeScreen={activeScreen}
-                />
+              <Suspense fallback={<MapTabSkeleton />}>
+                {(tabLoading && loadingTab === "maps") || forcedSkeleton === "maps" ? (
+                  <MapTabSkeleton />
+                ) : (
+                  <MapScreen
+                    onOpenModal={openModal}
+                    userReports={userReports}
+                    showMapUI={true}
+                    userLocation={userLocation}
+                    isMapFullView={true}
+                    onMapDoubleClick={() => {}}
+                    onPinClick={() => {}}
+                    isNavMinimized={false}
+                    isAdmin={false}
+                    activeScreen={activeScreen}
+                    refreshTrigger={refreshTrigger}
+                  />
+                )}
               </Suspense>
             </ErrorBoundary>
           </motion.div>
@@ -324,39 +448,99 @@ function App() {
             animate="animate"
             exit="exit"
             transition={screenVariants.transition}
-            className="screen active citizen-screen-view"
+            className="screen active citizen-screen-view hide-scroll"
             style={{
               zIndex: 10,
               background: "transparent",
             }}
           >
-            <ProfileScreen
-              onOpenModal={openModal}
-              userReports={userReports}
-              session={session}
-              setActiveScreen={setActiveScreen}
-            />
+            {(tabLoading && loadingTab === "profile") || forcedSkeleton === "profile" ? (
+              <ProfileTabSkeleton />
+            ) : (
+              <ProfileScreen
+                onOpenModal={openModal}
+                userReports={userReports}
+                session={session}
+                setActiveScreen={handleTabChange}
+                isLoadingReports={isLoadingReports}
+                isAdmin={isAdminAuthenticated}
+                isSuperadmin={adminUser?.isSuperadmin}
+                adminUser={adminUser}
+              />
+            )}
           </motion.div>
         )}
 
-        {activeScreen === "reports" && (
+        {activeScreen === "elnino" && (
           <motion.div
-            key="reports"
+            key="elnino"
             variants={screenVariants}
             initial="initial"
             animate="animate"
             exit="exit"
             transition={screenVariants.transition}
-            className="screen active citizen-screen-view"
+            className="screen active citizen-screen-view hide-scroll"
             style={{
               zIndex: 10,
               background: "transparent",
             }}
           >
-            <MyReportsScreen
-              onOpenModal={openModal}
-              userReports={userReports}
-            />
+            {(tabLoading && loadingTab === "elnino") || forcedSkeleton === "elnino" ? (
+              <ElNinoTabSkeleton />
+            ) : (
+              <ElNinoMonitoringDashboard
+                session={session}
+                onNavigateToAuth={() => handleTabChange("profile")}
+              />
+            )}
+          </motion.div>
+        )}
+
+        {activeScreen === "legal" && (
+          <motion.div
+            key="legal"
+            variants={screenVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={screenVariants.transition}
+            className="screen active citizen-screen-view hide-scroll"
+            style={{
+              zIndex: 10,
+              background: "transparent",
+            }}
+          >
+            <Suspense fallback={<LegalTabSkeleton />}>
+              <LegalScreen />
+            </Suspense>
+          </motion.div>
+        )}
+
+        {/* 404 Not Found - Catch-all for invalid routes */}
+        {!['home', 'about', 'maps', 'profile', 'elnino', 'legal', 'admin', 'admin-map'].includes(activeScreen) && (
+          <motion.div
+            key="notfound"
+            variants={screenVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={screenVariants.transition}
+            className="screen active citizen-screen-view hide-scroll"
+            style={{
+              zIndex: 10,
+              background: "transparent",
+            }}
+          >
+            <Suspense fallback={<div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              minHeight: '100vh',
+              fontSize: '1.2rem',
+              color: '#666'
+            }}>Loading...</div>}>
+              <NotFoundScreen onNavigate={handleTabChange} />
+            </Suspense>
           </motion.div>
         )}
 
@@ -371,19 +555,44 @@ function App() {
             className="screen active"
             style={{
               zIndex: 10,
-              background: "transparent",
-              overflowY: "auto",
-              position: "fixed",
+              background: isDark ? "#000000" : "#ffffff",
+              overflow: "hidden",
+              position: "absolute",
               inset: 0,
+              width: "100%",
+              height: "100%",
+              borderRadius: "inherit",
             }}
           >
             <ErrorBoundary>
               <Suspense
                 fallback={
                   <div
-                    style={{ padding: 40, color: "#4B6043", fontWeight: 800 }}
+                    style={{
+                      height: "100%",
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: isDark ? "#000000" : "#ffffff",
+                      flexDirection: "column",
+                      gap: 12,
+                    }}
                   >
-                    Loading Console...
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        border: isDark ? "4px solid rgba(255, 255, 255, 0.12)" : "4px solid rgba(0, 0, 0, 0.12)",
+                        borderTopColor: "#f59e0b",
+                        borderRadius: "50%",
+                      }}
+                    />
+                    <p style={{ color: "#71717a", fontFamily: "var(--font-sans, 'Nohemi', sans-serif)", fontWeight: 700, fontSize: 14 }}>
+                      Loading Console…
+                    </p>
                   </div>
                 }
               >
@@ -394,11 +603,8 @@ function App() {
                   }} />
                 ) : (
                   <AdminDashboard
-                    onLogout={() => {
-                      setIsAdminAuthenticated(false);
-                      setAdminUser(null);
-                      supabase.auth.signOut();
-                    }}
+                    onLogout={handleAdminLogout}
+                    onViewCitizenApp={handleNavigateToCitizenApp}
                     onMapOverview={() => setActiveScreen("admin-map")}
                     isSuperadmin={adminUser?.isSuperadmin}
                     adminCategories={adminUser?.adminCategories}
@@ -419,8 +625,13 @@ function App() {
             transition={{ duration: 0.35 }}
             style={{
               zIndex: 10,
-              position: "fixed",
+              position: "absolute",
               inset: 0,
+              width: "100%",
+              height: "100%",
+              borderRadius: "inherit",
+              background: isDark ? "#000000" : "#ffffff",
+              overflow: "hidden",
             }}
           >
             <ErrorBoundary>
@@ -428,16 +639,30 @@ function App() {
                 fallback={
                   <div
                     style={{
-                      height: "100vh",
+                      height: "100%",
+                      width: "100%",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: "#1a2612",
-                      color: "white",
-                      fontWeight: 800,
+                      background: isDark ? "#000000" : "#ffffff",
+                      flexDirection: "column",
+                      gap: 12,
                     }}
                   >
-                    Loading Map...
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        border: isDark ? "4px solid rgba(255, 255, 255, 0.12)" : "4px solid rgba(0, 0, 0, 0.12)",
+                        borderTopColor: "#f59e0b",
+                        borderRadius: "50%",
+                      }}
+                    />
+                    <p style={{ color: "#71717a", fontFamily: "var(--font-sans, 'Nohemi', sans-serif)", fontWeight: 700, fontSize: 14 }}>
+                      Loading Map…
+                    </p>
                   </div>
                 }
               >
@@ -449,14 +674,12 @@ function App() {
                 ) : (
                   <AdminMapScreen
                     onBackToDashboard={() => setActiveScreen("admin")}
-                    onLogout={() => {
-                      setIsAdminAuthenticated(false);
-                      setAdminUser(null);
-                      supabase.auth.signOut();
-                    }}
+                    onViewCitizenApp={handleNavigateToCitizenApp}
+                    onLogout={handleAdminLogout}
                     isSuperadmin={adminUser?.isSuperadmin}
                     adminCategories={adminUser?.adminCategories}
                     adminDepartment={adminUser?.adminDepartment}
+                    currentUser={adminUser}
                   />
                 )}
               </Suspense>
@@ -465,175 +688,25 @@ function App() {
         )}
       </AnimatePresence>
 
-      {/* MAP — Background layer: only visible on admin views */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 1,
-          opacity: isAdminView ? 1 : 0,
-          pointerEvents: isAdminView ? "auto" : "none",
-          transition: "opacity 0.4s ease",
-        }}
-      >
-        <ErrorBoundary>
-          <Suspense
-            fallback={
-              <div
-                className="map-loading"
-                style={{ position: "relative", flex: 1 }}
-              >
-                <div style={{ fontSize: 34, marginBottom: 6 }}>🗺️</div>
-                <div className="map-loading-text">Loading map...</div>
-              </div>
-            }
-          >
-            <AnimatePresence mode="wait">
-              {!userLocation ? (
-                <motion.div
-                  key="loading"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5 }}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "#f0ece8",
-                    zIndex: 2,
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "relative",
-                      width: 80,
-                      height: 80,
-                      marginBottom: 24,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {[0, 1, 2].map((i) => (
-                      <motion.div
-                        key={i}
-                        animate={{
-                          scale: [1, 3],
-                          opacity: [0.4, 0],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeOut",
-                          delay: i * 0.6,
-                        }}
-                        style={{
-                          position: "absolute",
-                          width: 24,
-                          height: 24,
-                          borderRadius: "50%",
-                          background: "#4B6043",
-                        }}
-                      />
-                    ))}
-                    {/* Core GPS Dot */}
-                    <motion.div
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{
-                        duration: 1,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                      style={{
-                        position: "absolute",
-                        width: 14,
-                        height: 14,
-                        borderRadius: "50%",
-                        background: "#2d8119",
-                        boxShadow: "0 0 12px rgba(45, 129, 25, 0.6)",
-                        zIndex: 10,
-                      }}
-                    />
-                  </div>
-                  <motion.div
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 1.5,
-                      ease: "easeInOut",
-                    }}
-                    style={{
-                      color: "#4B6043",
-                      fontSize: 15,
-                      fontWeight: 800,
-                      fontFamily: "Nunito, sans-serif",
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    Locating you...
-                  </motion.div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="map"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                  style={{ position: "absolute", inset: 0 }}
-                >
-                  <MapScreen
-                    onOpenModal={openModal}
-                    userReports={userReports}
-                    showMapUI={activeScreen === "home" || activeScreen === "maps"}
-                    userLocation={userLocation}
-                    isMapFullView={isMapFullView || activeScreen === "maps"}
-                    onMapDoubleClick={() => setIsMapFullView((prev) => !prev)}
-                    onPinClick={() => setIsMapFullView(true)}
-                    isNavMinimized={isNavMinimized}
-                    isAdmin={isAdminView}
-                    activeScreen={activeScreen}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Suspense>
-        </ErrorBoundary>
-      </div>
-
-      {/* Global Blur Overlay for non-Home Screens (Excluding Maps) */}
-      <AnimatePresence>
-        {activeScreen !== "home" &&
-          activeScreen !== "maps" &&
-          activeScreen !== "admin" &&
-          activeScreen !== "admin-map" && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.6, ease: "easeInOut" }}
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "rgba(0,0,0,0.15)",
-                backdropFilter: "blur(4px)",
-                WebkitBackdropFilter: "blur(4px)",
-                zIndex: 2, // Above map (1), below screens (10)
-                pointerEvents: "none",
-              }}
-            />
-          )}
-      </AnimatePresence>
 
       {!isAdminView && (
         <CitizenNav
           activeScreen={activeScreen}
-          setActiveScreen={setActiveScreen}
+          setActiveScreen={handleTabChange}
           session={session}
+          isAdmin={isAdminAuthenticated}
+          isSuperadmin={adminUser?.isSuperadmin}
+          adminUser={adminUser}
           onOpenModal={openModal}
+          onRefresh={() => {
+            setLoadingTab(activeScreen);
+            setTabLoading(true);
+            setRefreshTrigger((prev) => prev + 1);
+            setTimeout(() => {
+              setTabLoading(false);
+              setLoadingTab(null);
+            }, 550);
+          }}
         />
       )}
 
@@ -647,8 +720,21 @@ function App() {
 
       {/* TOAST */}
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
+      
+      {/* Scroll to top button - citizen view only */}
+      {!isAdminView && <ScrollToTopButton />}
+      
+      {/* Floating emergency contact button - citizen view only */}
+      {!isAdminView && <FloatingContactButton />}
+      
+      {/* Cookie consent banner */}
+      {!isAdminView && <CookieModal />}
     </div>
   );
 }
 
 export default App;
+
+
+
+

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Map, {
   Marker,
@@ -34,7 +34,11 @@ import {
   ChevronDown,
   Globe,
   Moon,
+  Sun,
   Map as MapIcon,
+  HeartPulse,
+  Zap,
+  Droplet,
 } from "lucide-react";
 
 const ICON_MAP = {
@@ -54,220 +58,64 @@ const STATUS_COLORS = {
   pending: "#ffffff",
   inprogress: "#e4e4e7",
   resolved: "#a1a1aa",
-  water: "#0284c7",
-  recreation: "#16a34a",
-  health: "#dc2626",
+  water: "#38bdf8",
+  recreation: "#22c55e",
+  health: "#ef4444",
+  utility: "#f59e0b",
+  government: "#a1a1aa",
 };
 const STATUS_BG = {
   pending: "rgba(255, 255, 255, 0.2)",
   inprogress: "rgba(255, 255, 255, 0.12)",
   resolved: "rgba(255, 255, 255, 0.08)",
-  water: "rgba(2, 132, 199, 0.18)",
-  recreation: "rgba(22, 163, 74, 0.18)",
-  health: "rgba(220, 38, 38, 0.18)",
+  water: "rgba(56, 189, 248, 0.18)",
+  recreation: "rgba(34, 197, 94, 0.18)",
+  health: "rgba(239, 68, 68, 0.18)",
+  utility: "rgba(245, 158, 11, 0.18)",
+  government: "rgba(161, 161, 170, 0.18)",
 };
 
 const CLIMA_COMMUNITY_FACILITIES = [
-  // ── Rivers & Water Areas ──
-  {
-    id: "fac-water-1",
-    title: "Peñaranda River Monitoring Point",
-    category: "Rivers & Water Areas",
-    filterType: "water",
-    status: "water",
-    statusLabel: "Rivers & Water Areas",
-    description: "Key river basin observation point. Monitored for water levels, flow rate, and seasonal flood mitigation.",
-    lat: 15.5280,
-    lng: 121.0740,
-    icon: "TreePine",
-    pinColor: "#0284c7",
-  },
-  {
-    id: "fac-water-2",
-    title: "Aulo Dam & Reservoir Basin",
-    category: "Rivers & Water Areas",
-    filterType: "water",
-    status: "water",
-    statusLabel: "Rivers & Water Areas",
-    description: "Major irrigation dam and water reservoir supplying Palayan agricultural fields.",
-    lat: 15.5760,
-    lng: 121.1120,
-    icon: "TreePine",
-    pinColor: "#0284c7",
-  },
-  {
-    id: "fac-water-3",
-    title: "Bacao River & Irrigation Canal",
-    category: "Rivers & Water Areas",
-    filterType: "water",
-    status: "water",
-    statusLabel: "Rivers & Water Areas",
-    description: "Agricultural waterway canal regulating freshwater flow across western Palayan barangays.",
-    lat: 15.5480,
-    lng: 121.0620,
-    icon: "TreePine",
-    pinColor: "#0284c7",
-  },
-  {
-    id: "fac-water-4",
-    title: "Caimito Creek & Waterways",
-    category: "Rivers & Water Areas",
-    filterType: "water",
-    status: "water",
-    statusLabel: "Rivers & Water Areas",
-    description: "Natural stream catchment and tributary connecting to regional drainage basin.",
-    lat: 15.5390,
-    lng: 121.0920,
-    icon: "TreePine",
-    pinColor: "#0284c7",
-  },
-  {
-    id: "fac-water-5",
-    title: "Singalat River Observation Post",
-    category: "Rivers & Water Areas",
-    filterType: "water",
-    status: "water",
-    statusLabel: "Rivers & Water Areas",
-    description: "Community river level station for early rainfall warnings and irrigation management.",
-    lat: 15.5210,
-    lng: 121.0850,
-    icon: "TreePine",
-    pinColor: "#0284c7",
-  },
-
-  // ── Resorts & Recreation Areas ──
-  {
-    id: "fac-rec-1",
-    title: "Palayan City Plaza & Sports Complex",
-    category: "Resorts & Recreation Areas",
-    filterType: "recreation",
-    status: "recreation",
-    statusLabel: "Resorts & Recreation Areas",
-    description: "Central civic plaza, athletic track, basketball complex, and community event grounds.",
-    lat: 15.5410,
-    lng: 121.0845,
-    icon: "Landmark",
-    pinColor: "#16a34a",
-  },
-  {
-    id: "fac-rec-2",
-    title: "Aulo Eco-Park & Lakeside Recreation",
-    category: "Resorts & Recreation Areas",
-    filterType: "recreation",
-    status: "recreation",
-    statusLabel: "Resorts & Recreation Areas",
-    description: "Scenic lakeside eco-park with picnic areas, hiking paths, and sunset viewpoints.",
-    lat: 15.5740,
-    lng: 121.1150,
-    icon: "TreePine",
-    pinColor: "#16a34a",
-  },
-  {
-    id: "fac-rec-3",
-    title: "Singalat Nature Resort & Spring",
-    category: "Resorts & Recreation Areas",
-    filterType: "recreation",
-    status: "recreation",
-    statusLabel: "Resorts & Recreation Areas",
-    description: "Popular recreation resort featuring freshwater spring pools and open cottages.",
-    lat: 15.5180,
-    lng: 121.0890,
-    icon: "Landmark",
-    pinColor: "#16a34a",
-  },
-  {
-    id: "fac-rec-4",
-    title: "Freedom Park & City Greens",
-    category: "Resorts & Recreation Areas",
-    filterType: "recreation",
-    status: "recreation",
-    statusLabel: "Resorts & Recreation Areas",
-    description: "Open garden park, walking promenades, and cultural recreation facilities at the capitol complex.",
-    lat: 15.5630,
-    lng: 121.1005,
-    icon: "Landmark",
-    pinColor: "#16a34a",
-  },
-  {
-    id: "fac-rec-5",
-    title: "Fort Magsaysay Mountain & Eco-Camp",
-    category: "Resorts & Recreation Areas",
-    filterType: "recreation",
-    status: "recreation",
-    statusLabel: "Resorts & Recreation Areas",
-    description: "Expansive pine-lined mountain trails, camping grounds, and outdoor adventure park.",
-    lat: 15.5020,
-    lng: 121.0650,
-    icon: "TreePine",
-    pinColor: "#16a34a",
-  },
-
-  // ── Health & Emergency Facilities ──
-  {
-    id: "fac-health-1",
-    title: "Palayan City District Hospital",
-    category: "Health & Emergency Facilities",
-    filterType: "health",
-    status: "health",
-    statusLabel: "Health & Emergency Facilities",
-    description: "24/7 Government hospital, emergency medicine, inpatient care, and surgical ward.",
-    lat: 15.5435,
-    lng: 121.0830,
-    icon: "ShieldAlert",
-    pinColor: "#dc2626",
-  },
-  {
-    id: "fac-health-2",
-    title: "CDRRMO Palayan Disaster Operations Center",
-    category: "Health & Emergency Facilities",
-    filterType: "health",
-    status: "health",
-    statusLabel: "Health & Emergency Facilities",
-    description: "City Disaster Risk Reduction Management Office & 911 Emergency Command Center.",
-    lat: 15.5628,
-    lng: 121.1010,
-    icon: "ShieldAlert",
-    pinColor: "#dc2626",
-  },
-  {
-    id: "fac-health-3",
-    title: "Palayan City Rural Health Unit (RHU)",
-    category: "Health & Emergency Facilities",
-    filterType: "health",
-    status: "health",
-    statusLabel: "Health & Emergency Facilities",
-    description: "Comprehensive public health center offering triage, vaccination, and maternal care.",
-    lat: 15.5402,
-    lng: 121.0860,
-    icon: "ShieldAlert",
-    pinColor: "#dc2626",
-  },
-  {
-    id: "fac-health-4",
-    title: "BFP Palayan City Central Fire & Rescue",
-    category: "Health & Emergency Facilities",
-    filterType: "health",
-    status: "health",
-    statusLabel: "Health & Emergency Facilities",
-    description: "Bureau of Fire Protection station equipped with emergency rescue trucks and ambulances.",
-    lat: 15.5615,
-    lng: 121.0995,
-    icon: "ShieldAlert",
-    pinColor: "#dc2626",
-  },
-  {
-    id: "fac-health-5",
-    title: "Singalat Barangay Health & Emergency Station",
-    category: "Health & Emergency Facilities",
-    filterType: "health",
-    status: "health",
-    statusLabel: "Health & Emergency Facilities",
-    description: "Local community first-responder outpost and primary health clinic.",
-    lat: 15.5225,
-    lng: 121.0835,
-    icon: "ShieldAlert",
-    pinColor: "#dc2626",
-  },
+  // Water Places
+  { id: "wp1", name: "Aulo Dam", lat: 15.517876609612005, lng: 121.1165842455089, icon: "Droplet", pinColor: "#3B82F6", filterType: "water", contact: "09208125946", desc: "Tourist attraction" },
+  { id: "wp2", name: "The Nest Resort & Campground", lat: 15.489973584331299, lng: 121.10963951359219, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "09171364116", desc: "Resort hotel" },
+  { id: "wp3", name: "Fort Magsaysay Reservoir", lat: 15.413111, lng: 121.109845, icon: "Droplet", pinColor: "#3B82F6", filterType: "water", contact: "N/A", desc: "Reservoir" },
+  { id: "wp4", name: "Villa Esmeralda Bryan's Resort Hotel and Restaurant", lat: 15.586414689864885, lng: 121.11623903883321, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Hotel" },
+  { id: "wp5", name: "Carl Matthew's Resort", lat: 15.574579510490553, lng: 121.09566459318246, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "09688505624", desc: "Resort hotel" },
+  { id: "wp6", name: "Nature Escape Farm and Resort", lat: 15.57867695647252, lng: 121.1255242506916, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "09284009629", desc: "Hotel" },
+  { id: "wp7", name: "Binhi Nature Farm", lat: 15.584092161875324, lng: 121.13578154478633, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "09559220120", desc: "Farmstay" },
+  { id: "wp8", name: "SUMMER VILLE FARM AND RESORT", lat: 15.592286705457264, lng: 121.12781604765748, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Hotel" },
+  { id: "wp9", name: "Damian's Farm and Pool", lat: 15.590737, lng: 121.128343, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Resort hotel" },
+  { id: "wp10", name: "Doña Josefa Bridge and River Park", lat: 15.428691067045309, lng: 121.14962575277522, icon: "Droplet", pinColor: "#3B82F6", filterType: "water", contact: "N/A", desc: "Tourist attraction" },
+  { id: "wp11", name: "Fishing Spot", lat: 15.567804894232617, lng: 121.08898899761066, icon: "Droplet", pinColor: "#3B82F6", filterType: "water", contact: "N/A", desc: "Tourist attraction" },
+  { id: "wp12", name: "R&S Abeleda's Private Resort", lat: 15.541400639670405, lng: 121.05464063799428, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "09230847749", desc: "Swimming pool" },
+  { id: "wp13", name: "Rustic River Resort", lat: 15.578890432686926, lng: 121.09222089890493, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Villa" },
+  { id: "wp14", name: "Villa Mikaella Private Resort", lat: 15.576062475813234, lng: 121.12068749754528, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "09171472741", desc: "Villa" },
+  { id: "wp15", name: "Chloe Summer Resort", lat: 15.551626642367127, lng: 121.11347977096071, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Villa" },
+  { id: "wp16", name: "Aves Resort", lat: 15.413869109977222, lng: 121.08296888922769, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Tourist attraction" },
+  { id: "wp17", name: "Gato's Crib - The Lake House", lat: 15.569618776309095, lng: 121.09399552658115, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "0444638460", desc: "Resort hotel" },
+  { id: "wp18", name: "Blue Sky Private Resort", lat: 15.530054707422712, lng: 121.05818567083095, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Ski resort" },
+  { id: "wp19", name: "VELA Private Pool", lat: 14.362079864132907, lng: 121.3370099705361, icon: "Palmtree", pinColor: "#16a34a", filterType: "recreation", contact: "N/A", desc: "Homestay" },
+  
+  // Utility Services
+  { id: "us1", name: "NEECO II Area 2 Palayan City Branch Office", lat: 15.54354600100982, lng: 121.08609465767155, icon: "Zap", pinColor: "#f59e0b", filterType: "utility", contact: "N/A", desc: "Electric utility company branch office" },
+  { id: "us2", name: "Palayan City Water District", lat: 15.543611484504744, lng: 121.08411454397788, icon: "Droplet", pinColor: "#0284c7", filterType: "water", statusLabel: "Water District", contact: "09188074263", desc: "Water utility company" },
+  { id: "us3", name: "Balibago Waterworks", lat: 15.563667717107219, lng: 121.10125996097958, icon: "Droplet", pinColor: "#0284c7", filterType: "water", statusLabel: "Water Service", contact: "N/A", desc: "Water utility facility" },
+  
+  // Public Services & Government Offices
+  { id: "ps1", name: "CDRRMO", lat: 15.559702386051606, lng: 121.09986385339798, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "09669109674", desc: "City Disaster Risk Reduction and Management Office" },
+  { id: "ps2", name: "PCH", lat: 15.546288564337402, lng: 121.08874087581593, icon: "HeartPulse", pinColor: "#dc2626", filterType: "health", contact: "N/A", desc: "Palayan City Hospital" },
+  { id: "ps3", name: "BFP", lat: 15.559549289187666, lng: 121.09959214158702, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Bureau of Fire Protection" },
+  
+  // Landmarks (gray dots, always visible - not filterable)
+  { id: "lm1", name: "Bulwagan ng mga Katutubo, Bacao Reforestation", lat: 15.445006790219457, lng: 121.12659487316665, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Catholic church" },
+  { id: "lm2", name: "Palayan City Mini-Park", lat: 15.540634807647502, lng: 121.07980971763624, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Park" },
+  { id: "lm3", name: "Palayan City Plaza Conception", lat: 15.542007621587873, lng: 121.08566821450574, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Park" },
+  { id: "lm4", name: "Palayan City Park", lat: 15.559201854690505, lng: 121.09869796044576, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Park" },
+  { id: "lm5", name: "Provincial Government of Nueva Ecija", lat: 15.556540176741274, lng: 121.09516861659826, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Local government office" },
+  { id: "lm6", name: "Central Business Hub", lat: 15.565424067232565, lng: 121.09771234275384, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Land planning authority" },
+  { id: "lm7", name: "Nueva Ecija Convention Center", lat: 15.558247241224999, lng: 121.0979418073124, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "09633680185", desc: "Convention center" },
+  { id: "lm8", name: "Sta. Cecilia Parish Church", lat: 15.542201550931459, lng: 121.08456810805654, icon: "Landmark", pinColor: "#71717a", filterType: "government", contact: "N/A", desc: "Catholic church" },
 ];
 
 const buildingsLayer = {
@@ -291,12 +139,50 @@ import SearchBar from "../components/map/SearchBar";
 import { PinMarker, SearchPin } from "../components/map/MapPins";
 import { reverseGeocode } from "../components/ui/report/reportConstants";
 import { MapOverlayActions } from "../components/map/MapOverlayActions";
+import { CategoryListPanel } from "../components/map/CategoryListPanel";
 import { MapPopupContent } from "../components/map/MapPopupContent";
 import { PhotoLightbox } from "../components/map/PhotoLightbox";
 import { DescriptionModal } from "../components/map/DescriptionModal";
-import { LayerControls } from "../components/map/LayerControls";
 import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/logger";
+import { PALAYAN_KLOUDTECH_STATIONS, fetchKloudtechDashboard } from "../services/kloudtechService";
+import { KloudtrackStationMarker } from "../components/map/KloudtrackStationMarker";
+import { KloudtrackStationPopup } from "../components/map/KloudtrackStationPopup";
+import { IOT_METRIC_CONFIG } from "../components/map/KloudtrackMapControls";
+import {
+  PIN_CATEGORIES,
+  getPinnedLocations,
+  subscribePinnedLocations,
+} from "../lib/pinnedLocationsStorage";
+import { usePowerInterruptionAdvisories } from "../hooks/usePowerInterruptionAdvisories";
+import { useWaterInterruptionAdvisories } from "../hooks/useWaterInterruptionAdvisories";
+
+function createGeoJSONCircle(center, radiusInKm, points = 64) {
+  const [lng, lat] = center;
+  const coords = { latitude: lat, longitude: lng };
+  const km = radiusInKm;
+  const ret = [];
+  const distanceX = km / (111.32 * Math.cos((coords.latitude * Math.PI) / 180));
+  const distanceY = km / 110.574;
+
+  for (let i = 0; i < points; i++) {
+    const theta = (i / points) * (2 * Math.PI);
+    const x = distanceX * Math.cos(theta);
+    const y = distanceY * Math.sin(theta);
+    ret.push([coords.longitude + x, coords.latitude + y]);
+  }
+  ret.push(ret[0]);
+
+  return {
+    type: "Feature",
+    geometry: {
+      type: "Polygon",
+      coordinates: [ret],
+    },
+    properties: {},
+  };
+}
 
 function MapScreen({
   onOpenModal,
@@ -309,29 +195,85 @@ function MapScreen({
   isAdmin = false,
   activeScreen,
   isNavMinimized,
+  refreshTrigger = 0,
 }) {
   const { theme, isDark } = useTheme();
   const [selectedReport, setSelectedReport] = useState(null);
   const [searchPin, setSearchPin] = useState(null);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [descModalOpen, setDescModalOpen] = useState(false);
+  const [categoryListOpen, setCategoryListOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [popupGeo, setPopupGeo] = useState(null);
   const [descExpanded, setDescExpanded] = useState(false);
   const [activeFilters, setActiveFilters] = useState([
     "water",
     "recreation",
     "health",
+    "utility",
   ]);
-  const [filterOpen, setFilterOpen] = useState(false);
   const [mapStyleId, setMapStyleId] = useState(isDark ? "dark-v11" : "streets-v12");
   const [isExiting, setIsExiting] = useState(false);
   const [barangayMarkers, setBarangayMarkers] = useState([]);
+  const [barangayGeoJSON, setBarangayGeoJSON] = useState(null);
+  const [selectedOutage, setSelectedOutage] = useState(null);
+  const {
+    powerOutageGeoJSON,
+    affectedBarangayOutages,
+    displayOutageMarkers,
+    isWholeCity,
+    affectedBarangays,
+    hasActiveAdvisories,
+  } = usePowerInterruptionAdvisories(barangayGeoJSON);
+  const [selectedWaterOutage, setSelectedWaterOutage] = useState(null);
+  const {
+    waterInterruptionGeoJSON,
+    affectedBarangayOutages: affectedWaterOutages,
+    displayWaterMarkers,
+    isWholeCity: isWholeCityWater,
+    affectedBarangays: affectedWaterBarangays,
+    hasActiveWaterAdvisories,
+  } = useWaterInterruptionAdvisories(barangayGeoJSON);
+  const [selectedKloudtrackStation, setSelectedKloudtrackStation] = useState(null);
+  const [activeMetric, setActiveMetric] = useState("heatIndex");
+  const [weatherStations, setWeatherStations] = useState(PALAYAN_KLOUDTECH_STATIONS);
+  const [isLoadingWeather, setIsLoadingWeather] = useState(false);
+  const [lastWeatherUpdate, setLastWeatherUpdate] = useState(null);
   const popupContentRef = useRef(null);
   const mapRef = useRef(null);
   const hasJumped = useRef(false);
 
+  const [customPins, setCustomPins] = useState(() => getPinnedLocations());
+  useEffect(() => {
+    return subscribePinnedLocations((pins) => {
+      setCustomPins(pins);
+    });
+  }, []);
+
+  const mappedCustomFacilities = useMemo(() => {
+    return customPins.map((p) => {
+      const cat = PIN_CATEGORIES[p.category] || PIN_CATEGORIES.water;
+      return {
+        id: p.id,
+        title: p.name,
+        category: cat.label,
+        filterType: p.category === "water" ? "water" : p.category === "hospital" || p.category === "fire" ? "health" : "recreation",
+        status: p.status,
+        statusLabel: `${cat.label} · ${p.subType || "Facility"}`,
+        description: p.description || `${p.name} - Brgy. ${p.barangay}`,
+        lat: Number(p.lat),
+        lng: Number(p.lng),
+        icon: cat.icon || "MapPin",
+        pinColor: cat.color,
+      };
+    });
+  }, [customPins]);
+
   // Layer Management States
   const [activeLayers, setActiveLayers] = useState({
+    kloudtrackStations: true,
+    stationCoverage: true,
+    heatIndexCoverage: true,
     barangays: true,
     heatmap: false,
     reports: true,
@@ -343,7 +285,30 @@ function MapScreen({
     hotels: false,
     restaurants: false,
     attractions: false,
+    waterPlaces: false,
+    utilityServices: false,
+    publicServices: false,
+    landmarks: false,
   });
+
+  // Coverage GeoJSON for all deployed KloudTech stations (Popolon, Sapang Buho, etc.)
+  const stationCoverageGeoJSON = useMemo(() => {
+    return {
+      type: "FeatureCollection",
+      features: (weatherStations || [])
+        .filter((s) => s.station?.location && Array.isArray(s.station.location))
+        .map((s) => createGeoJSONCircle(s.station.location, 3.2)),
+    };
+  }, [weatherStations]);
+
+  const heatIndexCoverageGeoJSON = useMemo(() => {
+    return {
+      type: "FeatureCollection",
+      features: (weatherStations || [])
+        .filter((s) => s.station?.location && Array.isArray(s.station.location))
+        .map((s) => createGeoJSONCircle(s.station.location, 1.8)),
+    };
+  }, [weatherStations]);
 
   // Data States for Dynamic Layers
   const [hospitals, setHospitals] = useState([]);
@@ -351,6 +316,10 @@ function MapScreen({
     hotels: [],
     restaurants: [],
     attractions: [],
+    waterPlaces: [],
+    utilityServices: [],
+    publicServices: [],
+    landmarks: [],
   });
 
   useEffect(() => {
@@ -360,6 +329,36 @@ function MapScreen({
   const toggleLayer = (layerId) => {
     setActiveLayers((prev) => ({ ...prev, [layerId]: !prev[layerId] }));
   };
+
+  // Fetch live weather data from KloudTech API
+  const refreshWeatherData = useCallback(async () => {
+    setIsLoadingWeather(true);
+    try {
+      const result = await fetchKloudtechDashboard();
+      if (result.success && result.data) {
+        setWeatherStations(result.data);
+        setLastWeatherUpdate(new Date());
+        logger.log(`✅ Weather data ${result.isLive ? 'LIVE' : 'FALLBACK'} updated:`, result.data);
+      }
+    } catch (error) {
+      logger.error('Failed to refresh weather data:', error);
+    } finally {
+      setIsLoadingWeather(false);
+    }
+  }, []);
+
+  // Auto-refresh weather data every 5 minutes AND on manual refresh trigger
+  useEffect(() => {
+    // Initial fetch or manual refresh triggered
+    refreshWeatherData();
+
+    // Set up auto-refresh interval (5 minutes = 300000ms)
+    const refreshInterval = setInterval(() => {
+      refreshWeatherData();
+    }, 300000); // 5 minutes
+
+    return () => clearInterval(refreshInterval);
+  }, [refreshWeatherData, refreshTrigger]);
 
   // Load Hospitals from Supabase
   useEffect(() => {
@@ -374,7 +373,7 @@ function MapScreen({
         if (error) throw error;
         setHospitals(data || []);
       } catch (err) {
-        console.error("Failed to load hospitals:", err);
+        logger.error("Failed to load hospitals:", err);
       }
     };
 
@@ -385,19 +384,35 @@ function MapScreen({
   useEffect(() => {
     const loadTourismData = async () => {
       try {
-        const [hotelsRes, restaurantsRes, attractionsRes] = await Promise.all([
+        const [
+          hotelsRes,
+          restaurantsRes,
+          attractionsRes,
+          waterPlacesRes,
+          utilityServicesRes,
+          publicServicesRes,
+          landmarksRes
+        ] = await Promise.all([
           fetch("/tourism-data/Hotels_14.json").then(r => r.json()).catch(() => ({ features: [] })),
           fetch("/tourism-data/Resto_8.json").then(r => r.json()).catch(() => ({ features: [] })),
           fetch("/tourism-data/Attraction_12.json").then(r => r.json()).catch(() => ({ features: [] })),
+          fetch("/tourism-data/WaterPlaces_15.json").then(r => r.json()).catch(() => ({ features: [] })),
+          fetch("/tourism-data/UtilityServices_16.json").then(r => r.json()).catch(() => ({ features: [] })),
+          fetch("/tourism-data/PublicServices_17.json").then(r => r.json()).catch(() => ({ features: [] })),
+          fetch("/tourism-data/Landmarks_18.json").then(r => r.json()).catch(() => ({ features: [] })),
         ]);
 
         setTourismData({
           hotels: hotelsRes.features || [],
           restaurants: restaurantsRes.features || [],
           attractions: attractionsRes.features || [],
+          waterPlaces: waterPlacesRes.features || [],
+          utilityServices: utilityServicesRes.features || [],
+          publicServices: publicServicesRes.features || [],
+          landmarks: landmarksRes.features || [],
         });
       } catch (err) {
-        console.error("Failed to load tourism data:", err);
+        logger.error("Failed to load tourism data:", err);
       }
     };
 
@@ -429,41 +444,42 @@ function MapScreen({
 
     // Update theme-color to match the map's land background so the Android
     // status bar blends seamlessly with the map.
-    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const statusBarColor = isDark ? "#1a1f2e" : "#f5f3f0";
+    const statusBarColor = isDark ? "#121214" : "#f5f3f0";
     const themeColorMeta = document.querySelector(
       'meta[name="theme-color"]:not([media])',
     );
     if (themeColorMeta) themeColorMeta.content = statusBarColor;
 
-    // ... rest of the existing code
-    const roadColor = "#c8d4e0";
-    const roadCasing = "#dce6ef";
-    [
-      "road-local",
-      "road-minor",
-      "road-street",
-      "road-secondary-tertiary",
-      "road-primary",
-      "road-motorway-trunk",
-    ].forEach((id) => {
-      if (map.getLayer(id)) map.setPaintProperty(id, "line-color", roadColor);
-    });
-    [
-      "road-local-case",
-      "road-minor-case",
-      "road-street-case",
-      "road-secondary-tertiary-case",
-      "road-primary-case",
-      "road-motorway-trunk-case",
-    ].forEach((id) => {
-      if (map.getLayer(id)) map.setPaintProperty(id, "line-color", roadCasing);
-    });
-    if (map.getLayer("building")) {
-      map.setPaintProperty("building", "fill-color", "#f5f3f0");
-      map.setPaintProperty("building", "fill-outline-color", "#e8e4e0");
+    // Only apply custom pastel road & building colors on the light streets-v12 style
+    if (mapStyleId === "streets-v12") {
+      const roadColor = "#c8d4e0";
+      const roadCasing = "#dce6ef";
+      [
+        "road-local",
+        "road-minor",
+        "road-street",
+        "road-secondary-tertiary",
+        "road-primary",
+        "road-motorway-trunk",
+      ].forEach((id) => {
+        if (map.getLayer(id)) map.setPaintProperty(id, "line-color", roadColor);
+      });
+      [
+        "road-local-case",
+        "road-minor-case",
+        "road-street-case",
+        "road-secondary-tertiary-case",
+        "road-primary-case",
+        "road-motorway-trunk-case",
+      ].forEach((id) => {
+        if (map.getLayer(id)) map.setPaintProperty(id, "line-color", roadCasing);
+      });
+      if (map.getLayer("building")) {
+        map.setPaintProperty("building", "fill-color", "#f5f3f0");
+        map.setPaintProperty("building", "fill-outline-color", "#e8e4e0");
+      }
     }
-  }, []);
+  }, [isDark, mapStyleId]);
 
   useEffect(() => {
     if (userLocation && mapRef.current && !hasJumped.current && !isAdmin) {
@@ -479,6 +495,7 @@ function MapScreen({
     fetch("/palayan-barangays.geojson")
       .then((res) => res.json())
       .then((data) => {
+        setBarangayGeoJSON(data);
         if (data && data.features) {
           const markers = data.features.map((f) => {
             // Calculate a simple bounding box center for the polygon
@@ -507,7 +524,7 @@ function MapScreen({
           setBarangayMarkers(markers);
         }
       })
-      .catch((err) => console.error("Failed to load barangay map:", err));
+      .catch((err) => logger.error("Failed to load barangay map:", err));
   }, []);
 
   // Overview View: Auto-fit bounds for Admin or Map Screen
@@ -567,9 +584,17 @@ function MapScreen({
     return "health";
   };
 
-  const visibleFacilities = CLIMA_COMMUNITY_FACILITIES.filter((f) =>
-    activeFilters.includes(f.filterType)
-  );
+  const visibleFacilities = useMemo(() => {
+    const combined = [...CLIMA_COMMUNITY_FACILITIES, ...mappedCustomFacilities];
+    // Show government facilities always (not filterable), filter the rest
+    return combined.filter(
+      (f) =>
+        f.filterType === "government" ||
+        activeFilters.includes(f.filterType) ||
+        (f.icon === "Droplet" && activeFilters.includes("water")) ||
+        (f.id.startsWith("us") && activeFilters.includes("utility"))
+    );
+  }, [mappedCustomFacilities, activeFilters]);
 
   const allReports = userReports.filter((r) => {
     const hasCoords = r.lat && r.lng;
@@ -624,7 +649,7 @@ function MapScreen({
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {showMapUI && (
           <div className="map-header">
-            <div className="map-title">Report Map 🗺️</div>
+            <div className="map-title">Report Map</div>
             <div className="map-search">
               <Search size={14} color="var(--gray)" />
               <span>Search for a place...</span>
@@ -633,7 +658,22 @@ function MapScreen({
         )}
         <div className="map-container">
           <div className="map-loading">
-            <div style={{ fontSize: 48, marginBottom: 8 }}>🗺️</div>
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: "50%",
+                background: "rgba(239, 68, 68, 0.12)",
+                border: "1px solid rgba(239, 68, 68, 0.25)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 12,
+                color: "#ef4444",
+              }}
+            >
+              <MapPin size={26} strokeWidth={2.2} />
+            </div>
             <div className="map-loading-text">Mapbox Token Required</div>
             <div
               style={{
@@ -671,35 +711,160 @@ function MapScreen({
         flexDirection: "column",
       }}
     >
-      {/* Layer Controls */}
-      <LayerControls
-        activeLayers={activeLayers}
-        onToggleLayer={toggleLayer}
-        isMapFullView={isMapFullView}
-      />
-
       <MapOverlayActions
         isMapFullView={isMapFullView}
         onOpenModal={onOpenModal}
         activeFilters={activeFilters}
         setActiveFilters={setActiveFilters}
-        filterOpen={filterOpen}
-        setFilterOpen={setFilterOpen}
         setSearchPin={setSearchPin}
         userLocation={userLocation}
         mapRef={mapRef}
+        activeLayers={activeLayers}
+        onToggleLayer={toggleLayer}
+        activeMetric={activeMetric}
+        onSelectMetric={setActiveMetric}
+        weatherStations={weatherStations}
+        selectedStation={selectedKloudtrackStation}
+        onSelectStation={(st) => {
+          closePopup();
+          setSelectedKloudtrackStation(st);
+          if (st?.station?.location && Array.isArray(st.station.location) && mapRef.current) {
+            mapRef.current.flyTo({
+              center: [st.station.location[0], st.station.location[1]],
+              zoom: 16.5,
+              pitch: 45,
+              duration: 1200,
+            });
+          }
+        }}
+        onCategoryClick={(categoryId) => {
+          // Set only this category as active
+          setActiveFilters([categoryId]);
+          setSelectedCategory(categoryId);
+          setCategoryListOpen(true);
+        }}
+      />
+
+      {/* Category List Panel */}
+      <CategoryListPanel
+        isOpen={categoryListOpen}
+        onClose={() => {
+          setCategoryListOpen(false);
+          setSelectedCategory(null);
+          // Restore all filters when closing
+          setActiveFilters(["water", "recreation", "health", "utility"]);
+        }}
+        category={selectedCategory}
+        facilities={CLIMA_COMMUNITY_FACILITIES.filter(
+          (f) => f.filterType === selectedCategory
+        )}
+        onSelectFacility={(facility) => {
+          // Transform and show popup
+          const categoryLabels = {
+            water: "Water Place",
+            recreation: "Recreation",
+            health: "Health",
+            government: "Government Office",
+            utility: "Utility Service",
+          };
+          const facilityAsReport = {
+            ...facility,
+            title: facility.name,
+            status: facility.filterType,
+            statusLabel: facility.statusLabel || categoryLabels[facility.filterType] || facility.filterType,
+            description: null,
+            isFacility: true,
+            facilityDesc: facility.desc,
+            facilityContact: facility.contact !== "N/A" ? facility.contact : null,
+          };
+          setSelectedReport(facilityAsReport);
+          setIsExiting(false);
+          // Fly to facility
+          if (mapRef.current) {
+            mapRef.current.flyTo({
+              center: [facility.lng, facility.lat],
+              zoom: 18.2,
+              pitch: 45,
+              duration: 1200,
+              essential: true,
+            });
+          }
+        }}
+        selectedFacilityId={selectedReport?.id}
       />
 
       <div className="map-container" style={{ position: "absolute", inset: 0 }}>
+        {/* Active Power Interruption Advisory Floating Alert */}
+        {hasActiveAdvisories && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{
+              position: "absolute",
+              top: 14,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 40,
+              background: "rgba(245, 158, 11, 0.95)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              color: "#18181b",
+              padding: "7px 16px",
+              borderRadius: 9999,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 6px 22px rgba(245, 158, 11, 0.45)",
+              cursor: "pointer",
+              maxWidth: "92%",
+            }}
+            onClick={() => {
+              if (mapRef.current && affectedBarangayOutages.length > 0) {
+                const bounds = affectedBarangayOutages.reduce(
+                  (b, o) => b.extend([o.lng, o.lat]),
+                  new mapboxgl.LngLatBounds()
+                );
+                mapRef.current.fitBounds(bounds, {
+                  padding: { top: 120, bottom: 80, left: 80, right: 80 },
+                  duration: 1500,
+                  maxZoom: 14,
+                });
+              }
+            }}
+          >
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#ef4444",
+                boxShadow: "0 0 8px #ef4444",
+                flexShrink: 0,
+              }}
+            />
+            <Zap size={14} color="#18181b" fill="#18181b" />
+            <span style={{ fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {isWholeCity
+                ? "Power Advisory: Palayan City (City-wide)"
+                : affectedBarangays.length > 3
+                ? `Power Advisory: Brgy. ${affectedBarangays.slice(0, 3).join(", ")} (+${affectedBarangays.length - 3} more)`
+                : `Power Advisory: Brgy. ${affectedBarangays.join(", ")}`}
+            </span>
+            <span style={{ fontSize: 11, fontWeight: 700, textDecoration: "underline", opacity: 0.85, whiteSpace: "nowrap" }}>
+              Focus Map
+            </span>
+          </motion.div>
+        )}
         <Map
           ref={mapRef}
           mapboxAccessToken={MAPBOX_TOKEN}
           initialViewState={{
-            longitude: userLocation?.lng || 121.0827,
-            latitude: userLocation?.lat || 15.5398,
-            zoom: 17,
-            pitch: 52,
-            bearing: -15,
+            longitude: userLocation?.lng || 121.085,
+            latitude: userLocation?.lat || 15.545,
+            zoom: userLocation ? 16.5 : 13.8,
+            pitch: userLocation ? 45 : 25,
+            bearing: -10,
           }}
           style={{ width: "100%", height: "100%" }}
           mapStyle={`mapbox://styles/mapbox/${mapStyleId}`}
@@ -744,6 +909,110 @@ function MapScreen({
                   "line-width": 1.5,
                   "line-opacity": mapStyleId === "dark-v11" ? 0.6 : 0.75,
                   "line-dasharray": [3, 2],
+                }}
+              />
+            </Source>
+          )}
+
+          {/* Highlighted Barangays with Power Interruption Advisory */}
+          {(activeLayers.powerFeeders || hasActiveAdvisories) && powerOutageGeoJSON?.features?.length > 0 && (
+            <Source
+              id="power-outage-advisory-source"
+              type="geojson"
+              data={powerOutageGeoJSON}
+            >
+              <Layer
+                id="power-outage-advisory-fill"
+                type="fill"
+                paint={{
+                  "fill-color": "#f59e0b",
+                  "fill-opacity": mapStyleId === "dark-v11" ? 0.32 : 0.25,
+                }}
+              />
+              <Layer
+                id="power-outage-advisory-stroke"
+                type="line"
+                paint={{
+                  "line-color": "#fbbf24",
+                  "line-width": 3,
+                  "line-opacity": 0.95,
+                  "line-dasharray": [4, 2],
+                }}
+              />
+            </Source>
+          )}
+
+          {/* Highlighted Barangays with Water Interruption Advisory (Blue) */}
+          {(activeLayers.waterFacilities || hasActiveWaterAdvisories) && waterInterruptionGeoJSON?.features?.length > 0 && (
+            <Source
+              id="water-outage-advisory-source"
+              type="geojson"
+              data={waterInterruptionGeoJSON}
+            >
+              <Layer
+                id="water-outage-advisory-fill"
+                type="fill"
+                paint={{
+                  "fill-color": "#0284c7",
+                  "fill-opacity": mapStyleId === "dark-v11" ? 0.32 : 0.25,
+                }}
+              />
+              <Layer
+                id="water-outage-advisory-stroke"
+                type="line"
+                paint={{
+                  "line-color": "#38bdf8",
+                  "line-width": 3,
+                  "line-opacity": 0.95,
+                  "line-dasharray": [4, 2],
+                }}
+              />
+            </Source>
+          )}
+
+          {/* KloudTrack Station Coverage (3.2km IoT range) */}
+          {activeLayers.stationCoverage && (
+            <Source id="kloudtrack-station-coverage" type="geojson" data={stationCoverageGeoJSON}>
+              <Layer
+                id="station-coverage-fill"
+                type="fill"
+                paint={{
+                  "fill-color": IOT_METRIC_CONFIG[activeMetric]?.fillColor || "#3B82F6",
+                  "fill-opacity": 0.08,
+                }}
+              />
+              <Layer
+                id="station-coverage-stroke"
+                type="line"
+                paint={{
+                  "line-color": IOT_METRIC_CONFIG[activeMetric]?.color || "#3B82F6",
+                  "line-width": 1.5,
+                  "line-opacity": 0.45,
+                  "line-dasharray": [4, 3],
+                }}
+              />
+            </Source>
+          )}
+
+          {/* KloudTrack Active Metric Severity Zone (1.8km radius) */}
+          {activeLayers.heatIndexCoverage && (
+            <Source id="kloudtrack-heat-coverage" type="geojson" data={heatIndexCoverageGeoJSON}>
+              <Layer
+                id="heat-coverage-fill"
+                type="fill"
+                paint={{
+                  "fill-color": IOT_METRIC_CONFIG[activeMetric]?.fillColor || "#EF4444",
+                  "fill-opacity": 0.14,
+                }}
+              />
+              <Layer
+                id="heat-coverage-stroke"
+                type="line"
+                paint={{
+                  "line-color": IOT_METRIC_CONFIG[activeMetric]?.color || "#EF4444",
+                  "line-width": 2,
+                  "line-opacity": 0.75,
+                  "line-dasharray": [2, 2],
                 }}
               />
             </Source>
@@ -875,6 +1144,102 @@ function MapScreen({
             </Source>
           )}
 
+          {/* Tourism: Water Places Layer */}
+          {activeLayers.waterPlaces && tourismData.waterPlaces.length > 0 && (
+            <Source
+              id="tourism-water-places"
+              type="geojson"
+              data={{
+                type: "FeatureCollection",
+                features: tourismData.waterPlaces,
+              }}
+            >
+              <Layer
+                id="water-places-layer"
+                type="circle"
+                paint={{
+                  "circle-radius": 8,
+                  "circle-color": "#3B82F6",
+                  "circle-stroke-width": 2,
+                  "circle-stroke-color": "#ffffff",
+                  "circle-opacity": 0.8,
+                }}
+              />
+            </Source>
+          )}
+
+          {/* Tourism: Utility Services Layer */}
+          {activeLayers.utilityServices && tourismData.utilityServices.length > 0 && (
+            <Source
+              id="tourism-utility-services"
+              type="geojson"
+              data={{
+                type: "FeatureCollection",
+                features: tourismData.utilityServices,
+              }}
+            >
+              <Layer
+                id="utility-services-layer"
+                type="circle"
+                paint={{
+                  "circle-radius": 8,
+                  "circle-color": "#F59E0B",
+                  "circle-stroke-width": 2,
+                  "circle-stroke-color": "#ffffff",
+                  "circle-opacity": 0.8,
+                }}
+              />
+            </Source>
+          )}
+
+          {/* Tourism: Public Services Layer */}
+          {activeLayers.publicServices && tourismData.publicServices.length > 0 && (
+            <Source
+              id="tourism-public-services"
+              type="geojson"
+              data={{
+                type: "FeatureCollection",
+                features: tourismData.publicServices,
+              }}
+            >
+              <Layer
+                id="public-services-layer"
+                type="circle"
+                paint={{
+                  "circle-radius": 8,
+                  "circle-color": "#EF4444",
+                  "circle-stroke-width": 2,
+                  "circle-stroke-color": "#ffffff",
+                  "circle-opacity": 0.8,
+                }}
+              />
+            </Source>
+          )}
+
+          {/* Tourism: Landmarks Layer */}
+          {activeLayers.landmarks && tourismData.landmarks.length > 0 && (
+            <Source
+              id="tourism-landmarks"
+              type="geojson"
+              data={{
+                type: "FeatureCollection",
+                features: tourismData.landmarks,
+              }}
+            >
+              <Layer
+                id="landmarks-layer"
+                type="circle"
+                paint={{
+                  "circle-radius": 8,
+                  "circle-color": "#A855F7",
+                  "circle-stroke-width": 2,
+                  "circle-stroke-color": "#ffffff",
+                  "circle-opacity": 0.8,
+                }}
+              />
+            </Source>
+          )}
+
           {userLocation && (
             <Marker
               longitude={userLocation.lng}
@@ -906,7 +1271,27 @@ function MapScreen({
                 if (selectedReport?.id === fac.id) {
                   closePopup();
                 } else {
-                  setSelectedReport(fac);
+                  // Transform facility data to match report structure for popup display
+                  const categoryLabels = {
+                    water: "Water Place",
+                    recreation: "Recreation",
+                    health: "Health",
+                    government: "Government Office",
+                    utility: "Utility Service",
+                  };
+                  const facilityAsReport = {
+                    ...fac,
+                    title: fac.name,
+                    status: fac.filterType,
+                    statusLabel: fac.statusLabel || categoryLabels[fac.filterType] || fac.filterType,
+                    // Don't use description field - facilities will show details differently
+                    description: null,
+                    // Add facility-specific fields
+                    isFacility: true,
+                    facilityDesc: fac.desc,
+                    facilityContact: fac.contact !== "N/A" ? fac.contact : null,
+                  };
+                  setSelectedReport(facilityAsReport);
                   setIsExiting(false);
                   if (onPinClick) onPinClick();
                 }
@@ -972,10 +1357,9 @@ function MapScreen({
                     justifyContent: "center",
                     border: "3px solid #ffffff",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-                    fontSize: 18,
-                  }}
+                    }}
                 >
-                  🏥
+                  <HeartPulse size={16} color="#ffffff" strokeWidth={2.4} />
                 </div>
                 <div
                   style={{
@@ -1024,6 +1408,358 @@ function MapScreen({
             </Marker>
           ))}
 
+          {/* Power Interruption Warning Markers */}
+          {(activeLayers.powerFeeders || hasActiveAdvisories) &&
+            displayOutageMarkers.map((outage) => (
+              <Marker
+                key={outage.isWholeCity ? "pwr-outage-marker-whole-city" : `pwr-outage-marker-${outage.name}`}
+                longitude={outage.lng}
+                latitude={outage.lat}
+                anchor="bottom"
+              >
+                <div
+                  onClick={(e) => {
+                    e.originalEvent?.stopPropagation();
+                    e.stopPropagation();
+                    setSelectedOutage(outage);
+                  }}
+                  style={{
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    transform: "translateY(-4px)",
+                    zIndex: 60,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: outage.isWholeCity ? 7 : 5,
+                      padding: outage.isWholeCity ? "6px 14px" : "4px 9px",
+                      borderRadius: outage.isWholeCity ? 20 : 16,
+                      background: mapStyleId === "dark-v11" ? "rgba(24, 24, 27, 0.95)" : "#ffffff",
+                      border: "2px solid #f59e0b",
+                      boxShadow: outage.isWholeCity
+                        ? "0 4px 18px rgba(245, 158, 11, 0.7), 0 0 24px rgba(245, 158, 11, 0.4)"
+                        : "0 4px 14px rgba(245, 158, 11, 0.55)",
+                      fontSize: outage.isWholeCity ? 12.5 : 11,
+                      fontWeight: 800,
+                      color: mapStyleId === "dark-v11" ? "#ffffff" : "#18181b",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <Zap size={outage.isWholeCity ? 15 : 13} color="#f59e0b" fill="#f59e0b" strokeWidth={2.4} />
+                    <span>{outage.isWholeCity ? "Palayan City" : `Brgy. ${outage.name}`}</span>
+                    <span
+                      style={{
+                        padding: "1px 7px",
+                        borderRadius: 5,
+                        fontSize: 9.5,
+                        fontWeight: 800,
+                        textTransform: "uppercase",
+                        background: outage.status === "ongoing" ? "rgba(239, 68, 68, 0.22)" : "rgba(245, 158, 11, 0.22)",
+                        color: outage.status === "ongoing" ? "#ef4444" : "#f59e0b",
+                        border: `1px solid ${outage.status === "ongoing" ? "rgba(239, 68, 68, 0.45)" : "rgba(245, 158, 11, 0.45)"}`,
+                        letterSpacing: "0.3px",
+                      }}
+                    >
+                      {outage.isWholeCity ? "City-wide" : (outage.status || "Outage")}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      width: 0,
+                      height: 0,
+                      borderLeft: outage.isWholeCity ? "6px solid transparent" : "5px solid transparent",
+                      borderRight: outage.isWholeCity ? "6px solid transparent" : "5px solid transparent",
+                      borderTop: outage.isWholeCity ? "6px solid #f59e0b" : "5px solid #f59e0b",
+                    }}
+                  />
+                </div>
+              </Marker>
+            ))}
+
+          {/* Water Interruption Warning Markers (Blue) */}
+          {(activeLayers.waterFacilities || hasActiveWaterAdvisories) &&
+            displayWaterMarkers.map((outage) => (
+              <Marker
+                key={outage.isWholeCity ? "wtr-outage-marker-whole-city" : `wtr-outage-marker-${outage.name}`}
+                longitude={outage.lng}
+                latitude={outage.lat}
+                anchor="bottom"
+              >
+                <div
+                  onClick={(e) => {
+                    e.originalEvent?.stopPropagation();
+                    e.stopPropagation();
+                    setSelectedWaterOutage(outage);
+                  }}
+                  style={{
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    transform: "translateY(-4px)",
+                    zIndex: 60,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: outage.isWholeCity ? 7 : 5,
+                      padding: outage.isWholeCity ? "6px 14px" : "4px 9px",
+                      borderRadius: outage.isWholeCity ? 20 : 16,
+                      background: mapStyleId === "dark-v11" ? "rgba(24, 24, 27, 0.95)" : "#ffffff",
+                      border: "2px solid #0284c7",
+                      boxShadow: outage.isWholeCity
+                        ? "0 4px 18px rgba(2, 132, 199, 0.7), 0 0 24px rgba(2, 132, 199, 0.4)"
+                        : "0 4px 14px rgba(2, 132, 199, 0.55)",
+                      fontSize: outage.isWholeCity ? 12.5 : 11,
+                      fontWeight: 800,
+                      color: mapStyleId === "dark-v11" ? "#ffffff" : "#18181b",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <Droplet size={outage.isWholeCity ? 15 : 13} color="#0284c7" fill="#0284c7" strokeWidth={2.4} />
+                    <span>{outage.isWholeCity ? "Palayan City" : `Brgy. ${outage.name}`}</span>
+                    <span
+                      style={{
+                        padding: "1px 7px",
+                        borderRadius: 5,
+                        fontSize: 9.5,
+                        fontWeight: 800,
+                        textTransform: "uppercase",
+                        background: outage.status === "ongoing" ? "rgba(2, 132, 199, 0.22)" : "rgba(34, 197, 94, 0.22)",
+                        color: outage.status === "ongoing" ? "#38bdf8" : "#22c55e",
+                        border: `1px solid ${outage.status === "ongoing" ? "rgba(2, 132, 199, 0.45)" : "rgba(34, 197, 94, 0.45)"}`,
+                        letterSpacing: "0.3px",
+                      }}
+                    >
+                      {outage.isWholeCity ? "City-wide" : (outage.status || "Interruption")}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      width: 0,
+                      height: 0,
+                      borderLeft: outage.isWholeCity ? "6px solid transparent" : "5px solid transparent",
+                      borderRight: outage.isWholeCity ? "6px solid transparent" : "5px solid transparent",
+                      borderTop: outage.isWholeCity ? "6px solid #0284c7" : "5px solid #0284c7",
+                    }}
+                  />
+                </div>
+              </Marker>
+            ))}
+
+          {/* Power Outage Advisory Popup */}
+          {selectedOutage && (
+            <Popup
+              longitude={selectedOutage.lng}
+              latitude={selectedOutage.lat}
+              anchor="top"
+              offset={14}
+              closeButton={true}
+              closeOnClick={false}
+              onClose={() => setSelectedOutage(null)}
+              maxWidth="320px"
+              style={{ zIndex: 120, fontFamily: "'Nohemi', sans-serif" }}
+            >
+              <div style={{ padding: "8px 6px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      background: "rgba(245, 158, 11, 0.2)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Zap size={16} color="#f59e0b" fill="#f59e0b" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: isDark ? "#ffffff" : "#18181b" }}>
+                      {selectedOutage.isWholeCity ? "Palayan City" : `Brgy. ${selectedOutage.name}`}
+                    </div>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "#f59e0b", textTransform: "uppercase", letterSpacing: 0.3 }}>
+                      {selectedOutage.isWholeCity ? "City-wide Power Interruption (All 19 Barangays)" : "NEECO Power Advisory"}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 6,
+                    margin: "8px 0",
+                    padding: "8px",
+                    borderRadius: 8,
+                    background: isDark ? "rgba(255, 255, 255, 0.05)" : "#f8f9fa",
+                    fontSize: 11,
+                  }}
+                >
+                  <div>
+                    <span style={{ color: "#71717a", display: "block" }}>Restoration Status</span>
+                    <strong
+                      style={{
+                        color: selectedOutage.status === "ongoing" ? "#ef4444" : "#f59e0b",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {selectedOutage.status}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "#71717a", display: "block" }}>Date</span>
+                    <strong>{selectedOutage.date || "Today"}</strong>
+                  </div>
+                  {selectedOutage.peakTime && (
+                    <div>
+                      <span style={{ color: "#71717a", display: "block" }}>Peak Outage Time</span>
+                      <strong>{selectedOutage.peakTime.slice(0, 5)}</strong>
+                    </div>
+                  )}
+                  {selectedOutage.cause && (
+                    <div>
+                      <span style={{ color: "#71717a", display: "block" }}>Cause</span>
+                      <strong>{selectedOutage.cause}</strong>
+                    </div>
+                  )}
+                  {selectedOutage.households && (
+                    <div>
+                      <span style={{ color: "#71717a", display: "block" }}>Affected Homes</span>
+                      <strong>{Number(selectedOutage.households).toLocaleString()}</strong>
+                    </div>
+                  )}
+                  {selectedOutage.duration && (
+                    <div>
+                      <span style={{ color: "#71717a", display: "block" }}>Duration</span>
+                      <strong>{selectedOutage.duration} mins</strong>
+                    </div>
+                  )}
+                </div>
+
+                {selectedOutage.description && (
+                  <p style={{ margin: "6px 0 0", fontSize: 11.5, color: isDark ? "#d4d4d8" : "#3f3f46", lineHeight: 1.4 }}>
+                    {selectedOutage.description}
+                  </p>
+                )}
+              </div>
+            </Popup>
+          )}
+
+          {/* Water Interruption Details Popup */}
+          {selectedWaterOutage && (
+            <Popup
+              longitude={selectedWaterOutage.lng}
+              latitude={selectedWaterOutage.lat}
+              anchor="top"
+              offset={14}
+              closeButton={true}
+              closeOnClick={false}
+              onClose={() => setSelectedWaterOutage(null)}
+              maxWidth="320px"
+              style={{ zIndex: 120, fontFamily: "'Nohemi', sans-serif" }}
+            >
+              <div style={{ padding: "8px 6px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      background: "rgba(2, 132, 199, 0.2)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Droplet size={16} color="#0284c7" fill="#0284c7" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: isDark ? "#ffffff" : "#18181b" }}>
+                      {selectedWaterOutage.isWholeCity ? "Palayan City" : `Brgy. ${selectedWaterOutage.name}`}
+                    </div>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "#0284c7", textTransform: "uppercase", letterSpacing: 0.3 }}>
+                      {selectedWaterOutage.isWholeCity ? "City-wide Water Interruption (All 19 Barangays)" : `${selectedWaterOutage.provider || "Water Utility"} Advisory`}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 6,
+                    margin: "8px 0",
+                    padding: "8px",
+                    borderRadius: 8,
+                    background: isDark ? "rgba(255, 255, 255, 0.05)" : "#f8f9fa",
+                    fontSize: 11,
+                  }}
+                >
+                  <div>
+                    <span style={{ color: "#71717a", display: "block" }}>Status</span>
+                    <strong
+                      style={{
+                        color: selectedWaterOutage.status === "ongoing" ? "#38bdf8" : "#22c55e",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {selectedWaterOutage.status}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "#71717a", display: "block" }}>Provider</span>
+                    <strong>{selectedWaterOutage.provider || "PCWD"}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "#71717a", display: "block" }}>Date</span>
+                    <strong>{selectedWaterOutage.date || "Today"}</strong>
+                  </div>
+                  {selectedWaterOutage.startTime && (
+                    <div>
+                      <span style={{ color: "#71717a", display: "block" }}>Start Time</span>
+                      <strong>{selectedWaterOutage.startTime.slice(0, 5)}</strong>
+                    </div>
+                  )}
+                  {selectedWaterOutage.durationHours && (
+                    <div>
+                      <span style={{ color: "#71717a", display: "block" }}>Duration</span>
+                      <strong>{selectedWaterOutage.durationHours} hrs</strong>
+                    </div>
+                  )}
+                  {selectedWaterOutage.cause && (
+                    <div>
+                      <span style={{ color: "#71717a", display: "block" }}>Cause</span>
+                      <strong style={{ textTransform: "capitalize" }}>{selectedWaterOutage.cause.replace(/_/g, " ")}</strong>
+                    </div>
+                  )}
+                  {selectedWaterOutage.households && (
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <span style={{ color: "#71717a", display: "block" }}>Affected Homes</span>
+                      <strong>{Number(selectedWaterOutage.households).toLocaleString()} households</strong>
+                    </div>
+                  )}
+                </div>
+
+                {selectedWaterOutage.description && (
+                  <p style={{ margin: "6px 0 0", fontSize: 11.5, color: isDark ? "#d4d4d8" : "#3f3f46", lineHeight: 1.4 }}>
+                    {selectedWaterOutage.description}
+                  </p>
+                )}
+              </div>
+            </Popup>
+          )}
+
           {searchPin && (
             <Marker
               longitude={searchPin.lng}
@@ -1032,6 +1768,69 @@ function MapScreen({
             >
               <SearchPin />
             </Marker>
+          )}
+
+          {/* KloudTrack IoT Weather Stations */}
+          {activeLayers.kloudtrackStations && weatherStations.map((station) => (
+            <Marker
+              key={station.station.id}
+              longitude={station.station.location[0]}
+              latitude={station.station.location[1]}
+              anchor="bottom"
+              onClick={(e) => {
+                e.originalEvent.stopPropagation();
+                closePopup();
+                setSelectedKloudtrackStation(station);
+              }}
+            >
+              <KloudtrackStationMarker
+                station={station}
+                isSelected={selectedKloudtrackStation?.station?.id === station.station.id}
+                onClick={(st) => {
+                  closePopup();
+                  setSelectedKloudtrackStation(st);
+                }}
+                isDark={isDark}
+                activeMetric={activeMetric}
+              />
+            </Marker>
+          ))}
+
+          {/* KloudTrack Station Telemetry Popup */}
+          {selectedKloudtrackStation && (
+            <Popup
+              longitude={selectedKloudtrackStation.station.location[0]}
+              latitude={selectedKloudtrackStation.station.location[1]}
+              anchor="top"
+              offset={16}
+              closeButton={false}
+              closeOnClick={false}
+              onClose={() => setSelectedKloudtrackStation(null)}
+              maxWidth="360px"
+              style={{ zIndex: 100, fontFamily: "'Nohemi', sans-serif" }}
+            >
+              <KloudtrackStationPopup
+                station={selectedKloudtrackStation}
+                onClose={() => setSelectedKloudtrackStation(null)}
+                onFocusStation={() => {
+                  if (mapRef.current) {
+                    mapRef.current.flyTo({
+                      center: [
+                        selectedKloudtrackStation.station.location[0],
+                        selectedKloudtrackStation.station.location[1],
+                      ],
+                      zoom: 17.5,
+                      pitch: 55,
+                      bearing: -20,
+                      duration: 1500,
+                    });
+                  }
+                }}
+                isDark={isDark}
+                activeMetric={activeMetric}
+                onSelectMetric={setActiveMetric}
+              />
+            </Popup>
           )}
 
           {selectedReport && (
@@ -1044,8 +1843,8 @@ function MapScreen({
               closeOnClick={false}
               onClose={closePopup}
               className={isExiting ? "popup-exiting" : ""}
-              style={{ fontFamily: "Nunito, sans-serif" }}
-              maxWidth="280px"
+              style={{ fontFamily: "'Nohemi', sans-serif" }}
+              maxWidth="320px"
             >
               <MapPopupContent
                 selectedReport={selectedReport}
@@ -1067,8 +1866,8 @@ function MapScreen({
           <div
             style={{
               position: "absolute",
-              bottom: "calc(16px + env(safe-area-inset-bottom, 0px) + 64px + 6px + 64px + 6px)",
-              right: 14,
+              bottom: "calc(16px + env(safe-area-inset-bottom, 0px) + 58px + 10px + 64px + 10px)",
+              right: 16,
               width: 64,
               zIndex: 9,
               opacity: isMapFullView ? 1 : 0,
@@ -1107,15 +1906,17 @@ function MapScreen({
               }}
             >
               {[
-                { id: "dark-v11", Icon: Moon },
-                { id: "streets-v12", Icon: MapIcon },
-                { id: "satellite-streets-v12", Icon: Globe },
+                { id: "dark-v11", Icon: Moon, title: "Dark Mode" },
+                { id: "streets-v12", Icon: Sun, title: "Light Mode" },
+                { id: "satellite-streets-v12", Icon: Globe, title: "Satellite View" },
               ].map((layer) => {
                 const isActive = mapStyleId === layer.id;
                 return (
                   <button
                     key={layer.id}
                     onClick={() => setMapStyleId(layer.id)}
+                    title={layer.title}
+                    aria-label={layer.title}
                     style={{
                       width: 52,
                       height: 52,
@@ -1152,7 +1953,7 @@ function MapScreen({
           </div>
         )}
 
-        {/* FAB — only on Maps tab */}
+        {/* FAB - only on Maps tab */}
         {showMapUI && (
           <>
             <button
@@ -1168,8 +1969,8 @@ function MapScreen({
               style={{
                 position: "absolute",
                 bottom:
-                  "calc(16px + env(safe-area-inset-bottom, 0px) + 64px + 6px)",
-                right: 14,
+                  "calc(16px + env(safe-area-inset-bottom, 0px) + 58px + 10px)",
+                right: 16,
                 width: 64,
                 height: 64,
                 background: isDark ? "#18181b" : "#ffffff",
@@ -1211,6 +2012,7 @@ function MapScreen({
         setDescModalOpen={setDescModalOpen}
         selectedReport={selectedReport}
       />
+
     </div>
   );
 }

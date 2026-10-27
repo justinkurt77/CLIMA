@@ -186,7 +186,7 @@ export default function BottomNav({
                     fontSize: 9,
                     fontWeight: isActive ? 800 : 700,
                     color: isActive ? "#ffffff" : "rgba(255,255,255,0.7)",
-                    fontFamily: "Nunito, sans-serif",
+                    fontFamily: "'Nohemi', sans-serif",
                     letterSpacing: 0.2,
                   }}
                 >

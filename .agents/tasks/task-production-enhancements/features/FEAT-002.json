@@ -1,0 +1,50 @@
+{
+  "id": "FEAT-002",
+  "type": "perf",
+  "description": "Data Layer & Performance Optimization: Wrap all Supabase calls with React Query (already done in main.jsx but verify all screens use it), add debounce to search/filter inputs, implement pagination UI components for reports/advisories/operations lists (hooks already exist, add UI controls), memoize expensive components and computations, ensure lazy loading for route-level code splitting (already done for Map/Admin/Legal but verify), add loading='lazy' to all images, create skeleton components for data tables and cards, cache expensive calculations like weather aggregations and damage totals",
+  "status": "pending",
+  "steps": [
+    "1. Audit all screens for direct supabase.from() calls. Confirm HomeScreen, MapScreen, AdminDashboard, EmergencyScreen, ElNinoMonitoringDashboard already use React Query or can be refactored. Document any remaining direct calls to migrate",
+    "2. Extract useDebounce hook from components/map/SearchBar.jsx into src/hooks/useDebounce.js for reuse",
+    "3. In AdminMapScreen.jsx line 552, wrap searchQuery state with useDebounce(searchQuery, 300) before filtering reports. Import from hooks/useDebounce.js",
+    "4. In HomeScreen.jsx line 787 (barangay search), wrap searchQuery with useDebounce(searchQuery, 300). Apply debounced value to filteredBarangays useMemo",
+    "5. In AdminDashboard.jsx, find all input onChange handlers for search/filter fields and apply useDebounce with 300ms delay before triggering filter operations",
+    "6. Create src/components/ui/PaginationControls.jsx: reusable component accepting { currentPage, totalPages, onPageChange, isLoading }. Render Prev/Next buttons and page number. Style matching existing button patterns",
+    "7. In AdminDashboard.jsx ReportsTab, the usePaginatedReports hook is already imported. Add PaginationControls component below the reports list, wire up fetchNextPage, hasNextPage, isFetchingNextPage from useInfiniteQuery result",
+    "8. Similarly add pagination controls to AdvisoriesTab, BFP Operations, CDRRMO Operations, Hospital Records sections in AdminDashboard using existing hooks (usePaginatedAdvisories, usePaginatedBFPOps, usePaginatedCDRRMOOps, usePaginatedHospitalRecords)",
+    "9. In HomeScreen.jsx, identify large ReportCard list renders. Confirm ReportCard is already memoized (src/components/ui/ReportCard.jsx line 58). Verify parent list doesn't recreate callbacks - wrap any inline functions passed as props with useCallback",
+    "10. In MapScreen.jsx, confirm useMemo for stationCoverageGeoJSON and heatIndexCoverageGeoJSON (lines 388, 397). Verify onMapLoad, refreshWeatherData, fitAllPins are useCallback wrapped (lines 423, 515). No changes needed if already optimized",
+    "11. Create src/components/ui/LoadingSkeleton.jsx: reusable skeleton component for cards, rows, and avatars. Accept variant prop: 'card' | 'row' | 'avatar'. Use CSS animations for shimmer effect",
+    "12. In HomeScreen.jsx, when loading advisories or reports, show <LoadingSkeleton variant='card' count={3} /> instead of plain 'Loading...' text",
+    "13. In AdminDashboard.jsx OverviewTab, when fetching analytics data, show LoadingSkeleton for metric cards and chart areas until data loads",
+    "14. In MapScreen.jsx, the existing map loading fallback shows MapIcon + text. Enhance with LoadingSkeleton for map pins list if applicable",
+    "15. Audit all <img> tags in components. Confirm loading='lazy' on: ReportCard (line 85), PhotoCard (line 53), AdminDashboard (lines 1605, 3023, 3091). Add loading='lazy' to any remaining <img> tags in HomeScreen, EmergencyScreen, ProfileScreen",
+    "16. In HomeScreen.jsx, the heatIndex calculation (line 358 useMemo) is already cached. Verify weatherInfo, filteredBarangays, waveInfo, formattedRecordedAt, liveStationData are all useMemo wrapped. Confirm heroBgUrl useMemo (line 311). No changes if already optimized",
+    "17. In ElNinoMonitoringDashboard.jsx, if there are large data aggregations or chart data preparations, wrap with useMemo based on the data dependencies",
+    "18. Run 'npm run build' and check dist/ chunk sizes. Confirm code splitting produced separate chunks for MapScreen, AdminDashboard, LegalScreen, AdminMapScreen",
+    "19. Test in browser: verify debounced search doesn't trigger on every keystroke, pagination controls appear and work, skeletons show while loading, images lazy load as you scroll"
+  ],
+  "acceptance_criteria": [
+    "Search inputs do not trigger filter operations on every keystroke, only after 300ms pause",
+    "Pagination controls (Prev/Next, page number) appear below paginated lists in AdminDashboard",
+    "Clicking Next Page loads next set of 50 records without full page reload",
+    "While data loads, skeleton placeholders appear instead of blank space or 'Loading...' text",
+    "All images have loading='lazy' attribute and load only when scrolled into view (check Network tab throttling)",
+    "npm run build output shows separate chunk files for MapScreen, AdminDashboard, LegalScreen",
+    "No console warnings about missing dependencies in useEffect/useMemo/useCallback arrays"
+  ],
+  "verification": [
+    "Run 'npm run build' and confirm exit code 0, verify dist/assets/ contains separate chunks for lazy-loaded routes",
+    "Run 'npm run dev', open http://localhost:5173",
+    "Open DevTools Network tab, set throttling to Slow 3G",
+    "Navigate to Maps tab and confirm MapScreen chunk loads separately",
+    "In AdminDashboard ReportsTab, type in search field and observe only one filter operation after you stop typing (not on every keystroke)",
+    "Scroll to bottom of reports list and confirm Next Page button appears if more than 50 records exist",
+    "Click Next Page and confirm new records load",
+    "Reload page and observe skeleton components appear briefly before real data",
+    "Scroll down a long list and watch Network tab - images should load as they enter viewport, not all at once",
+    "Check browser console for any React warnings about missing dependencies"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

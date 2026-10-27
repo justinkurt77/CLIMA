@@ -1,0 +1,38 @@
+{
+  "id": "FEAT-002",
+  "type": "perf",
+  "description": "Eliminate N+1 query patterns across the application by ensuring all Supabase queries join related tables in a single query instead of fetching parent records then looping to fetch children. The primary pattern to fix is reports/advisories/operations fetching categories/departments/profiles in separate queries. This reduces query count from hundreds to single-digit per page load.",
+  "status": "pending",
+  "steps": [
+    "1. Audit all Supabase queries in src/screens/AdminDashboard.jsx (all tab functions), src/screens/HomeScreen.jsx, src/components/dashboard/ElNinoMonitoringDashboard.jsx for N+1 patterns (loops with queries, .map() followed by individual fetches)",
+    "2. Fix reports queries in AdminDashboard.jsx fetchData function: change from .select('*') to .select('*, categories(id, name, icon, department_id, departments(id, name, accent_color))') to fetch all related data in ONE query",
+    "3. Fix advisories queries in AdminDashboard.jsx AdvisoriesTab and HomeScreen.jsx: add profiles join to existing departments join: .select('*, departments(id, name, accent_color), profiles(id, full_name, email)')",
+    "4. Fix hospital_daily_records queries to join any lookup tables (hospitals, conditions, etc.) in single query",
+    "5. Fix cdrrmo_daily_operations queries to join operation_types, resources, evacuation centers if applicable",
+    "6. Fix bfp_operations queries to join fire_stations, equipment, personnel if applicable",
+    "7. Fix agriculture_damage_reports queries to join farmer/location lookups if applicable",
+    "8. Verify ReportCard.jsx component (src/components/ui/ReportCard.jsx) makes no Supabase calls—should only receive props",
+    "9. Verify MapPins.jsx and map components (src/components/map/*.jsx) have no loops triggering per-marker queries",
+    "10. Document all query changes in FEAT-002 findings for future reference"
+  ],
+  "acceptance_criteria": [
+    "Browser Network tab shows each data fetch is a single Supabase query, not N separate queries",
+    "Reports query returns nested categories and departments objects without additional queries",
+    "Advisories query returns nested departments and profiles objects without additional queries",
+    "No grep matches for patterns like 'data.map(async item => supabase.from' or similar loop-query combinations",
+    "ReportCard.jsx has no supabase import or query logic",
+    "MapPins.jsx and map components have no per-marker Supabase queries",
+    "All admin dashboard tabs load with <10 network requests total (down from potentially 100+)"
+  ],
+  "verification": [
+    "npm run dev, navigate to admin dashboard",
+    "Open DevTools Network tab, filter for supabase.co requests",
+    "Click through Reports, Advisories, Hospital tabs",
+    "Verify each tab makes 1-3 queries max, not dozens",
+    "Inspect query responses: confirm nested related data present (e.g., report.categories.departments)",
+    "grep -r 'supabase' src/components/ui/ReportCard.jsx (should return no matches)",
+    "grep -r 'supabase' src/components/map/MapPins.jsx (should return no matches or only static imports)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

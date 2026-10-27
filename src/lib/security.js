@@ -1,4 +1,5 @@
 // Security utilities for CLIMA
+import { logger } from './logger';
 
 /**
  * XSS Protection: Sanitize user input
@@ -234,7 +235,7 @@ export async function logAuditEvent(supabase, event) {
       user_agent: navigator.userAgent,
     });
   } catch (error) {
-    console.error('Failed to log audit event:', error);
+    logger.error('Failed to log audit event:', error);
   }
 }
 

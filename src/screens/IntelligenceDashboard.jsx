@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { AlertTriangle, CheckCircle, Bell, Network, Activity } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/logger";
 
 export default function IntelligenceDashboard() {
   const { isDark } = useTheme();
@@ -14,8 +15,9 @@ export default function IntelligenceDashboard() {
     fetchData();
 
     // Real-time subscriptions
+    const alertsChannelId = `conflict_alerts_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const alertsSub = supabase
-      .channel("conflict_alerts")
+      .channel(alertsChannelId)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "conflict_alerts" },
@@ -23,8 +25,9 @@ export default function IntelligenceDashboard() {
       )
       .subscribe();
 
+    const notifsChannelId = `inter_agency_notifications_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const notifsSub = supabase
-      .channel("inter_agency_notifications")
+      .channel(notifsChannelId)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "inter_agency_notifications" },
@@ -33,8 +36,8 @@ export default function IntelligenceDashboard() {
       .subscribe();
 
     return () => {
-      alertsSub.unsubscribe();
-      notifsSub.unsubscribe();
+      supabase.removeChannel(alertsSub);
+      supabase.removeChannel(notifsSub);
     };
   }, [filter]);
 
@@ -69,7 +72,7 @@ export default function IntelligenceDashboard() {
       setAlerts(alertsData || []);
       setNotifications(notifsData || []);
     } catch (err) {
-      console.error("Failed to fetch intelligence data:", err);
+      logger.error("Failed to fetch intelligence data:", err);
     } finally {
       setLoading(false);
     }
@@ -88,7 +91,7 @@ export default function IntelligenceDashboard() {
       if (error) throw error;
       fetchData();
     } catch (err) {
-      console.error("Failed to acknowledge alert:", err);
+      logger.error("Failed to acknowledge alert:", err);
     }
   };
 
@@ -105,7 +108,7 @@ export default function IntelligenceDashboard() {
       if (error) throw error;
       fetchData();
     } catch (err) {
-      console.error("Failed to resolve alert:", err);
+      logger.error("Failed to resolve alert:", err);
     }
   };
 

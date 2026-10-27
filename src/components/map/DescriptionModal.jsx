@@ -1,3 +1,5 @@
+import DOMPurify from "dompurify";
+
 export function DescriptionModal({
   descModalOpen,
   setDescModalOpen,
@@ -79,7 +81,7 @@ export function DescriptionModal({
             Location
           </div>
           <div style={{ fontSize: 12, color: "#555", lineHeight: 1.5 }}>
-            {selectedReport.location || "—"}
+            {selectedReport.location || "N/A"}
           </div>
         </div>
 
@@ -97,7 +99,8 @@ export function DescriptionModal({
             Description
           </div>
           <div style={{ fontSize: 13, color: "#333", lineHeight: 1.6 }}>
-            {selectedReport.description || "No description provided."}
+            {/* Sanitize user-generated report description to prevent XSS */}
+            {DOMPurify.sanitize(selectedReport.description || "No description provided.")}
           </div>
         </div>
 

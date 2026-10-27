@@ -1,3 +1,4 @@
+import React from "react";
 import {
   MapPin,
   Clock,
@@ -13,16 +14,8 @@ import {
 } from "lucide-react";
 
 import { useTheme } from "../../context/ThemeContext";
-
-const ICON_MAP = {
-  ShieldAlert,
-  Wrench,
-  Trash2,
-  Dog,
-  Construction,
-  TreePine,
-  CarFront,
-};
+import DOMPurify from 'dompurify';
+import { resolveMapIcon } from "../map/MapPins";
 
 export function getStatusMeta(status, isDark) {
   switch (status) {
@@ -53,10 +46,15 @@ export function getStatusMeta(status, isDark) {
   }
 }
 
-export default function ReportCard({ report }) {
+const ReportCard = React.memo(function ReportCard({ report }) {
   const { isDark } = useTheme();
   const meta = getStatusMeta(report.status, isDark);
   const { Icon } = meta;
+  
+  // Sanitize user-generated content to prevent XSS
+  const sanitizedTitle = DOMPurify.sanitize(report.title || report.category || "Reported Issue", { ALLOWED_TAGS: [] });
+  const sanitizedLocation = DOMPurify.sanitize(report.location || "Palayan City", { ALLOWED_TAGS: [] });
+  
   return (
     <div
       style={{
@@ -75,6 +73,9 @@ export default function ReportCard({ report }) {
         <img
           src={report.photoPreview}
           alt="report"
+          loading="lazy"
+          width="44"
+          height="44"
           style={{
             width: 44,
             height: 44,
@@ -100,12 +101,16 @@ export default function ReportCard({ report }) {
             color: "var(--text-primary)",
           }}
         >
-          {ICON_MAP[report.icon]
-            ? (() => {
-                const DynamicIcon = ICON_MAP[report.icon];
-                return <DynamicIcon size={20} color={isDark ? "#ffffff" : "#09090b"} />;
-              })()
-            : report.icon || "📝"}
+          {(() => {
+            const { Component: DynIcon, isEmoji, emojiText } = resolveMapIcon(report.icon);
+            if (DynIcon) {
+              return <DynIcon size={20} color={isDark ? "#ffffff" : "#09090b"} />;
+            }
+            if (isEmoji) {
+              return emojiText;
+            }
+            return "📝";
+          })()}
         </div>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -161,4 +166,6 @@ export default function ReportCard({ report }) {
       </div>
     </div>
   );
-}
+});
+
+export default ReportCard;

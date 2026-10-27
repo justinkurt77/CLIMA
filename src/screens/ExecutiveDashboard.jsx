@@ -24,6 +24,7 @@ import {
 } from "recharts";
 import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
+import { logger } from "../lib/logger";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
@@ -68,24 +69,55 @@ export default function ExecutiveDashboard() {
 
       // Hospitals data
       const { data: hospitals } = await supabase
-        .from("hospitals")
+        .from("hospital_daily_records")
         .select("heat_stroke_cases, heat_exhaustion_cases, dehydration_cases");
+
+      // Utilities data
+      const [{ data: powerData }, { data: waterData }] = await Promise.all([
+        supabase.from("power_interruptions").select("id, restoration_status"),
+        supabase.from("water_interruptions").select("id, status")
+      ]);
+
+      // Fire operations data
+      const { data: bfpData } = await supabase
+        .from("bfp_operations")
+        .select("operation_date, operation_type")
+        .gte("operation_date", startDate.toISOString().split("T")[0]);
 
       // Process data
       const incidentsByDay = processIncidentsByDay(incidents || []);
       const categoryBreakdown = processCategoryBreakdown(categories || []);
       const hospitalStats = processHospitalStats(hospitals || []);
 
+      const powerCount = powerData?.length || 0;
+      const waterCount = waterData?.length || 0;
+      const resolvedPower = powerData?.filter(p => p.restoration_status === "restored").length || 0;
+      const resolvedWater = waterData?.filter(w => w.status === "resolved").length || 0;
+
+      const utilityStats = [
+        { name: "Power Interruptions", value: powerCount },
+        { name: "Water Outages", value: waterCount },
+        { name: "Resolved", value: resolvedPower + resolvedWater },
+      ];
+
+      // Fire data by month/type
+      const fireMap = {};
+      (bfpData || []).forEach(b => {
+        const month = new Date(b.operation_date).toLocaleString("default", { month: "short" });
+        fireMap[month] = (fireMap[month] || 0) + 1;
+      });
+      const fireStats = Object.entries(fireMap).map(([month, incidents]) => ({ month, incidents }));
+
       setAnalytics({
         incidents: incidentsByDay,
         categories: categoryBreakdown,
         hospitals: hospitalStats,
-        heatIndex: generateMockHeatIndexData(daysAgo),
-        utilities: generateMockUtilityData(),
-        fire: generateMockFireData(),
+        heatIndex: [],
+        utilities: utilityStats,
+        fire: fireStats,
       });
     } catch (err) {
-      console.error("Failed to fetch analytics:", err);
+      logger.error("Failed to fetch analytics:", err);
     } finally {
       setLoading(false);
     }
@@ -98,7 +130,7 @@ export default function ExecutiveDashboard() {
       if (!dayMap[day]) {
         dayMap[day] = { date: day, pending: 0, inprogress: 0, resolved: 0 };
       }
-      dayMap[day][inc.status]++;
+      dayMap[day][inc.status] = (dayMap[day][inc.status] || 0) + 1;
     });
     return Object.values(dayMap);
   };
@@ -113,7 +145,7 @@ export default function ExecutiveDashboard() {
   };
 
   const processHospitalStats = (hospitals) => {
-    const totals = hospitals.reduce(
+    const totals = (hospitals || []).reduce(
       (acc, h) => ({
         heatStroke: acc.heatStroke + (h.heat_stroke_cases || 0),
         heatExhaustion: acc.heatExhaustion + (h.heat_exhaustion_cases || 0),
@@ -128,34 +160,6 @@ export default function ExecutiveDashboard() {
       { name: "Dehydration", value: totals.dehydration },
     ];
   };
-
-  const generateMockHeatIndexData = (days) => {
-    const data = [];
-    for (let i = days; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      data.push({
-        date: date.toLocaleDateString(),
-        heatIndex: 35 + Math.random() * 10,
-        temperature: 30 + Math.random() * 8,
-      });
-    }
-    return data;
-  };
-
-  const generateMockUtilityData = () => [
-    { name: "Power Interruptions", value: 12 },
-    { name: "Water Outages", value: 8 },
-    { name: "Resolved", value: 15 },
-  ];
-
-  const generateMockFireData = () => [
-    { month: "Jan", incidents: 3 },
-    { month: "Feb", incidents: 2 },
-    { month: "Mar", incidents: 5 },
-    { month: "Apr", incidents: 4 },
-    { month: "May", incidents: 6 },
-  ];
 
   const exportToPDF = () => {
     const doc = new jsPDF();

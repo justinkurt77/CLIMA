@@ -9,6 +9,7 @@ import {
   TreePine,
   CarFront,
 } from "lucide-react";
+import { logger } from "../../../lib/logger";
 
 export const CATEGORY_GROUPS = [
   {
@@ -244,7 +245,7 @@ export async function reverseGeocode(lat, lng) {
         address = [road, barangay, city, province].filter(Boolean).join(", ");
       }
     } catch (err) {
-      console.error("Mapbox geocoding error:", err);
+      logger.error("Mapbox geocoding error:", err);
     }
   }
 

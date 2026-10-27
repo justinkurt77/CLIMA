@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ChevronLeft, Folder, Loader2, ShieldAlert, Wrench, Trash2, Dog, Construction, TreePine, CarFront, ClipboardList } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "../../../lib/supabase";
+import { logger } from "../../../lib/logger";
 import { CATEGORY_GROUPS } from "./reportConstants";
 import { useTheme } from "../../../context/ThemeContext";
 
@@ -43,7 +44,7 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
           setExpandedGroups({ 0: true });
         }
       } catch (err) {
-        console.error("Error loading categories, using fallback", err);
+        logger.error("Error loading categories, using fallback", err);
         setCategoryGroups(CATEGORY_GROUPS.map(g => ({ name: g.name, items: g.items, iconName: g.iconName })));
         setExpandedGroups({ 0: true });
       } finally {
@@ -107,7 +108,7 @@ export default function Step1CategoryPicker({ onNext, onClose }) {
       <div className="hide-scroll" style={{ padding: "0 22px", paddingBottom: 110, flex: 1, overflowY: "auto" }}>
         <h1
           style={{
-            fontFamily: "Nunito, sans-serif",
+            fontFamily: "'Nohemi', sans-serif",
             fontWeight: 900,
             fontSize: 24,
             letterSpacing: -0.5,

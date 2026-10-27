@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-005",
+  "type": "docs",
+  "description": "Create required legal and operational documents as requested: Terms of Service, Privacy Policy, Data Processing Agreement, Refund Policy, Master Service Agreement. These documents must be tailored for CLIMA disaster response platform operated by Palayan City government, Philippines.",
+  "status": "pending",
+  "steps": [
+    "Create public/legal/terms-of-service.md with sections: Acceptance of Terms, Service Description (disaster reporting platform for Palayan City), User Accounts, User Responsibilities, Prohibited Uses, Content Ownership, Government Use Disclaimer, Limitation of Liability, Governing Law (Philippines), Contact Information",
+    "Create public/legal/privacy-policy.md with sections: Information Collection (name, email, location, photos), Use of Information (disaster response coordination), Data Sharing (with government agencies only), Data Retention, User Rights (access, deletion), Cookies, Security Measures (RLS, encryption in transit), Children's Privacy, Changes to Policy, Contact Information. Must be GDPR-aware and Philippines Data Privacy Act 2012 compliant.",
+    "Create public/legal/data-processing-agreement.md for government departments using CLIMA: Purpose and Scope, Data Categories (citizen reports, locations, emergency data), Processing Activities, Data Subject Rights, Security Measures (RLS, server-side validation, rate limiting), Sub-processors (Supabase, Mapbox), Data Breach Notification, Term and Termination",
+    "Create public/legal/refund-policy.md stating CLIMA is a free public service provided by Palayan City government with no charges or refunds applicable",
+    "Create public/legal/master-service-agreement.md for inter-agency data sharing: Parties (Palayan City Government departments), Services Provided (CLIMA platform access), Data Usage Rights, Service Level Expectations, Confidentiality, Indemnification, Dispute Resolution, Term (ongoing), Amendment Process",
+    "Create src/screens/LegalScreen.jsx as a new screen component with tabs for each legal document, markdown rendering using react-markdown or simple pre-formatted text display",
+    "Add legal document links to ProfileScreen.jsx footer: Terms, Privacy, DPA (admin only)",
+    "Add /legal route to App.jsx with lazy-loaded LegalScreen"
+  ],
+  "acceptance_criteria": [
+    "5 legal documents created in public/legal/ directory, each 500-2000 words, specific to CLIMA and Palayan City context",
+    "Documents reference actual CLIMA features: citizen reporting, admin moderation, geolocation, photo uploads, department routing",
+    "Privacy Policy mentions Supabase (data processor), Mapbox (mapping), specific data types collected",
+    "LegalScreen component created and accessible via ProfileScreen links",
+    "Documents display correctly in browser without markdown rendering errors"
+  ],
+  "verification": [
+    "Execute: ls -lh public/legal/ (verify 5 files exist: terms-of-service.md, privacy-policy.md, data-processing-agreement.md, refund-policy.md, master-service-agreement.md)",
+    "Execute: wc -w public/legal/*.md (verify each file 500+ words)",
+    "Execute: npm run dev, navigate to /legal, verify documents load and display correctly",
+    "Manual: Review each document for Palayan City branding, CLIMA-specific content, legal completeness (not generic template)"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

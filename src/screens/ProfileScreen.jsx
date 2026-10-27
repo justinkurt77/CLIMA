@@ -11,6 +11,7 @@ import {
   Check,
   Moon,
   Sun,
+  Shield,
 } from "lucide-react";
 import MyReportsScreen from "./MyReportsScreen";
 import AuthScreen from "./AuthScreen";
@@ -18,6 +19,9 @@ import { supabase } from "../lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import imageCompression from "browser-image-compression";
 import { useTheme } from "../context/ThemeContext";
+import { logger } from "../lib/logger";
+import { validateImageFile } from "../lib/fileValidator";
+import { getUserProfile } from "../lib/authHelpers";
 
 const menuItems = [
   { id: "reports", Icon: ClipboardList, label: "My Reports" },
@@ -25,22 +29,43 @@ const menuItems = [
   { id: "support", Icon: HelpCircle, label: "Help & Support" },
 ];
 
-function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiveScreen }) {
+function ProfileScreen({
+  userReports: allReports,
+  onOpenModal,
+  session,
+  setActiveScreen,
+  isLoadingReports = false,
+  isAdmin = false,
+  isSuperadmin = false,
+  adminUser = null,
+}) {
   const { theme, toggleTheme, isDark } = useTheme();
+  const userProfile = getUserProfile(session?.user);
+
+  const isUserAdmin = Boolean(
+    isAdmin ||
+    isSuperadmin ||
+    adminUser?.isAdmin ||
+    session?.user?.user_metadata?.role === "admin" ||
+    session?.user?.user_metadata?.role === "superadmin" ||
+    session?.user?.user_metadata?.role?.includes("admin")
+  );
+  const isUserSuperadmin = Boolean(
+    isSuperadmin ||
+    adminUser?.isSuperadmin ||
+    session?.user?.user_metadata?.role === "superadmin"
+  );
+
   // Filter for the user's personal reports to show in "My Reports" and stats
   const userReports = (allReports || []).filter((r) => {
     if (!session?.user) return false;
     const uid = session.user.id;
-    const meta = session.user.user_metadata;
-    const firstName = meta?.first_name || "";
-    const lastName = meta?.last_name || "";
-    const fullName = meta?.full_name || `${firstName} ${lastName}`.trim();
-    
+    const fullName = userProfile?.fullName || "";
     return r.user_id === uid || (fullName && r.full_name === fullName);
   });
   const [view, setView] = useState("menu"); // "menu" | "reports" | "customize"
   const [showAuth, setShowAuth] = useState(
-    !session || !session?.user?.user_metadata?.first_name,
+    !session || !userProfile?.isComplete,
   );
 
   // Form states for profile customization
@@ -58,35 +83,48 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
 
   // Sync session metadata
   useEffect(() => {
-    if (session?.user?.user_metadata) {
-      const meta = session.user.user_metadata;
-      setFirstName(meta.first_name || "");
-      setLastName(meta.last_name || "");
-      setPhone(meta.phone || "");
-      setAvatarPreview(meta.avatar_url || "");
-      setAvatarFile(null);
+    if (session?.user) {
+      const p = getUserProfile(session.user);
+      if (p) {
+        setFirstName(p.firstName || "");
+        setLastName(p.lastName || "");
+        setPhone(session.user.user_metadata?.phone || "");
+        setAvatarPreview(p.avatarUrl || "");
+        setAvatarFile(null);
+      }
     }
   }, [session, view]);
 
   // Require users to complete setup (set first name) before seeing their profile
   useEffect(() => {
-    if (!session || !session.user?.user_metadata?.first_name) {
+    const p = getUserProfile(session?.user);
+    if (!session || !p?.isComplete) {
       setShowAuth(true);
+    } else {
+      setShowAuth(false);
     }
   }, [session]);
 
   const handleLoginSuccess = () => {
     setShowAuth(false);
-    if (setActiveScreen) {
-      setActiveScreen("home");
-    }
+    // Stay on profile screen to show the user their profile menu
+    // Don't auto-navigate away after successful login
   };
 
-  const handleAvatarChange = (e) => {
+  const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Validate the file before setting it
+    const validation = await validateImageFile(file);
+    if (!validation.valid) {
+      setError(validation.error);
+      return;
+    }
+
     setAvatarPreview(URL.createObjectURL(file));
     setAvatarFile(file);
+    setError(null); // Clear any previous errors
   };
 
   const handleSaveProfile = async (e) => {
@@ -159,7 +197,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
         setSuccess(false);
       }, 1500);
     } catch (err) {
-      console.error("Failed to update profile:", err);
+      logger.error("Failed to update profile:", err);
       setError(err.message || "An error occurred while saving your profile.");
     } finally {
       setSaving(false);
@@ -232,6 +270,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                 <MyReportsScreen
                   userReports={userReports}
                   onOpenModal={onOpenModal}
+                  isLoading={isLoadingReports}
                 />
               </div>
             </motion.div>
@@ -290,7 +329,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                 >
                   <h2
                     style={{
-                      fontFamily: "Baloo 2, cursive",
+                      fontFamily: "'Nohemi', sans-serif",
                       fontSize: 24,
                       fontWeight: 800,
                       color: "var(--text-primary)",
@@ -626,7 +665,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                   <h2
                     style={{
-                      fontFamily: "Baloo 2, cursive",
+                      fontFamily: "'Nohemi', sans-serif",
                       fontSize: 24,
                       fontWeight: 800,
                       color: "var(--text-primary)",
@@ -734,7 +773,7 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                   }}
                 >
                   <img
-                    src="/palayan_ict.png"
+                    src="/palayan_ict.webp"
                     alt="Palayan City ICT Division Logo"
                     style={{
                       height: 52,
@@ -770,9 +809,9 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
               <div className="profile-header-card">
                 {/* Monochrome pill: avatar + name */}
                 <div className="profile-pill">
-                  {session?.user?.user_metadata?.avatar_url ? (
+                  {userProfile?.avatarUrl ? (
                     <img
-                      src={session.user.user_metadata.avatar_url}
+                      src={userProfile.avatarUrl}
                       alt="Profile"
                       className="profile-avatar-green"
                       style={{
@@ -793,11 +832,11 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                         background: "#27272a",
                       }}
                     >
-                      {session?.user?.user_metadata?.first_name?.charAt(0).toUpperCase() || "P"}
+                      {userProfile?.firstName?.charAt(0).toUpperCase() || "P"}
                     </div>
                   )}
                   <span className="profile-name-green">
-                    {session?.user?.user_metadata?.full_name || "Palayano User"}
+                    {userProfile?.fullName || "Palayano User"}
                   </span>
                 </div>
 
@@ -832,9 +871,151 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                 </div>
               </div>
 
+              {/* Prominent Admin Console Quick Launch Card */}
+              {isUserAdmin && (
+                <div style={{ padding: "0 20px 14px 20px" }}>
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    id="profile-admin-portal-card-btn"
+                    onClick={() => setActiveScreen && setActiveScreen("admin")}
+                    style={{
+                      width: "100%",
+                      padding: "16px 18px",
+                      borderRadius: 22,
+                      background: isDark
+                        ? "linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(217, 119, 6, 0.08))"
+                        : "linear-gradient(135deg, #fffbeb, #fef3c7)",
+                      border: "1.5px solid rgba(245, 158, 11, 0.4)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 14,
+                      cursor: "pointer",
+                      textAlign: "left",
+                      boxShadow: isDark
+                        ? "0 8px 24px rgba(0, 0, 0, 0.35)"
+                        : "0 8px 20px rgba(245, 158, 11, 0.15)",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <div
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 14,
+                          background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                          color: "#ffffff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          boxShadow: "0 4px 14px rgba(245, 158, 11, 0.4)",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Shield size={22} strokeWidth={2.4} />
+                      </div>
+                      <div>
+                        <div
+                          style={{
+                            fontSize: 15,
+                            fontWeight: 800,
+                            color: isDark ? "#fbbf24" : "#92400e",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          {isUserSuperadmin ? "Superadmin Console" : "Admin Command"}
+                          <span
+                            style={{
+                              fontSize: 9,
+                              fontWeight: 900,
+                              padding: "2px 7px",
+                              borderRadius: 9999,
+                              background: isDark ? "rgba(245, 158, 11, 0.25)" : "rgba(245, 158, 11, 0.2)",
+                              border: "1px solid rgba(245, 158, 11, 0.4)",
+                              color: isDark ? "#fbbf24" : "#b45309",
+                              letterSpacing: "0.06em",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {isUserSuperadmin ? "SUPERADMIN" : "ADMIN"}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: isDark ? "#d1d5db" : "#78350f",
+                            marginTop: 2,
+                          }}
+                        >
+                          Access CLIMA City Command & Incident Operations
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        color: isDark ? "#fbbf24" : "#b45309",
+                        fontWeight: 800,
+                        fontSize: 13,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <ChevronRight size={18} strokeWidth={2.5} />
+                    </div>
+                  </motion.button>
+                </div>
+              )}
+
               {/* Light green body with pill menu items */}
               <div className="profile-body-green">
                 <div className="menu-list-green">
+                  {/* Admin Console Menu Item */}
+                  {isUserAdmin && (
+                    <button
+                      id="profile-admin-menu-item-btn"
+                      className="menu-item-green"
+                      onClick={() => setActiveScreen && setActiveScreen("admin")}
+                      style={{
+                        borderColor: "rgba(245, 158, 11, 0.35)",
+                        background: isDark ? "rgba(245, 158, 11, 0.08)" : "rgba(245, 158, 11, 0.05)",
+                      }}
+                    >
+                      <span className="menu-icon-green" style={{ color: "#f59e0b" }}>
+                        <Shield size={20} strokeWidth={2.4} />
+                      </span>
+                      <span className="menu-text-green" style={{ fontWeight: 800 }}>
+                        {isUserSuperadmin ? "Superadmin Console" : "Admin Portal"}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 800,
+                          color: "#f59e0b",
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                          background: "rgba(245, 158, 11, 0.15)",
+                          border: "1px solid rgba(245, 158, 11, 0.3)",
+                          marginRight: 6,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {isUserSuperadmin ? "Superadmin" : "Admin"}
+                      </span>
+                      <ChevronRight
+                        size={18}
+                        strokeWidth={2}
+                        className="menu-arrow-green"
+                      />
+                    </button>
+                  )}
                   {menuItems.map(({ id, Icon, label }) => (
                     <button
                       key={id}
@@ -878,6 +1059,84 @@ function ProfileScreen({ userReports: allReports, onOpenModal, session, setActiv
                       {theme}
                     </span>
                   </button>
+                </div>
+              </div>
+
+              {/* Legal links section */}
+              <div style={{
+                padding: '20px 24px',
+                paddingBottom: 'calc(100px + env(safe-area-inset-bottom, 0px))',
+                borderTop: '1px solid var(--border-subtle)',
+                background: 'var(--bg-card)'
+              }}>
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: 'var(--text-secondary)',
+                  textAlign: 'center',
+                  marginBottom: '12px',
+                  fontWeight: '600'
+                }}>
+                  Legal Information
+                </div>
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  gap: '8px 16px',
+                  fontSize: '0.8rem'
+                }}>
+                  <button
+                    onClick={() => setActiveScreen && setActiveScreen('legal')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--btn-primary-bg)',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      padding: '4px 0',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Terms of Service
+                  </button>
+                  <span style={{ color: 'var(--border-subtle)' }}>•</span>
+                  <button
+                    onClick={() => setActiveScreen && setActiveScreen('legal')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--btn-primary-bg)',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      padding: '4px 0',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Privacy Policy
+                  </button>
+                  <span style={{ color: 'var(--border-subtle)' }}>•</span>
+                  <button
+                    onClick={() => setActiveScreen && setActiveScreen('legal')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--btn-primary-bg)',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      padding: '4px 0',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Legal Documents
+                  </button>
+                </div>
+                <div style={{
+                  fontSize: '0.7rem',
+                  color: 'var(--text-secondary)',
+                  textAlign: 'center',
+                  marginTop: '12px'
+                }}>
+                  © 2025 Palayan City ICT Office
                 </div>
               </div>
 

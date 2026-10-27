@@ -1,0 +1,7 @@
+{
+  "task_id": "task-performance-optimization",
+  "task_description": "Implement 4 critical performance optimizations: pagination with React Query, eliminate N+1 queries, quick performance wins (lazy loading + React.memo), and database indexes",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004"],
+  "blocked_reason": null
+}
